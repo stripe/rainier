@@ -4,11 +4,15 @@ Rainier provides an idiomatic functional Scala API for bayesian inference via Ma
 
 Rainier allows you to describe a complex prior distribution by composing primitive distributions using familiar combinators like `map`, `flatMap`, and `zip`; condition that prior on your observed data; and, after an inference step, sample from the resulting posterior distribution.
 
+It is implemented in pure Scala, with no external dependencies, JNI libs, or reliance on GPUs, and as such is convenient to deploy to Spark or Hadoop clusters.
+
 Rainier currently provides two samplers: `affine-invariant MCMC`, an ensemble method popularized by the [Emcee](https://github.com/dfm/emcee) package in Python, and `Hamiltonian Monte Carlo` (along with its `NUTS` variant), a gradient-based method used in [Stan](http://mc-stan.org/) and [PyMC3](https://github.com/pymc-devs/pymc3).
 
 ## Documentation
 
 A good starting point is the [Tour of Rainier's Core](docs/tour_tut.md).
+
+If you want to dig deeper, there are some [implementation notes](docs/impl.md).
 
 If you're more familiar with deep learning systems like TensorFlow or PyTorch, you might also be interested in [this summary of some of the similarities and differences](docs/dl.md) between DL and MCMC.
 
