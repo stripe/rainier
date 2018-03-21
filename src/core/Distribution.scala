@@ -90,6 +90,9 @@ object Distributions {
     ((err * err) / (stddev * stddev * Real(-2.0))) - stddev.log
   }
 
+  def laplace(x: Real, mean: Real, scale: Real): Real =
+    (Real.one / (scale * 2.0)).log + ((x - mean).abs / (scale * -1))
+
   def cauchy(x: Real, x0: Real, beta: Real): Real = {
     val err = x - x0
     beta.log -

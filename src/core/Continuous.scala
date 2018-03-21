@@ -86,6 +86,19 @@ case class StudentsT(nu: Real, mu: Real, sigma: Real) extends Continuous {
   def param = ???
 }
 
+case class Laplace(mean: Real, scale: Real) extends Continuous {
+  def logDensity(t: Double) =
+    Distributions.laplace(Real(t), mean, scale)
+
+  def param =
+    Unbounded.param.flatMap { x =>
+      val translated = x + mean
+      RandomVariable(translated, Distributions.laplace(translated, mean, scale))
+    }  
+
+  def generator = ???
+}
+
 object Unbounded extends Continuous {
   def param = RandomVariable(new Variable)
   def logDensity(t: Double) = Real.one
