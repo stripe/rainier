@@ -153,20 +153,24 @@ object Compiler {
       case DivideOp   => 1
       case MultiplyOp => 2
       case SubtractOp => 3
+      case OrOp       => 4
+      case AndOp      => 5
+      case AndNotOp   => 6
     }
     List(encode(store, opcode), left, right)
   }
 
   private def unary(load: Int, store: Int, op: UnaryOp): Seq[Int] = {
     val opcode = op match {
-      case ExpOp => 4
-      case LogOp => 5
+      case ExpOp => 7
+      case LogOp => 8
+      case AbsOp => 9
     }
     List(encode(store, opcode), load)
   }
 
   private def sum(store: Int, seq: Seq[Int]): Seq[Int] = {
-    encode(store, 6) :: seq.size :: seq.toList
+    encode(store, 10) :: seq.size :: seq.toList
   }
 
   private val bitmask = ((1 << addressBits) - 1)
@@ -191,11 +195,25 @@ object Compiler {
           heap(next()) * heap(next())
         case 3 => //Subtract
           heap(next()) - heap(next())
-        case 4 => //Exp
+        case 4 => //Or
+          val left = heap(next())
+          val right = heap(next())
+          if (left == 0) right else left
+        case 5 => //And
+          val left = heap(next())
+          val right = heap(next())
+          if (right == 0) 0 else left
+        case 6 => //AndNot
+          val left = heap(next())
+          val right = heap(next())
+          if (right == 0) left else 0
+        case 7 => //Exp
           math.exp(heap(next()))
-        case 5 => //Log
+        case 8 => //Log
           math.log(heap(next()))
-        case 6 => //Sum
+        case 9 => //Abs
+          heap(next()).abs
+        case 10 => //Sum
           val size = next()
           var sum = 0.0
           var i = 0

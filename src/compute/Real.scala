@@ -7,8 +7,13 @@ sealed trait Real {
   def -(other: Real): Real =
     Pruner.prune(new BinaryReal(this, other, SubtractOp))
   def /(other: Real): Real = Pruner.prune(new BinaryReal(this, other, DivideOp))
+  def ||(other: Real): Real = Pruner.prune(new BinaryReal(this, other, OrOp))
+  def &&(other: Real): Real = Pruner.prune(new BinaryReal(this, other, AndOp))
+  def &&!(other: Real): Real =
+    Pruner.prune(new BinaryReal(this, other, AndNotOp))
   def exp: Real = Pruner.prune(new UnaryReal(this, ExpOp))
   def log: Real = Pruner.prune(new UnaryReal(this, LogOp))
+  def abs: Real = Pruner.prune(new UnaryReal(this, AbsOp))
 }
 
 object Real {
@@ -83,6 +88,30 @@ case object DivideOp extends BinaryOp {
   def apply(left: Double, right: Double) = left / right
 }
 
+case object OrOp extends BinaryOp {
+  def apply(left: Double, right: Double) =
+    if (left == 0.0)
+      right
+    else
+      left
+}
+
+case object AndOp extends BinaryOp {
+  def apply(left: Double, right: Double) =
+    if (right == 0.0)
+      0.0
+    else
+      left
+}
+
+case object AndNotOp extends BinaryOp {
+  def apply(left: Double, right: Double) =
+    if (right == 0.0)
+      left
+    else
+      0.0
+}
+
 sealed trait UnaryOp {
   def apply(original: Double): Double
 }
@@ -93,4 +122,8 @@ case object ExpOp extends UnaryOp {
 
 case object LogOp extends UnaryOp {
   def apply(original: Double) = math.log(original)
+}
+
+case object AbsOp extends UnaryOp {
+  def apply(original: Double) = original.abs
 }

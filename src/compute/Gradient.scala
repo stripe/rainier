@@ -83,6 +83,21 @@ object Gradient {
             gradient.toReal * (Real.one / child.right)
           else
             gradient.toReal * -1 * child.left / (child.right * child.right)
+        case OrOp =>
+          if (isLeft)
+            gradient.toReal && child.left
+          else
+            gradient.toReal &&! child.left
+        case AndOp =>
+          if (isLeft)
+            gradient.toReal && child.right
+          else
+            Real.zero
+        case AndNotOp =>
+          if (isLeft)
+            gradient.toReal &&! child.right
+          else
+            Real.zero
       }
   }
 
@@ -90,6 +105,7 @@ object Gradient {
     def toReal = child.op match {
       case LogOp => gradient.toReal * (Real.one / child.original)
       case ExpOp => gradient.toReal * child
+      case AbsOp => gradient.toReal * child.original / (child || Real.one)
     }
   }
 }
