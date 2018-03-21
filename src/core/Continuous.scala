@@ -94,7 +94,7 @@ case class Laplace(mean: Real, scale: Real) extends Continuous {
     Unbounded.param.flatMap { x =>
       val translated = x + mean
       RandomVariable(translated, Distributions.laplace(translated, mean, scale))
-    }  
+    }
 
   def generator = ???
 }

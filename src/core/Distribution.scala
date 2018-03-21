@@ -3,14 +3,15 @@ package rainier.core
 import rainier.compute.Real
 import rainier.sampler.RNG
 
-trait Distribution[T] extends Likelihood[T] {self =>
+trait Distribution[T] extends Likelihood[T] { self =>
   def logDensity(t: T): Real
   def logDensities(list: Seq[T]): Real = Real.sum(list.map(logDensity))
 
   def generator: Generator[T]
 
   def fit(t: T) = RandomVariable(generator, logDensity(t))
-  override def fit(list: Seq[T]) = RandomVariable(generator.repeat(list.size), logDensities(list))
+  override def fit(list: Seq[T]) =
+    RandomVariable(generator.repeat(list.size), logDensities(list))
 }
 
 case class Poisson(lambda: Real) extends Distribution[Int] {
@@ -18,7 +19,7 @@ case class Poisson(lambda: Real) extends Distribution[Int] {
     lambda.log * t - lambda - Distributions.factorial(t)
   }
 
-  val generator = Generator.from{(r,n) => 
+  val generator = Generator.from { (r, n) =>
     val l = math.exp(-n.toDouble(lambda))
     var k = 0
     var p = 1.0
@@ -38,7 +39,9 @@ case class Mixture[T, D](pmf: Map[D, Real])(implicit ev: D <:< Distribution[T])
         (ev(dist).logDensity(t) + prob.log)
     })
 
-  val generator = Categorical(pmf).flatMap{d => d.generator}
+  val generator = Categorical(pmf).flatMap { d =>
+    d.generator
+  }
 }
 
 case class Categorical[T](pmf: Map[T, Real]) extends Generator[T] {
