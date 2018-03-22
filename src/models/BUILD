@@ -7,6 +7,14 @@ scala_binary(
 )
 
 scala_binary(
+    name = "fitsparse",
+    srcs = ["FitSparse.scala"],
+    visibility = ["//visibility:public"],
+    main_class = "rainier.models.FitSparse",
+    deps = ["//src/compute", "//src/sampler", "//src/core",  "//src/report"]
+)
+
+scala_binary(
     name = "fitmixture",
     srcs = ["FitMixture.scala"],
     visibility = ["//visibility:public"],
