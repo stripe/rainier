@@ -15,9 +15,9 @@ object FitNormal {
     }
 
     val model = for {
-      mean <- Uniform(0,10).param
-      stddev <- Uniform(0,10).param
-      _ <- Normal(mean,stddev).fit(data)
+      mean <- Uniform(0, 10).param
+      stddev <- Uniform(0, 10).param
+      _ <- Normal(mean, stddev).fit(data)
     } yield (mean, stddev)
 
     implicit val rng = RNG.default

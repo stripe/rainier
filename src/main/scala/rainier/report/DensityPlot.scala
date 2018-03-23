@@ -20,13 +20,13 @@ case class DensityPlot(nRows: Int = 20,
         .groupBy { case (x, y) => (xBucketFn(x), yBucketFn(y)) }
         .map { case (k, v) => k -> v.size.toDouble }
 
-    val markerFn = if(cellCounts.values.max == 1)
-                          {x: Double => markers.size - 1}
-                        else
-                          mapping(cellCounts.values.max + 1,
-                                  cellCounts.values.min,
-                                  markers.size,
-                                  logMarkers)._1
+    val markerFn = if (cellCounts.values.max == 1) { x: Double =>
+      markers.size - 1
+    } else
+      mapping(cellCounts.values.max + 1,
+              cellCounts.values.min,
+              markers.size,
+              logMarkers)._1
     val cells = cellCounts.map {
       case (k, v) =>
         k -> markers(markerFn(v)).toString

@@ -24,8 +24,7 @@ case class Hamiltonian(iterations: Int,
                        "chains" -> chains.toDouble
                      ))
 
-  def sample(density: Real)(
-      implicit rng: RNG): Iterator[Sample] = {
+  def sample(density: Real)(implicit rng: RNG): Iterator[Sample] = {
     val tuned = take(HamiltonianChain(density),
                      burnIn + 1,
                      initialStepSize,

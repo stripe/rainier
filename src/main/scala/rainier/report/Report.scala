@@ -4,7 +4,8 @@ import rainier.compute._
 import rainier.core._
 import rainier.sampler._
 
-case class Report(chains: Seq[List[Sample]])(fn: Numeric[Real] => Map[String,Double]) {
+case class Report(chains: Seq[List[Sample]])(
+    fn: Numeric[Real] => Map[String, Double]) {
   import Report._
 
   val acceptanceRates = Summary(chains.map { chain =>
@@ -92,7 +93,8 @@ object Report {
       mean
   }
 
-  def printReport[T](model: RandomVariable[T], sampler: Sampler = Sampler.default)(
+  def printReport[T](model: RandomVariable[T],
+                     sampler: Sampler = Sampler.default)(
       implicit rng: RNG = RNG.default,
       sampleable: Sampleable[T, Map[String, Double]]): Unit = {
     val (name, config) = sampler.description
@@ -119,7 +121,7 @@ object Report {
         .values
         .toList
 
-    Report(chains){num =>
+    Report(chains) { num =>
       model.get(rng, sampleable, num)
     }.printReport()
   }
