@@ -10,7 +10,7 @@ Rainier currently provides two samplers: `affine-invariant MCMC`, an ensemble me
 
 ## Documentation
 
-A good starting point is the [Tour of Rainier's Core](docs/tour_tut.md).
+A good starting point is the [Tour of Rainier's Core](docs/tour.md).
 
 If you want to dig deeper, there are some [implementation notes](docs/impl.md).
 
@@ -18,10 +18,10 @@ If you're more familiar with deep learning systems like TensorFlow or PyTorch, y
 
 ## Building
 
-Rainier currently uses [Bazel](https://bazel.build/) to build. If you have Bazel installed, you can build Rainier and test that it's working by executing `bazel run src/models:fitnormal`. You should see output something like this:
+Rainier uses [SBT](https://www.scala-sbt.org/) to build. If you have SBT installed, you can build Rainier and test that it's working by executing `sbt run` and then choosing `3` to run `FitNormal`. You should see output something like this:
 
 ```
-INFO: Running command line: bazel-bin/src/models/fitnormal
+[info] Running rainier.models.FitNormal 
     2.19 |                                                                                
          |                                 ·           ··                                 
          |               ·           ·  · ·· ·  ···  ·  ·· ·  ·    · · ·                  

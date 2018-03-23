@@ -97,6 +97,6 @@ val model = posterior.map{case (l1, l2, t) =>
   )
 }
 
-Report.printReport(model, Emcee(burnIn = 100, iterations = 1000, walkers = 1000))
+Report.printReport(model, Emcee(burnIn = 100, iterations = 1000, walkers = 100))
 ```
 

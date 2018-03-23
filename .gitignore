@@ -1,2 +1,4 @@
 bazel-*
 .idea
+project/target
+target/
