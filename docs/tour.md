@@ -1,6 +1,6 @@
 # A Tour of Rainier's Core
 
-Hello! This document will provide a quick tour through the most important parts of Rainier's core. If you'd like to follow along with this tour, `bazel build src/repl:repl && bazel-bin/src/repl/repl` will get you to a Scala REPL.
+Hello! This document will provide a quick tour through the most important parts of Rainier's core. If you'd like to follow along with this tour, `sbt console` will get you to a Scala REPL.
 
 The `rainier.core` package defines some key traits like `Distribution`, `RandomVariable`, `Likelihood`, and `Predictor`. Let's import it, along with a `repl` package that gives us some useful utilities.
 
