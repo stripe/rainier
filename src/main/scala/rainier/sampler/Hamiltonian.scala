@@ -38,46 +38,46 @@ case class Hamiltonian(iterations: Int,
   }
 
   private def computeExponent(deltaH: Double): Double = {
-    val indicator = if (deltaH > Math.log(0.5)) { 1.0 } else { 0.0 }
-    2 * indicator - 1
+    if (deltaH > Math.log(0.5)) { 1.0 } else { -1.0 }
   }
 
-  private def updateEpsilon(deltaH: Double,
-                            epsilon: Double,
-                            exponent: Double): Double = {
-    epsilon * Math.pow(2, exponent)
+  private def updateStepSize(deltaH: Double,
+                             stepSize: Double,
+                             exponent: Double): Double = {
+    stepSize * Math.pow(2, exponent)
   }
 
-  private def continuationCriterion(deltaH: Double,
-                                    exponent: Double): Boolean = {
+  private def continueTuningStepSize(deltaH: Double,
+                                     exponent: Double): Boolean = {
     exponent * deltaH > (-exponent) * Math.log(2)
   }
 
-  private def tuningStep(
+  private def tuneStepSize(
       chain: HamiltonianChain,
       nextChain: HamiltonianChain,
-      epsilon: Double,
+      stepSize: Double,
       continue: Boolean
   ): (HamiltonianChain, HamiltonianChain, Double, Boolean) = {
     val deltaH = nextChain.hParams.hamiltonian - chain.hParams.hamiltonian
     val newExponent = computeExponent(deltaH)
-    val newContinue = continuationCriterion(deltaH, newExponent)
-    val newEpsilon = updateEpsilon(deltaH, epsilon, newExponent)
-    val newNextChain = chain.nextChain(newEpsilon)
-    (chain, newNextChain, newEpsilon, newContinue)
+    val newContinue = continueTuningStepSize(deltaH, newExponent)
+    val newStepSize = updateStepSize(deltaH, stepSize, newExponent)
+    val newNextChain = chain.nextChain(newStepSize)
+    (chain, newNextChain, newStepSize, newContinue)
   }
 
-  private def findReasonableEpsilon(chain: HamiltonianChain): Double = {
-    val initialEpsilon = 1.0
-    val nextChain = chain.nextChain(initialEpsilon)
-    val tuningSteps = Stream.iterate((chain, nextChain, initialEpsilon, true)) {
-      case (chain, nextChain, eps, continue) =>
-        tuningStep(chain, nextChain, eps, continue)
-    }
-    val (_, _, epsilon, _) = tuningSteps.takeWhile {
-      case (chain, nextChain, eps, continue) => continue
+  private def findReasonableStepSize(chain: HamiltonianChain,
+                                     initialStepSize: Double): Double = {
+    val nextChain = chain.nextChain(initialStepSize)
+    val tuningSteps =
+      Stream.iterate((chain, nextChain, initialStepSize, true)) {
+        case (chain, nextChain, stepSize, continue) =>
+          tuneStepSize(chain, nextChain, stepSize, continue)
+      }
+    val (_, _, stepSize, _) = tuningSteps.takeWhile {
+      case (_, _, _, continue) => continue
     }.last
-    epsilon
+    stepSize
   }
 
   private def take(chain: HamiltonianChain,
