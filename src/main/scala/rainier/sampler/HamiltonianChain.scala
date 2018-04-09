@@ -9,6 +9,13 @@ case class HamiltonianChain(accepted: Boolean,
                             gradient: Seq[Real],
                             cf: Compiler.CompiledFunction)(implicit rng: RNG) {
 
+  def nextChain(stepSize: Double): HamiltonianChain = {
+    val initialParams =
+      HParams(hParams.qs, hParams.gradPotential, hParams.potential)
+    val newParams = integrator.step(initialParams, stepSize)
+    copy(hParams = newParams)
+  }
+
   def nextHMC(stepSize: Double, nSteps: Int): HamiltonianChain = {
     val initialParams =
       HParams(hParams.qs, hParams.gradPotential, hParams.potential)

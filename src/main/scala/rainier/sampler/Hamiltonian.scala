@@ -37,6 +37,54 @@ case class Hamiltonian(iterations: Int,
     }
   }
 
+  private def computeDeltaH(currentChain: HamiltonianChain,
+                            nextChain: HamiltonianChain): Double =
+    nextChain.hParams.hamiltonian - currentChain.hParams.hamiltonian
+
+  private def computeExponent(deltaH: Double): Double = {
+    val indicator = if (deltaH > Math.log(0.5)) { 1.0 } else { 0.0 }
+    2 * indicator - 1
+  }
+
+  private def updateEpsilon(deltaH: Double,
+                            epsilon: Double,
+                            exponent: Double): Double = {
+    epsilon * Math.pow(2, exponent)
+  }
+
+  private def continuationCriterion(deltaH: Double,
+                                    exponent: Double): Boolean = {
+    exponent * deltaH > (-exponent) * Math.log(2)
+  }
+
+  private def tuningStep(
+      chain: HamiltonianChain,
+      nextChain: HamiltonianChain,
+      epsilon: Double,
+      continue: Boolean
+  ): (HamiltonianChain, HamiltonianChain, Double, Boolean) = {
+    val deltaH = computeDeltaH(chain, nextChain)
+    val newExponent = computeExponent(deltaH)
+    val newContinue = continuationCriterion(deltaH, newExponent)
+    val newEpsilon = updateEpsilon(deltaH, epsilon, newExponent)
+    val newNextChain = chain.nextChain(newEpsilon)
+    (chain, newNextChain, newEpsilon, newContinue)
+  }
+
+  private def findReasonableEpsilon(chain: HamiltonianChain)(
+      implicit rng: RNG): Double = {
+    val initialEpsilon = 1.0
+    val nextChain = chain.nextChain(initialEpsilon)
+    val tuningSteps = Stream.iterate((chain, nextChain, initialEpsilon, true)) {
+      case (chain, nextChain, eps, continue) =>
+        tuningStep(chain, nextChain, eps, continue)
+    }
+    val (_, _, epsilon, _) = tuningSteps.takeWhile {
+      case (chain, nextChain, eps, continue) => continue
+    }.last
+    epsilon
+  }
+
   private def take(chain: HamiltonianChain,
                    iterations: Int,
                    stepSize: Double,
