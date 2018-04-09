@@ -9,6 +9,7 @@ case class HamiltonianChain(accepted: Boolean,
                             gradient: Seq[Real],
                             cf: Compiler.CompiledFunction)(implicit rng: RNG) {
 
+  // Take a single leapfrog step, for use in turning epsilon
   def nextChain(stepSize: Double): HamiltonianChain = {
     val initialParams =
       HParams(hParams.qs, hParams.gradPotential, hParams.potential)
