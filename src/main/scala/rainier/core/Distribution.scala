@@ -31,49 +31,6 @@ case class Poisson(lambda: Real) extends Distribution[Int] {
   }
 }
 
-case class Mixture[T, D](pmf: Map[D, Real])(implicit ev: D <:< Distribution[T])
-    extends Distribution[T] {
-  def logDensity(t: T) =
-    Real.logSumExp(pmf.toList.map {
-      case (dist, prob) =>
-        (ev(dist).logDensity(t) + prob.log)
-    })
-
-  val generator = Categorical(pmf).flatMap { d =>
-    d.generator
-  }
-}
-
-case class Categorical[T](pmf: Map[T, Real]) extends Generator[T] {
-
-  val cdf = pmf.toList
-    .scanLeft((Option.empty[T], Real.zero)) {
-      case ((_, acc), (t, p)) => ((Some(t)), p + acc)
-    }
-    .collect { case (Some(t), p) => (t, p) }
-
-  def get(implicit r: RNG, n: Numeric[Real]) = {
-    val v = r.standardUniform
-    cdf.find { case (t, p) => n.toDouble(p) >= v }.getOrElse(cdf.last)._1
-  }
-
-}
-
-object Categorical {
-
-  def boolean(p: Real) = Categorical(Map(true -> p, false -> (Real.one - p)))
-
-  def normalize[T](pmf: Map[T, Real]) = {
-    val total = Real.sum(pmf.values.toList)
-    Categorical(pmf.map { case (t, p) => (t, p / total) })
-  }
-
-  def list[T](seq: Seq[T]) =
-    normalize(seq.groupBy(identity).mapValues { l =>
-      Real(l.size)
-    })
-}
-
 object Distributions {
   def gamma(z: Real): Real = {
     val w = z + (Real.one / ((12 * z) - (Real.one / (10 * z))))
