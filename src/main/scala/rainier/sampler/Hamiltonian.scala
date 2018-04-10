@@ -29,6 +29,8 @@ case class Hamiltonian(iterations: Int,
                      burnIn + 1,
                      initialStepSize,
                      sampleMethod).last
+    val stepSize = findReasonableStepSize(tuned, initialStepSize)
+    println(s"tuned stepSize: $stepSize")
     0.until(chains).iterator.flatMap { i =>
       take(tuned, iterations, initialStepSize, sampleMethod).map { c =>
         val eval = new Evaluator(c.variables.zip(c.hParams.qs).toMap)
@@ -62,6 +64,12 @@ case class Hamiltonian(iterations: Int,
     val newExponent = computeExponent(deltaH)
     val newContinue = continueTuningStepSize(deltaH, newExponent)
     val newStepSize = updateStepSize(deltaH, stepSize, newExponent)
+    // Are we supposed to recompute the exponent every iteration
+    // or choose it once at the beginning???
+    println(s"deltaH: $deltaH")
+    println(s"newExponent: $newExponent")
+    println(s"newContinue: $newContinue")
+    println(s"newStepSize: $newStepSize")
     val newNextChain = chain.nextChain(newStepSize)
     (chain, newNextChain, newStepSize, newContinue)
   }
