@@ -39,6 +39,10 @@ case class Hamiltonian(iterations: Int,
     }
   }
 
+  private def computeDeltaH(chain: HamiltonianChain,
+                            nextChain: HamiltonianChain): Double =
+    nextChain.hParams.hamiltonian - chain.hParams.hamiltonian
+
   private def computeExponent(deltaH: Double): Double = {
     if (deltaH > Math.log(0.5)) { 1.0 } else { -1.0 }
   }
@@ -51,39 +55,44 @@ case class Hamiltonian(iterations: Int,
 
   private def continueTuningStepSize(deltaH: Double,
                                      exponent: Double): Boolean = {
-    exponent * deltaH > (-exponent) * Math.log(2)
+    exponent * deltaH > -exponent * Math.log(2)
   }
 
-  private def tuneStepSize(
-      chain: HamiltonianChain,
+  private def tuneStepSize(chain: HamiltonianChain, exponent: Double)(
       nextChain: HamiltonianChain,
       stepSize: Double,
       continue: Boolean
-  ): (HamiltonianChain, HamiltonianChain, Double, Boolean) = {
-    val deltaH = nextChain.hParams.hamiltonian - chain.hParams.hamiltonian
-    val newExponent = computeExponent(deltaH)
-    val newContinue = continueTuningStepSize(deltaH, newExponent)
-    val newStepSize = updateStepSize(deltaH, stepSize, newExponent)
+  ): (HamiltonianChain, Double, Boolean) = {
+    val deltaH = computeDeltaH(chain, nextChain)
+    val newContinue = continueTuningStepSize(deltaH, exponent)
+    val newStepSize = updateStepSize(deltaH, stepSize, exponent)
     // Are we supposed to recompute the exponent every iteration
     // or choose it once at the beginning???
     println(s"deltaH: $deltaH")
-    println(s"newExponent: $newExponent")
+    println(s"qs: ${chain.hParams.qs}")
+    println(s"new qs: ${nextChain.hParams.qs}")
+    println(s"potential: ${nextChain.hParams.potential}")
+    println(s"grad: ${nextChain.hParams.gradPotential}")
+    println(s"exponent: $exponent")
     println(s"newContinue: $newContinue")
     println(s"newStepSize: $newStepSize")
     val newNextChain = chain.nextChain(newStepSize)
-    (chain, newNextChain, newStepSize, newContinue)
+    (newNextChain, newStepSize, newContinue)
   }
 
   private def findReasonableStepSize(chain: HamiltonianChain,
                                      initialStepSize: Double): Double = {
     val nextChain = chain.nextChain(initialStepSize)
+    val deltaH = computeDeltaH(chain, nextChain)
+    val exponent = computeExponent(deltaH)
+    println(s"initial deltaH: $deltaH, initial exponent: $exponent")
     val tuningSteps =
-      Stream.iterate((chain, nextChain, initialStepSize, true)) {
-        case (chain, nextChain, stepSize, continue) =>
-          tuneStepSize(chain, nextChain, stepSize, continue)
+      Stream.iterate((nextChain, initialStepSize, true), 100) {
+        case (nextChain, stepSize, continue) =>
+          tuneStepSize(chain, exponent)(nextChain, stepSize, continue)
       }
-    val (_, _, stepSize, _) = tuningSteps.takeWhile {
-      case (_, _, _, continue) => continue
+    val (_, stepSize, _) = tuningSteps.takeWhile {
+      case (_, _, continue) => continue
     }.last
     stepSize
   }
