@@ -1,5 +1,6 @@
 package rainier.sampler
 
+import scala.annotation.tailrec
 import rainier.compute._
 
 sealed trait SampleMethod
@@ -29,12 +30,63 @@ case class Hamiltonian(iterations: Int,
                      burnIn + 1,
                      initialStepSize,
                      sampleMethod).last
+    val stepSize = findReasonableStepSize(tuned, initialStepSize)
     0.until(chains).iterator.flatMap { i =>
       take(tuned, iterations, initialStepSize, sampleMethod).map { c =>
         val eval = new Evaluator(c.variables.zip(c.hParams.qs).toMap)
         Sample(i, c.accepted, eval)
       }.iterator
     }
+  }
+
+  /**
+    * @note: Let U(Θ) be the potential, K(r) the kinetic.
+    * The NUTS paper defines
+    * H(Θ,r) = U(Θ) - K(r) as the difference
+    * p(Θ,r) = exp(H)
+    * and for ΔH = H(Θ',r') - H(Θ,r)
+    * defines the acceptance ratio as min{1, exp(ΔH)}.
+    * Neal and McKay, on the other hand, define
+    * H(Θ,r) = U(Θ) + K(r) as the sum
+    * and the acceptance ratio as min{1, exp(-ΔH)}.
+    * These are the definitions we use in the rest of HMC and NUTS
+    * so we similarly use -ΔH to tune the stepSize here.
+    */
+  private def computeDeltaH(chain: HamiltonianChain,
+                            nextChain: HamiltonianChain): Double =
+    nextChain.hParams.hamiltonian - chain.hParams.hamiltonian
+
+  private def computeExponent(deltaH: Double): Double =
+    if (-deltaH > Math.log(0.5)) { 1.0 } else { -1.0 }
+
+  private def updateStepSize(stepSize: Double, exponent: Double): Double =
+    stepSize * Math.pow(2, exponent)
+
+  private def continueTuningStepSize(deltaH: Double,
+                                     exponent: Double): Boolean =
+    exponent * (-deltaH) > -exponent * Math.log(2)
+
+  @tailrec
+  private def tuneStepSize(
+      chain: HamiltonianChain,
+      nextChain: HamiltonianChain,
+      exponent: Double,
+      stepSize: Double
+  ): Double = {
+    val deltaH = computeDeltaH(chain, nextChain)
+    if (continueTuningStepSize(deltaH, exponent)) {
+      val newStepSize = updateStepSize(stepSize, exponent)
+      val newNextChain = chain.stepOnce(newStepSize)
+      tuneStepSize(chain, newNextChain, exponent, newStepSize)
+    } else { stepSize }
+  }
+
+  private def findReasonableStepSize(chain: HamiltonianChain,
+                                     initialStepSize: Double): Double = {
+    val nextChain = chain.stepOnce(initialStepSize)
+    val deltaH = computeDeltaH(chain, nextChain)
+    val exponent = computeExponent(deltaH)
+    tuneStepSize(chain, nextChain, exponent, initialStepSize)
   }
 
   private def take(chain: HamiltonianChain,
