@@ -53,7 +53,7 @@ object FitPriors {
         "Uniform(Normal)" -> unifNormal
       )
 
-    Report.printReport(prior, Emcee(10000, 1000, 100))
-//    Report.printReport(prior, Hamiltonian(1, 1, 1, 1))
+//    Report.printReport(prior, Emcee(10000, 1000, 100))
+    Report.printReport(prior, Hamiltonian(1000, 10, 10, 10))
   }
 }
