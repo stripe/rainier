@@ -1,5 +1,6 @@
 package rainier.sampler
 
+import scala.annotation.tailrec
 import rainier.compute._
 
 sealed trait SampleMethod
@@ -30,7 +31,6 @@ case class Hamiltonian(iterations: Int,
                      initialStepSize,
                      sampleMethod).last
     val stepSize = findReasonableStepSize(tuned, initialStepSize)
-    println(s"tuned stepSize: $stepSize")
     0.until(chains).iterator.flatMap { i =>
       take(tuned, iterations, initialStepSize, sampleMethod).map { c =>
         val eval = new Evaluator(c.variables.zip(c.hParams.qs).toMap)
@@ -66,44 +66,27 @@ case class Hamiltonian(iterations: Int,
                                      exponent: Double): Boolean =
     exponent * (-deltaH) > -exponent * Math.log(2)
 
-  private def tuneStepSize(chain: HamiltonianChain, exponent: Double)(
+  @tailrec
+  private def tuneStepSize(
+      chain: HamiltonianChain,
       nextChain: HamiltonianChain,
-      stepSize: Double,
-      continue: Boolean
-  ): (HamiltonianChain, Double, Boolean) = {
+      exponent: Double,
+      stepSize: Double
+  ): Double = {
     val deltaH = computeDeltaH(chain, nextChain)
-    val newContinue = continueTuningStepSize(deltaH, exponent)
-    val (newStepSize, newNextChain) = {
-      if (newContinue) {
-        val updatedStepSize = updateStepSize(stepSize, exponent)
-        val updatedNextChain = chain.nextChain(updatedStepSize)
-        (updatedStepSize, updatedNextChain)
-      } else { (stepSize, nextChain) }
-    }
-    println(s"deltaH: $deltaH")
-    println(s"qs: ${chain.hParams.qs}")
-    println(s"new qs: ${nextChain.hParams.qs}")
-    println(s"potential: ${nextChain.hParams.potential}")
-    println(s"grad: ${nextChain.hParams.gradPotential}")
-    println(s"newContinue: $newContinue")
-    println(s"newStepSize: $newStepSize")
-    (newNextChain, newStepSize, newContinue)
+    if (continueTuningStepSize(deltaH, exponent)) {
+      val newStepSize = updateStepSize(stepSize, exponent)
+      val newNextChain = chain.stepOnce(newStepSize)
+      tuneStepSize(chain, newNextChain, exponent, newStepSize)
+    } else { stepSize }
   }
 
   private def findReasonableStepSize(chain: HamiltonianChain,
                                      initialStepSize: Double): Double = {
-    val nextChain = chain.nextChain(initialStepSize)
+    val nextChain = chain.stepOnce(initialStepSize)
     val deltaH = computeDeltaH(chain, nextChain)
     val exponent = computeExponent(deltaH)
-    val tuningSteps =
-      Stream.iterate((nextChain, initialStepSize, true)) {
-        case (nextChain, stepSize, continue) =>
-          tuneStepSize(chain, exponent)(nextChain, stepSize, continue)
-      }
-    val (_, stepSize, _) = tuningSteps.takeWhile {
-      case (_, _, continue) => continue
-    }.last
-    stepSize
+    tuneStepSize(chain, nextChain, exponent, initialStepSize)
   }
 
   private def take(chain: HamiltonianChain,

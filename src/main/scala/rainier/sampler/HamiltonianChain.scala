@@ -11,7 +11,7 @@ case class HamiltonianChain(accepted: Boolean,
 
   // Take a single leapfrog step without re-initialzing momenta
   // for use in tuning the step size
-  def nextChain(stepSize: Double): HamiltonianChain = {
+  def stepOnce(stepSize: Double): HamiltonianChain = {
     val newParams = integrator.step(hParams, stepSize)
     copy(hParams = newParams)
   }
