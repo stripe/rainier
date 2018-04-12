@@ -56,18 +56,15 @@ case class Hamiltonian(iterations: Int,
                             nextChain: HamiltonianChain): Double =
     nextChain.hParams.hamiltonian - chain.hParams.hamiltonian
 
-  private def computeExponent(deltaH: Double): Double = {
+  private def computeExponent(deltaH: Double): Double =
     if (-deltaH > Math.log(0.5)) { 1.0 } else { -1.0 }
-  }
 
-  private def updateStepSize(stepSize: Double, exponent: Double): Double = {
+  private def updateStepSize(stepSize: Double, exponent: Double): Double =
     stepSize * Math.pow(2, exponent)
-  }
 
   private def continueTuningStepSize(deltaH: Double,
-                                     exponent: Double): Boolean = {
+                                     exponent: Double): Boolean =
     exponent * (-deltaH) > -exponent * Math.log(2)
-  }
 
   private def tuneStepSize(chain: HamiltonianChain, exponent: Double)(
       nextChain: HamiltonianChain,
