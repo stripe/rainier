@@ -9,7 +9,7 @@ case class HamiltonianChain(accepted: Boolean,
                             gradient: Seq[Real],
                             cf: Compiler.CompiledFunction)(implicit rng: RNG) {
 
-  // Take a single leapfrog step without re-initialzing momenta
+  // Take a single leapfrog step without re-initializing momenta
   // for use in tuning the step size
   def stepOnce(stepSize: Double): HamiltonianChain = {
     val newParams = integrator.step(hParams, stepSize)
