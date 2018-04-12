@@ -39,23 +39,34 @@ case class Hamiltonian(iterations: Int,
     }
   }
 
+  /**
+    * @note: Let U(Θ) be the potential, K(r) the kinetic.
+    * The NUTS paper defines
+    * H(Θ,r) = U(Θ) - K(r) as the difference
+    * p(Θ,r) = exp(H)
+    * and for ΔH = H(Θ',r') - H(Θ,r)
+    * defines the acceptance ratio as min{1, exp(ΔH)}.
+    * Neal and McKay, on the other hand
+    * H(Θ,r) = U(Θ) + K(r) as the sum
+    * and the acceptance ratio as min{1, exp(-ΔH)}.
+    * These are the definitions we use, in the rest of HMC and NUTS
+    * so we similarly use -ΔH to tune the stepSize for consistency.
+    */
   private def computeDeltaH(chain: HamiltonianChain,
                             nextChain: HamiltonianChain): Double =
     nextChain.hParams.hamiltonian - chain.hParams.hamiltonian
 
   private def computeExponent(deltaH: Double): Double = {
-    if (deltaH > Math.log(0.5)) { 1.0 } else { -1.0 }
+    if (-deltaH > Math.log(0.5)) { 1.0 } else { -1.0 }
   }
 
-  private def updateStepSize(deltaH: Double,
-                             stepSize: Double,
-                             exponent: Double): Double = {
+  private def updateStepSize(stepSize: Double, exponent: Double): Double = {
     stepSize * Math.pow(2, exponent)
   }
 
   private def continueTuningStepSize(deltaH: Double,
                                      exponent: Double): Boolean = {
-    exponent * deltaH > -exponent * Math.log(2)
+    exponent * (-deltaH) > -exponent * Math.log(2)
   }
 
   private def tuneStepSize(chain: HamiltonianChain, exponent: Double)(
@@ -65,18 +76,20 @@ case class Hamiltonian(iterations: Int,
   ): (HamiltonianChain, Double, Boolean) = {
     val deltaH = computeDeltaH(chain, nextChain)
     val newContinue = continueTuningStepSize(deltaH, exponent)
-    val newStepSize = updateStepSize(deltaH, stepSize, exponent)
-    // Are we supposed to recompute the exponent every iteration
-    // or choose it once at the beginning???
+    val (newStepSize, newNextChain) = {
+      if (newContinue) {
+        val updatedStepSize = updateStepSize(stepSize, exponent)
+        val updatedNextChain = chain.nextChain(updatedStepSize)
+        (updatedStepSize, updatedNextChain)
+      } else { (stepSize, nextChain) }
+    }
     println(s"deltaH: $deltaH")
     println(s"qs: ${chain.hParams.qs}")
     println(s"new qs: ${nextChain.hParams.qs}")
     println(s"potential: ${nextChain.hParams.potential}")
     println(s"grad: ${nextChain.hParams.gradPotential}")
-    println(s"exponent: $exponent")
     println(s"newContinue: $newContinue")
     println(s"newStepSize: $newStepSize")
-    val newNextChain = chain.nextChain(newStepSize)
     (newNextChain, newStepSize, newContinue)
   }
 
@@ -85,9 +98,8 @@ case class Hamiltonian(iterations: Int,
     val nextChain = chain.nextChain(initialStepSize)
     val deltaH = computeDeltaH(chain, nextChain)
     val exponent = computeExponent(deltaH)
-    println(s"initial deltaH: $deltaH, initial exponent: $exponent")
     val tuningSteps =
-      Stream.iterate((nextChain, initialStepSize, true), 100) {
+      Stream.iterate((nextChain, initialStepSize, true)) {
         case (nextChain, stepSize, continue) =>
           tuneStepSize(chain, exponent)(nextChain, stepSize, continue)
       }

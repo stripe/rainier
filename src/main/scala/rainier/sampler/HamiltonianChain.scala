@@ -9,23 +9,20 @@ case class HamiltonianChain(accepted: Boolean,
                             gradient: Seq[Real],
                             cf: Compiler.CompiledFunction)(implicit rng: RNG) {
 
-  // Take a single leapfrog step, for use in turning epsilon
+  // Take a single leapfrog step without re-initialzing momenta
+  // for use in turning epsilon
   def nextChain(stepSize: Double): HamiltonianChain = {
-    val initialParams =
-      HParams(hParams.qs, hParams.gradPotential, hParams.potential)
-    val newParams = integrator.step(initialParams, stepSize)
+    val newParams = integrator.step(hParams, stepSize)
     copy(hParams = newParams)
   }
 
   def nextHMC(stepSize: Double, nSteps: Int): HamiltonianChain = {
     val initialParams =
       HParams(hParams.qs, hParams.gradPotential, hParams.potential)
-    val initialPotential = initialParams.potential
     val finalParams = (1 to nSteps)
       .foldLeft(initialParams) {
         case (params, _) => integrator.step(params, stepSize)
       }
-    val finalPotential = finalParams.potential
     val deltaH =
       finalParams.hamiltonian - initialParams.hamiltonian
 
