@@ -10,7 +10,7 @@ case class HamiltonianChain(accepted: Boolean,
                             cf: Compiler.CompiledFunction)(implicit rng: RNG) {
 
   // Take a single leapfrog step without re-initialzing momenta
-  // for use in turning epsilon
+  // for use in tuning the step size
   def nextChain(stepSize: Double): HamiltonianChain = {
     val newParams = integrator.step(hParams, stepSize)
     copy(hParams = newParams)
