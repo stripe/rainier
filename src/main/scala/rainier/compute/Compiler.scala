@@ -23,6 +23,31 @@ object Compiler {
       Compiler.execute(heap, instructions)
       targetAddresses.map { case (t, i) => t -> heap(i) }.toMap
     }
+
+    def trace: Unit = {
+      val targetIndices = targetAddresses.values.toList
+      val variableIndices = variableAddresses.values.toList
+      val constants = constantAddresses.map { case (Constant(v), i) => i -> v }
+      val labels = 0
+        .to(heapSize)
+        .map { i =>
+          val t = targetIndices.indexOf(i)
+          val v = variableIndices.indexOf(i)
+          i ->
+            (if (t >= 0)
+               s"output$t"
+             else if (v >= 0)
+               s"input$v"
+             else
+               constants.get(i) match {
+                 case Some(c) => c.toString
+                 case None    => s"tmp$i"
+               })
+        }
+        .toMap
+
+      Compiler.trace(instructions, labels)
+    }
   }
 
   def apply(targets: Seq[Real]): CompiledFunction = {
@@ -224,6 +249,53 @@ object Compiler {
           sum
       }
       heap.update(store, result)
+    }
+  }
+
+  def trace(instructions: Array[Int], labels: Map[Int, String]): Unit = {
+    var pc = 0
+    def next(): Int = {
+      val inst = instructions(pc)
+      pc += 1
+      inst
+    }
+
+    def nextLabel: String = labels(next())
+
+    val n = instructions.size
+    while (pc < n) {
+      val inst = next()
+      val opcode = inst >>> addressBits
+      val store = labels(inst & bitmask)
+      val result = opcode match {
+        case 0 => //Add
+          s"$nextLabel + $nextLabel"
+        case 1 => //Divide
+          s"$nextLabel / $nextLabel"
+        case 2 => //Multiply
+          s"$nextLabel * $nextLabel"
+        case 3 => //Subtract
+          s"$nextLabel - $nextLabel"
+        case 4 => //Or
+          s"$nextLabel || $nextLabel"
+        case 5 => //And
+          s"$nextLabel && $nextLabel"
+        case 6 => //AndNot
+          s"$nextLabel &&! $nextLabel"
+        case 7 => //Exp
+          s"exp($nextLabel)"
+        case 8 => //Log
+          s"log($nextLabel)"
+        case 9 => //Abs
+          s"abs($nextLabel)"
+        case 10 => //Sum
+          1.to(next())
+            .map { _ =>
+              nextLabel
+            }
+            .mkString(" + ")
+      }
+      println(s"$store = $result")
     }
   }
 }
