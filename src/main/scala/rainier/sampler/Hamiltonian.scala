@@ -46,11 +46,11 @@ case class Hamiltonian(iterations: Int,
     * p(Θ,r) = exp(H)
     * and for ΔH = H(Θ',r') - H(Θ,r)
     * defines the acceptance ratio as min{1, exp(ΔH)}.
-    * Neal and McKay, on the other hand
+    * Neal and McKay, on the other hand, define
     * H(Θ,r) = U(Θ) + K(r) as the sum
     * and the acceptance ratio as min{1, exp(-ΔH)}.
-    * These are the definitions we use, in the rest of HMC and NUTS
-    * so we similarly use -ΔH to tune the stepSize for consistency.
+    * These are the definitions we use in the rest of HMC and NUTS
+    * so we similarly use -ΔH to tune the stepSize here.
     */
   private def computeDeltaH(chain: HamiltonianChain,
                             nextChain: HamiltonianChain): Double =
