@@ -23,7 +23,10 @@ object Real {
     toReal(value)
   def seq[A](as: Seq[A])(implicit toReal: ToReal[A]): Seq[Real] =
     as.map(toReal(_))
-  def sum(seq: Seq[Real]): Real = seq.reduce(_ + _)
+
+  def sum(seq: Seq[Real]): Real = reduceCommutative(seq, AddOp)
+  def product(seq: Seq[Real]): Real = reduceCommutative(seq, MultiplyOp)
+
   def logSumExp(seq: Seq[Real]): Real =
     sum(seq.map(_.exp)).log //TODO: special case this
   val zero: Real = Real(0.0)
@@ -56,6 +59,18 @@ object Real {
         println(padding + v)
     }
   }
+
+  private def reduceCommutative(seq: Seq[Real], op: CommutativeOp): Real =
+    if (seq.size == 1)
+      seq.head
+    else
+      reduceCommutative(seq.grouped(2).toList.map {
+        case oneOrTwo =>
+          if (oneOrTwo.size == 1)
+            oneOrTwo.head
+          else
+            Pruner.prune(new BinaryReal(oneOrTwo(0), oneOrTwo(1), op))
+      }, op)
 }
 
 case class Constant(value: Double) extends Real
