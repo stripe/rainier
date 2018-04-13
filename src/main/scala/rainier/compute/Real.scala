@@ -23,7 +23,7 @@ object Real {
     toReal(value)
   def seq[A](as: Seq[A])(implicit toReal: ToReal[A]): Seq[Real] =
     as.map(toReal(_))
-  def sum(seq: Seq[Real]): Real = Pruner.prune(new SumReal(seq))
+  def sum(seq: Seq[Real]): Real = seq.reduce(_ + _)
   def logSumExp(seq: Seq[Real]): Real =
     sum(seq.map(_.exp)).log //TODO: special case this
   val zero: Real = Real(0.0)
@@ -35,7 +35,6 @@ object Real {
         case Constant(_)   => acc
         case b: BinaryReal => loop(b.right, loop(b.left, acc))
         case u: UnaryReal  => loop(u.original, acc)
-        case s: SumReal    => s.seq.foldLeft(acc) { case (l, v) => loop(v, l) }
         case v: Variable   => acc + v
       }
 
@@ -53,9 +52,6 @@ object Real {
       case u: UnaryReal =>
         println(padding + u.op)
         print(u.original, depth + 1)
-      case s: SumReal =>
-        println(padding + "Sum{" + s.seq.size + "}")
-        print(s.seq.head, depth + 1)
       case v: Variable =>
         println(padding + v)
     }
@@ -65,7 +61,6 @@ object Real {
 case class Constant(value: Double) extends Real
 class BinaryReal(val left: Real, val right: Real, val op: BinaryOp) extends Real
 class UnaryReal(val original: Real, val op: UnaryOp) extends Real
-class SumReal(val seq: Seq[Real]) extends Real
 class Variable extends Real
 
 sealed trait BinaryOp {

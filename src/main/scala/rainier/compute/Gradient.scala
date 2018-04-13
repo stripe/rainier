@@ -27,13 +27,6 @@ object Gradient {
           case u: UnaryReal =>
             diff(u.original).register(UnaryDiff(u, diff(u)))
             visit(u.original)
-
-          case s: SumReal =>
-            val ds = diff(s)
-            s.seq.foreach { r =>
-              diff(r).register(ds)
-              visit(r)
-            }
         }
       }
     }
