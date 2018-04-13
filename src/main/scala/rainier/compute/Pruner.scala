@@ -23,10 +23,10 @@ object Pruner {
           left
         case (left, Constant(0.0), MultiplyOp) =>
           Constant(0.0)
-        case (left, Constant(1.0), DivideOp) =>
-          left
-        case (left, Constant(0.0), SubtractOp) =>
-          left
+        case (left, Constant(r), SubtractOp) =>
+          BinaryReal(left, Constant(-r), AddOp)
+        case (left, Constant(r), DivideOp) =>
+          BinaryReal(left, Constant(1.0 / r), MultiplyOp)
         case (Constant(l), right, op: CommutativeOp) =>
           BinaryReal(b.right, b.left, op)
         case (left: BinaryReal, Constant(r), op: CommutativeOp)
