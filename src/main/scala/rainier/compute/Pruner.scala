@@ -36,12 +36,23 @@ object Pruner {
               new BinaryReal(left.left, Constant(op(r, lr)), b.op)
             case _ => b
           }
-        case (left: BinaryReal, right, op: CommutativeOp) if left.op == b.op =>
+        case (left: BinaryReal, right, op: CommutativeOp)
+            if left.op == b.op && left.right
+              .isInstanceOf[Constant] => //FIX this hack
           left.right match {
             case Constant(lr) =>
               prune(
-                new BinaryReal(new BinaryReal(left.left, right, b.op),
+                new BinaryReal(prune(new BinaryReal(left.left, right, b.op)),
                                left.right,
+                               b.op))
+            case _ => b
+          }
+        case (left, right: BinaryReal, op: CommutativeOp) if right.op == b.op =>
+          right.right match {
+            case Constant(rr) =>
+              prune(
+                new BinaryReal(new BinaryReal(left, right.left, b.op),
+                               right.right,
                                b.op))
             case _ => b
           }
