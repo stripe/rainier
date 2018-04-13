@@ -28,12 +28,12 @@ object Pruner {
         case (left, Constant(0.0), SubtractOp) =>
           left
         case (Constant(l), right, op: CommutativeOp) =>
-          prune(new BinaryReal(b.right, b.left, op))
+          BinaryReal(b.right, b.left, op)
         case (left: BinaryReal, Constant(r), op: CommutativeOp)
             if left.op == b.op =>
           left.right match {
             case Constant(lr) =>
-              new BinaryReal(left.left, Constant(op(r, lr)), b.op)
+              BinaryReal(left.left, Constant(op(r, lr)), b.op)
             case _ => b
           }
         case (left: BinaryReal, right, op: CommutativeOp)
@@ -41,19 +41,13 @@ object Pruner {
               .isInstanceOf[Constant] => //FIX this hack
           left.right match {
             case Constant(lr) =>
-              prune(
-                new BinaryReal(prune(new BinaryReal(left.left, right, b.op)),
-                               left.right,
-                               b.op))
+              BinaryReal(BinaryReal(left.left, right, b.op), left.right, b.op)
             case _ => b
           }
         case (left, right: BinaryReal, op: CommutativeOp) if right.op == b.op =>
           right.right match {
             case Constant(rr) =>
-              prune(
-                new BinaryReal(new BinaryReal(left, right.left, b.op),
-                               right.right,
-                               b.op))
+              BinaryReal(BinaryReal(left, right.left, b.op), right.right, b.op)
             case _ => b
           }
         case _ => b
