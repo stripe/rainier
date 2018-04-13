@@ -82,7 +82,6 @@ object Compiler {
   private def deps(real: Real): Seq[Real] = real match {
     case b: BinaryReal => List(b.left, b.right)
     case u: UnaryReal  => List(u.original)
-    case s: SumReal    => s.seq
     case c: Constant   => Nil
     case v: Variable   => Nil
   }
@@ -157,8 +156,6 @@ object Compiler {
           binary(info.deps(0).address, info.deps(1).address, info.address, b.op)
         case u: UnaryReal =>
           unary(info.deps.head.address, info.address, u.op)
-        case s: SumReal =>
-          sum(info.address, info.deps.map(_.address))
         case _ => Nil
       })
     }
@@ -192,10 +189,6 @@ object Compiler {
       case AbsOp => 9
     }
     List(encode(store, opcode), load)
-  }
-
-  private def sum(store: Int, seq: Seq[Int]): Seq[Int] = {
-    encode(store, 10) :: seq.size :: seq.toList
   }
 
   private val bitmask = ((1 << addressBits) - 1)
@@ -238,15 +231,6 @@ object Compiler {
           math.log(heap(next()))
         case 9 => //Abs
           heap(next()).abs
-        case 10 => //Sum
-          val size = next()
-          var sum = 0.0
-          var i = 0
-          while (i < size) {
-            sum += heap(next())
-            i += 1
-          }
-          sum
       }
       heap.update(store, result)
     }
@@ -288,12 +272,6 @@ object Compiler {
           s"log($nextLabel)"
         case 9 => //Abs
           s"abs($nextLabel)"
-        case 10 => //Sum
-          1.to(next())
-            .map { _ =>
-              nextLabel
-            }
-            .mkString(" + ")
       }
       println(s"$store = $result")
     }

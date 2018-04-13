@@ -29,19 +29,6 @@ object Pruner {
           left
         case _ => b
       }
-    case s: SumReal =>
-      val (reduced, remaining) = s.seq.foldLeft((0.0, List.empty[Real])) {
-        case ((acc, list), Constant(c)) =>
-          (acc + c, list)
-        case ((acc, list), real) =>
-          (acc, real :: list)
-      }
-      val constant = Constant(reduced)
-
-      if (remaining.isEmpty)
-        constant
-      else
-        prune(new BinaryReal(constant, new SumReal(remaining), AddOp))
     case _ => real
   }
 }
