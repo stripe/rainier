@@ -27,6 +27,24 @@ object Pruner {
           left
         case (left, Constant(0.0), SubtractOp) =>
           left
+        case (Constant(l), right, op: CommutativeOp) =>
+          prune(new BinaryReal(b.right, b.left, op))
+        case (left: BinaryReal, Constant(r), op: CommutativeOp)
+            if left.op == b.op =>
+          left.right match {
+            case Constant(lr) =>
+              new BinaryReal(left.left, Constant(op(r, lr)), b.op)
+            case _ => b
+          }
+        case (left: BinaryReal, right, op: CommutativeOp) if left.op == b.op =>
+          left.right match {
+            case Constant(lr) =>
+              prune(
+                new BinaryReal(new BinaryReal(left.left, right, b.op),
+                               left.right,
+                               b.op))
+            case _ => b
+          }
         case _ => b
       }
     case _ => real
