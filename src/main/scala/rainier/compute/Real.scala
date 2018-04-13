@@ -67,11 +67,13 @@ sealed trait BinaryOp {
   def apply(left: Double, right: Double): Double
 }
 
-case object AddOp extends BinaryOp {
+sealed trait CommutativeOp extends BinaryOp
+
+case object AddOp extends CommutativeOp {
   def apply(left: Double, right: Double) = left + right
 }
 
-case object MultiplyOp extends BinaryOp {
+case object MultiplyOp extends CommutativeOp {
   def apply(left: Double, right: Double) = left * right
 }
 
