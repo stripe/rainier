@@ -1,19 +1,16 @@
 package rainier.compute
 
 sealed trait Real {
-  def +(other: Real): Real = Pruner.prune(new BinaryReal(this, other, AddOp))
-  def *(other: Real): Real =
-    Pruner.prune(new BinaryReal(this, other, MultiplyOp))
-  def -(other: Real): Real =
-    Pruner.prune(new BinaryReal(this, other, SubtractOp))
-  def /(other: Real): Real = Pruner.prune(new BinaryReal(this, other, DivideOp))
-  def ||(other: Real): Real = Pruner.prune(new BinaryReal(this, other, OrOp))
-  def &&(other: Real): Real = Pruner.prune(new BinaryReal(this, other, AndOp))
-  def &&!(other: Real): Real =
-    Pruner.prune(new BinaryReal(this, other, AndNotOp))
-  def exp: Real = Pruner.prune(new UnaryReal(this, ExpOp))
-  def log: Real = Pruner.prune(new UnaryReal(this, LogOp))
-  def abs: Real = Pruner.prune(new UnaryReal(this, AbsOp))
+  def +(other: Real): Real = BinaryReal(this, other, AddOp)
+  def *(other: Real): Real = BinaryReal(this, other, MultiplyOp)
+  def -(other: Real): Real = BinaryReal(this, other, SubtractOp)
+  def /(other: Real): Real = BinaryReal(this, other, DivideOp)
+  def ||(other: Real): Real = BinaryReal(this, other, OrOp)
+  def &&(other: Real): Real = BinaryReal(this, other, AndOp)
+  def &&!(other: Real): Real = BinaryReal(this, other, AndNotOp)
+  def exp: Real = UnaryReal(this, ExpOp)
+  def log: Real = UnaryReal(this, LogOp)
+  def abs: Real = UnaryReal(this, AbsOp)
 }
 
 object Real {
@@ -69,13 +66,24 @@ object Real {
           if (oneOrTwo.size == 1)
             oneOrTwo.head
           else
-            Pruner.prune(new BinaryReal(oneOrTwo(0), oneOrTwo(1), op))
+            BinaryReal(oneOrTwo(0), oneOrTwo(1), op)
       }, op)
 }
 
 case class Constant(value: Double) extends Real
+
 class BinaryReal(val left: Real, val right: Real, val op: BinaryOp) extends Real
+object BinaryReal {
+  def apply(left: Real, right: Real, op: BinaryOp): Real =
+    Table.intern(Pruner.prune(new BinaryReal(left, right, op)))
+}
+
 class UnaryReal(val original: Real, val op: UnaryOp) extends Real
+object UnaryReal {
+  def apply(original: Real, op: UnaryOp): Real =
+    Table.intern(Pruner.prune(new UnaryReal(original, op)))
+}
+
 class Variable extends Real
 
 sealed trait BinaryOp {
