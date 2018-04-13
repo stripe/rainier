@@ -39,7 +39,7 @@ object TraceNormal {
     implicit val rng = RNG.default
     val t1 = System.currentTimeMillis
     val samples =
-      m.sample(Hamiltonian(10000, 1000, 100, 100, SampleHMC, 1, 0.01))
+      m.sample(Hamiltonian(1000, 100, 100, 100, SampleHMC, 1, 0.01))
     val t2 = System.currentTimeMillis
     println("ms: " + (t2 - t1))
     println("mean: " + (samples.map(_._1).sum / samples.size))
