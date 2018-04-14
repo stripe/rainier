@@ -10,6 +10,8 @@ scalacOptions ++= Seq(
 
 val unpublished = Seq(publish := (), publishLocal := (), publishArtifact := false)
 
+scalafmtOnCompile in ThisBuild := true
+
 lazy val root = project.
   in(file(".")).
   dependsOn(rainierCore).
