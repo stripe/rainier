@@ -1,4 +1,4 @@
-package rainier.models
+package rainier.example
 
 import scala.util.hashing.MurmurHash3
 import rainier.compute.Real
