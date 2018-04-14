@@ -1,4 +1,4 @@
-package rainier.bench
+package rainier.benchmark
 
 import org.openjdk.jmh.annotations.Benchmark
 
