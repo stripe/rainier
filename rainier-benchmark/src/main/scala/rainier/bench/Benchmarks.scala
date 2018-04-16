@@ -10,23 +10,25 @@ object Benchmarks {
     val x = new Variable
     def expression: Real
 
-    def compile: (Real, Real, Compiler.CompiledFunction) = {
+    def compile: (Real, Real, Compiler.CompiledFunction, Double => Double) = {
       val expr = expression
       val grad = Gradient.derive(List(x), expr).head
       val cf = Compiler(List(expr, grad))
-      (expr, grad, cf)
+      val asm = ASM.compileToFunction(expr + grad)
+      (expr, grad, cf, asm)
     }
 
-    val (expr, grad, cf) = compile
+    val (expr, grad, cf, asm) = compile
 
     Real.prune = false
-    val (_, _, unpruned) = compile
+    val (_, _, unpruned, _) = compile
     Real.prune = true
     Real.intern = false
-    val (_, _, uninterned) = compile
+    val (_, _, uninterned, _) = compile
     Real.intern = true
 
     def runCompiled = cf(Map(x -> 1.0))
+    def runAsm = asm(1.0)
     def runUnpruned = unpruned(Map(x -> 1.0))
     def runUninterned = uninterned(Map(x -> 1.0))
     def evaluate = {
@@ -75,6 +77,11 @@ class Benchmarks {
   @Benchmark
   def runPoisson(state: PoissonBenchmark): Unit = {
     state.runCompiled
+  }
+
+  @Benchmark
+  def runPoissonAsm(state: PoissonBenchmark): Unit = {
+    state.runAsm
   }
 
   @Benchmark

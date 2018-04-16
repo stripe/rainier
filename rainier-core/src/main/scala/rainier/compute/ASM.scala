@@ -1,15 +1,5 @@
 package rainier.compute
 
-sealed trait AST
-case class Const(x: Double) extends AST
-case class ParamRef(pos: Int) extends AST
-case class Plus(x1: AST, x2: AST) extends AST
-case class Minus(x1: AST, x2: AST) extends AST
-case class Multiply(x1: AST, x2: AST) extends AST
-case class Divide(x1: AST, x2: AST) extends AST
-case class Exp(x: AST) extends AST
-case class Log(x: AST) extends AST
-
 import java.io.File
 
 import org.apache.commons.io.FileUtils
@@ -18,43 +8,68 @@ import org.objectweb.asm.tree.{ClassNode, MethodNode}
 import org.objectweb.asm.Opcodes._
 
 object ASM {
+  class SingleClassClassLoader(name: String,
+                               bytes: Array[Byte],
+                               parent: ClassLoader)
+      extends ClassLoader(parent) {
+    lazy val clazz: Class[_] = defineClass(name, bytes, 0, bytes.length)
+  }
 
-  def compile(program: AST): tree.ClassNode = {
+  def compileToFunction(program: Real): Double => Double = {
+    val classNode = compile(program)
+    val bytes = writeBytecode(classNode)
+    val parentClassloader = this.getClass.getClassLoader
+    val classLoader =
+      new SingleClassClassLoader("Foo", bytes, parentClassloader)
+    val cls = classLoader.clazz
+    val inst = cls.newInstance()
+    val method = cls.getMethod("foo_method", classOf[Double])
+    val result = { x: Double =>
+      method
+        .invoke(inst, new java.lang.Double(x))
+        .asInstanceOf[Double]
+    }
+    result
+  }
+
+  def compile(program: Real): tree.ClassNode = {
     // public MethodNode(api: Int, access: Int, name: String, desc: String, signature: String, exceptions: Array[String])
     //
     val m = new MethodNode(ASM6,
                            ACC_PUBLIC + ACC_STATIC,
                            "foo_method",
-                           "(DD)D",
+                           "(D)D",
                            null,
                            Array.empty)
-    def interpret(ast: AST): Unit = ast match {
-      case ParamRef(pos) =>
+    def interpret(ast: Real): Unit = ast match {
+      case v: Variable =>
+        val pos = 0 //only one param allowed for now
         // double occupies two slots local variable table
         m.visitVarInsn(DLOAD, pos * 2)
-      case Plus(x1, x2) =>
-        interpret(x1)
-        interpret(x2)
-        m.visitInsn(DADD)
-      case Minus(x1, x2) =>
-        interpret(x1)
-        interpret(x2)
-        m.visitInsn(DSUB)
-      case Multiply(x1, x2) =>
-        interpret(x1)
-        interpret(x2)
-        m.visitInsn(DMUL)
-      case Divide(x1, x2) =>
-        interpret(x1)
-        interpret(x2)
-        m.visitInsn(DDIV)
-      case Exp(x) =>
-        interpret(x)
-        m.visitMethodInsn(INVOKESTATIC, "java/lang/Math", "exp", "(D)D", false)
-      case Log(x) =>
-        interpret(x)
-        m.visitMethodInsn(INVOKESTATIC, "java/lang/Math", "log", "(D)D", false)
-      case Const(x) =>
+      case b: BinaryReal =>
+        interpret(b.left)
+        interpret(b.right)
+        val insn = b.op match {
+          case AddOp      => DADD
+          case SubtractOp => DSUB
+          case MultiplyOp => DMUL
+          case DivideOp   => DDIV
+          case _          => ???
+        }
+        m.visitInsn(insn)
+      case u: UnaryReal =>
+        interpret(u.original)
+        val methodName = u.op match {
+          case LogOp => "log"
+          case ExpOp => "exp"
+          case _     => ???
+        }
+        m.visitMethodInsn(INVOKESTATIC,
+                          "java/lang/Math",
+                          methodName,
+                          "(D)D",
+                          false)
+      case Constant(x) =>
         m.visitLdcInsn(x)
     }
     interpret(program)
@@ -93,11 +108,4 @@ object ASM {
     FileUtils.writeByteArrayToFile(where, bytes)
   }
 
-}
-
-class SingleClassClassLoader(name: String,
-                             bytes: Array[Byte],
-                             parent: ClassLoader)
-    extends ClassLoader(parent) {
-  lazy val clazz: Class[_] = defineClass(name, bytes, 0, bytes.length)
 }
