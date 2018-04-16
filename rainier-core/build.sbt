@@ -1,4 +1,4 @@
-name := "bonsai-core"
+name := "rainier-core"
 
 libraryDependencies ++= Seq(
   Dependencies.scalaTest,
