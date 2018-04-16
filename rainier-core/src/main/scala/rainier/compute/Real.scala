@@ -57,6 +57,17 @@ object Real {
     }
   }
 
+  var prune = true
+  var intern = true
+  def optimize(real: Real): Real = {
+    var result = real
+    if (prune)
+      result = Pruner.prune(result)
+    if (intern)
+      result = Table.intern(result)
+    result
+  }
+
   private def reduceCommutative(seq: Seq[Real], op: CommutativeOp): Real =
     if (seq.size == 1)
       seq.head
@@ -75,13 +86,13 @@ case class Constant(value: Double) extends Real
 class BinaryReal(val left: Real, val right: Real, val op: BinaryOp) extends Real
 object BinaryReal {
   def apply(left: Real, right: Real, op: BinaryOp): Real =
-    Table.intern(Pruner.prune(new BinaryReal(left, right, op)))
+    Real.optimize(new BinaryReal(left, right, op))
 }
 
 class UnaryReal(val original: Real, val op: UnaryOp) extends Real
 object UnaryReal {
   def apply(original: Real, op: UnaryOp): Real =
-    Table.intern(Pruner.prune(new UnaryReal(original, op)))
+    Real.optimize(new UnaryReal(original, op))
 }
 
 class Variable extends Real
