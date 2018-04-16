@@ -46,6 +46,9 @@ object Benchmarks {
   }
 }
 
+@Warmup(iterations = 4)
+@Measurement(iterations = 10)
+@Fork(3)
 class Benchmarks {
   import Benchmarks._
 
