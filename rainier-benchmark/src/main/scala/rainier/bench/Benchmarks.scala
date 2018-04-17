@@ -75,6 +75,11 @@ class Benchmarks {
   }
 
   @Benchmark
+  def runNormalAsm(state: NormalBenchmark): Unit = {
+    state.runAsm
+  }
+
+  @Benchmark
   def runPoisson(state: PoissonBenchmark): Unit = {
     state.runCompiled
   }
