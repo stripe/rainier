@@ -24,4 +24,10 @@ class ASMTest extends FunSuite {
     val result = compileAndRun(x.log, 2.0)
     assert(result == Math.log(2.0))
   }
+
+  test("handle temps") {
+    val t = x * 3
+    val result = compileAndRun(t + t, 2.0)
+    assert(result == 12.0)
+  }
 }

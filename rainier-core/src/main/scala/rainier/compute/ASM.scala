@@ -33,6 +33,30 @@ object ASM {
   }
 
   def compile(program: Real): tree.ClassNode = {
+    var numReferences = Map.empty[Real, Int]
+    def incReference(real: Real): Unit = {
+      val prev = numReferences.getOrElse(real, 0)
+      numReferences += real -> (prev + 1)
+    }
+
+    def countReferences(real: Real): Unit = numReferences.get(real) match {
+      case Some(n) => ()
+      case None =>
+        real match {
+          case u: UnaryReal =>
+            incReference(u.original)
+            countReferences(u.original)
+          case b: BinaryReal =>
+            incReference(b.left)
+            incReference(b.right)
+            countReferences(b.left)
+            countReferences(b.right)
+          case _ => ()
+        }
+    }
+
+    countReferences(program)
+
     // public MethodNode(api: Int, access: Int, name: String, desc: String, signature: String, exceptions: Array[String])
     //
     val m = new MethodNode(ASM6,
@@ -41,7 +65,32 @@ object ASM {
                            "(D)D",
                            null,
                            Array.empty)
-    def interpret(ast: Real): Unit = ast match {
+
+    var nextID = 0
+    var ids = Map.empty[Real, Int]
+
+    def localVarSlot(id: Int) = 2 + (id * 2)
+
+    def interpret(ast: Real): Unit = {
+      val nRefs = numReferences.getOrElse(ast, 0)
+      if (nRefs <= 1)
+        basicInterpret(ast)
+      else {
+        ids.get(ast) match {
+          case Some(id) =>
+            m.visitVarInsn(DLOAD, localVarSlot(id))
+          case None =>
+            val id = nextID
+            ids += ast -> id
+            nextID += 1
+            basicInterpret(ast)
+            m.visitVarInsn(DSTORE, localVarSlot(id))
+            m.visitVarInsn(DLOAD, localVarSlot(id))
+        }
+      }
+    }
+
+    def basicInterpret(ast: Real): Unit = ast match {
       case v: Variable =>
         val pos = 0 //only one param allowed for now
         // double occupies two slots local variable table
