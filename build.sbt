@@ -1,15 +1,33 @@
-import Dependencies._
+organization in ThisBuild := "com.stripe"
+scalaVersion in ThisBuild := "2.12.3"
 
-enablePlugins(TutPlugin)
+scalacOptions ++= Seq(
+  "-deprecation",
+  "-feature",
+  "-unchecked",
+  "-optimize"
+)
 
-lazy val root = (project in file(".")).
-  settings(
-    inThisBuild(List(
-      organization := "com.stripe",
-      scalaVersion := "2.12.3",
-      version      := "0.1.0-SNAPSHOT",
-      scalafmtOnCompile := true
-    )),
-    name := "rainier",
-    libraryDependencies += scalaTest % Test
-  )
+val unpublished = Seq(publish := (), publishLocal := (), publishArtifact := false)
+
+scalafmtOnCompile in ThisBuild := true
+
+lazy val root = project.
+  in(file(".")).
+  dependsOn(rainierCore).
+  aggregate(rainierCore, rainierExample, rainierBenchmark).
+  settings(unpublished: _*)
+
+lazy val rainierCore = project.
+  in(file("rainier-core")).
+  enablePlugins(TutPlugin)
+
+lazy val rainierExample = project.
+  in(file("rainier-example")).
+  dependsOn(rainierCore).
+  settings(unpublished: _*)
+
+lazy val rainierBenchmark = project.
+  in(file("rainier-benchmark")).
+  dependsOn(rainierCore).
+  settings(unpublished: _*)

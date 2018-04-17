@@ -18,9 +18,7 @@ class Evaluator(variables: Map[Variable, Double]) extends Numeric[Real] {
     case c: Constant   => c.value
     case b: BinaryReal => b.op(toDouble(b.left), toDouble(b.right))
     case u: UnaryReal  => u.op(toDouble(u.original))
-    case s: SumReal =>
-      s.seq.foldLeft(0.0) { case (acc, r) => acc + toDouble(r) }
-    case v: Variable => variables(v)
+    case v: Variable   => variables(v)
   }
 
   def compare(x: Real, y: Real) = toDouble(x).compare(toDouble(y))

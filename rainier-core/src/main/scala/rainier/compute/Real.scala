@@ -1,19 +1,16 @@
 package rainier.compute
 
 sealed trait Real {
-  def +(other: Real): Real = Pruner.prune(new BinaryReal(this, other, AddOp))
-  def *(other: Real): Real =
-    Pruner.prune(new BinaryReal(this, other, MultiplyOp))
-  def -(other: Real): Real =
-    Pruner.prune(new BinaryReal(this, other, SubtractOp))
-  def /(other: Real): Real = Pruner.prune(new BinaryReal(this, other, DivideOp))
-  def ||(other: Real): Real = Pruner.prune(new BinaryReal(this, other, OrOp))
-  def &&(other: Real): Real = Pruner.prune(new BinaryReal(this, other, AndOp))
-  def &&!(other: Real): Real =
-    Pruner.prune(new BinaryReal(this, other, AndNotOp))
-  def exp: Real = Pruner.prune(new UnaryReal(this, ExpOp))
-  def log: Real = Pruner.prune(new UnaryReal(this, LogOp))
-  def abs: Real = Pruner.prune(new UnaryReal(this, AbsOp))
+  def +(other: Real): Real = BinaryReal(this, other, AddOp)
+  def *(other: Real): Real = BinaryReal(this, other, MultiplyOp)
+  def -(other: Real): Real = BinaryReal(this, other, SubtractOp)
+  def /(other: Real): Real = BinaryReal(this, other, DivideOp)
+  def ||(other: Real): Real = BinaryReal(this, other, OrOp)
+  def &&(other: Real): Real = BinaryReal(this, other, AndOp)
+  def &&!(other: Real): Real = BinaryReal(this, other, AndNotOp)
+  def exp: Real = UnaryReal(this, ExpOp)
+  def log: Real = UnaryReal(this, LogOp)
+  def abs: Real = UnaryReal(this, AbsOp)
 }
 
 object Real {
@@ -23,7 +20,10 @@ object Real {
     toReal(value)
   def seq[A](as: Seq[A])(implicit toReal: ToReal[A]): Seq[Real] =
     as.map(toReal(_))
-  def sum(seq: Seq[Real]): Real = Pruner.prune(new SumReal(seq))
+
+  def sum(seq: Seq[Real]): Real = reduceCommutative(seq, AddOp)
+  def product(seq: Seq[Real]): Real = reduceCommutative(seq, MultiplyOp)
+
   def logSumExp(seq: Seq[Real]): Real =
     sum(seq.map(_.exp)).log //TODO: special case this
   val zero: Real = Real(0.0)
@@ -35,7 +35,6 @@ object Real {
         case Constant(_)   => acc
         case b: BinaryReal => loop(b.right, loop(b.left, acc))
         case u: UnaryReal  => loop(u.original, acc)
-        case s: SumReal    => s.seq.foldLeft(acc) { case (l, v) => loop(v, l) }
         case v: Variable   => acc + v
       }
 
@@ -53,30 +52,62 @@ object Real {
       case u: UnaryReal =>
         println(padding + u.op)
         print(u.original, depth + 1)
-      case s: SumReal =>
-        println(padding + "Sum{" + s.seq.size + "}")
-        print(s.seq.head, depth + 1)
       case v: Variable =>
         println(padding + v)
     }
   }
+
+  var prune = true
+  var intern = true
+  def optimize(real: Real): Real = {
+    var result = real
+    if (prune)
+      result = Pruner.prune(result)
+    if (intern)
+      result = Table.intern(result)
+    result
+  }
+
+  private def reduceCommutative(seq: Seq[Real], op: CommutativeOp): Real =
+    if (seq.size == 1)
+      seq.head
+    else
+      reduceCommutative(seq.grouped(2).toList.map {
+        case oneOrTwo =>
+          if (oneOrTwo.size == 1)
+            oneOrTwo.head
+          else
+            BinaryReal(oneOrTwo(0), oneOrTwo(1), op)
+      }, op)
 }
 
 case class Constant(value: Double) extends Real
+
 class BinaryReal(val left: Real, val right: Real, val op: BinaryOp) extends Real
+object BinaryReal {
+  def apply(left: Real, right: Real, op: BinaryOp): Real =
+    Real.optimize(new BinaryReal(left, right, op))
+}
+
 class UnaryReal(val original: Real, val op: UnaryOp) extends Real
-class SumReal(val seq: Seq[Real]) extends Real
+object UnaryReal {
+  def apply(original: Real, op: UnaryOp): Real =
+    Real.optimize(new UnaryReal(original, op))
+}
+
 class Variable extends Real
 
 sealed trait BinaryOp {
   def apply(left: Double, right: Double): Double
 }
 
-case object AddOp extends BinaryOp {
+sealed trait CommutativeOp extends BinaryOp
+
+case object AddOp extends CommutativeOp {
   def apply(left: Double, right: Double) = left + right
 }
 
-case object MultiplyOp extends BinaryOp {
+case object MultiplyOp extends CommutativeOp {
   def apply(left: Double, right: Double) = left * right
 }
 
