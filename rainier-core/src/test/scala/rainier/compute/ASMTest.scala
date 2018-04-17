@@ -2,32 +2,43 @@ package rainier.compute
 
 import org.scalatest._
 
+import rainier.core._
+
 class ASMTest extends FunSuite {
 
-  def compileAndRun(p: Real, x: Double): Double = {
-    ASM.compileToFunction(p)(x)
+  val x = new Variable
+  def compareToEvaluator(p: Real, xVal: Double): Double = {
+    val result = ASM.compileToFunction(p)(xVal)
+    val actual = (new Evaluator(Map(x -> xVal))).toDouble(p)
+    assert(result == actual)
+    val grad = Gradient.derive(List(x), p).head
+    val gradResult = ASM.compileToFunction(grad)(xVal)
+    val gradActual = (new Evaluator(Map(x -> xVal))).toDouble(grad)
+    assert(gradResult == gradActual)
   }
 
-  val x = new Variable
   test("handle plus") {
-    val result =
-      compileAndRun(x + 11, 4.0)
-    assert(result == (4.0 + 11.0))
+    compareToEvaluator(x + 11, 4.0)
   }
 
   test("handle exp") {
-    val result = compileAndRun(x.exp, 2.0)
-    assert(result == Math.exp(2.0))
+    compareToEvaluator(x.exp, 2.0)
   }
 
   test("handle log") {
-    val result = compileAndRun(x.log, 2.0)
-    assert(result == Math.log(2.0))
+    compareToEvaluator(x.log, 2.0)
   }
 
   test("handle temps") {
     val t = x * 3
-    val result = compileAndRun(t + t, 2.0)
-    assert(result == 12.0)
+    compareToEvaluator(t + t, 2.0)
+  }
+
+  test("poisson") {
+    compareToEvaluator(Poisson(x).logDensities(0.to(10).toList), 2.0)
+  }
+
+  test("normal") {
+    compareToEvaluator(Normal(x, 1).logDensities(0d.to(2d).by(0.1).toList))
   }
 }

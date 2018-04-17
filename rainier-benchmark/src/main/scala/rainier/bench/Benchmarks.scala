@@ -27,12 +27,13 @@ object Benchmarks {
     val (_, _, uninterned, _) = compile
     Real.intern = true
 
-    def runCompiled = cf(Map(x -> 1.0))
+    val rand = new scala.util.Random
+    def runCompiled = cf(Map(x -> rand.nextDouble))
     def runAsm = asm(1.0)
-    def runUnpruned = unpruned(Map(x -> 1.0))
-    def runUninterned = uninterned(Map(x -> 1.0))
+    def runUnpruned = unpruned(Map(x -> rand.nextDouble))
+    def runUninterned = uninterned(Map(x -> rand.nextDouble))
     def evaluate = {
-      val eval = new Evaluator(Map(x -> 1.0))
+      val eval = new Evaluator(Map(x -> rand.nextDouble))
       eval.toDouble(expr) + eval.toDouble(grad)
     }
   }
