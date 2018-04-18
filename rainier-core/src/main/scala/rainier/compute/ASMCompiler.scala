@@ -20,7 +20,7 @@ object ASMCompiler extends Compiler {
 
   def compile(inputs: Seq[Variable],
               outputs: Seq[Real]): Array[Double] => Array[Double] = {
-    val classNode = compileClassNode(inputs, outputs.head)
+    val classNode = compileClassNode(inputs, outputs)
     val bytes = writeBytecode(classNode)
     val parentClassloader = this.getClass.getClassLoader
     val classLoader =
@@ -29,15 +29,15 @@ object ASMCompiler extends Compiler {
     val inst = cls.newInstance()
     val method = cls.getMethod(MethodName, classOf[Array[Double]])
     val result = { x: Array[Double] =>
-      Array(
-        method
-          .invoke(inst, x)
-          .asInstanceOf[Double])
+      method
+        .invoke(inst, x)
+        .asInstanceOf[Array[Double]]
     }
     result
   }
 
-  def compileClassNode(variables: Seq[Real], target: Real): tree.ClassNode = {
+  def compileClassNode(variables: Seq[Real],
+                       targets: Seq[Real]): tree.ClassNode = {
     var numReferences = Map.empty[Real, Int]
     def incReference(real: Real): Unit = {
       val prev = numReferences.getOrElse(real, 0)
@@ -62,12 +62,14 @@ object ASMCompiler extends Compiler {
         }
     }
 
-    countReferences(target)
+    targets.foreach { target =>
+      countReferences(target)
+    }
 
     val m = new MethodNode(ASM6, //api
                            ACC_PUBLIC + ACC_STATIC, //access
                            MethodName, //name
-                           "([D)D", //desc
+                           "([D)[D", //desc
                            null, //signature
                            Array.empty) //exceptions
 
@@ -126,9 +128,16 @@ object ASMCompiler extends Compiler {
       case Constant(x) =>
         m.visitLdcInsn(x)
     }
-    interpret(target)
-
-    m.visitInsn(DRETURN)
+    m.visitLdcInsn(targets.size)
+    m.visitIntInsn(NEWARRAY, T_DOUBLE)
+    targets.zipWithIndex.foreach {
+      case (target, i) =>
+        m.visitInsn(DUP)
+        m.visitLdcInsn(i)
+        interpret(target)
+        m.visitInsn(DASTORE)
+    }
+    m.visitInsn(ARETURN)
     val cls = new tree.ClassNode()
     cls.visit(V1_8,
               ACC_PUBLIC | ACC_SUPER,
