@@ -7,7 +7,7 @@ import org.objectweb.asm.{ClassVisitor, ClassWriter, tree}
 import org.objectweb.asm.tree.{ClassNode, MethodNode}
 import org.objectweb.asm.Opcodes._
 
-object ASM {
+object ASMCompiler extends Compiler {
   val ClassName = "Compiled"
   val MethodName = "apply"
 
@@ -18,8 +18,9 @@ object ASM {
     lazy val clazz: Class[_] = defineClass(name, bytes, 0, bytes.length)
   }
 
-  def compileToFunction(program: Real): Double => Double = {
-    val classNode = compile(program)
+  def compile(inputs: Seq[Variable],
+              outputs: Seq[Real]): Array[Double] => Array[Double] = {
+    val classNode = compileClassNode(inputs, outputs.head)
     val bytes = writeBytecode(classNode)
     val parentClassloader = this.getClass.getClassLoader
     val classLoader =
@@ -27,20 +28,23 @@ object ASM {
     val cls = classLoader.clazz
     val inst = cls.newInstance()
     val method = cls.getMethod(MethodName, classOf[Array[Double]])
-    val result = { x: Double =>
-      method
-        .invoke(inst, Array(x))
-        .asInstanceOf[Double]
+    val result = { x: Array[Double] =>
+      Array(
+        method
+          .invoke(inst, x)
+          .asInstanceOf[Double])
     }
     result
   }
 
-  def compile(program: Real): tree.ClassNode = {
+  def compileClassNode(variables: Seq[Real], target: Real): tree.ClassNode = {
     var numReferences = Map.empty[Real, Int]
     def incReference(real: Real): Unit = {
       val prev = numReferences.getOrElse(real, 0)
       numReferences += real -> (prev + 1)
     }
+
+    val varIndices = variables.zipWithIndex.toMap
 
     def countReferences(real: Real): Unit = numReferences.get(real) match {
       case Some(n) => ()
@@ -58,7 +62,7 @@ object ASM {
         }
     }
 
-    countReferences(program)
+    countReferences(target)
 
     val m = new MethodNode(ASM6, //api
                            ACC_PUBLIC + ACC_STATIC, //access
@@ -93,9 +97,8 @@ object ASM {
 
     def basicInterpret(ast: Real): Unit = ast match {
       case v: Variable =>
-        val pos = 0 //only one param allowed for now
         m.visitVarInsn(ALOAD, 0)
-        m.visitLdcInsn(pos)
+        m.visitLdcInsn(varIndices(v))
         m.visitInsn(DALOAD)
       case b: BinaryReal =>
         interpret(b.left)
@@ -123,7 +126,7 @@ object ASM {
       case Constant(x) =>
         m.visitLdcInsn(x)
     }
-    interpret(program)
+    interpret(target)
 
     m.visitInsn(DRETURN)
     val cls = new tree.ClassNode()
