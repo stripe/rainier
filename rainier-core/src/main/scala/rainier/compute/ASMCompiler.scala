@@ -22,6 +22,8 @@ object ASMCompiler extends Compiler {
               outputs: Seq[Real]): Array[Double] => Array[Double] = {
     val classNode = compileClassNode(inputs, outputs)
     val bytes = writeBytecode(classNode)
+    val size = bytes.size
+    println(s"Compiled Java method with $size bytes")
     val parentClassloader = this.getClass.getClassLoader
     val classLoader =
       new SingleClassClassLoader(ClassName, bytes, parentClassloader)

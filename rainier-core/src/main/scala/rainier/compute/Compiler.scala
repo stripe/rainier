@@ -18,7 +18,7 @@ trait Compiler {
 }
 
 object Compiler {
-  val default: Compiler = ArrayCompiler
+  val default: Compiler = ASMCompiler
 }
 
 import scala.collection.mutable.{HashMap, ArrayBuffer, ListBuffer, ArrayStack}
