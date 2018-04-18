@@ -47,14 +47,3 @@ object FitHLL {
     compare(1000)
   }
 }
-
-object TraceHLL {
-  def main(args: Array[String]) {
-    val m = FitHLL.compare(1000)
-    val d = m.density
-    val v = Real.variables(d).toList.head
-    val g = Gradient.derive(List(v), d).head
-    val c = Compiler(List(d, g))
-    c.trace
-  }
-}

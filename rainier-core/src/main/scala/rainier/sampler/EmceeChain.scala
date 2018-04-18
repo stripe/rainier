@@ -3,7 +3,7 @@ package rainier.sampler
 import rainier.compute._
 
 case class EmceeChain(density: Real,
-                      cf: Compiler.CompiledFunction,
+                      cf: Array[Double] => Double,
                       walkers: Int,
                       left: EmceeSet,
                       right: EmceeSet,
@@ -47,16 +47,14 @@ case class EmceeChain(density: Real,
         .map {
           case ((vars, z), i) =>
             val otherVars = complement.params(i)
-            vars.map {
-              case (k, from) =>
-                val to = otherVars(k)
-                k -> (to + (z * (from - to)))
+            vars.zip(otherVars).map {
+              case (from, to) =>
+                to + (z * (from - to))
             }
         }
 
     val newScores = proposals.map { variables =>
-      val outputs = cf(variables)
-      outputs(density)
+      cf(variables)
     }
 
     val accepted = newScores.zip(target.scores).zip(zs).map {
@@ -72,30 +70,32 @@ case class EmceeChain(density: Real,
 }
 
 object EmceeChain {
-  def apply(density: Real, walkers: Int)(implicit rng: RNG): EmceeChain = {
+  def apply(density: Real, variables: Seq[Variable], walkers: Int)(
+      implicit rng: RNG): EmceeChain = {
     require(walkers % 2 == 0)
-    val cf = Compiler(List(density))
-    val left = initialize(density, walkers / 2, cf)
-    val right = initialize(density, walkers / 2, cf)
+    val cf = Compiler.default.compile(variables, density)
+    val left = initialize(variables.size, walkers / 2, cf)
+    val right = initialize(variables.size, walkers / 2, cf)
     val walker = walkers - 1 //trigger update next time
     EmceeChain(density, cf, walkers, left, right, walker)
   }
 
-  def initialize(density: Real, walkers: Int, cf: Compiler.CompiledFunction)(
+  def initialize(nVars: Int, walkers: Int, cf: Array[Double] => Double)(
       implicit rng: RNG): EmceeSet = {
-    val vars = Real.variables(density)
     val params =
       1.to(walkers)
         .map { i =>
-          vars.map { v =>
-            v -> rng.standardNormal
-          }.toMap
+          1.to(nVars)
+            .map { j =>
+              rng.standardNormal
+            }
+            .toArray
         }
         .toVector
 
     val scores =
       params.map { variables =>
-        cf(variables)(density)
+        cf(variables)
       }
 
     val accepted = scores.map { s =>
@@ -107,11 +107,11 @@ object EmceeChain {
 }
 
 case class EmceeSet(
-    params: Vector[Map[Variable, Double]],
+    params: Vector[Array[Double]],
     accepted: Vector[Boolean],
     scores: Vector[Double]
 ) {
-  def walker(w: Int): (Map[Variable, Double], Boolean) =
+  def walker(w: Int): (Array[Double], Boolean) =
     (params(w), accepted(w))
 
   def propose(other: EmceeSet): EmceeSet = {

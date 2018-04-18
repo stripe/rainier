@@ -1,38 +1,96 @@
 package rainier.compute
 
-import scala.collection.mutable.{HashMap, ArrayBuffer, ListBuffer, ArrayStack}
+trait Compiler {
+  def compile(inputs: Seq[Variable],
+              outputs: Seq[Real]): Array[Double] => Array[Double]
+
+  def compile(inputs: Seq[Variable], output: Real): Array[Double] => Double =
+    compile(inputs, List(output)).andThen { array =>
+      array(0)
+    }
+
+  def compileGradient(inputs: Seq[Variable],
+                      output: Real): Array[Double] => (Double, Array[Double]) =
+    compile(inputs, output :: Gradient.derive(inputs, output).toList).andThen {
+      array =>
+        (array.head, array.tail)
+    }
+}
 
 object Compiler {
-  case class CompiledFunction(targetAddresses: Map[Real, Int],
-                              variableAddresses: Map[Variable, Int],
-                              constantAddresses: Map[Constant, Int],
-                              instructions: Array[Int],
-                              heapSize: Int) {
+  val default: Compiler = ArrayCompiler
+}
+
+import scala.collection.mutable.{HashMap, ArrayBuffer, ListBuffer, ArrayStack}
+
+object ArrayCompiler extends Compiler {
+
+  def compile(inputs: Seq[Variable],
+              outputs: Seq[Real]): Array[Double] => Array[Double] = {
+    val infos = topologicalSort(outputs)
+    findLastUses(infos)
+    val heapSize = allocateAddresses(infos)
+    val instructions = generateInstructions(infos)
+
+    val addressMap = infos.map { info =>
+      info.real -> info.address
+    }.toMap
+    val inputAddresses = inputs.map { v =>
+      addressMap(v)
+    }.toArray
+    val outputAddresses = outputs.map { r =>
+      addressMap(r)
+    }.toArray
+
+    val constantAddresses = addressMap.collect {
+      case (Constant(d), i) => (d, i)
+    }.toList
+
+    CompiledFunction(outputAddresses,
+                     inputAddresses,
+                     constantAddresses,
+                     instructions,
+                     heapSize)
+  }
+
+  private case class CompiledFunction(outputAddresses: Array[Int],
+                                      inputAddresses: Array[Int],
+                                      constantAddresses: Seq[(Double, Int)],
+                                      instructions: Array[Int],
+                                      heapSize: Int)
+      extends Function1[Array[Double], Array[Double]] {
 
     val heap = Array.fill[Double](heapSize)(0.0)
     constantAddresses.foreach {
-      case (Constant(d), i) =>
+      case (d, i) =>
         heap.update(i, d)
     }
 
-    def apply(input: Map[Variable, Double]): Map[Real, Double] = {
-      input.foreach {
-        case (v, d) =>
-          heap.update(variableAddresses(v), d)
+    def apply(input: Array[Double]): Array[Double] = {
+      var i = 0
+      while (i < input.size) {
+        heap.update(inputAddresses(i), input(i))
+        i += 1
       }
-      Compiler.execute(heap, instructions)
-      targetAddresses.map { case (t, i) => t -> heap(i) }.toMap
+
+      ArrayCompiler.execute(heap, instructions)
+
+      val output = new Array[Double](outputAddresses.size)
+      i = 0
+      while (i < output.size) {
+        output.update(i, heap(outputAddresses(i)))
+        i += 1
+      }
+      output
     }
 
     def trace: Unit = {
-      val targetIndices = targetAddresses.values.toList
-      val variableIndices = variableAddresses.values.toList
-      val constants = constantAddresses.map { case (Constant(v), i) => i -> v }
+      val constants = constantAddresses.map(_.swap).toMap
       val labels = 0
         .to(heapSize)
         .map { i =>
-          val t = targetIndices.indexOf(i)
-          val v = variableIndices.indexOf(i)
+          val v = inputAddresses.indexOf(i)
+          val t = outputAddresses.indexOf(i)
           i ->
             (if (t >= 0)
                s"output$t"
@@ -46,24 +104,8 @@ object Compiler {
         }
         .toMap
 
-      Compiler.trace(instructions, labels)
+      ArrayCompiler.trace(instructions, labels)
     }
-  }
-
-  def apply(targets: Seq[Real]): CompiledFunction = {
-    val infos = topologicalSort(targets)
-    findLastUses(infos)
-    val heapSize = allocateAddresses(infos)
-
-    CompiledFunction(
-      targetAddresses = collectAddresses(infos.filter(_.isTarget)) {
-        case r => r
-      },
-      variableAddresses = collectAddresses(infos) { case v: Variable => v },
-      constantAddresses = collectAddresses(infos) { case c: Constant => c },
-      instructions = generateInstructions(infos),
-      heapSize = heapSize
-    )
   }
 
   private class Info(val real: Real, val deps: Seq[Info]) {
@@ -137,16 +179,6 @@ object Compiler {
     }
     heapSize
   }
-
-  private def collectAddresses[T](seq: Seq[Info])(
-      fn: PartialFunction[Real, T]): Map[T, Int] =
-    seq.foldLeft(Map.empty[T, Int]) {
-      case (map, info) =>
-        if (fn.isDefinedAt(info.real))
-          map + (fn(info.real) -> info.address)
-        else
-          map
-    }
 
   private def generateInstructions(seq: Seq[Info]): Array[Int] = {
     val instructionsBuf = ArrayBuffer.empty[Int]

@@ -12,10 +12,7 @@ trait HamiltonianIntegrator {
   def step(hParams: HParams, stepSize: Double): HParams
 }
 
-case class LeapFrogIntegrator(negativeDensity: Real,
-                              variables: Seq[Variable],
-                              gradient: Seq[Real],
-                              cf: Compiler.CompiledFunction)
+case class LeapFrogIntegrator(cf: Array[Double] => (Double, Array[Double]))
     extends HamiltonianIntegrator {
 
   private def halfStepPs(hParams: HParams, stepSize: Double): HParams = {
@@ -31,19 +28,12 @@ case class LeapFrogIntegrator(negativeDensity: Real,
       .zip(hParams.ps)
       .map { case (q, p) => q + (stepSize * p) }
 
-    val inputs =
-      variables
-        .zip(newQs)
-        .toMap
-
-    val outputs = cf(inputs)
+    val (potential, gradPotential) = cf(newQs)
 
     hParams.copy(
       qs = newQs,
-      gradPotential = gradient.map { g =>
-        outputs(g)
-      },
-      potential = outputs(negativeDensity)
+      gradPotential = gradPotential,
+      potential = potential
     )
   }
 

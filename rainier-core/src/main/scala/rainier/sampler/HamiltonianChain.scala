@@ -2,12 +2,10 @@ package rainier.sampler
 
 import rainier.compute._
 
-case class HamiltonianChain(accepted: Boolean,
-                            hParams: HParams,
-                            negativeDensity: Real,
-                            variables: Seq[Variable],
-                            gradient: Seq[Real],
-                            cf: Compiler.CompiledFunction)(implicit rng: RNG) {
+case class HamiltonianChain(
+    accepted: Boolean,
+    hParams: HParams,
+    cf: Array[Double] => (Double, Array[Double]))(implicit rng: RNG) {
 
   // Take a single leapfrog step without re-initializing momenta
   // for use in tuning the step size
@@ -48,47 +46,38 @@ case class HamiltonianChain(accepted: Boolean,
     )
   }
 
-  private def integrator =
-    LeapFrogIntegrator(negativeDensity, variables, gradient, cf)
+  private def integrator = LeapFrogIntegrator(cf)
 }
 
 object HamiltonianChain {
 
-  def apply(density: Real)(implicit rng: RNG): HamiltonianChain = {
-    val variables = Real.variables(density).toList
+  def apply(variables: Seq[Variable], density: Real)(
+      implicit rng: RNG): HamiltonianChain = {
     val negativeDensity = density * -1
-    val gradient = Gradient.derive(variables, negativeDensity).toList
-    val cf = Compiler(negativeDensity :: gradient)
-    val hParams = initialize(negativeDensity, variables, gradient, cf)
-    HamiltonianChain(true, hParams, negativeDensity, variables, gradient, cf)
+    val cf = Compiler.default.compileGradient(variables, negativeDensity)
+    val hParams = initialize(variables.size, cf)
+    HamiltonianChain(true, hParams, cf)
   }
 
-  def initialize(negativeDensity: Real,
-                 variables: Seq[Variable],
-                 gradient: Seq[Real],
-                 cf: Compiler.CompiledFunction)(implicit rng: RNG): HParams = {
-    val qs = variables.map { v =>
-      rng.standardNormal
-    }
-    val inputs =
-      variables
-        .zip(qs)
-        .toMap
+  def initialize(nVars: Int, cf: Array[Double] => (Double, Array[Double]))(
+      implicit rng: RNG): HParams = {
+    val qs = 1
+      .to(nVars)
+      .map { v =>
+        rng.standardNormal
+      }
+      .toArray
 
-    val outputs = cf(inputs)
+    val (potential, gradPotential) = cf(qs)
 
-    val gradPotential = gradient.map { g =>
-      outputs(g)
-    }
-    val potential = outputs(negativeDensity)
     HParams(qs, gradPotential, potential)
   }
 }
 
 case class HParams(
-    qs: Seq[Double],
-    ps: Seq[Double],
-    gradPotential: Seq[Double],
+    qs: Array[Double],
+    ps: Array[Double],
+    gradPotential: Array[Double],
     potential: Double
 ) {
 
@@ -108,11 +97,12 @@ case class HParams(
 
 object HParams {
 
-  def apply(qs: Seq[Double], gradPotential: Seq[Double], potential: Double)(
+  def apply(qs: Array[Double], gradPotential: Array[Double], potential: Double)(
       implicit rng: RNG): HParams = {
-    val ps = (1 to qs.size).map { _ =>
+    val ps = qs.map { _ =>
       rng.standardNormal
     }
+
     HParams(qs, ps, gradPotential, potential)
   }
 }
