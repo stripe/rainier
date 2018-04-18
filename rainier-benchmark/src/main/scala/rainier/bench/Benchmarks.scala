@@ -10,7 +10,7 @@ object Benchmarks {
     val x = new Variable
     def expression: Real
 
-    def compile: (Real, Real, Compiler.CompiledFunction, Double => Double) = {
+    def setup: (Real, Real, Compiler.CompiledFunction, Double => Double) = {
       val expr = expression
       val grad = Gradient.derive(List(x), expr).head
       val cf = Compiler(List(expr, grad))
@@ -18,13 +18,13 @@ object Benchmarks {
       (expr, grad, cf, asm)
     }
 
-    val (expr, grad, cf, asm) = compile
+    val (expr, grad, cf, asm) = setup
 
     Real.prune = false
-    val (_, _, unpruned, _) = compile
+    val (_, _, unpruned, _) = setup
     Real.prune = true
     Real.intern = false
-    val (_, _, uninterned, _) = compile
+    val (_, _, uninterned, _) = setup
     Real.intern = true
 
     val rand = new scala.util.Random
@@ -36,11 +36,14 @@ object Benchmarks {
       val eval = new Evaluator(Map(x -> rand.nextDouble))
       eval.toDouble(expr) + eval.toDouble(grad)
     }
+
+    def compile = Compiler(List(expr, grad))
+    def compileAsm = ASM.compileToFunction(expr + grad)
   }
 
   @State(Scope.Benchmark)
   class NormalBenchmark extends BenchmarkState {
-    def expression = Normal(x, 1).logDensities(0d.to(2d).by(0.1).toList)
+    def expression = Normal(x, 1).logDensities(0d.to(2d).by(0.01).toList)
   }
 
   @State(Scope.Benchmark)
@@ -81,6 +84,16 @@ class Benchmarks {
   }
 
   @Benchmark
+  def compileNormal(state: NormalBenchmark): Unit = {
+    state.compile
+  }
+
+  @Benchmark
+  def compileNormalAsm(state: NormalBenchmark): Unit = {
+    state.compileAsm
+  }
+
+  @Benchmark
   def runPoisson(state: PoissonBenchmark): Unit = {
     state.runCompiled
   }
@@ -103,5 +116,15 @@ class Benchmarks {
   @Benchmark
   def runPoissonUninterned(state: PoissonBenchmark): Unit = {
     state.runUninterned
+  }
+
+  @Benchmark
+  def compilePoisson(state: PoissonBenchmark): Unit = {
+    state.compile
+  }
+
+  @Benchmark
+  def compilePoissonAsm(state: PoissonBenchmark): Unit = {
+    state.compileAsm
   }
 }

@@ -7,7 +7,7 @@ import rainier.core._
 class ASMTest extends FunSuite {
 
   val x = new Variable
-  def compareToEvaluator(p: Real, xVal: Double): Double = {
+  def compareToEvaluator(p: Real, xVal: Double): Unit = {
     val result = ASM.compileToFunction(p)(xVal)
     val actual = (new Evaluator(Map(x -> xVal))).toDouble(p)
     assert(result == actual)
@@ -39,6 +39,7 @@ class ASMTest extends FunSuite {
   }
 
   test("normal") {
-    compareToEvaluator(Normal(x, 1).logDensities(0d.to(2d).by(0.1).toList))
+    compareToEvaluator(Normal(x, 1).logDensities(0d.to(2d).by(0.001).toList),
+                       2.0)
   }
 }

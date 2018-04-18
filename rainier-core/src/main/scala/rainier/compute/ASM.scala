@@ -8,6 +8,9 @@ import org.objectweb.asm.tree.{ClassNode, MethodNode}
 import org.objectweb.asm.Opcodes._
 
 object ASM {
+  val ClassName = "Compiled"
+  val MethodName = "apply"
+
   class SingleClassClassLoader(name: String,
                                bytes: Array[Byte],
                                parent: ClassLoader)
@@ -20,13 +23,13 @@ object ASM {
     val bytes = writeBytecode(classNode)
     val parentClassloader = this.getClass.getClassLoader
     val classLoader =
-      new SingleClassClassLoader("Foo", bytes, parentClassloader)
+      new SingleClassClassLoader(ClassName, bytes, parentClassloader)
     val cls = classLoader.clazz
     val inst = cls.newInstance()
-    val method = cls.getMethod("foo_method", classOf[Double])
+    val method = cls.getMethod(MethodName, classOf[Array[Double]])
     val result = { x: Double =>
       method
-        .invoke(inst, new java.lang.Double(x))
+        .invoke(inst, Array(x))
         .asInstanceOf[Double]
     }
     result
@@ -57,19 +60,17 @@ object ASM {
 
     countReferences(program)
 
-    // public MethodNode(api: Int, access: Int, name: String, desc: String, signature: String, exceptions: Array[String])
-    //
-    val m = new MethodNode(ASM6,
-                           ACC_PUBLIC + ACC_STATIC,
-                           "foo_method",
-                           "(D)D",
-                           null,
-                           Array.empty)
+    val m = new MethodNode(ASM6, //api
+                           ACC_PUBLIC + ACC_STATIC, //access
+                           MethodName, //name
+                           "([D)D", //desc
+                           null, //signature
+                           Array.empty) //exceptions
 
     var nextID = 0
     var ids = Map.empty[Real, Int]
 
-    def localVarSlot(id: Int) = 2 + (id * 2)
+    def localVarSlot(id: Int) = 1 + (id * 2)
 
     def interpret(ast: Real): Unit = {
       val nRefs = numReferences.getOrElse(ast, 0)
@@ -93,8 +94,9 @@ object ASM {
     def basicInterpret(ast: Real): Unit = ast match {
       case v: Variable =>
         val pos = 0 //only one param allowed for now
-        // double occupies two slots local variable table
-        m.visitVarInsn(DLOAD, pos * 2)
+        m.visitVarInsn(ALOAD, 0)
+        m.visitLdcInsn(pos)
+        m.visitInsn(DALOAD)
       case b: BinaryReal =>
         interpret(b.left)
         interpret(b.right)
@@ -122,11 +124,12 @@ object ASM {
         m.visitLdcInsn(x)
     }
     interpret(program)
+
     m.visitInsn(DRETURN)
     val cls = new tree.ClassNode()
     cls.visit(V1_8,
               ACC_PUBLIC | ACC_SUPER,
-              "Foo",
+              ClassName,
               null,
               "java/lang/Object",
               null)
