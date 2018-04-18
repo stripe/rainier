@@ -65,7 +65,7 @@ class Benchmarks {
   def runNormal(state: NormalBenchmark): Unit = {
     state.runCompiled
   }
-  /*
+  
   @Benchmark
   def evaluateNormal(state: NormalBenchmark): Unit = {
     state.evaluate
@@ -80,12 +80,12 @@ class Benchmarks {
   def runNormalUninterned(state: NormalBenchmark): Unit = {
     state.runUninterned
   }
-   */
+  
   @Benchmark
   def runNormalAsm(state: NormalBenchmark): Unit = {
     state.runAsm
   }
-  /*
+  
   @Benchmark
   def compileNormal(state: NormalBenchmark): Unit = {
     state.compile
@@ -130,5 +130,4 @@ class Benchmarks {
   def compilePoissonAsm(state: PoissonBenchmark): Unit = {
     state.compileAsm
   }
- */
 }
