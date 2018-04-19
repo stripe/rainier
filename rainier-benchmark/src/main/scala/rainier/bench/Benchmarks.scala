@@ -13,11 +13,11 @@ object Benchmarks {
       val expr = expression
       val vars = Real.variables(expr).toList
       val cf = ArrayCompiler.compile(vars, expr)
-      val asm = ASMCompiler.compile(vars, expr)
-      (cf, asm, vars)
+      val a = asm.ASMCompiler.compile(vars, expr)
+      (cf, a, vars)
     }
 
-    val (cf, asm, vars) = setup
+    val (cf, a, vars) = setup
 
     val rand = new scala.util.Random
     def runCompiled =
@@ -25,7 +25,7 @@ object Benchmarks {
         rand.nextDouble
       }.toArray)
     def runAsm =
-      asm(vars.map { _ =>
+      a(vars.map { _ =>
         rand.nextDouble
       }.toArray)
   }
