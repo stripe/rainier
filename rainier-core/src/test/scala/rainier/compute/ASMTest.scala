@@ -9,12 +9,13 @@ class ASMTest extends FunSuite {
   val x = new Variable
   val y = new Variable
   def compareToEvaluator(p: Real, xVal: Double, yVal: Double = 0.0): Unit = {
-    val c = ASMCompiler.compile(List(x, y), p)
+    val c = asm.ASMCompiler.compile(List(x, y), p)
     val result = c(Array(xVal, yVal))
     val actual = (new Evaluator(Map(x -> xVal, y -> yVal))).toDouble(p)
     assert(result == actual)
     val grad = Gradient.derive(List(x, y), p).head
-    val gradResult = ASMCompiler.compile(List(x, y), grad)(Array(xVal, yVal))
+    val gradResult =
+      asm.ASMCompiler.compile(List(x, y), grad)(Array(xVal, yVal))
     val gradActual = (new Evaluator(Map(x -> xVal, y -> yVal))).toDouble(grad)
     assert(gradResult == gradActual)
   }
