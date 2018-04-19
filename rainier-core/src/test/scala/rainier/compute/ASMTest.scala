@@ -41,7 +41,7 @@ class ASMTest extends FunSuite {
   }
 
   test("normal") {
-    compareToEvaluator(Normal(x, 1).logDensities(0d.to(2d).by(0.001).toList),
+    compareToEvaluator(Normal(x, 1).logDensities(0d.to(2d).by(0.01).toList),
                        2.0)
   }
 

@@ -12,34 +12,15 @@ trait ASMCompiledFunction {
 }
 
 object ASMCompiler extends Compiler {
-  val ClassName = "Compiled"
-  val MethodName = "apply"
-  var classID = 0
-
-  class SingleClassClassLoader(name: String,
-                               bytes: Array[Byte],
-                               parent: ClassLoader)
-      extends ClassLoader(parent) {
-    lazy val clazz: Class[_] = defineClass(name, bytes, 0, bytes.length)
-  }
-
   def compile(inputs: Seq[Variable],
               outputs: Seq[Real]): Array[Double] => Array[Double] = {
-    classID += 1
-    val classNode = compileClassNode(inputs, outputs)
-    val bytes = writeBytecode(classNode)
-    //println("writing Compiled" + classID)
-    //writeBytesToFile(new File("/tmp/Compiled" + classID + ".class"), bytes)
-    val parentClassloader = this.getClass.getClassLoader
-    val classLoader =
-      new SingleClassClassLoader(ClassName, bytes, parentClassloader)
-    val cls = classLoader.clazz
-    val inst = cls.newInstance().asInstanceOf[ASMCompiledFunction]
-    inst.apply(_)
+    val methods = compileMethods(inputs, outputs)
+    val cls = ASMClass.methods(methods)
+    cls.instance.apply(_)
   }
 
-  def compileClassNode(variables: Seq[Real],
-                       targets: Seq[Real]): tree.ClassNode = {
+  def compileMethods(variables: Seq[Real],
+                     targets: Seq[Real]): Seq[MethodNode] = {
     var numReferences = Map.empty[Real, Int]
     def incReference(real: Real): Unit = {
       val prev = numReferences.getOrElse(real, 0)
@@ -70,7 +51,7 @@ object ASMCompiler extends Compiler {
 
     val m = new MethodNode(ASM6, //api
                            ACC_PUBLIC, //access
-                           MethodName, //name
+                           "apply", //name
                            "([D)[D", //desc
                            null, //signature
                            Array.empty) //exceptions
@@ -143,19 +124,35 @@ object ASMCompiler extends Compiler {
         m.visitInsn(DASTORE)
     }
     m.visitInsn(ARETURN)
-    val cls = new tree.ClassNode()
+
+    List(m)
+  }
+}
+
+class ASMClass(name: String, methods: Seq[MethodNode]) {
+  val classNode = createClass
+  val bytes = writeBytecode
+  val instance = createInstance
+
+  def writeToTmpFile: Unit =
+    FileUtils.writeByteArrayToFile(new File("/tmp/" + name + ".class"), bytes)
+
+  private def createClass: ClassNode = {
+    val cls = new ClassNode()
     cls.visit(V1_8,
               ACC_PUBLIC | ACC_SUPER,
-              ClassName,
+              name,
               null,
               "java/lang/Object",
               Array("rainier/compute/ASMCompiledFunction"))
     cls.methods.add(createInit)
-    cls.methods.add(m)
+    methods.foreach { m =>
+      cls.methods.add(m)
+    }
     cls
   }
 
-  def createInit: MethodNode = {
+  private def createInit: MethodNode = {
     val m = new MethodNode(ACC_PUBLIC, "<init>", "()V", null, null)
     m.visitCode()
     m.visitVarInsn(ALOAD, 0)
@@ -166,15 +163,31 @@ object ASMCompiler extends Compiler {
     m
   }
 
-  def writeBytecode(classNode: ClassNode): Array[Byte] = {
+  private def writeBytecode: Array[Byte] = {
     val cw = new ClassWriter(
       ClassWriter.COMPUTE_FRAMES + ClassWriter.COMPUTE_MAXS)
     classNode.accept(cw)
     cw.toByteArray
   }
 
-  def writeBytesToFile(where: File, bytes: Array[Byte]): Unit = {
-    FileUtils.writeByteArrayToFile(where, bytes)
+  private def createInstance: ASMCompiledFunction = {
+    val parentClassloader = this.getClass.getClassLoader
+    val classLoader =
+      new ASMClassLoader(name, bytes, parentClassloader)
+    val cls = classLoader.clazz
+    cls.newInstance().asInstanceOf[ASMCompiledFunction]
   }
+}
 
+object ASMClass {
+  private var id = 0
+  def methods(seq: Seq[MethodNode]): ASMClass = {
+    id += 1
+    new ASMClass("ASMCompiledFunction$" + id, seq)
+  }
+}
+
+class ASMClassLoader(name: String, bytes: Array[Byte], parent: ClassLoader)
+    extends ClassLoader(parent) {
+  lazy val clazz: Class[_] = defineClass(name, bytes, 0, bytes.length)
 }
