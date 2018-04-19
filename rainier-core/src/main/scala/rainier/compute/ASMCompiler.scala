@@ -7,9 +7,14 @@ import org.objectweb.asm.{ClassVisitor, ClassWriter, tree}
 import org.objectweb.asm.tree.{ClassNode, MethodNode}
 import org.objectweb.asm.Opcodes._
 
+trait ASMCompiledFunction {
+  def apply(inputs: Array[Double]): Array[Double]
+}
+
 object ASMCompiler extends Compiler {
   val ClassName = "Compiled"
   val MethodName = "apply"
+  var classID = 0
 
   class SingleClassClassLoader(name: String,
                                bytes: Array[Byte],
@@ -20,22 +25,17 @@ object ASMCompiler extends Compiler {
 
   def compile(inputs: Seq[Variable],
               outputs: Seq[Real]): Array[Double] => Array[Double] = {
+    classID += 1
     val classNode = compileClassNode(inputs, outputs)
     val bytes = writeBytecode(classNode)
-    val size = bytes.size
-    println(s"Compiled Java method with $size bytes")
+    //println("writing Compiled" + classID)
+    //writeBytesToFile(new File("/tmp/Compiled" + classID + ".class"), bytes)
     val parentClassloader = this.getClass.getClassLoader
     val classLoader =
       new SingleClassClassLoader(ClassName, bytes, parentClassloader)
     val cls = classLoader.clazz
-    val inst = cls.newInstance()
-    val method = cls.getMethod(MethodName, classOf[Array[Double]])
-    val result = { x: Array[Double] =>
-      method
-        .invoke(inst, x)
-        .asInstanceOf[Array[Double]]
-    }
-    result
+    val inst = cls.newInstance().asInstanceOf[ASMCompiledFunction]
+    inst.apply(_)
   }
 
   def compileClassNode(variables: Seq[Real],
@@ -53,13 +53,13 @@ object ASMCompiler extends Compiler {
       case None =>
         real match {
           case u: UnaryReal =>
-            incReference(u.original)
             countReferences(u.original)
+            incReference(u.original)
           case b: BinaryReal =>
-            incReference(b.left)
-            incReference(b.right)
             countReferences(b.left)
             countReferences(b.right)
+            incReference(b.left)
+            incReference(b.right)
           case _ => ()
         }
     }
@@ -69,7 +69,7 @@ object ASMCompiler extends Compiler {
     }
 
     val m = new MethodNode(ASM6, //api
-                           ACC_PUBLIC + ACC_STATIC, //access
+                           ACC_PUBLIC, //access
                            MethodName, //name
                            "([D)[D", //desc
                            null, //signature
@@ -78,30 +78,33 @@ object ASMCompiler extends Compiler {
     var nextID = 0
     var ids = Map.empty[Real, Int]
 
-    def localVarSlot(id: Int) = 1 + (id * 2)
+    def localVarSlot(id: Int) = 2 + (id * 2)
 
     def interpret(ast: Real): Unit = {
       val nRefs = numReferences.getOrElse(ast, 0)
       if (nRefs <= 1)
         basicInterpret(ast)
-      else {
-        ids.get(ast) match {
-          case Some(id) =>
-            m.visitVarInsn(DLOAD, localVarSlot(id))
-          case None =>
-            val id = nextID
-            ids += ast -> id
-            nextID += 1
-            basicInterpret(ast)
-            m.visitVarInsn(DSTORE, localVarSlot(id))
-            m.visitVarInsn(DLOAD, localVarSlot(id))
+      else
+        ast match {
+          case Constant(_) => basicInterpret(ast)
+          case _ =>
+            ids.get(ast) match {
+              case Some(id) =>
+                m.visitVarInsn(DLOAD, localVarSlot(id))
+              case None =>
+                val id = nextID
+                ids += ast -> id
+                nextID += 1
+                basicInterpret(ast)
+                m.visitVarInsn(DSTORE, localVarSlot(id))
+                m.visitVarInsn(DLOAD, localVarSlot(id))
+            }
         }
-      }
     }
 
     def basicInterpret(ast: Real): Unit = ast match {
       case v: Variable =>
-        m.visitVarInsn(ALOAD, 0)
+        m.visitVarInsn(ALOAD, 1)
         m.visitLdcInsn(varIndices(v))
         m.visitInsn(DALOAD)
       case b: BinaryReal =>
@@ -146,7 +149,7 @@ object ASMCompiler extends Compiler {
               ClassName,
               null,
               "java/lang/Object",
-              null)
+              Array("rainier/compute/ASMCompiledFunction"))
     cls.methods.add(createInit)
     cls.methods.add(m)
     cls

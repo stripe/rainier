@@ -7,51 +7,63 @@ import rainier.core._
 
 object Benchmarks {
   trait BenchmarkState {
-    val x = new Variable
     def expression: Real
 
-    def setup: (Real,
-                Real,
-                Array[Double] => Array[Double],
-                Array[Double] => Array[Double]) = {
+    def setup = {
       val expr = expression
-      val grad = Gradient.derive(List(x), expr).head
-      val cf = ArrayCompiler.compile(List(x), List(expr, grad))
-      val asm = ASMCompiler.compile(List(x), List(expr, grad))
-      (expr, grad, cf, asm)
+      val vars = Real.variables(expr).toList
+      val cf = ArrayCompiler.compile(vars, expr)
+      val asm = ASMCompiler.compile(vars, expr)
+      (cf, asm, vars)
     }
 
-    val (expr, grad, cf, asm) = setup
-
-    Real.prune = false
-    val (_, _, unpruned, _) = setup
-    Real.prune = true
-    Real.intern = false
-    val (_, _, uninterned, _) = setup
-    Real.intern = true
+    val (cf, asm, vars) = setup
 
     val rand = new scala.util.Random
-    def runCompiled = cf(Array(rand.nextDouble))
-    def runAsm = asm(Array(rand.nextDouble))
-    def runUnpruned = unpruned(Array(rand.nextDouble))
-    def runUninterned = uninterned(Array(rand.nextDouble))
-    def evaluate = {
-      val eval = new Evaluator(Map(x -> rand.nextDouble))
-      eval.toDouble(expr) + eval.toDouble(grad)
-    }
-
-    def compile = ArrayCompiler.compile(List(x), List(expr, grad))
-    def compileAsm = ASMCompiler.compile(List(x), List(expr, grad))
+    def runCompiled =
+      cf(vars.map { _ =>
+        rand.nextDouble
+      }.toArray)
+    def runAsm =
+      asm(vars.map { _ =>
+        rand.nextDouble
+      }.toArray)
   }
 
   @State(Scope.Benchmark)
   class NormalBenchmark extends BenchmarkState {
-    def expression = Normal(x, 1).logDensities(0d.to(2d).by(0.1).toList)
+    def expression = {
+      val x = new Variable
+      Normal(x, 1).logDensities(0d.to(2d).by(0.001).toList)
+    }
   }
 
   @State(Scope.Benchmark)
   class PoissonBenchmark extends BenchmarkState {
-    def expression = Poisson(x).logDensities(0.to(10).toList)
+    def expression = {
+      val x = new Variable
+      Poisson(x).logDensities(0.to(10).toList)
+    }
+  }
+
+  @State(Scope.Benchmark)
+  class FullNormalBenchmark extends BenchmarkState {
+    def expression = {
+      val r = new scala.util.Random
+      val trueMean = 3.0
+      val trueStddev = 2.0
+      val data = 1.to(1000).map { i =>
+        (r.nextGaussian * trueStddev) + trueMean
+      }
+
+      val model = for {
+        mean <- Uniform(0, 10).param
+        stddev <- Uniform(0, 10).param
+        _ <- Normal(mean, stddev).fit(data)
+      } yield (mean, stddev)
+
+      model.density
+    }
   }
 }
 
@@ -62,38 +74,23 @@ class Benchmarks {
   import Benchmarks._
 
   @Benchmark
+  def runFullNormal(state: FullNormalBenchmark): Unit = {
+    state.runCompiled
+  }
+
+  @Benchmark
+  def runFullNormalAsm(state: FullNormalBenchmark): Unit = {
+    state.runAsm
+  }
+
+  @Benchmark
   def runNormal(state: NormalBenchmark): Unit = {
     state.runCompiled
   }
-  
-  @Benchmark
-  def evaluateNormal(state: NormalBenchmark): Unit = {
-    state.evaluate
-  }
 
-  @Benchmark
-  def runNormalUnpruned(state: NormalBenchmark): Unit = {
-    state.runUnpruned
-  }
-
-  @Benchmark
-  def runNormalUninterned(state: NormalBenchmark): Unit = {
-    state.runUninterned
-  }
-  
   @Benchmark
   def runNormalAsm(state: NormalBenchmark): Unit = {
     state.runAsm
-  }
-  
-  @Benchmark
-  def compileNormal(state: NormalBenchmark): Unit = {
-    state.compile
-  }
-
-  @Benchmark
-  def compileNormalAsm(state: NormalBenchmark): Unit = {
-    state.compileAsm
   }
 
   @Benchmark
@@ -104,30 +101,5 @@ class Benchmarks {
   @Benchmark
   def runPoissonAsm(state: PoissonBenchmark): Unit = {
     state.runAsm
-  }
-
-  @Benchmark
-  def evaluatePoisson(state: PoissonBenchmark): Unit = {
-    state.evaluate
-  }
-
-  @Benchmark
-  def runPoissonUnpruned(state: PoissonBenchmark): Unit = {
-    state.runUnpruned
-  }
-
-  @Benchmark
-  def runPoissonUninterned(state: PoissonBenchmark): Unit = {
-    state.runUninterned
-  }
-
-  @Benchmark
-  def compilePoisson(state: PoissonBenchmark): Unit = {
-    state.compile
-  }
-
-  @Benchmark
-  def compilePoissonAsm(state: PoissonBenchmark): Unit = {
-    state.compileAsm
   }
 }
