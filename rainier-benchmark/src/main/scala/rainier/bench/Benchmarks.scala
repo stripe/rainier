@@ -7,42 +7,63 @@ import rainier.core._
 
 object Benchmarks {
   trait BenchmarkState {
-    val x = new Variable
     def expression: Real
 
-    def compile: (Real, Real, Compiler.CompiledFunction) = {
+    def setup = {
       val expr = expression
-      val grad = Gradient.derive(List(x), expr).head
-      val cf = Compiler(List(expr, grad))
-      (expr, grad, cf)
+      val vars = Real.variables(expr).toList
+      val cf = ArrayCompiler.compile(vars, expr)
+      val a = asm.ASMCompiler.compile(vars, expr)
+      (cf, a, vars)
     }
 
-    val (expr, grad, cf) = compile
+    val (cf, a, vars) = setup
 
-    Real.prune = false
-    val (_, _, unpruned) = compile
-    Real.prune = true
-    Real.intern = false
-    val (_, _, uninterned) = compile
-    Real.intern = true
-
-    def runCompiled = cf(Map(x -> 1.0))
-    def runUnpruned = unpruned(Map(x -> 1.0))
-    def runUninterned = uninterned(Map(x -> 1.0))
-    def evaluate = {
-      val eval = new Evaluator(Map(x -> 1.0))
-      eval.toDouble(expr) + eval.toDouble(grad)
-    }
+    val rand = new scala.util.Random
+    def runCompiled =
+      cf(vars.map { _ =>
+        rand.nextDouble
+      }.toArray)
+    def runAsm =
+      a(vars.map { _ =>
+        rand.nextDouble
+      }.toArray)
   }
 
   @State(Scope.Benchmark)
   class NormalBenchmark extends BenchmarkState {
-    def expression = Normal(x, 1).logDensities(0d.to(2d).by(0.1).toList)
+    def expression = {
+      val x = new Variable
+      Normal(x, 1).logDensities(0d.to(2d).by(0.001).toList)
+    }
   }
 
   @State(Scope.Benchmark)
   class PoissonBenchmark extends BenchmarkState {
-    def expression = Poisson(x).logDensities(0.to(10).toList)
+    def expression = {
+      val x = new Variable
+      Poisson(x).logDensities(0.to(10).toList)
+    }
+  }
+
+  @State(Scope.Benchmark)
+  class FullNormalBenchmark extends BenchmarkState {
+    def expression = {
+      val r = new scala.util.Random
+      val trueMean = 3.0
+      val trueStddev = 2.0
+      val data = 1.to(1000).map { i =>
+        (r.nextGaussian * trueStddev) + trueMean
+      }
+
+      val model = for {
+        mean <- Uniform(0, 10).param
+        stddev <- Uniform(0, 10).param
+        _ <- Normal(mean, stddev).fit(data)
+      } yield (mean, stddev)
+
+      model.density
+    }
   }
 }
 
@@ -53,23 +74,23 @@ class Benchmarks {
   import Benchmarks._
 
   @Benchmark
+  def runFullNormal(state: FullNormalBenchmark): Unit = {
+    state.runCompiled
+  }
+
+  @Benchmark
+  def runFullNormalAsm(state: FullNormalBenchmark): Unit = {
+    state.runAsm
+  }
+
+  @Benchmark
   def runNormal(state: NormalBenchmark): Unit = {
     state.runCompiled
   }
 
   @Benchmark
-  def evaluateNormal(state: NormalBenchmark): Unit = {
-    state.evaluate
-  }
-
-  @Benchmark
-  def runNormalUnpruned(state: NormalBenchmark): Unit = {
-    state.runUnpruned
-  }
-
-  @Benchmark
-  def runNormalUninterned(state: NormalBenchmark): Unit = {
-    state.runUninterned
+  def runNormalAsm(state: NormalBenchmark): Unit = {
+    state.runAsm
   }
 
   @Benchmark
@@ -78,17 +99,7 @@ class Benchmarks {
   }
 
   @Benchmark
-  def evaluatePoisson(state: PoissonBenchmark): Unit = {
-    state.evaluate
-  }
-
-  @Benchmark
-  def runPoissonUnpruned(state: PoissonBenchmark): Unit = {
-    state.runUnpruned
-  }
-
-  @Benchmark
-  def runPoissonUninterned(state: PoissonBenchmark): Unit = {
-    state.runUninterned
+  def runPoissonAsm(state: PoissonBenchmark): Unit = {
+    state.runAsm
   }
 }
