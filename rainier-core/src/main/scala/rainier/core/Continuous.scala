@@ -16,6 +16,7 @@ trait Continuous extends Distribution[Double] { self =>
 
 class ContinuousWrapper(original: Continuous) extends Continuous {
   def param = original.param
+  override def logDensity(t: Double) = original.logDensity(t)
   def realLogDensity(real: Real) = original.realLogDensity(real)
   def generator = original.generator
 }
@@ -26,29 +27,7 @@ object Unbounded extends Continuous {
   def generator = ???
 }
 
-//object NonNegative extends ContinuousWrapper(Unbounded.exp)
-
-object NonNegative extends Continuous {
-  /*
-   * To get a parameter which is only defined above zero, we use an unbounded parameter x
-   * and transform it to e^x. Any non-linear transformation on a parameter that we are going to
-   * later apply a prior to needs to add a correction term (a "jacobian"), which we include here
-   * as the density. The correction comes from the change of variables formula from calculus.
-   */
-  def param = Unbounded.param.flatMap { x =>
-    RandomVariable(x.exp, x)
-  }
-
-  def realLogDensity(real: Real) = Real.one
-
-  override def logDensity(t: Double) =
-    if (t < 0)
-      Real.zero
-    else
-      Real.one
-
-  def generator = ???
-}
+object NonNegative extends ContinuousWrapper(Unbounded.exp)
 
 object StandardExponential extends Continuous {
   def realLogDensity(real: Real) = real * -1
@@ -60,10 +39,10 @@ object StandardExponential extends Continuous {
 
   def generator = ???
 }
-/*
+
 case class Exponential(lambda: Real)
     extends ContinuousWrapper(StandardExponential.scale(Real.one / lambda))
- */
+
 case class Normal(mean: Real, stddev: Real) extends Continuous {
 
   def realLogDensity(real: Real) =
@@ -109,18 +88,6 @@ case class LogNormal(mean: Real, stddev: Real) extends Continuous {
   }
 
   def param = Normal(mean, stddev).param.map(_.exp)
-
-  def generator = ???
-}
-
-case class Exponential(lambda: Real) extends Continuous {
-  def realLogDensity(real: Real) = Distributions.exponential(real, lambda)
-
-  def param =
-    NonNegative.param.flatMap { x =>
-      val scaled = x / lambda
-      RandomVariable(scaled, Distributions.exponential(scaled, lambda))
-    }
 
   def generator = ???
 }
