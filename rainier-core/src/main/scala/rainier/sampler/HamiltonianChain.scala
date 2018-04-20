@@ -3,6 +3,7 @@ package rainier.sampler
 import rainier.compute._
 
 case class HamiltonianChain(accepted: Boolean,
+                            acceptanceProb: Double,
                             hParams: HParams,
                             negativeDensity: Real,
                             variables: Seq[Variable],
@@ -27,13 +28,18 @@ case class HamiltonianChain(accepted: Boolean,
       finalParams.hamiltonian - initialParams.hamiltonian
 
     //we accept the proposal with probability min{1, exp(-deltaH)}
+    val newAcceptanceProb = Math.exp(-deltaH).min(1.0)
     val (newParams, newAccepted) = {
-      if (deltaH < 0 || rng.standardUniform < Math.exp(-deltaH))
+      if (rng.standardUniform < newAcceptanceProb)
         (finalParams, true)
       else
         (initialParams, false)
     }
-    copy(hParams = newParams, accepted = newAccepted)
+    copy(
+      hParams = newParams,
+      accepted = newAccepted,
+      acceptanceProb = newAcceptanceProb
+    )
   }
 
   def nextNUTS(stepSize: Double, maxDepth: Int = 6): HamiltonianChain = {
@@ -60,7 +66,13 @@ object HamiltonianChain {
     val gradient = Gradient.derive(variables, negativeDensity).toList
     val cf = Compiler(negativeDensity :: gradient)
     val hParams = initialize(negativeDensity, variables, gradient, cf)
-    HamiltonianChain(true, hParams, negativeDensity, variables, gradient, cf)
+    HamiltonianChain(true,
+                     1.0,
+                     hParams,
+                     negativeDensity,
+                     variables,
+                     gradient,
+                     cf)
   }
 
   def initialize(negativeDensity: Real,

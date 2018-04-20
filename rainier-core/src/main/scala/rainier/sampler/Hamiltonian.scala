@@ -7,6 +7,37 @@ sealed trait SampleMethod
 case object SampleNUTS extends SampleMethod
 case object SampleHMC extends SampleMethod
 
+case class DualAvg(
+    delta: Double,
+    lambda: Double,
+    logEpsilon: Double,
+    logEpsilonBar: Double,
+    acceptanceProb: Double,
+    hBar: Double,
+    iteration: Int,
+    mu: Double,
+    gamma: Double = 0.05,
+    t: Int = 10,
+    kappa: Double = 0.75
+) {
+  val stepSize = Math.exp(logEpsilon)
+  val nSteps = (lambda / Math.exp(logEpsilon)).toInt.max(1)
+}
+
+object DualAvg {
+  def apply(delta: Double, lambda: Double, epsilon: Double): DualAvg =
+    DualAvg(
+      delta = delta,
+      lambda = lambda,
+      logEpsilon = Math.log(epsilon),
+      logEpsilonBar = 0.0,
+      acceptanceProb = 1.0,
+      hBar = 0.0,
+      iteration = 0,
+      mu = Math.log(10 * epsilon)
+    )
+}
+
 case class Hamiltonian(iterations: Int,
                        burnIn: Int,
                        tuneEvery: Int,
@@ -30,7 +61,7 @@ case class Hamiltonian(iterations: Int,
                      burnIn + 1,
                      initialStepSize,
                      sampleMethod).last
-    val stepSize = findReasonableStepSize(tuned, initialStepSize)
+    val stepSize = findReasonableStepSize(tuned)
     0.until(chains).iterator.flatMap { i =>
       take(tuned, iterations, initialStepSize, sampleMethod).map { c =>
         val eval = new Evaluator(c.variables.zip(c.hParams.qs).toMap)
@@ -81,8 +112,8 @@ case class Hamiltonian(iterations: Int,
     } else { stepSize }
   }
 
-  private def findReasonableStepSize(chain: HamiltonianChain,
-                                     initialStepSize: Double): Double = {
+  private def findReasonableStepSize(chain: HamiltonianChain): Double = {
+    val initialStepSize = 1.0
     val nextChain = chain.stepOnce(initialStepSize)
     val deltaH = computeDeltaH(chain, nextChain)
     val exponent = computeExponent(deltaH)
@@ -103,5 +134,47 @@ case class Hamiltonian(iterations: Int,
         case _ => list.take(iterations)
       }
     go(List(chain), iterations)
+  }
+
+  private def updateDualAvg(acceptanceProb: Double,
+                            dualAvg: DualAvg): DualAvg = {
+    val newAcceptanceProb = acceptanceProb
+    val newIteration = dualAvg.iteration + 1
+    val hBarMultiplier = 1.0 / (newIteration + dualAvg.t)
+    val newHBar = {
+      (1.0 - hBarMultiplier) * dualAvg.hBar
+      +(hBarMultiplier * (dualAvg.delta - newAcceptanceProb))
+    }
+    val newLogEpsilon =
+      dualAvg.mu - (newHBar * Math.sqrt(newIteration) / dualAvg.gamma)
+    val newLogEpsilonBar = {
+      Math.pow(newIteration, -dualAvg.kappa) * newLogEpsilon
+      +((1.0 - Math.pow(newIteration, -dualAvg.kappa)) * dualAvg.logEpsilonBar)
+    }
+    dualAvg.copy(iteration = newIteration,
+                 acceptanceProb = newAcceptanceProb,
+                 hBar = newHBar,
+                 logEpsilon = newLogEpsilon,
+                 logEpsilonBar = newLogEpsilonBar)
+  }
+
+  private def dualAvgStepSize(chain: HamiltonianChain,
+                              delta: Double,
+                              lambda: Double,
+                              iterations: Int): Double = {
+    val epsilon0 = findReasonableStepSize(chain)
+    val dualAvg = DualAvg(delta, lambda, epsilon0)
+    def go(chain: HamiltonianChain,
+           dualAvg: DualAvg,
+           remaining: Int): (HamiltonianChain, DualAvg) = {
+      if (remaining > 0) {
+        val nextChain = chain.nextHMC(dualAvg.stepSize, dualAvg.nSteps)
+        val nextAcceptanceProb = nextChain.acceptanceProb
+        val nextDualAvg = updateDualAvg(nextAcceptanceProb, dualAvg)
+        go(nextChain, nextDualAvg, remaining - 1)
+      } else (chain, dualAvg)
+    }
+    val (_, finalDualAvg) = go(chain, dualAvg, iterations)
+    Math.exp(finalDualAvg.logEpsilonBar)
   }
 }
