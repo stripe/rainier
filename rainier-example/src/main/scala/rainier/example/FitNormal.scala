@@ -26,22 +26,3 @@ object FitNormal {
     println(DensityPlot().plot2D(model(1000).sample()).mkString("\n"))
   }
 }
-
-object TraceNormal {
-  def main(args: Array[String]) {
-    val m = FitNormal.model(1000)
-    val d = m.density
-    val v = Real.variables(d).toList.head
-    val g = Gradient.derive(List(v), d).head
-    val c = Compiler(List(d, g))
-    c.trace
-
-    implicit val rng = RNG.default
-    val t1 = System.currentTimeMillis
-    val samples =
-      m.sample(Hamiltonian(1000, 100, 100, 100, SampleHMC, 1, 0.01))
-    val t2 = System.currentTimeMillis
-    println("ms: " + (t2 - t1))
-    println("mean: " + (samples.map(_._1).sum / samples.size))
-  }
-}

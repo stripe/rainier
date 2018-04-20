@@ -26,14 +26,15 @@ case class Hamiltonian(iterations: Int,
                      ))
 
   def sample(density: Real)(implicit rng: RNG): Iterator[Sample] = {
-    val tuned = take(HamiltonianChain(density),
+    val variables = Real.variables(density).toList
+    val tuned = take(HamiltonianChain(variables, density),
                      burnIn + 1,
                      initialStepSize,
                      sampleMethod).last
     val stepSize = findReasonableStepSize(tuned, initialStepSize)
     0.until(chains).iterator.flatMap { i =>
       take(tuned, iterations, initialStepSize, sampleMethod).map { c =>
-        val eval = new Evaluator(c.variables.zip(c.hParams.qs).toMap)
+        val eval = new Evaluator(variables.zip(c.hParams.qs).toMap)
         Sample(i, c.accepted, eval)
       }.iterator
     }

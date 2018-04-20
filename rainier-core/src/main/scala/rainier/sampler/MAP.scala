@@ -21,18 +21,16 @@ object MAP {
                iterations: Int,
                stepSize: Double): Map[Variable, Double] = {
     val variables = Real.variables(density).toList
-    val gradients = Gradient.derive(variables, density).toList
-    val cf = Compiler(density :: gradients)
+    val cf = Compiler.default.compileGradient(variables, density)
     val initialValues = variables.map { v =>
       0.0
-    }
+    }.toArray
     val finalValues = 1.to(iterations).foldLeft(initialValues) {
       case (values, _) =>
-        val inputs = variables.zip(values).toMap
-        val outputs = cf(inputs)
+        val (_, gradients) = cf(values)
         values.zip(gradients).map {
           case (v, g) =>
-            v + (stepSize * outputs(g))
+            v + (stepSize * g)
         }
     }
     variables.zip(finalValues).toMap
