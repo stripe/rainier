@@ -49,8 +49,8 @@ case class Translate(b: Real) extends Injection {
 }
 
 object Exp extends Injection {
-  def forwards(x: Real) = x.log
-  def backwards(y: Real) = y.exp
+  def forwards(x: Real) = x.exp
+  def backwards(y: Real) = y.log
   def isDefinedAt(y: Double) = y >= 0
   def logJacobian(x: Real) = x
 }
