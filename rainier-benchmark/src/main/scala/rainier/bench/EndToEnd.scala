@@ -7,7 +7,7 @@ import rainier.core._
 import rainier.sampler._
 
 @Warmup(iterations = 1)
-@Measurement(iterations = 1)
+@Measurement(iterations = 5)
 @Fork(1)
 class EndToEnd {
   def normal(k: Int) = {

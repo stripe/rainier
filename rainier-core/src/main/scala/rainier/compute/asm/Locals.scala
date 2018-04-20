@@ -36,6 +36,7 @@ private class Locals(outputs: Seq[Real]) {
   private var ids = Map.empty[Real, Int]
   private var nextID = 0
 
+  //returns Some((id,firstTimeSeen)) for a local, None otherwise
   def find(real: Real): Option[(Int, Boolean)] =
     real match {
       case Constant(_) => None
