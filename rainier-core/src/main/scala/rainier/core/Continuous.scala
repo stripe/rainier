@@ -12,7 +12,26 @@ trait Continuous extends Distribution[Double] { self =>
   def scale(a: Real): Continuous = Scale(a).transform(this)
   def translate(b: Real): Continuous = Translate(b).transform(this)
   def exp: Continuous = Exp.transform(this)
+
+  private def unboundedParam = {
+    val x = new Variable
+    RandomVariable(x, realLogDensity(x))
+  }
+
+  private def nonNegativeParam = {
+    val x = new Variable
+    RandomVariable(x.exp, x)
+  }
 }
+
+object Standard {
+  val normal = new Continuous {
+    def realLogDensity(real: Real) = (real * real) / -2.0
+    def param = unboundedParam
+    def generator = Generator.from{(r,n) => r.standardNormal}
+  }
+}
+
 
 class ContinuousWrapper(original: Continuous) extends Continuous {
   def param = original.param
@@ -20,14 +39,6 @@ class ContinuousWrapper(original: Continuous) extends Continuous {
   def realLogDensity(real: Real) = original.realLogDensity(real)
   def generator = original.generator
 }
-
-object Unbounded extends Continuous {
-  def param = RandomVariable(new Variable)
-  def realLogDensity(real: Real) = Real.one
-  def generator = ???
-}
-
-object NonNegative extends ContinuousWrapper(Unbounded.exp)
 
 object StandardExponential extends Continuous {
   def realLogDensity(real: Real) = real * -1
@@ -43,30 +54,9 @@ object StandardExponential extends Continuous {
 case class Exponential(lambda: Real)
     extends ContinuousWrapper(StandardExponential.scale(Real.one / lambda))
 
-case class Normal(mean: Real, stddev: Real) extends Continuous {
 
-  def realLogDensity(real: Real) =
-    Distributions.normal(real, mean, stddev)
-
-  override def logDensities(list: Seq[Double]) = {
-    val squaredErrors = list.map { t =>
-      val err = t - mean
-      err * err
-    }
-    (Real.sum(squaredErrors) / (stddev * stddev * Real(-2.0))) -
-      (stddev.log * Real(list.size))
-  }
-
-  val generator = Generator.from { (r, n) =>
-    r.standardNormal * n.toDouble(stddev) + n.toDouble(mean)
-  }
-
-  def param =
-    Unbounded.param.flatMap { x =>
-      val translated = x + mean
-      RandomVariable(translated, Distributions.normal(translated, mean, stddev))
-    }
-}
+case class Normal(location: Real, scale: Real)
+    extends ContinuousWrapper(Standard.normal.scale(scale).translate(location))
 
 case class Cauchy(x0: Real, beta: Real) extends Continuous {
   def realLogDensity(real: Real): Real =
@@ -81,16 +71,8 @@ case class Cauchy(x0: Real, beta: Real) extends Continuous {
   def generator = ???
 }
 
-case class LogNormal(mean: Real, stddev: Real) extends Continuous {
-  def realLogDensity(real: Real) = {
-    val err = real.log - mean
-    ((err * err) / (stddev * stddev * -2.0)) - real.log - stddev.log
-  }
-
-  def param = Normal(mean, stddev).param.map(_.exp)
-
-  def generator = ???
-}
+case class LogNormal(mean: Real, stddev: Real)
+  extends ContinuousWrapper(Normal(mean, stddev).exp)
 
 case class StudentsT(nu: Real, mu: Real, sigma: Real) extends Continuous {
 
