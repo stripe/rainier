@@ -51,11 +51,11 @@ object Laplace extends LocationScaleFamily {
 object Gamma {
   def standard(shape: Real): Continuous = new Continuous {
     def realLogDensity(real: Real) =
-      (shape - 1) * real.log - Distributions.gamma(shape) - real
+      (shape - 1) * real.log - Combinatrics.gamma(shape) - real
 
     def param = {
       val x = new Variable
-      RandomVariable(x.exp, x + realLogDensity(x))
+      RandomVariable(x.exp, x + realLogDensity(x.exp))
     }
     def generator = ???
   }
@@ -89,5 +89,5 @@ object Uniform {
   }
 
   def apply(from: Real, to: Real): Continuous =
-    standard.scale(to - from).translate(to)
+    standard.scale(to - from).translate(from)
 }
