@@ -64,25 +64,33 @@ object Gamma {
       val x = new Variable
       RandomVariable(x.exp, x + realLogDensity(x.exp))
     }
+
     def generator = Generator.from { (r, n) =>
       val a = n.toDouble(shape)
-      generate(a, r)
+      if (a < 1) {
+        val u = r.standardUniform
+        generate(a + 1, r) * Math.pow(u, 1.0 / a)
+      } else
+        generate(a, r)
     }
 
     @tailrec
     private def generate(a: Double, r: RNG): Double = {
-      val d = a - 1 / 3
-      val c = 1 / Math.sqrt(9 * d)
+      val d = a - 1.0 / 3.0
+      val c = (1.0 / 3.0) / Math.sqrt(d)
+
       var x = r.standardNormal
-      var v = 1 + c * x
+      var v = 1.0 + c * x
       while (v <= 0) {
         x = r.standardNormal
-        v = 1 + c * x
+        v = 1.0 + c * x
       }
+
       val v3 = v * v * v
       val u = r.standardUniform
-      if ((u < 1 - 0.0331 * (x * x * x * x))
-          || (Math.log(u) < 0.5 * x * x + d * (1 - v3 + Math.log(v3))))
+
+      if ((u < 1 - 0.0331 * x * x * x * x) ||
+          (Math.log(u) < 0.5 * x * x + d * (1 - v3 + Math.log(v3))))
         d * v3
       else
         generate(a, r)
