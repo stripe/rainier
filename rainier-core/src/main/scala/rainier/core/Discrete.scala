@@ -5,7 +5,7 @@ import rainier.sampler.RNG
 
 case class Poisson(lambda: Real) extends Distribution[Int] {
   def logDensity(t: Int): Real = {
-    lambda.log * t - lambda - Distributions.factorial(t)
+    lambda.log * t - lambda - Combinatrics.factorial(t)
   }
 
   val generator = Generator.from { (r, n) =>
