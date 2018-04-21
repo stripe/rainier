@@ -10,7 +10,7 @@ object FitHLL {
   implicit val rng = RNG.default
 
   def model(sketch: Map[Int, Byte]) =
-    NonNegative.param.condition { lambda =>
+    LogNormal(0, 1).param.condition { lambda =>
       hll.logDensity(lambda, sketch)
     }
 

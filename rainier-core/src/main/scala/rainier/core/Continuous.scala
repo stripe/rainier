@@ -12,114 +12,82 @@ trait Continuous extends Distribution[Double] { self =>
   def scale(a: Real): Continuous = Scale(a).transform(this)
   def translate(b: Real): Continuous = Translate(b).transform(this)
   def exp: Continuous = Exp.transform(this)
+}
 
-  private def unboundedParam = {
-    val x = new Variable
-    RandomVariable(x, realLogDensity(x))
+trait LocationScaleFamily { self =>
+  def logDensity(x: Real): Real
+  def generate(r: RNG): Double
+
+  val standard: Continuous = new Continuous {
+    val generator = Generator.from { (r, n) =>
+      generate(r)
+    }
+    def realLogDensity(real: Real) = self.logDensity(real)
+    def param = {
+      val x = new Variable
+      RandomVariable(x, self.logDensity(x))
+    }
   }
 
-  private def nonNegativeParam = {
-    val x = new Variable
-    RandomVariable(x.exp, x)
-  }
+  def apply(location: Real, scale: Real): Continuous =
+    standard.scale(scale).translate(location)
 }
 
-object Standard {
-  val normal = new Continuous {
-    def realLogDensity(real: Real) = (real * real) / -2.0
-    def param = unboundedParam
-    def generator = Generator.from{(r,n) => r.standardNormal}
-  }
+object Normal extends LocationScaleFamily {
+  def logDensity(x: Real) = (x * x) / -2.0
+  def generate(r: RNG) = r.standardNormal
 }
 
-
-class ContinuousWrapper(original: Continuous) extends Continuous {
-  def param = original.param
-  override def logDensity(t: Double) = original.logDensity(t)
-  def realLogDensity(real: Real) = original.realLogDensity(real)
-  def generator = original.generator
+object Cauchy extends LocationScaleFamily {
+  def logDensity(x: Real) = (((x * x) + 1) * Math.PI).log * -1
+  def generate(r: RNG) = ???
 }
 
-object StandardExponential extends Continuous {
-  def realLogDensity(real: Real) = real * -1
+object Laplace extends LocationScaleFamily {
+  def logDensity(x: Real) = Real(0.5).log - x.abs
+  def generate(r: RNG) = ???
+}
 
-  def param =
-    NonNegative.param.flatMap { x =>
-      RandomVariable(x, realLogDensity(x))
+object Gamma {
+  def standard(shape: Real): Continuous = new Continuous {
+    def realLogDensity(real: Real) =
+      (shape - 1) * real.log - Distributions.gamma(shape) - real
+
+    def param = {
+      val x = new Variable
+      RandomVariable(x.exp, x + realLogDensity(x))
     }
-
-  def generator = ???
-}
-
-case class Exponential(lambda: Real)
-    extends ContinuousWrapper(StandardExponential.scale(Real.one / lambda))
-
-
-case class Normal(location: Real, scale: Real)
-    extends ContinuousWrapper(Standard.normal.scale(scale).translate(location))
-
-case class Cauchy(x0: Real, beta: Real) extends Continuous {
-  def realLogDensity(real: Real): Real =
-    Distributions.cauchy(real, x0, beta)
-
-  def param =
-    Unbounded.param.flatMap { x =>
-      val translated = x + x0
-      RandomVariable(translated, Distributions.cauchy(translated, x0, beta))
-    }
-
-  def generator = ???
-}
-
-case class LogNormal(mean: Real, stddev: Real)
-  extends ContinuousWrapper(Normal(mean, stddev).exp)
-
-case class StudentsT(nu: Real, mu: Real, sigma: Real) extends Continuous {
-
-  /**
-    * pdf(x) = (top / bottom) * rest
-    *        = [ Γ((ν+1)/2) / ( Γ(ν/2) sqrt(πν) σ ) ] (1 + (1/ν)((x - μ) / σ)²)^{ -(ν+1)/2 }
-    */
-  def realLogDensity(real: Real) = {
-    val top = Distributions.gamma((nu + 1) / 2)
-    val bottom = Distributions.gamma(nu / 2) + Distributions.gamma(nu * Math.PI) / 2 + sigma.log
-    val err = (real - mu) / sigma
-    val rest = (Real.zero - ((nu + 1) / 2)) * (1 + (1 / nu) * err * err).log
-    (top / bottom) * rest
+    def generator = ???
   }
 
-  def generator = ???
-  def param = ???
+  def apply(shape: Real, scale: Real) =
+    standard(shape).scale(scale)
 }
 
-case class Laplace(mean: Real, scale: Real) extends Continuous {
-  def realLogDensity(real: Real) =
-    Distributions.laplace(real, mean, scale)
-
-  def param =
-    Unbounded.param.flatMap { x =>
-      val translated = x + mean
-      RandomVariable(translated, Distributions.laplace(translated, mean, scale))
-    }
-
-  def generator = ???
+object Exponential {
+  val standard = Gamma.standard(1.0)
+  def apply(rate: Real) = standard.scale(Real.one / rate)
 }
 
-case class Uniform(from: Real, to: Real) extends Continuous {
-  /*
-   * As with nonNegative, if we want a constrained parameter we need to transform an unbounded
-   * one and then add a jacobian correction. Here we use a logistic function to produce
-   * a parameter in (0,1).
-   */
-  def param =
-    Unbounded.param.flatMap { x =>
-      val standard = Real.one / (Real.one + (x * -1).exp)
-      val density = (standard * (Real.one - standard)).log
-      RandomVariable(from + (standard * (to - from)), density)
+object LogNormal {
+  def apply(location: Real, scale: Real) =
+    Normal(location, scale).exp
+}
+
+object Uniform {
+  val standard: Continuous = new Continuous {
+    def realLogDensity(real: Real) = Real.one
+    val generator = Generator.from { (r, n) =>
+      r.standardUniform
     }
+    def param = {
+      val x = new Variable
+      val logistic = Real.one / (Real.one + (x * -1).exp)
+      val density = (logistic * (Real.one - logistic)).log
+      RandomVariable(logistic, density)
+    }
+  }
 
-  def realLogDensity(real: Real) =
-    (Real.one / (to - from)).log
-
-  def generator = ???
+  def apply(from: Real, to: Real): Continuous =
+    standard.scale(to - from).translate(to)
 }
