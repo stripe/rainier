@@ -2,6 +2,7 @@ package rainier.core
 
 import rainier.compute._
 import rainier.sampler.RNG
+import scala.annotation.tailrec
 
 trait Continuous extends Distribution[Double] { self =>
   def param: RandomVariable[Real]
@@ -40,15 +41,21 @@ object Normal extends LocationScaleFamily {
 
 object Cauchy extends LocationScaleFamily {
   def logDensity(x: Real) = (((x * x) + 1) * Math.PI).log * -1
-  def generate(r: RNG) = ???
+  def generate(r: RNG) = r.standardNormal / r.standardNormal
 }
 
 object Laplace extends LocationScaleFamily {
   def logDensity(x: Real) = Real(0.5).log - x.abs
-  def generate(r: RNG) = ???
+  def generate(r: RNG) = {
+    val u = r.standardUniform - 0.5
+    Math.signum(u) * -1 * Math.log(1 - (2 * Math.abs(u)))
+  }
 }
 
 object Gamma {
+  def apply(shape: Real, scale: Real) =
+    standard(shape).scale(scale)
+
   def standard(shape: Real): Continuous = new Continuous {
     def realLogDensity(real: Real) =
       (shape - 1) * real.log - Combinatrics.gamma(shape) - real
@@ -57,11 +64,30 @@ object Gamma {
       val x = new Variable
       RandomVariable(x.exp, x + realLogDensity(x.exp))
     }
-    def generator = ???
-  }
+    def generator = Generator.from { (r, n) =>
+      val a = n.toDouble(shape)
+      generate(a, r)
+    }
 
-  def apply(shape: Real, scale: Real) =
-    standard(shape).scale(scale)
+    @tailrec
+    private def generate(a: Double, r: RNG): Double = {
+      val d = a - 1 / 3
+      val c = 1 / Math.sqrt(9 * d)
+      var x = r.standardNormal
+      var v = 1 + c * x
+      while (v <= 0) {
+        x = r.standardNormal
+        v = 1 + c * x
+      }
+      val v3 = v * v * v
+      val u = r.standardUniform
+      if ((u < 1 - 0.0331 * (x * x * x * x))
+          || (Math.log(u) < 0.5 * x * x + d * (1 - v3 + Math.log(v3))))
+        d * v3
+      else
+        generate(a, r)
+    }
+  }
 }
 
 object Exponential {
