@@ -101,7 +101,7 @@ object Report {
     println("")
     println(name)
 
-    println(fmtKey("Variables") + Real.variables(model.density).size)
+    println(fmtKey("Variables") + model.density.variables.size)
 
     config.foreach {
       case (k, v) =>

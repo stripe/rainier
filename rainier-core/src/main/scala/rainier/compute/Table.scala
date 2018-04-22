@@ -2,7 +2,7 @@ package rainier.compute
 
 import scala.collection.mutable.WeakHashMap
 
-object Table {
+private object Table {
   val binary = WeakHashMap.empty[(Real, Real, BinaryOp), BinaryReal]
   val unary = WeakHashMap.empty[(Real, UnaryOp), UnaryReal]
 
