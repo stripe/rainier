@@ -1,6 +1,9 @@
 package rainier.sampler
 
-import rainier.compute.{Compiler, Gradient, Real, Variable}
+
+import rainier.core._
+import rainier.compute._
+
 
 case class Variational(tolerance: Double, maxIterations: Int) extends Sampler {
   override def description: (String, Map[String, Double]) = ("Variational",
@@ -11,52 +14,47 @@ case class Variational(tolerance: Double, maxIterations: Int) extends Sampler {
 
   override def sample(density: Real)(implicit rng: RNG): Iterator[Sample] = {
     //VariationalOptimizer(tolerance, maxIterations)
-    val vars = Real.variables(density)
+
+    val modelVariables = Real.variables(density).toList
 
     // use a set of independent normals as the guide
-    val K = vars.length
+    val K = modelVariables.length
     val iterations = 100
     val samples = 100
     val stepsize = .1
 
-    def sampleFromGuide(): List[Real] = {
+
+    def sampleFromGuide(): List[Double] = {
       1.to(K).map { i =>
         rng.standardNormal
       }
     }
-    def transformGuideSamples(guideSamples: List[Real], guideParams: List(Real, Real)): List[Real] = {
-      guideSamples.zip(guideParams).map {
-        case (eps, (mu, sigma)) =>
-          mu + eps * sigma
-      }
+
+
+    val guideParams = modelVariables.map(_ => (Unbounded.param, NonNegative.param)) // guide mu and sigma
+    val eps: List[RandomVariable[Real]] = guideParams.map {
+      case (mu, sigma) => mu + sigma * Normal(0., 1.).param
     }
-    // initialize the guide paramaters
-    val guideParams = vars.map { v =>
-      v -> (rng.standardNormal, abs(rng.standardUniform))
-    }.toMap
 
-    val densityGradients = Gradient.derive(guideParams, compose(density, transformGuidesamples)).toList
-    val cf = Compiler(compose(density, transformGuidesamples) :: densityGradients)
+    val guideDensity = eps.foldLeft(Real(0.)) {case (d, e) => d + e.density}
+    val transformedDensity = density // need to change this to density wrt fixed eps
+    val surrogateLoss = transformedDensity + guideDensity
+    val variables = Real.variables(surrogateLoss).toList
+    val guideVariables = Real.variables(guideDensity).toList
+    val gradients = Gradient.derive(variables, surrogateLoss)
+    val cf = Compiler(surrogateLoss :: gradients)
 
-    val guideGradients = Gradient.derive(guideParams, compose(guide_density, transformGuideSamples)).toList
-    val cfGuide = Compiler(compose(guide_density, transformGuidesamples) :: guideGradients)
+    val initialValues = guideVariables.map(v => v -> sampleFromGuide())
+      .toMap
 
-    // need to optimize the elbo
-    // elbo = ELBO≡Expectation_over_guide[density − guide_density]
-    // Use the monte carlo estimate of the gradient
-    // grad elbo
-    // = grad_guide_params Expectation_over_guide[density - guide_density]
-    // = Expectation_over_eps[ grad_guide_params density (transformGuideSamples) - grad guide_density (transformGuideSamples) ]
-    val finalValues = 1.to(iterations).foldLeft(guideParams) {
+    val finalValues = 1.to(iterations).foldLeft(initialValues) {
       case (values, _) =>
-        val inputs = vars.zip(values).toMap
-        val outputs = cf(inputs)
-        val guideOutputs = cfGuide(inputs)
-        values.zip((guideGradients, densityGradients)).map {
-          case (v, (guideG, densityG) =>
-            // how to get the gradient with respect to guide params at eps?
-            v + 1 / samples * 1.to(samples).map(stepSize * (outputs(guideG) - guideOutputs(densityG))).sum()
-        }
+        // for i in 1 to nsamples
+        // set modelVariables to sample from guide with values
+        // set variables to modelVariables ++ values
+        // grads[i] = cf(variables)
+        // update = values + 1/nsamples * sum(grads)
+
     }
 
 
