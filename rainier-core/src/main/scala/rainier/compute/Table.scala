@@ -7,6 +7,7 @@ private object Table {
   val unary = WeakHashMap.empty[(Real, UnaryOp), UnaryReal]
 
   def intern(real: Real): Real = real match {
+    case Real_+(original) => intern(original)
     case b: BinaryReal =>
       val key = (b.left, b.right, b.op)
       val hit = binary.get(key).orElse {

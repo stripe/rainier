@@ -41,6 +41,7 @@ object Real {
   private def variables(real: Real): Set[Variable] = {
     def loop(r: Real, acc: Set[Variable]): Set[Variable] =
       r match {
+        case Real_+(orig)  => loop(orig, acc)
         case Constant(_)   => acc
         case b: BinaryReal => loop(b.right, loop(b.left, acc))
         case u: UnaryReal  => loop(u.original, acc)
@@ -53,7 +54,8 @@ object Real {
   def print(real: Real, depth: Int = 0): Unit = {
     val padding = "  " * depth
     real match {
-      case Constant(v) => println(padding + v)
+      case Real_+(orig) => print(orig, depth)
+      case Constant(v)  => println(padding + v)
       case b: BinaryReal =>
         println(padding + b.op)
         print(b.left, depth + 1)
@@ -102,6 +104,20 @@ private object UnaryReal {
 }
 
 class Variable extends Real
+
+case class private Real_+(original: Real) extends Real {
+  def +(other: Real_+): Real_+ = Real_+(original + other.original)
+  def *(other: Real_+): Real_+ = Real_+(original * other.original)
+  def /(other: Real_+): Real_+ = Real_+(original / other.original)
+}
+
+object Real_+ {
+  def apply[N](value: N)(implicit numeric: Numeric[N]): Real_+ = {
+    val n = numeric.toDouble(value)
+    require(n >= 0)
+    Real_+(Constant(n))
+  }
+}
 
 private sealed trait BinaryOp {
   def apply(left: Double, right: Double): Double

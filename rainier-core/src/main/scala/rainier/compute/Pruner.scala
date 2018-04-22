@@ -2,6 +2,7 @@ package rainier.compute
 
 private object Pruner {
   def prune(real: Real): Real = real match {
+    case Real_+(original) => original
     case u: UnaryReal =>
       u.original match {
         case Constant(v) => Constant(u.op(v))
