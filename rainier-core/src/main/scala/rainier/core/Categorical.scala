@@ -25,7 +25,7 @@ case class Categorical[T](pmf: Map[T, Real]) extends Distribution[T] {
   def generator: Generator[T] = {
     val cdf =
       pmf.toList
-        .scanLeft((Option.empty[T], Real.zero)) {
+        .scanLeft((Option.empty[T], Real.zero: Real)) {
           case ((_, acc), (t, p)) => ((Some(t)), p + acc)
         }
         .collect { case (Some(t), p) => (t, p) }
@@ -69,7 +69,7 @@ case class Multinomial[T](pmf: Map[T, Real], k: Int)
   def logDensity(t: Map[T, Int]) =
     Combinatrics.factorial(k) + Real.sum(t.toList.map {
       case (v, i) =>
-        i * pmf.getOrElse(v, Real.zero).log - Combinatrics.factorial(i)
+        pmf.getOrElse(v, Real.zero).log * i - Combinatrics.factorial(i)
     })
 }
 

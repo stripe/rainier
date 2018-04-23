@@ -16,7 +16,7 @@ trait Distribution[T] extends Likelihood[T] { self =>
 
 object Combinatrics {
   def gamma(z: Real): Real = {
-    val w = z + (Real.one / ((12 * z) - (Real.one / (10 * z))))
+    val w = z + (Real.one / ((z * 12) - (Real.one / (z * 10))))
     (Real(Math.PI * 2).log / 2) - (z.log / 2) + (z * (w.log - 1))
   }
 

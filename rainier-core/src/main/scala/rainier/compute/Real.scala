@@ -1,14 +1,14 @@
 package rainier.compute
 
 sealed trait Real {
-  def +(other: Real): Real = BinaryReal(this, other, AddOp)
-  def +(other: Double): Real = this + Real(other)
-  def *(other: Real): Real = BinaryReal(this, other, MultiplyOp)
-  def *(other: Double): Real = this * Real(other)
-  def -(other: Real): Real = BinaryReal(this, other, SubtractOp)
-  def -(other: Double): Real = this - Real(other)
-  def /(other: Real): Real = BinaryReal(this, other, DivideOp)
-  def /(other: Double): Real = this / Real(other)
+  def +[N](other: N)(implicit ev: ToReal[N]): Real =
+    BinaryReal(this, ev(other), AddOp)
+  def *[N](other: N)(implicit ev: ToReal[N]): Real =
+    BinaryReal(this, ev(other), MultiplyOp)
+  def -[N](other: N)(implicit ev: ToReal[N]): Real =
+    BinaryReal(this, ev(other), SubtractOp)
+  def /[N](other: N)(implicit ev: ToReal[N]): Real =
+    BinaryReal(this, ev(other), DivideOp)
   def log: Real = UnaryReal(this, LogOp)
   def exp: Real_+ = Unsigned(UnaryReal(this, ExpOp))
   def abs: Real_+ = Unsigned(UnaryReal(this, AbsOp))
@@ -16,29 +16,35 @@ sealed trait Real {
   lazy val variables: Seq[Variable] = Real.variables(this).toList
   def gradient: Seq[Real] = Gradient.derive(variables, this)
 
-  def signed: Signed
+  private[compute] def signed: Signed
 }
 
 object Real {
-  implicit def signed(real: Real): Signed = real.signed
+  private[compute] implicit def signed(real: Real): Signed = real.signed
 
   def apply[N](n: N)(implicit num: Numeric[N]): Real =
     Constant(num.toDouble(n))
 
-  def sum(seq: Seq[Real]): Real =
+  def sum[N](seq: Seq[N])(implicit ev: ToReal[N]): Real =
     if (seq.isEmpty)
       Real.zero
     else
-      reduceCommutative(seq.map(_.signed), AddOp)
+      reduceCommutative(seq.map { n =>
+        ev(n).signed
+      }, AddOp)
 
-  def product(seq: Seq[Real]): Real =
+  def product[N](seq: Seq[N])(implicit ev: ToReal[N]): Real =
     if (seq.isEmpty)
       Real.one
     else
-      reduceCommutative(seq.map(_.signed), MultiplyOp)
+      reduceCommutative(seq.map { n =>
+        ev(n).signed
+      }, MultiplyOp)
 
-  def logSumExp(seq: Seq[Real]): Real =
-    sum(seq.map(_.exp)).log //TODO: special case this
+  def logSumExp[N](seq: Seq[N])(implicit ev: ToReal[N]): Real =
+    sum(seq.map { n =>
+      ev(n).exp
+    }).log //TODO: special case this
 
   val zero: Real_+ = Real_+(0.0)
   val one: Real_+ = Real_+(1.0)
@@ -87,8 +93,8 @@ object Real {
       }, op)
 }
 
-sealed trait Signed extends Real {
-  def signed = this
+private[compute] sealed trait Signed extends Real {
+  private[compute] def signed = this
 }
 
 private case class Constant(value: Double) extends Signed
@@ -121,71 +127,9 @@ sealed trait Real_+ extends Real {
 object Real_+ {
   def apply[N](n: N)(implicit num: Numeric[N]): Real_+ = {
     val v = num.toDouble(n)
-    require(v >= 0.0)
+    require(v > 0.0)
     Unsigned(Constant(v))
   }
 }
 
 private case class Unsigned(signed: Signed) extends Real_+
-
-private sealed trait BinaryOp {
-  def apply(left: Double, right: Double): Double
-}
-
-private sealed trait CommutativeOp extends BinaryOp
-
-private case object AddOp extends CommutativeOp {
-  def apply(left: Double, right: Double) = left + right
-}
-
-private case object MultiplyOp extends CommutativeOp {
-  def apply(left: Double, right: Double) = left * right
-}
-
-private case object SubtractOp extends BinaryOp {
-  def apply(left: Double, right: Double) = left - right
-}
-
-private case object DivideOp extends BinaryOp {
-  def apply(left: Double, right: Double) = left / right
-}
-
-private case object OrOp extends BinaryOp {
-  def apply(left: Double, right: Double) =
-    if (left == 0.0)
-      right
-    else
-      left
-}
-
-private case object AndOp extends BinaryOp {
-  def apply(left: Double, right: Double) =
-    if (right == 0.0)
-      0.0
-    else
-      left
-}
-
-private case object AndNotOp extends BinaryOp {
-  def apply(left: Double, right: Double) =
-    if (right == 0.0)
-      left
-    else
-      0.0
-}
-
-private sealed trait UnaryOp {
-  def apply(original: Double): Double
-}
-
-private case object ExpOp extends UnaryOp {
-  def apply(original: Double) = math.exp(original)
-}
-
-private case object LogOp extends UnaryOp {
-  def apply(original: Double) = math.log(original)
-}
-
-private case object AbsOp extends UnaryOp {
-  def apply(original: Double) = original.abs
-}

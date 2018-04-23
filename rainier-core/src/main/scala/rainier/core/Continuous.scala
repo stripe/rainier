@@ -8,10 +8,10 @@ trait Continuous extends Distribution[Double] { self =>
   def param: RandomVariable[Real]
   def realLogDensity(real: Real): Real
 
-  def logDensity(t: Double) = realLogDensity(Constant(t))
+  def logDensity(t: Double) = realLogDensity(Real(t))
 
-  def scale(a: Real): Continuous = Scale(a).transform(this)
-  def translate(b: Real): Continuous = Translate(b).transform(this)
+  def scale[M: ToReal](a: M): Continuous = Scale(a).transform(this)
+  def translate[N: ToReal](b: N): Continuous = Translate(b).transform(this)
   def exp: Continuous = Exp.transform(this)
 }
 
@@ -30,7 +30,7 @@ trait LocationScaleFamily { self =>
     }
   }
 
-  def apply(location: Real, scale: Real): Continuous =
+  def apply[M: ToReal, N: ToReal_+](location: M, scale: N): Continuous =
     standard.scale(scale).translate(location)
 }
 
@@ -53,58 +53,61 @@ object Laplace extends LocationScaleFamily {
 }
 
 object Gamma {
-  def apply(shape: Real, scale: Real) =
+  def apply[M: ToReal_+, N: ToReal_+](shape: M, scale: N) =
     standard(shape).scale(scale)
 
-  def standard(shape: Real): Continuous = new Continuous {
-    def realLogDensity(real: Real) =
-      (shape - 1) * real.log - Combinatrics.gamma(shape) - real
+  def standard[M](shape: M)(implicit ev: ToReal_+[M]): Continuous =
+    new Continuous {
+      val s = ev(shape)
+      def realLogDensity(real: Real) =
+        (s - 1) * real.log - Combinatrics.gamma(s) - real
 
-    def param = {
-      val x = new Variable
-      RandomVariable(x.exp, x + realLogDensity(x.exp))
-    }
-
-    def generator = Generator.from { (r, n) =>
-      val a = n.toDouble(shape)
-      if (a < 1) {
-        val u = r.standardUniform
-        generate(a + 1, r) * Math.pow(u, 1.0 / a)
-      } else
-        generate(a, r)
-    }
-
-    @tailrec
-    private def generate(a: Double, r: RNG): Double = {
-      val d = a - 1.0 / 3.0
-      val c = (1.0 / 3.0) / Math.sqrt(d)
-
-      var x = r.standardNormal
-      var v = 1.0 + c * x
-      while (v <= 0) {
-        x = r.standardNormal
-        v = 1.0 + c * x
+      def param = {
+        val x = new Variable
+        RandomVariable(x.exp, x + realLogDensity(x.exp))
       }
 
-      val v3 = v * v * v
-      val u = r.standardUniform
+      def generator = Generator.from { (r, n) =>
+        val a = n.toDouble(s)
+        if (a < 1) {
+          val u = r.standardUniform
+          generate(a + 1, r) * Math.pow(u, 1.0 / a)
+        } else
+          generate(a, r)
+      }
 
-      if ((u < 1 - 0.0331 * x * x * x * x) ||
-          (Math.log(u) < 0.5 * x * x + d * (1 - v3 + Math.log(v3))))
-        d * v3
-      else
-        generate(a, r)
+      @tailrec
+      private def generate(a: Double, r: RNG): Double = {
+        val d = a - 1.0 / 3.0
+        val c = (1.0 / 3.0) / Math.sqrt(d)
+
+        var x = r.standardNormal
+        var v = 1.0 + c * x
+        while (v <= 0) {
+          x = r.standardNormal
+          v = 1.0 + c * x
+        }
+
+        val v3 = v * v * v
+        val u = r.standardUniform
+
+        if ((u < 1 - 0.0331 * x * x * x * x) ||
+            (Math.log(u) < 0.5 * x * x + d * (1 - v3 + Math.log(v3))))
+          d * v3
+        else
+          generate(a, r)
+      }
     }
-  }
 }
 
 object Exponential {
   val standard = Gamma.standard(1.0)
-  def apply(rate: Real) = standard.scale(Real.one / rate)
+  def apply[M](rate: M)(implicit ev: ToReal_+[M]) =
+    standard.scale(Real.one / rate)
 }
 
 object LogNormal {
-  def apply(location: Real, scale: Real) =
+  def apply[M: ToReal, N: ToReal_+](location: M, scale: N) =
     Normal(location, scale).exp
 }
 
@@ -122,6 +125,7 @@ object Uniform {
     }
   }
 
-  def apply(from: Real, to: Real): Continuous =
-    standard.scale(to - from).translate(from)
+  def apply[M, N](from: M, to: N)(implicit ev: ToReal[N],
+                                  ev2: ToReal[M]): Continuous =
+    standard.scale(ev(to) - from).translate(from)
 }

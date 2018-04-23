@@ -17,7 +17,7 @@ trait Injection {
   def transform(dist: Continuous): Continuous = new Continuous {
     override def logDensity(t: Double) =
       if (isDefinedAt(t))
-        realLogDensity(Constant(t))
+        realLogDensity(Real(t))
       else
         Real.zero
 
@@ -27,21 +27,21 @@ trait Injection {
     }
 
     val generator = Generator.from { (r, n) =>
-      n.toDouble(forwards(dist.generator.get(r, n)))
+      n.toDouble(forwards(Real(dist.generator.get(r, n))))
     }
 
     def param = dist.param.map(forwards)
   }
 }
 
-case class Scale(a: Real) extends Injection {
+case class Scale[N: ToReal](a: N) extends Injection {
   def forwards(x: Real) = x * a
   def backwards(y: Real) = y / a
   def isDefinedAt(y: Double) = true
   def logJacobian(x: Real) = Real.zero
 }
 
-case class Translate(b: Real) extends Injection {
+case class Translate[N: ToReal](b: N) extends Injection {
   def forwards(x: Real) = x + b
   def backwards(y: Real) = y - b
   def isDefinedAt(y: Double) = true
