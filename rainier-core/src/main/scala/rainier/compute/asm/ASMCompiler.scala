@@ -1,9 +1,10 @@
 package rainier.compute.asm
 
+import rainier.compute
 import rainier.compute._
 
 object ASMCompiler extends Compiler {
-  def compile(inputs: Seq[Variable],
+  def compile(inputs: Seq[compute.Variable],
               outputs: Seq[Real]): Array[Double] => Array[Double] = {
     val m = compileMethods(inputs, outputs)
     val c = m.compiledClass
@@ -11,7 +12,7 @@ object ASMCompiler extends Compiler {
     c.instance.apply(_)
   }
 
-  private def compileMethods(inputs: Seq[Variable],
+  private def compileMethods(inputs: Seq[compute.Variable],
                              outputs: Seq[Real]): MethodStack = {
     val locals = new Locals(outputs)
     val m = new MethodStack
@@ -29,7 +30,7 @@ object ASMCompiler extends Compiler {
       }
 
     def walk(real: Real): Unit = real match {
-      case v: Variable =>
+      case v: compute.Variable =>
         m.loadParameter(varIndices(v))
       case b: BinaryReal =>
         interpret(b.left)
