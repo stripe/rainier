@@ -2,46 +2,50 @@ package rainier.compute
 
 sealed trait Real {
   def +(other: Real): Real = BinaryReal(this, other, AddOp)
+  def +(other: Double): Real = this + Real(other)
   def *(other: Real): Real = BinaryReal(this, other, MultiplyOp)
+  def *(other: Double): Real = this * Real(other)
   def -(other: Real): Real = BinaryReal(this, other, SubtractOp)
+  def -(other: Double): Real = this - Real(other)
   def /(other: Real): Real = BinaryReal(this, other, DivideOp)
-  def exp: Real = UnaryReal(this, ExpOp)
+  def /(other: Double): Real = this / Real(other)
   def log: Real = UnaryReal(this, LogOp)
-  def abs: Real = UnaryReal(this, AbsOp)
+  def exp: Real_+ = Unsigned(UnaryReal(this, ExpOp))
+  def abs: Real_+ = Unsigned(UnaryReal(this, AbsOp))
 
   lazy val variables: Seq[Variable] = Real.variables(this).toList
   def gradient: Seq[Real] = Gradient.derive(variables, this)
+
+  def signed: Signed
 }
 
 object Real {
-  import scala.language.implicitConversions
+  implicit def signed(real: Real): Signed = real.signed
 
-  implicit def apply[N](value: N)(implicit toReal: ToReal[N]): Real =
-    toReal(value)
-  def seq[A](as: Seq[A])(implicit toReal: ToReal[A]): Seq[Real] =
-    as.map(toReal(_))
+  def apply[N](n: N)(implicit num: Numeric[N]): Real =
+    Constant(num.toDouble(n))
 
   def sum(seq: Seq[Real]): Real =
     if (seq.isEmpty)
       Real.zero
     else
-      reduceCommutative(seq, AddOp)
+      reduceCommutative(seq.map(_.signed), AddOp)
 
   def product(seq: Seq[Real]): Real =
     if (seq.isEmpty)
       Real.one
     else
-      reduceCommutative(seq, MultiplyOp)
+      reduceCommutative(seq.map(_.signed), MultiplyOp)
 
   def logSumExp(seq: Seq[Real]): Real =
     sum(seq.map(_.exp)).log //TODO: special case this
-  val zero: Real = Real(0.0)
-  val one: Real = Real(1.0)
 
-  private def variables(real: Real): Set[Variable] = {
-    def loop(r: Real, acc: Set[Variable]): Set[Variable] =
+  val zero: Real_+ = Real_+(0.0)
+  val one: Real_+ = Real_+(1.0)
+
+  private def variables(real: Signed): Set[Variable] = {
+    def loop(r: Signed, acc: Set[Variable]): Set[Variable] =
       r match {
-        case Real_+(orig)  => loop(orig, acc)
         case Constant(_)   => acc
         case b: BinaryReal => loop(b.right, loop(b.left, acc))
         case u: UnaryReal  => loop(u.original, acc)
@@ -51,11 +55,10 @@ object Real {
     loop(real, Set.empty)
   }
 
-  def print(real: Real, depth: Int = 0): Unit = {
+  def print(real: Signed, depth: Int = 0): Unit = {
     val padding = "  " * depth
     real match {
-      case Real_+(orig) => print(orig, depth)
-      case Constant(v)  => println(padding + v)
+      case Constant(v) => println(padding + v)
       case b: BinaryReal =>
         println(padding + b.op)
         print(b.left, depth + 1)
@@ -68,10 +71,10 @@ object Real {
     }
   }
 
-  private[compute] def optimize(real: Real): Real =
+  private[compute] def optimize(real: Signed): Real =
     Table.intern(Pruner.prune(real))
 
-  private def reduceCommutative(seq: Seq[Real], op: CommutativeOp): Real =
+  private def reduceCommutative(seq: Seq[Signed], op: CommutativeOp): Real =
     if (seq.size == 1)
       seq.head
     else
@@ -84,40 +87,46 @@ object Real {
       }, op)
 }
 
-private case class Constant(value: Double) extends Real
+sealed trait Signed extends Real {
+  def signed = this
+}
 
-private class BinaryReal private (val left: Real,
-                                  val right: Real,
+private case class Constant(value: Double) extends Signed
+
+private class BinaryReal private (val left: Signed,
+                                  val right: Signed,
                                   val op: BinaryOp)
-    extends Real
+    extends Signed
 
 private object BinaryReal {
-  def apply(left: Real, right: Real, op: BinaryOp): Real =
+  def apply(left: Signed, right: Signed, op: BinaryOp): Signed =
     Real.optimize(new BinaryReal(left, right, op))
 }
 
-private class UnaryReal private (val original: Real, val op: UnaryOp)
-    extends Real
+private class UnaryReal private (val original: Signed, val op: UnaryOp)
+    extends Signed
 private object UnaryReal {
-  def apply(original: Real, op: UnaryOp): Real =
+  def apply(original: Signed, op: UnaryOp): Real =
     Real.optimize(new UnaryReal(original, op))
 }
 
-class Variable extends Real
+class Variable extends Signed
 
-case class private Real_+(original: Real) extends Real {
-  def +(other: Real_+): Real_+ = Real_+(original + other.original)
-  def *(other: Real_+): Real_+ = Real_+(original * other.original)
-  def /(other: Real_+): Real_+ = Real_+(original / other.original)
+sealed trait Real_+ extends Real {
+  def +(other: Real_+): Real_+ = Unsigned(signed + other.signed)
+  def *(other: Real_+): Real_+ = Unsigned(signed * other.signed)
+  def /(other: Real_+): Real_+ = Unsigned(signed / other.signed)
 }
 
 object Real_+ {
-  def apply[N](value: N)(implicit numeric: Numeric[N]): Real_+ = {
-    val n = numeric.toDouble(value)
-    require(n >= 0)
-    Real_+(Constant(n))
+  def apply[N](n: N)(implicit num: Numeric[N]): Real_+ = {
+    val v = num.toDouble(n)
+    require(v >= 0.0)
+    Unsigned(Constant(v))
   }
 }
+
+private case class Unsigned(signed: Signed) extends Real_+
 
 private sealed trait BinaryOp {
   def apply(left: Double, right: Double): Double

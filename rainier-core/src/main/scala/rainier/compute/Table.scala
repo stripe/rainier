@@ -3,11 +3,10 @@ package rainier.compute
 import scala.collection.mutable.WeakHashMap
 
 private object Table {
-  val binary = WeakHashMap.empty[(Real, Real, BinaryOp), BinaryReal]
-  val unary = WeakHashMap.empty[(Real, UnaryOp), UnaryReal]
+  val binary = WeakHashMap.empty[(Signed, Signed, BinaryOp), BinaryReal]
+  val unary = WeakHashMap.empty[(Signed, UnaryOp), UnaryReal]
 
-  def intern(real: Real): Real = real match {
-    case Real_+(original) => intern(original)
+  def intern(real: Signed): Signed = real match {
     case b: BinaryReal =>
       val key = (b.left, b.right, b.op)
       val hit = binary.get(key).orElse {

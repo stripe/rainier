@@ -8,14 +8,13 @@ class Evaluator(variables: Map[Variable, Double]) extends Numeric[Real] {
   def toDouble(x: Real): Double = cache.get(x) match {
     case Some(v) => v
     case None => {
-      val v = eval(x)
+      val v = eval(x.signed)
       cache.update(x, v)
       v
     }
   }
 
-  private def eval(real: Real): Double = real match {
-    case p: Real_+ => toDouble(p.original)
+  private def eval(real: Signed): Double = real match {
     case c: Constant   => c.value
     case b: BinaryReal => b.op(toDouble(b.left), toDouble(b.right))
     case u: UnaryReal  => u.op(toDouble(u.original))
