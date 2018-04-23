@@ -23,8 +23,17 @@ class IRTest extends FunSuite {
     val ir = IR.toIR(p)
 //    println(ir)
     val (packedIr, mds) = IR.packIntoMethods(ir)
-    println("------------------------")
-    mds.foreach(packed => println(s"###### $packed"))
+    for (md <- mds) {
+      object TreeSize extends IR.ForeachTraverse {
+        var count = 0
+        override def traverse(ir: IR): Unit = {
+          count += 1
+          super.traverse(ir)
+        }
+      }
+      TreeSize.traverse(md)
+      assert(TreeSize.count < IR.methodSizeLimit)
+    }
   }
 
   test("handle plus") {
