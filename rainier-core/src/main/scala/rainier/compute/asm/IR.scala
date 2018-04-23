@@ -12,7 +12,7 @@ case class Const(value: Double) extends IR
 case class BinaryIR(left: IR, right: IR, op: compute.BinaryOp) extends IR
 case class UnaryIR(original: IR, op: compute.UnaryOp) extends IR
 
-case class Sym private(id: Int)
+case class Sym private (id: Int)
 object Sym {
   private var curIdx = 0
   def freshSym(): Sym = {
@@ -34,35 +34,40 @@ object IR {
   def toIR(r: compute.Real): IR = {
     if (alreadySeen.contains(r))
       VarRef(alreadySeen(r))
-    else r match {
-      case compute.Constant(value) => Const(value)
+    else
+      r match {
+        case compute.Constant(value) => Const(value)
         // variable access is treated like an atomic operation and is not stored in a VarDef
-      case v: compute.Variable => Variable(v)
-      case b: compute.BinaryReal =>
-        val bIR = BinaryIR(toIR(b.left), toIR(b.right), b.op)
-        createVarDefFromOriginal(b, bIR)
-      case u: compute.UnaryReal =>
-        val uIR = UnaryIR(toIR(u.original), u.op)
-        createVarDefFromOriginal(u, uIR)
-    }
+        case v: compute.Variable => Variable(v)
+        case b: compute.BinaryReal =>
+          val bIR = BinaryIR(toIR(b.left), toIR(b.right), b.op)
+          createVarDefFromOriginal(b, bIR)
+        case u: compute.UnaryReal =>
+          val uIR = UnaryIR(toIR(u.original), u.op)
+          createVarDefFromOriginal(u, uIR)
+      }
   }
+  val methodSizeLimit = 20
   def packIntoMethods(p: IR): (IR, Set[MethodDef]) = {
-    val packingSizeLimit = 20
     def internalTraverse(p: IR): (IR, Int) = p match {
-      case c: Const => (c, 1)
+      case c: Const    => (c, 1)
       case v: Variable => (v, 1)
       case vd: VarDef =>
-        val (traversedRhs, rhsSize) = traverseAndMaybePack(vd.rhs, packingSizeLimit-1)
-        (VarDef(vd.sym, traversedRhs), rhsSize+1)
+        val (traversedRhs, rhsSize) =
+          traverseAndMaybePack(vd.rhs, methodSizeLimit - 1)
+        (VarDef(vd.sym, traversedRhs), rhsSize + 1)
       case vr: VarRef =>
         (vr, 1)
       case b: BinaryIR =>
-        val (leftIR, leftSize) = traverseAndMaybePack(b.left, packingSizeLimit/2)
-        val (rightIR, rightSize) = traverseAndMaybePack(b.right, packingSizeLimit/2)
-        (BinaryIR(leftIR, rightIR, b.op), leftSize+rightSize+1)
+        val (leftIR, leftSize) =
+          traverseAndMaybePack(b.left, methodSizeLimit / 2)
+        val (rightIR, rightSize) =
+          traverseAndMaybePack(b.right, methodSizeLimit / 2)
+        (BinaryIR(leftIR, rightIR, b.op), leftSize + rightSize + 1)
       case u: UnaryIR =>
-        val (traversedIR, irSize) = traverseAndMaybePack(u.original, packingSizeLimit-1)
-        (traversedIR, irSize+1)
+        val (traversedIR, irSize) =
+          traverseAndMaybePack(u.original, methodSizeLimit - 1)
+        (traversedIR, irSize + 1)
     }
     def traverseAndMaybePack(p: IR, localSizeLimit: Int): (IR, Int) = {
       val (pt, size) = internalTraverse(p)
@@ -75,7 +80,8 @@ object IR {
     (pPacked, symMethodDef.values.toSet)
   }
 
-  private def createVarDefFromOriginal(original: compute.Real, rhs: IR): VarDef = {
+  private def createVarDefFromOriginal(original: compute.Real,
+                                       rhs: IR): VarDef = {
     val s = Sym.freshSym()
     val vd = VarDef(s, rhs)
     alreadySeen(original) = s
