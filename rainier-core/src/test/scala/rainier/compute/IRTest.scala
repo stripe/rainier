@@ -1,9 +1,8 @@
-package rainier
-package compute
-package ir
+package rainier.compute
 
 import org.scalatest._
-
+import rainier.compute
+import rainier.compute.asm.IR
 import rainier.core._
 
 class IRTest extends FunSuite {
@@ -11,6 +10,7 @@ class IRTest extends FunSuite {
   val x = new compute.Variable
   val y = new compute.Variable
   def compareToEvaluator(p: Real, xVal: Double, yVal: Double = 0.0): Unit = {
+    // TODO: uncomment once IR -> ASM phase is implemented
 //    val c = asm.ASMCompiler.compile(List(x, y), p)
 //    val result = c(Array(xVal, yVal))
 //    val actual = (new Evaluator(Map(x -> xVal, y -> yVal))).toDouble(p)
