@@ -94,4 +94,20 @@ object IR {
     symMethodDef(s) = md
     MethodRef(s)
   }
+
+  abstract class ForeachTraverse {
+    def traverse(ir: IR): Unit = ir match {
+      // leaves
+      case (_: Const | _: Variable | _: VarRef | _: MethodRef) =>
+      case vd: VarDef =>
+        traverse(vd.rhs)
+      case b: BinaryIR =>
+        traverse(b.left)
+        traverse(b.right)
+      case u: UnaryIR =>
+        traverse(u.original)
+      case md: MethodDef =>
+        traverse(md.rhs)
+    }
+  }
 }
