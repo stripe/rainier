@@ -21,7 +21,10 @@ class IRTest extends FunSuite {
 //    val gradActual = (new Evaluator(Map(x -> xVal, y -> yVal))).toDouble(grad)
 //    assert(gradResult == gradActual)
     val ir = IR.toIR(p)
-    println(ir)
+//    println(ir)
+    val (packedIr, mds) = IR.packIntoMethods(ir)
+    println("------------------------")
+    mds.foreach(packed => println(s"###### $packed"))
   }
 
   test("handle plus") {
