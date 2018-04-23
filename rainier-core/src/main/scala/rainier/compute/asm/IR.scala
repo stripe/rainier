@@ -6,7 +6,7 @@ import scala.collection.mutable
 
 sealed trait IR
 
-case class Variable(original: compute.Variable) extends IR
+case class Parameter(original: compute.Variable) extends IR
 case class Const(value: Double) extends IR
 
 case class BinaryIR(left: IR, right: IR, op: compute.BinaryOp) extends IR
@@ -38,7 +38,7 @@ object IR {
       r match {
         case compute.Constant(value) => Const(value)
         // variable access is treated like an atomic operation and is not stored in a VarDef
-        case v: compute.Variable => Variable(v)
+        case v: compute.Variable => Parameter(v)
         case b: compute.BinaryReal =>
           val bIR = BinaryIR(toIR(b.left), toIR(b.right), b.op)
           createVarDefFromOriginal(b, bIR)
@@ -50,8 +50,8 @@ object IR {
   val methodSizeLimit = 20
   def packIntoMethods(p: IR): (IR, Set[MethodDef]) = {
     def internalTraverse(p: IR): (IR, Int) = p match {
-      case c: Const    => (c, 1)
-      case v: Variable => (v, 1)
+      case c: Const     => (c, 1)
+      case v: Parameter => (v, 1)
       case vd: VarDef =>
         val (traversedRhs, rhsSize) =
           traverseAndMaybePack(vd.rhs, methodSizeLimit - 1)
@@ -98,7 +98,7 @@ object IR {
   abstract class ForeachTraverse {
     def traverse(ir: IR): Unit = ir match {
       // leaves
-      case (_: Const | _: Variable | _: VarRef | _: MethodRef) =>
+      case (_: Const | _: Parameter | _: VarRef | _: MethodRef) =>
       case vd: VarDef =>
         traverse(vd.rhs)
       case b: BinaryIR =>
