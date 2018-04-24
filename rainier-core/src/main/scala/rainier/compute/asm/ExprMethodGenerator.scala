@@ -4,8 +4,7 @@ import rainier.compute._
 
 private case class ExprMethodGenerator(method: MethodDef,
                                        inputs: Seq[Variable],
-                                       locals: Seq[Sym],
-                                       globals: Seq[Sym],
+                                       stats: DepStats,
                                        className: String)
     extends MethodGenerator {
   val isPrivate = true
@@ -13,8 +12,6 @@ private case class ExprMethodGenerator(method: MethodDef,
   val methodDesc = "([D[D])D"
 
   private val varIndices = inputs.zipWithIndex.toMap
-  private val localIndices = locals.zipWithIndex.toMap
-  private val globalIndices = globals.zipWithIndex.toMap
 
   traverse(method.rhs)
   ret()
@@ -35,19 +32,25 @@ private case class ExprMethodGenerator(method: MethodDef,
         traverse(original)
         unaryOp(op)
       case VarDef(sym, rhs) =>
-        localIndices.get(sym) match {
-          case Some(i) =>
+        stats.varType(sym) match {
+          case Inline =>
             traverse(rhs)
-            storeLocalVar(i)
-          case None =>
-            storeGlobalVar(globalIndices(sym)) {
+          case Local(i) =>
+            traverse(rhs)
+            storeLocalVar(i)     
+          case Global(i) =>       
+            storeGlobalVar(i) {
               traverse(rhs)
             }
         }
       case VarRef(sym) =>
-        localIndices.get(sym) match {
-          case Some(i) => loadLocalVar(i)
-          case None    => loadGlobalVar(globalIndices(sym))
+        stats.varType(sym) match {
+          case Inline =>
+            sys.error("Should not have references to inlined vars")
+          case Local(i) =>
+            loadLocalVar(i)
+          case Global(i) =>
+            loadGlobalVar(i)
         }
       case MethodRef(sym) =>
         callExprMethod(sym.id)
