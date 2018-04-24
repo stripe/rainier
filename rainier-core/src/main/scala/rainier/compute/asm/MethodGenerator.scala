@@ -1,94 +1,51 @@
 package rainier.compute.asm
 
-import rainier.compute._
 import org.objectweb.asm.Opcodes._
 import org.objectweb.asm.tree.MethodNode
+import rainier.compute._
 
-private class MethodGenerator(method: MethodDef,
-                              inputs: Seq[Variable],
-                              locals: Seq[Sym],
-                              globals: Seq[Sym],
-                              className: String) {
-  val methodNode =
+trait MethodGenerator {
+  val methodNode: MethodNode =
     new MethodNode(ASM6, //api
-                   ACC_PUBLIC, //access
-                   methodName(method.sym.id), //name
-                   "([D[D])D", //desc
+                   if (isPrivate) ACC_PRIVATE else ACC_PUBLIC, //access
+                   methodName, //name
+                   methodDesc, //desc
                    null, //signature
                    Array.empty) //exceptions
 
-  private val varIndices = inputs.zipWithIndex.toMap
-  private val localIndices = locals.zipWithIndex.toMap
-  private val globalIndices = globals.zipWithIndex.toMap
+  def methodName: String
+  def methodDesc: String
+  def isPrivate: Boolean
+  def className: String
 
-  traverse(method.rhs)
-  ret
+  def loadLocalVar(pos: Int): Unit =
+    methodNode.visitVarInsn(DLOAD, localVarSlot(pos))
 
-  //could almost use ForEachTraverse here but the operand ordering for
-  //array stores makes that not really work
-  def traverse(ir: IR): Unit = {
-    ir match {
-      case Const(value) =>
-        constant(value)
-      case Parameter(variable) =>
-        loadParameter(varIndices(variable))
-      case BinaryIR(left, right, op) =>
-        traverse(left)
-        traverse(right)
-        binaryOp(op)
-      case UnaryIR(original, op) =>
-        traverse(original)
-        unaryOp(op)
-      case VarDef(sym, rhs) =>
-        localIndices.get(sym) match {
-          case Some(i) =>
-            traverse(rhs)
-            storeLocalVar(i)
-          case None =>
-            storeGlobalVar(globalIndices(sym)) {
-              traverse(rhs)
-            }
-        }
-      case VarRef(sym) =>
-        localIndices.get(sym) match {
-          case Some(i) => loadLocalVar(i)
-          case None    => loadGlobalVar(globalIndices(sym))
-        }
-      case MethodRef(sym) =>
-        callMethod(sym.id)
-      case MethodDef(sym, rhs) =>
-        sys.error("Should not have nested method defs")
-    }
+  def storeLocalVar(pos: Int): Unit = {
+    methodNode.visitVarInsn(DSTORE, localVarSlot(pos))
+    loadLocalVar(pos)
   }
 
-  private def loadLocalVar(id: Int): Unit =
-    methodNode.visitVarInsn(DLOAD, localVarSlot(id))
-
-  private def storeLocalVar(id: Int): Unit = {
-    methodNode.visitVarInsn(DSTORE, localVarSlot(id))
-    loadLocalVar(id)
-  }
-
-  private def loadGlobalVar(pos: Int): Unit = {
-    methodNode.visitVarInsn(ALOAD, globalVarSlot)
+  def loadGlobalVar(pos: Int): Unit = {
+    loadGlobalVars()
     methodNode.visitLdcInsn(pos)
     methodNode.visitInsn(DALOAD)
   }
 
-  private def storeGlobalVar(pos: Int)(fn: => Unit): Unit = {
-    methodNode.visitVarInsn(ALOAD, globalVarSlot)
+  def storeGlobalVar(pos: Int)(fn: => Unit): Unit = {
+    loadGlobalVars()
     methodNode.visitLdcInsn(pos)
     fn
     methodNode.visitInsn(DASTORE)
   }
 
-  private def loadParameter(pos: Int): Unit = {
-    methodNode.visitVarInsn(ALOAD, paramSlot)
+  def loadParameter(pos: Int): Unit = {
+    loadParams()
     methodNode.visitLdcInsn(pos)
     methodNode.visitInsn(DALOAD)
   }
 
-  private def binaryOp(op: BinaryOp): Unit = {
+  def binaryOp(op: BinaryOp): Unit = {
     val insn = op match {
       case AddOp      => DADD
       case SubtractOp => DSUB
@@ -99,7 +56,7 @@ private class MethodGenerator(method: MethodDef,
     methodNode.visitInsn(insn)
   }
 
-  private def unaryOp(op: UnaryOp): Unit = {
+  def unaryOp(op: UnaryOp): Unit = {
     val methodName = op match {
       case LogOp => "log"
       case ExpOp => "exp"
@@ -112,38 +69,58 @@ private class MethodGenerator(method: MethodDef,
                                false)
   }
 
-  private def callMethod(id: Int): Unit = {
-    methodNode.visitVarInsn(ALOAD, thisSlot)
-    methodNode.visitVarInsn(ALOAD, paramSlot)
-    methodNode.visitVarInsn(ALOAD, globalVarSlot)
+  def exprMethodName(id: Int) = s"_$id"
+  def callExprMethod(id: Int): Unit = {
+    loadThis()
+    loadParams()
+    loadGlobalVars()
     methodNode.visitMethodInsn(INVOKESPECIAL,
                                className,
-                               methodName(id),
+                               exprMethodName(id),
                                "([D[D)D",
                                false)
   }
 
-  private def ret: Unit =
+  def ret(): Unit =
     methodNode.visitInsn(ARETURN)
 
-  private def constant(value: Double): Unit =
+  def constant(value: Double): Unit =
     methodNode.visitLdcInsn(value)
 
-  private val thisSlot = 0
-  private val paramSlot = 1
-  private val globalVarSlot = 2
-  private def localVarSlot(id: Int) = 3 + (id * 2)
-
-  private def methodName(id: Int) = s"_$id"
-}
-
-object MethodGenerator {
-  def generate(method: MethodDef,
-               inputs: Seq[Variable],
-               locals: Seq[Sym],
-               globals: Seq[Sym],
-               className: String): MethodNode = {
-    val mg = new MethodGenerator(method, inputs, locals, globals, className)
-    mg.methodNode
+  def newArrayOfSize(size: Int): Unit = {
+    methodNode.visitLdcInsn(size)
+    methodNode.visitIntInsn(NEWARRAY, T_DOUBLE)
   }
+
+  def newArray[T](values: Seq[T])(fn: T => Unit): Unit = {
+    newArrayOfSize(values.size)
+    values.zipWithIndex.foreach {
+      case (v, i) =>
+        methodNode.visitInsn(DUP)
+        methodNode.visitLdcInsn(i)
+        fn(v)
+        methodNode.visitInsn(DASTORE)
+    }
+  }
+
+  /**
+  The local var layout is assumed to be:
+  0: this
+  1: params array (always passed in)
+  2: globals array (either passed in or locally allocated)
+  3..N: locally allocated doubles (two slots each)
+  **/
+  def loadThis(): Unit =
+    methodNode.visitVarInsn(ALOAD, 0)
+
+  def loadParams(): Unit =
+    methodNode.visitVarInsn(ALOAD, 1)
+
+  def loadGlobalVars(): Unit =
+    methodNode.visitVarInsn(ALOAD, 2)
+
+  def storeGlobalVars(): Unit =
+    methodNode.visitVarInsn(ASTORE, 2)
+
+  private def localVarSlot(pos: Int) = 3 + (pos * 2)
 }
