@@ -81,35 +81,6 @@ object IR {
     (packedSpillOverRef, symMethodDef.values.toSet)
   }
 
-  // the first key is either a sym of a var or a sym of a method def
-  // the second key (in the inner map) is always a method def
-  // VarRef referred just once: m(sym).values.sum = 1
-  // VarRef referred from one method: m(sym).keys.size = 1
-  def depStats(p: MethodRef): Map[Sym, Map[Sym, Int]] = {
-    val m: mutable.Map[Sym, mutable.Map[Sym, Int]] = mutable.Map.empty.withDefaultValue(
-      mutable.Map.empty.withDefaultValue(0))
-    object markDeps extends ForeachDagTraverse {
-      var currentMethodDef: Sym = _
-      override def traverse(ir: IR): Unit = ir match {
-        case MethodDef(sym, _) =>
-          val saved = currentMethodDef
-          currentMethodDef = sym
-          super.traverse(ir)
-          currentMethodDef = saved
-        case MethodRef(sym) =>
-          m(sym)(currentMethodDef) += 1
-          super.traverse(ir)
-        case VarRef(sym) =>
-          m(sym)(currentMethodDef) += 1
-          super.traverse(ir)
-        case _ =>
-          super.traverse(ir)
-      }
-    }
-    markDeps.traverse(symMethodDef(p.sym))
-    m.toMap.mapValues(_.toMap)
-  }
-
   private def createVarDefFromOriginal(original: compute.Real,
                                        rhs: IR): VarDef = {
     val s = Sym.freshSym()
@@ -158,6 +129,42 @@ object IR {
         traverse(u.original)
       case md: MethodDef =>
         traverse(md.rhs)
+    }
+  }
+
+  case class SymStats(sym: Sym, rawStats: Map[Sym, Int]) {
+    lazy val numReferences: Int = rawStats.values.sum
+    lazy val referringMethods: Set[Sym] = rawStats.keySet
+  }
+
+  case class DepStats(symStats: Map[Sym, SymStats])
+  object DepStats {
+    def apply(p: MethodRef): DepStats = {
+      val m: mutable.Map[Sym, mutable.Map[Sym, Int]] = mutable.Map.empty.withDefaultValue(
+        mutable.Map.empty.withDefaultValue(0))
+      object markDeps extends ForeachDagTraverse {
+        var currentMethodDef: Sym = _
+        override def traverse(ir: IR): Unit = ir match {
+          case MethodDef(sym, _) =>
+            val saved = currentMethodDef
+            currentMethodDef = sym
+            super.traverse(ir)
+            currentMethodDef = saved
+          case MethodRef(sym) =>
+            m(sym)(currentMethodDef) += 1
+            super.traverse(ir)
+          case VarRef(sym) =>
+            m(sym)(currentMethodDef) += 1
+            super.traverse(ir)
+          case _ =>
+            super.traverse(ir)
+        }
+      }
+      markDeps.traverse(symMethodDef(p.sym))
+      val symStats = m.toMap.map {
+        case (sym, rawSingleSymStats) => (sym, SymStats(sym, rawSingleSymStats.toMap))
+      }
+      DepStats(symStats)
     }
   }
 }
