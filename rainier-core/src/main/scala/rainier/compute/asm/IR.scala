@@ -48,7 +48,7 @@ object IR {
       }
   }
   val methodSizeLimit = 20
-  def packIntoMethods(p: IR): (IR, Set[MethodDef]) = {
+  def packIntoMethods(p: IR): (MethodRef, Set[MethodDef]) = {
     def internalTraverse(p: IR): (IR, Int) = p match {
       case c: Const     => (c, 1)
       case v: Parameter => (v, 1)
@@ -76,8 +76,38 @@ object IR {
       else
         (pt, size)
     }
-    val (pPacked, _) = internalTraverse(p)
-    (pPacked, symMethodDef.values.toSet)
+    val (pSpillOver, _) = internalTraverse(p)
+    val packedSpillOverRef = packIntoMethod(pSpillOver)
+    (packedSpillOverRef, symMethodDef.values.toSet)
+  }
+
+  // the first key is either a sym of a var or a sym of a method def
+  // the second key (in the inner map) is always a method def
+  // VarRef referred just once: m(sym).values.sum = 1
+  // VarRef referred from one method: m(sym).keys.size = 1
+  def depStats(p: MethodRef): Map[Sym, Map[Sym, Int]] = {
+    val m: mutable.Map[Sym, mutable.Map[Sym, Int]] = mutable.Map.empty.withDefaultValue(
+      mutable.Map.empty.withDefaultValue(0))
+    object markDeps extends ForeachDagTraverse {
+      var currentMethodDef: Sym = _
+      override def traverse(ir: IR): Unit = ir match {
+        case MethodDef(sym, _) =>
+          val saved = currentMethodDef
+          currentMethodDef = sym
+          super.traverse(ir)
+          currentMethodDef = saved
+        case MethodRef(sym) =>
+          m(sym)(currentMethodDef) += 1
+          super.traverse(ir)
+        case VarRef(sym) =>
+          m(sym)(currentMethodDef) += 1
+          super.traverse(ir)
+        case _ =>
+          super.traverse(ir)
+      }
+    }
+    markDeps.traverse(symMethodDef(p.sym))
+    m.toMap.mapValues(_.toMap)
   }
 
   private def createVarDefFromOriginal(original: compute.Real,
@@ -95,10 +125,30 @@ object IR {
     MethodRef(s)
   }
 
-  abstract class ForeachTraverse {
+  abstract class ForeachTreeTraverse {
     def traverse(ir: IR): Unit = ir match {
       // leaves
       case (_: Const | _: Parameter | _: VarRef | _: MethodRef) =>
+      case vd: VarDef =>
+        traverse(vd.rhs)
+      case b: BinaryIR =>
+        traverse(b.left)
+        traverse(b.right)
+      case u: UnaryIR =>
+        traverse(u.original)
+      case md: MethodDef =>
+        traverse(md.rhs)
+    }
+  }
+
+  abstract class ForeachDagTraverse {
+    def traverse(ir: IR): Unit = ir match {
+      // atomic values
+      case (_: Const | _: Parameter ) =>
+      case VarRef(sym) =>
+        traverse(symVarDef(sym))
+      case MethodRef(sym) =>
+        traverse(symMethodDef(sym))
       case vd: VarDef =>
         traverse(vd.rhs)
       case b: BinaryIR =>

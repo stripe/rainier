@@ -21,10 +21,10 @@ class IRTest extends FunSuite {
 //    val gradActual = (new Evaluator(Map(x -> xVal, y -> yVal))).toDouble(grad)
 //    assert(gradResult == gradActual)
     val ir = IR.toIR(p)
-//    println(ir)
-    val (packedIr, mds) = IR.packIntoMethods(ir)
+    val (rootMethodRef, mds) = IR.packIntoMethods(ir)
+    mds.foreach(println)
     for (md <- mds) {
-      object TreeSize extends IR.ForeachTraverse {
+      object TreeSize extends IR.ForeachTreeTraverse {
         var count = 0
         override def traverse(ir: IR): Unit = {
           count += 1
