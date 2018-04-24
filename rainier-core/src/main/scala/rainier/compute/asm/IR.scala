@@ -139,7 +139,7 @@ object IR {
 
   case class DepStats(symStats: Map[Sym, SymStats])
   object DepStats {
-    def apply(p: MethodRef): DepStats = {
+    def apply(ps: Seq[MethodDef]): DepStats = {
       val m: mutable.Map[Sym, mutable.Map[Sym, Int]] = mutable.Map.empty
         .withDefaultValue(mutable.Map.empty.withDefaultValue(0))
       object markDeps extends ForeachDagTraverse {
@@ -162,7 +162,9 @@ object IR {
             super.traverse(ir)
         }
       }
-      markDeps.traverse(symMethodDef(p.sym))
+      ps.foreach { p =>
+        markDeps.traverse(p)
+      }
       val symStats = m.toMap.map {
         case (sym, rawSingleSymStats) =>
           (sym, SymStats(sym, rawSingleSymStats.toMap))
