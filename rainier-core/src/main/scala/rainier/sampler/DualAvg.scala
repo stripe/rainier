@@ -31,11 +31,7 @@ case class DualAvg(
 
     val newLogEpsilonBar = (epsilonMultiplier * newLogEpsilon
       + (1.0 - epsilonMultiplier) * logEpsilonBar)
-//    println(s"m: $newIteration")
-//    println(s"epsilon: ${Math.exp(logEpsilon)}, ${Math.exp(newLogEpsilon)}")
-//    println(
-//      s"epsilonBar: ${Math.exp(logEpsilonBar)}, ${Math.exp(newLogEpsilonBar)}")
-//    println(s"acceptance prob: ${acceptanceProb}, ${newAcceptanceProb}")
+
     copy(iteration = newIteration,
          acceptanceProb = newAcceptanceProb,
          hBar = newHBar,
