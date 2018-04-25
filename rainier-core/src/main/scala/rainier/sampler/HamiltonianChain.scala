@@ -1,6 +1,7 @@
 package rainier.sampler
 
 import rainier.compute._
+import rainier.compute.compiler._
 
 private case class HamiltonianChain(
     accepted: Boolean,
@@ -60,7 +61,7 @@ private object HamiltonianChain {
   def apply(variables: Seq[Variable], density: Real)(
       implicit rng: RNG): HamiltonianChain = {
     val negativeDensity = density * -1
-    val cf = Compiler.default.compileGradient(variables, negativeDensity)
+    val cf = Compiler.compileGradient(variables, negativeDensity)
     val hParams = initialize(variables.size, cf)
     HamiltonianChain(true, 1.0, hParams, cf)
   }

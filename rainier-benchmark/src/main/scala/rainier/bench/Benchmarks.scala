@@ -3,6 +3,7 @@ package rainier.bench
 import org.openjdk.jmh.annotations._
 
 import rainier.compute._
+import rainier.compute.compiler._
 import rainier.core._
 
 object Benchmarks {
@@ -11,25 +12,15 @@ object Benchmarks {
     val expr = expression
     val vars = expr.variables
 
-    def setup = {
-      val cf = ArrayCompiler.compile(vars, expr)
-      val a = asm.IRCompiler.compile(vars, expr)
-      (cf, a)
-    }
+    def compile = Compiler.compile(vars, expr)
 
-    val (cf, a) = setup
+    val cf = compile
 
     val rand = new scala.util.Random
     def runCompiled =
       cf(vars.map { _ =>
         rand.nextDouble
       }.toArray)
-    def runAsm =
-      a(vars.map { _ =>
-        rand.nextDouble
-      }.toArray)
-    def compile = ArrayCompiler.compile(vars, expr)
-    def compileAsm = asm.IRCompiler.compile(vars, expr)
   }
 
   @State(Scope.Benchmark)
@@ -81,18 +72,8 @@ class Benchmarks {
   }
 
   @Benchmark
-  def runFullNormalAsm(state: FullNormalBenchmark): Unit = {
-    state.runAsm
-  }
-
-  @Benchmark
   def runNormal(state: NormalBenchmark): Unit = {
     state.runCompiled
-  }
-
-  @Benchmark
-  def runNormalAsm(state: NormalBenchmark): Unit = {
-    state.runAsm
   }
 
   @Benchmark
@@ -101,27 +82,12 @@ class Benchmarks {
   }
 
   @Benchmark
-  def compileNormalAsm(state: NormalBenchmark): Unit = {
-    state.compileAsm
-  }
-
-  @Benchmark
   def runPoisson(state: PoissonBenchmark): Unit = {
     state.runCompiled
   }
 
   @Benchmark
-  def runPoissonAsm(state: PoissonBenchmark): Unit = {
-    state.runAsm
-  }
-
-  @Benchmark
   def compilePoisson(state: PoissonBenchmark): Unit = {
     state.compile
-  }
-
-  @Benchmark
-  def compilePoissonAsm(state: PoissonBenchmark): Unit = {
-    state.compileAsm
   }
 }

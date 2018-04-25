@@ -1,6 +1,7 @@
 package rainier.sampler
 
 import rainier.compute._
+import rainier.compute.compiler._
 
 case class MAP(stepSize: Double) extends Sampler {
   def sample(density: Real, warmupIterations: Int)(
@@ -15,7 +16,7 @@ object MAP {
   def optimize(density: Real,
                iterations: Int,
                stepSize: Double): Map[Variable, Double] = {
-    val cf = Compiler.default.compileGradient(density.variables, density)
+    val cf = Compiler.compileGradient(density.variables, density)
     val initialValues = density.variables.map { v =>
       0.0
     }.toArray

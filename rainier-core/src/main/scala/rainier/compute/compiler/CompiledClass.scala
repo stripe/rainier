@@ -1,4 +1,4 @@
-package rainier.compute.asm
+package rainier.compute.compiler
 
 import org.objectweb.asm.Opcodes._
 import java.io.File

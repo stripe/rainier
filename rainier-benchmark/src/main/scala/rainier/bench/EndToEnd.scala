@@ -28,14 +28,6 @@ class EndToEnd {
   @Benchmark
   def fitNormal: Unit = {
     implicit val rng = RNG.default
-    Compiler.default = ArrayCompiler
-    normal(1000).sample()
-  }
-
-  @Benchmark
-  def fitNormalAsm: Unit = {
-    implicit val rng = RNG.default
-    Compiler.default = asm.IRCompiler
     normal(1000).sample()
   }
 }

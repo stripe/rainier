@@ -1,6 +1,7 @@
 package rainier.sampler
 
 import rainier.compute._
+import rainier.compute.compiler._
 
 private case class EmceeChain(density: Real,
                               cf: Array[Double] => Double,
@@ -73,7 +74,7 @@ private object EmceeChain {
   def apply(density: Real, variables: Seq[Variable], walkers: Int)(
       implicit rng: RNG): EmceeChain = {
     require(walkers % 2 == 0)
-    val cf = Compiler.default.compile(variables, density)
+    val cf = Compiler.compile(variables, density)
     val left = initialize(variables.size, walkers / 2, cf)
     val right = initialize(variables.size, walkers / 2, cf)
     val walker = walkers - 1 //trigger update next time

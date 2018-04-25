@@ -1,4 +1,4 @@
-package rainier.compute.asm
+package rainier.compute.compiler
 
 import scala.collection.mutable
 
