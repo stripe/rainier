@@ -20,16 +20,22 @@ case class DualAvg(
   def update(newAcceptanceProb: Double): DualAvg = {
     val newIteration = iteration + 1
     val hBarMultiplier = 1.0 / (newIteration + t)
-    val newHBar = {
+    val epsilonMultiplier = Math.pow(newIteration, -kappa)
+    val newHBar = (
       (1.0 - hBarMultiplier) * hBar
-      +(hBarMultiplier * (delta - newAcceptanceProb))
-    }
+        + (hBarMultiplier * (delta - newAcceptanceProb))
+    )
+
     val newLogEpsilon =
       mu - (newHBar * Math.sqrt(newIteration) / gamma)
-    val newLogEpsilonBar = {
-      Math.pow(newIteration, -kappa) * newLogEpsilon
-      +((1.0 - Math.pow(newIteration, -kappa)) * logEpsilonBar)
-    }
+
+    val newLogEpsilonBar = (epsilonMultiplier * newLogEpsilon
+      + (1.0 - epsilonMultiplier) * logEpsilonBar)
+    println(s"m: $newIteration")
+    println(s"epsilon_m: $newLogEpsilon")
+    println(
+      s"epsilonBar: ${Math.exp(logEpsilonBar)}, ${Math.exp(newLogEpsilonBar)}")
+    println(s"acceptance prob: ${acceptanceProb}, ${newAcceptanceProb}")
     copy(iteration = newIteration,
          acceptanceProb = newAcceptanceProb,
          hBar = newHBar,
