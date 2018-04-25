@@ -2,19 +2,11 @@ package rainier.sampler
 
 import rainier.compute._
 
-case class HamiltonianChain(accepted: Boolean,
-                            acceptanceProb: Double,
-                            hParams: HParams,
-                            negativeDensity: Real,
-                            variables: Seq[Variable],
-                            gradient: Seq[Real],
-                            cf: Compiler.CompiledFunction)(implicit rng: RNG) {
-//=======
-//case class HamiltonianChain(
-//    accepted: Boolean,
-//    hParams: HParams,
-//    cf: Array[Double] => (Double, Array[Double]))(implicit rng: RNG) {
-//>>>>>>> master
+case class HamiltonianChain(
+    accepted: Boolean,
+    acceptanceProb: Double,
+    hParams: HParams,
+    cf: Array[Double] => (Double, Array[Double]))(implicit rng: RNG) {
 
   // Take a single leapfrog step without re-initializing momenta
   // for use in tuning the step size
@@ -69,14 +61,8 @@ object HamiltonianChain {
       implicit rng: RNG): HamiltonianChain = {
     val negativeDensity = density * -1
     val cf = Compiler.default.compileGradient(variables, negativeDensity)
-    val hParams = initialize(negativeDensity, variables, gradient, cf)
-    HamiltonianChain(true,
-                     1.0,
-                     hParams,
-                     negativeDensity,
-                     variables,
-                     gradient,
-                     cf)
+    val hParams = initialize(variables.size, cf)
+    HamiltonianChain(true, 1.0, hParams, cf)
   }
 
   def initialize(nVars: Int, cf: Array[Double] => (Double, Array[Double]))(
