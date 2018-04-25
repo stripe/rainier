@@ -40,6 +40,6 @@ object FitMixture {
 
     val m = model(data)
     //Report.printReport(m, Emcee(1000, 1000, 100))
-    Report.printReport(m, Hamiltonian(1000, 1000, 100, 20))
+    Report.printReport(m, Hamiltonian(1000, 100, 100))
   }
 }

@@ -30,7 +30,7 @@ object FitHLL {
     val m = model(sketch)
     val t1 = System.currentTimeMillis
     val samples =
-      m.sample(Hamiltonian(10000, 1000, 100, 100, SampleHMC, 1, 0.01))
+      m.sample(Hamiltonian(10000, 1000, 100, SampleHMC, 1, 0.01))
     val t2 = System.currentTimeMillis
     val mean = samples.sum / samples.size
     println("Inferred size: " + mean.toInt)
