@@ -1,6 +1,6 @@
 package rainier.compute
 
-object Pruner {
+private object Pruner {
   def prune(real: Real): Real = real match {
     case u: UnaryReal =>
       u.original match {
