@@ -2,13 +2,7 @@ package rainier.sampler
 
 import rainier.compute._
 
-case class MAP(iterations: Int, stepSize: Double) extends Sampler {
-  val description = ("Gradient MAP",
-                     Map(
-                       "Iterations" -> iterations.toDouble,
-                       "Step Size" -> stepSize
-                     ))
-
+case class MAP(stepSize: Double) extends Sampler {
   def sample(density: Real)(implicit rng: RNG): Iterator[Sample] = {
     val values = MAP.optimize(density, iterations, stepSize)
     val eval = new Evaluator(values)

@@ -7,22 +7,10 @@ sealed trait SampleMethod
 case object SampleNUTS extends SampleMethod
 case object SampleHMC extends SampleMethod
 
-case class Hamiltonian(iterations: Int,
-                       burnIn: Int,
-                       nSteps: Int,
+case class Hamiltonian(nSteps: Int,
                        sampleMethod: SampleMethod = SampleNUTS,
-                       chains: Int = 4,
                        initialStepSize: Double = 1.0)
     extends Sampler {
-  val description = ("HamiltonianMC",
-                     Map(
-                       "nSteps" -> nSteps.toDouble,
-                       "initialStepSize" -> initialStepSize,
-                       "iterations" -> iterations.toDouble,
-                       "burnIn" -> burnIn.toDouble,
-                       "chains" -> chains.toDouble
-                     ))
-
   def sample(density: Real)(implicit rng: RNG): Iterator[Sample] = {
     val (tunedChain, tunedStepSize) =
       dualAvgStepSize(HamiltonianChain(density.variables, density),
