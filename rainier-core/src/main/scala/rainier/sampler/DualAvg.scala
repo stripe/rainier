@@ -3,8 +3,8 @@ package rainier.sampler
 case class DualAvg(
     delta: Double,
     lambda: Double,
-    logEpsilon: Double,
-    logEpsilonBar: Double,
+    logStepSize: Double,
+    logStepSizeBar: Double,
     acceptanceProb: Double,
     hBar: Double,
     iteration: Int,
@@ -13,43 +13,43 @@ case class DualAvg(
     t: Int = 10,
     kappa: Double = 0.75
 ) {
-  val stepSize = Math.exp(logEpsilon)
-  val finalStepSize = Math.exp(logEpsilonBar)
-  val nSteps = (lambda / Math.exp(logEpsilon)).toInt.max(1)
+  val stepSize = Math.exp(logStepSize)
+  val finalStepSize = Math.exp(logStepSizeBar)
+  val nSteps = (lambda / Math.exp(logStepSize)).toInt.max(1)
 
   def update(newAcceptanceProb: Double): DualAvg = {
     val newIteration = iteration + 1
     val hBarMultiplier = 1.0 / (newIteration + t)
-    val epsilonMultiplier = Math.pow(newIteration, -kappa)
+    val stepSizeMultiplier = Math.pow(newIteration, -kappa)
     val newHBar = (
       (1.0 - hBarMultiplier) * hBar
         + (hBarMultiplier * (delta - newAcceptanceProb))
     )
 
-    val newLogEpsilon =
+    val newLogStepSize =
       mu - (newHBar * Math.sqrt(newIteration) / gamma)
 
-    val newLogEpsilonBar = (epsilonMultiplier * newLogEpsilon
-      + (1.0 - epsilonMultiplier) * logEpsilonBar)
+    val newLogStepSizeBar = (stepSizeMultiplier * newLogStepSize
+      + (1.0 - stepSizeMultiplier) * logStepSizeBar)
 
     copy(iteration = newIteration,
          acceptanceProb = newAcceptanceProb,
          hBar = newHBar,
-         logEpsilon = newLogEpsilon,
-         logEpsilonBar = newLogEpsilonBar)
+         logStepSize = newLogStepSize,
+         logStepSizeBar = newLogStepSizeBar)
   }
 }
 
 object DualAvg {
-  def apply(delta: Double, lambda: Double, epsilon: Double): DualAvg =
+  def apply(delta: Double, lambda: Double, stepSize: Double): DualAvg =
     DualAvg(
       delta = delta,
       lambda = lambda,
-      logEpsilon = Math.log(epsilon),
-      logEpsilonBar = 0.0,
+      logStepSize = Math.log(stepSize),
+      logStepSizeBar = 0.0,
       acceptanceProb = 1.0,
       hBar = 0.0,
       iteration = 0,
-      mu = Math.log(10 * epsilon)
+      mu = Math.log(10 * stepSize)
     )
 }

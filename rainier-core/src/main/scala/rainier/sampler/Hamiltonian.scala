@@ -105,8 +105,8 @@ case class Hamiltonian(iterations: Int,
                               delta: Double,
                               lambda: Double,
                               iterations: Int): Double = {
-    val epsilon0 = findReasonableStepSize(chain)
-    val dualAvg = DualAvg(delta, lambda, epsilon0)
+    val stepSize0 = findReasonableStepSize(chain)
+    val dualAvg = DualAvg(delta, lambda, stepSize0)
     def go(chain: HamiltonianChain,
            dualAvg: DualAvg,
            remaining: Int): (HamiltonianChain, DualAvg) = {
