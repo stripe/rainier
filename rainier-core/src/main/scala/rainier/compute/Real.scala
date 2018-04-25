@@ -21,8 +21,17 @@ object Real {
   def seq[A](as: Seq[A])(implicit toReal: ToReal[A]): Seq[Real] =
     as.map(toReal(_))
 
-  def sum(seq: Seq[Real]): Real = reduceCommutative(seq, AddOp)
-  def product(seq: Seq[Real]): Real = reduceCommutative(seq, MultiplyOp)
+  def sum(seq: Seq[Real]): Real =
+    if (seq.isEmpty)
+      Real.zero
+    else
+      reduceCommutative(seq, AddOp)
+
+  def product(seq: Seq[Real]): Real =
+    if (seq.isEmpty)
+      Real.one
+    else
+      reduceCommutative(seq, MultiplyOp)
 
   def logSumExp(seq: Seq[Real]): Real =
     sum(seq.map(_.exp)).log //TODO: special case this

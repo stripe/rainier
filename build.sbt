@@ -20,7 +20,14 @@ lazy val root = project.
 
 lazy val rainierCore = project.
   in(file("rainier-core")).
-  enablePlugins(TutPlugin)
+  enablePlugins(TutPlugin).
+  settings(
+    libraryDependencies += "org.ow2.asm" % "asm" % "6.0",
+    // https://mvnrepository.com/artifact/org.ow2.asm/asm-tree
+    libraryDependencies += "org.ow2.asm" % "asm-tree" % "6.0",
+    // https://mvnrepository.com/artifact/commons-io/commons-io
+    libraryDependencies += "commons-io" % "commons-io" % "2.6"
+  )
 
 lazy val rainierExample = project.
   in(file("rainier-example")).
