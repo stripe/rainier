@@ -4,23 +4,18 @@ import rainier.compute._
 
 private case class ExprMethodGenerator(method: MethodDef,
                                        inputs: Seq[Variable],
-                                       locals: Seq[Sym],
-                                       globals: Seq[Sym],
+                                       varTypes: VarTypes,
                                        className: String)
     extends MethodGenerator {
   val isPrivate = true
   val methodName = exprMethodName(method.sym.id)
-  val methodDesc = "([D[D])D"
+  val methodDesc = "([D[D)D"
 
   private val varIndices = inputs.zipWithIndex.toMap
-  private val localIndices = locals.zipWithIndex.toMap
-  private val globalIndices = globals.zipWithIndex.toMap
 
   traverse(method.rhs)
-  ret()
+  returnDouble()
 
-  //could almost use ForEachTraverse here but the operand ordering for
-  //array stores makes that not really work
   def traverse(ir: IR): Unit = {
     ir match {
       case Const(value) =>
@@ -35,19 +30,25 @@ private case class ExprMethodGenerator(method: MethodDef,
         traverse(original)
         unaryOp(op)
       case VarDef(sym, rhs) =>
-        localIndices.get(sym) match {
-          case Some(i) =>
+        varTypes(sym) match {
+          case Inline =>
+            traverse(rhs)
+          case Local(i) =>
             traverse(rhs)
             storeLocalVar(i)
-          case None =>
-            storeGlobalVar(globalIndices(sym)) {
+          case Global(i) =>
+            storeGlobalVar(i) {
               traverse(rhs)
             }
         }
       case VarRef(sym) =>
-        localIndices.get(sym) match {
-          case Some(i) => loadLocalVar(i)
-          case None    => loadGlobalVar(globalIndices(sym))
+        varTypes(sym) match {
+          case Inline =>
+            sys.error("Should not have references to inlined vars")
+          case Local(i) =>
+            loadLocalVar(i)
+          case Global(i) =>
+            loadGlobalVar(i)
         }
       case MethodRef(sym) =>
         callExprMethod(sym.id)

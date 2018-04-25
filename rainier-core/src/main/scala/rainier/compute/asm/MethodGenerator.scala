@@ -4,8 +4,8 @@ import org.objectweb.asm.Opcodes._
 import org.objectweb.asm.tree.MethodNode
 import rainier.compute._
 
-trait MethodGenerator {
-  val methodNode: MethodNode =
+private trait MethodGenerator {
+  lazy val methodNode: MethodNode =
     new MethodNode(ASM6, //api
                    if (isPrivate) ACC_PRIVATE else ACC_PUBLIC, //access
                    methodName, //name
@@ -37,6 +37,7 @@ trait MethodGenerator {
     methodNode.visitLdcInsn(pos)
     fn
     methodNode.visitInsn(DASTORE)
+    loadGlobalVar(pos)
   }
 
   def loadParameter(pos: Int): Unit = {
@@ -81,8 +82,11 @@ trait MethodGenerator {
                                false)
   }
 
-  def ret(): Unit =
+  def returnArray(): Unit =
     methodNode.visitInsn(ARETURN)
+
+  def returnDouble(): Unit =
+    methodNode.visitInsn(DRETURN)
 
   def constant(value: Double): Unit =
     methodNode.visitLdcInsn(value)
