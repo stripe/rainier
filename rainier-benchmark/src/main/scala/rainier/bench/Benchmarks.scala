@@ -8,16 +8,16 @@ import rainier.core._
 object Benchmarks {
   trait BenchmarkState {
     def expression: Real
+    val expr = expression
+    val vars = expr.variables
 
     def setup = {
-      val expr = expression
-      val vars = Real.variables(expr).toList
       val cf = ArrayCompiler.compile(vars, expr)
-      val a = asm.ASMCompiler.compile(vars, expr)
-      (cf, a, vars)
+      val a = asm.IRCompiler.compile(vars, expr)
+      (cf, a)
     }
 
-    val (cf, a, vars) = setup
+    val (cf, a) = setup
 
     val rand = new scala.util.Random
     def runCompiled =
@@ -28,6 +28,8 @@ object Benchmarks {
       a(vars.map { _ =>
         rand.nextDouble
       }.toArray)
+    def compile = ArrayCompiler.compile(vars, expr)
+    def compileAsm = asm.IRCompiler.compile(vars, expr)
   }
 
   @State(Scope.Benchmark)
@@ -94,6 +96,16 @@ class Benchmarks {
   }
 
   @Benchmark
+  def compileNormal(state: NormalBenchmark): Unit = {
+    state.compile
+  }
+
+  @Benchmark
+  def compileNormalAsm(state: NormalBenchmark): Unit = {
+    state.compileAsm
+  }
+
+  @Benchmark
   def runPoisson(state: PoissonBenchmark): Unit = {
     state.runCompiled
   }
@@ -101,5 +113,15 @@ class Benchmarks {
   @Benchmark
   def runPoissonAsm(state: PoissonBenchmark): Unit = {
     state.runAsm
+  }
+
+  @Benchmark
+  def compilePoisson(state: PoissonBenchmark): Unit = {
+    state.compile
+  }
+
+  @Benchmark
+  def compilePoissonAsm(state: PoissonBenchmark): Unit = {
+    state.compileAsm
   }
 }

@@ -14,7 +14,7 @@ private class CompiledClass(name: String, methods: Seq[MethodNode]) {
 
   val classNode = createClass
   val bytes = writeBytecode
-  val instance = createInstance
+  lazy val instance = createInstance
 
   def writeToTmpFile: Unit =
     FileUtils.writeByteArrayToFile(new File("/tmp/" + name + ".class"), bytes)
@@ -63,10 +63,13 @@ private class CompiledClass(name: String, methods: Seq[MethodNode]) {
 
 private object CompiledClass {
   private var id = 0
-  def methods(seq: Seq[MethodNode]): CompiledClass = {
+  def freshName: String = {
     id += 1
-    new CompiledClass("CompiledFunction$" + id, seq)
+    "CompiledFunction$" + id
   }
+
+  def methods(seq: Seq[MethodNode]): CompiledClass =
+    new CompiledClass(freshName, seq)
 }
 
 private class SingleClassLoader(name: String,

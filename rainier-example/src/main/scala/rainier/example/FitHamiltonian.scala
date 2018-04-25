@@ -1,4 +1,4 @@
-package rainier
+package rainier.example
 
 import rainier.compute._
 import rainier.core._

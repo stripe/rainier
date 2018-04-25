@@ -11,12 +11,11 @@ case class Emcee(iterations: Int, burnIn: Int, walkers: Int) extends Sampler {
                      ))
 
   def sample(density: Real)(implicit rng: RNG): Iterator[Sample] = {
-    val variables = Real.variables(density).toList
-    EmceeChain(density, variables, walkers).toStream
+    EmceeChain(density, density.variables, walkers).toStream
       .drop(burnIn * walkers)
       .take(iterations * walkers)
       .map { c =>
-        val map = variables.zip(c.variables).toMap
+        val map = density.variables.zip(c.variables).toMap
         Sample(c.walker, c.accepted, new Evaluator(map))
       }
       .iterator

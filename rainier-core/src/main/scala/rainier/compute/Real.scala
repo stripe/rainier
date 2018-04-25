@@ -5,12 +5,12 @@ sealed trait Real {
   def *(other: Real): Real = BinaryReal(this, other, MultiplyOp)
   def -(other: Real): Real = BinaryReal(this, other, SubtractOp)
   def /(other: Real): Real = BinaryReal(this, other, DivideOp)
-  def ||(other: Real): Real = BinaryReal(this, other, OrOp)
-  def &&(other: Real): Real = BinaryReal(this, other, AndOp)
-  def &&!(other: Real): Real = BinaryReal(this, other, AndNotOp)
   def exp: Real = UnaryReal(this, ExpOp)
   def log: Real = UnaryReal(this, LogOp)
   def abs: Real = UnaryReal(this, AbsOp)
+
+  lazy val variables: Seq[Variable] = Real.variables(this).toList
+  def gradient: Seq[Real] = Gradient.derive(variables, this)
 }
 
 object Real {
@@ -38,7 +38,7 @@ object Real {
   val zero: Real = Real(0.0)
   val one: Real = Real(1.0)
 
-  def variables(real: Real): Set[Variable] = {
+  private def variables(real: Real): Set[Variable] = {
     def loop(r: Real, acc: Set[Variable]): Set[Variable] =
       r match {
         case Constant(_)   => acc
@@ -66,16 +66,8 @@ object Real {
     }
   }
 
-  var prune = true
-  var intern = true
-  def optimize(real: Real): Real = {
-    var result = real
-    if (prune)
-      result = Pruner.prune(result)
-    if (intern)
-      result = Table.intern(result)
-    result
-  }
+  private[compute] def optimize(real: Real): Real =
+    Table.intern(Pruner.prune(real))
 
   private def reduceCommutative(seq: Seq[Real], op: CommutativeOp): Real =
     if (seq.size == 1)
@@ -90,45 +82,50 @@ object Real {
       }, op)
 }
 
-case class Constant(value: Double) extends Real
+private case class Constant(value: Double) extends Real
 
-class BinaryReal(val left: Real, val right: Real, val op: BinaryOp) extends Real
-object BinaryReal {
+private class BinaryReal private (val left: Real,
+                                  val right: Real,
+                                  val op: BinaryOp)
+    extends Real
+
+private object BinaryReal {
   def apply(left: Real, right: Real, op: BinaryOp): Real =
     Real.optimize(new BinaryReal(left, right, op))
 }
 
-class UnaryReal(val original: Real, val op: UnaryOp) extends Real
-object UnaryReal {
+private class UnaryReal private (val original: Real, val op: UnaryOp)
+    extends Real
+private object UnaryReal {
   def apply(original: Real, op: UnaryOp): Real =
     Real.optimize(new UnaryReal(original, op))
 }
 
 class Variable extends Real
 
-sealed trait BinaryOp {
+private sealed trait BinaryOp {
   def apply(left: Double, right: Double): Double
 }
 
-sealed trait CommutativeOp extends BinaryOp
+private sealed trait CommutativeOp extends BinaryOp
 
-case object AddOp extends CommutativeOp {
+private case object AddOp extends CommutativeOp {
   def apply(left: Double, right: Double) = left + right
 }
 
-case object MultiplyOp extends CommutativeOp {
+private case object MultiplyOp extends CommutativeOp {
   def apply(left: Double, right: Double) = left * right
 }
 
-case object SubtractOp extends BinaryOp {
+private case object SubtractOp extends BinaryOp {
   def apply(left: Double, right: Double) = left - right
 }
 
-case object DivideOp extends BinaryOp {
+private case object DivideOp extends BinaryOp {
   def apply(left: Double, right: Double) = left / right
 }
 
-case object OrOp extends BinaryOp {
+private case object OrOp extends BinaryOp {
   def apply(left: Double, right: Double) =
     if (left == 0.0)
       right
@@ -136,7 +133,7 @@ case object OrOp extends BinaryOp {
       left
 }
 
-case object AndOp extends BinaryOp {
+private case object AndOp extends BinaryOp {
   def apply(left: Double, right: Double) =
     if (right == 0.0)
       0.0
@@ -144,7 +141,7 @@ case object AndOp extends BinaryOp {
       left
 }
 
-case object AndNotOp extends BinaryOp {
+private case object AndNotOp extends BinaryOp {
   def apply(left: Double, right: Double) =
     if (right == 0.0)
       left
@@ -152,18 +149,18 @@ case object AndNotOp extends BinaryOp {
       0.0
 }
 
-sealed trait UnaryOp {
+private sealed trait UnaryOp {
   def apply(original: Double): Double
 }
 
-case object ExpOp extends UnaryOp {
+private case object ExpOp extends UnaryOp {
   def apply(original: Double) = math.exp(original)
 }
 
-case object LogOp extends UnaryOp {
+private case object LogOp extends UnaryOp {
   def apply(original: Double) = math.log(original)
 }
 
-case object AbsOp extends UnaryOp {
+private case object AbsOp extends UnaryOp {
   def apply(original: Double) = original.abs
 }
