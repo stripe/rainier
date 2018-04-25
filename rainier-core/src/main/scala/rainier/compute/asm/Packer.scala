@@ -2,7 +2,7 @@ package rainier.compute.asm
 
 import scala.collection.mutable
 
-class Packer(methodSizeLimit: Int) {
+private class Packer(methodSizeLimit: Int) {
   private val methodDefs: mutable.Map[Sym, MethodDef] = mutable.Map.empty
   def methods: Set[MethodDef] = methodDefs.values.toSet
 

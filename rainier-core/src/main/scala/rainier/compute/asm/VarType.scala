@@ -2,13 +2,13 @@ package rainier.compute.asm
 
 import scala.collection.mutable
 
-sealed trait VarType
-object Inline extends VarType
-case class Local(id: Int) extends VarType
-case class Global(id: Int) extends VarType
+private sealed trait VarType
+private object Inline extends VarType
+private case class Local(id: Int) extends VarType
+private case class Global(id: Int) extends VarType
 
-case class VarTypes(numReferences: Map[Sym, Int],
-                    referringMethods: Map[Sym, Set[Sym]]) {
+private case class VarTypes(numReferences: Map[Sym, Int],
+                            referringMethods: Map[Sym, Set[Sym]]) {
   var globals = Map.empty[Sym, Global]
   var locals = Map.empty[Sym, Map[Sym, Local]]
 
@@ -51,7 +51,7 @@ case class VarTypes(numReferences: Map[Sym, Int],
     }
 }
 
-object VarTypes {
+private object VarTypes {
   def methods(seq: Seq[MethodDef]): VarTypes = {
     val allReferences = seq.map { md =>
       md.sym -> references(md)

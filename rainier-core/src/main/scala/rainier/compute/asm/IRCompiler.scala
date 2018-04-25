@@ -10,7 +10,7 @@ object IRCompiler extends Compiler {
     val irs = outputs.map { real =>
       translator.toIR(real)
     }
-    val packer = new Packer(20)
+    val packer = new Packer(200)
     val outputMeths = irs.map { ir =>
       packer.pack(ir)
     }

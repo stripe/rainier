@@ -13,7 +13,7 @@ object Benchmarks {
       val expr = expression
       val vars = Real.variables(expr).toList
       val cf = ArrayCompiler.compile(vars, expr)
-      val a = asm.ASMCompiler.compile(vars, expr)
+      val a = asm.IRCompiler.compile(vars, expr)
       (cf, a, vars)
     }
 

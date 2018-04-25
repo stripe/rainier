@@ -3,7 +3,7 @@ package rainier.compute.asm
 import rainier.compute._
 import scala.collection.mutable
 
-class Translator {
+private class Translator {
   private val alreadySeen = mutable.Map.empty[Real, Sym]
 
   def toIR(r: Real): IR = {

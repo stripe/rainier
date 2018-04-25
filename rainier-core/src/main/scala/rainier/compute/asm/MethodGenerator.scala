@@ -4,7 +4,7 @@ import org.objectweb.asm.Opcodes._
 import org.objectweb.asm.tree.MethodNode
 import rainier.compute._
 
-trait MethodGenerator {
+private trait MethodGenerator {
   lazy val methodNode: MethodNode =
     new MethodNode(ASM6, //api
                    if (isPrivate) ACC_PRIVATE else ACC_PUBLIC, //access
