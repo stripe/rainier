@@ -9,7 +9,7 @@ object Benchmarks {
   trait BenchmarkState {
     def expression: Real
     val expr = expression
-    val vars = Real.variables(expr).toList
+    val vars = expr.variables
 
     def setup = {
       val cf = ArrayCompiler.compile(vars, expr)

@@ -80,7 +80,7 @@ private object Gradient {
           if (isLeft)
             BinaryReal(gradient.toReal, child.left, AndOp)
           else
-            BinaryReal(gradient.toReal, child.left, AndNot)
+            BinaryReal(gradient.toReal, child.left, AndNotOp)
         case AndOp =>
           if (isLeft)
             BinaryReal(gradient.toReal, child.right, AndOp)
@@ -88,7 +88,7 @@ private object Gradient {
             Real.zero
         case AndNotOp =>
           if (isLeft)
-            BinaryReal(gradient.toReal, child.right, AndNot)
+            BinaryReal(gradient.toReal, child.right, AndNotOp)
           else
             Real.zero
       }
@@ -98,7 +98,8 @@ private object Gradient {
     def toReal = child.op match {
       case LogOp => gradient.toReal * (Real.one / child.original)
       case ExpOp => gradient.toReal * child
-      case AbsOp => gradient.toReal * child.original / BinaryReal(child, Real.one, OrOp)
+      case AbsOp =>
+        gradient.toReal * child.original / BinaryReal(child, Real.one, OrOp)
     }
   }
 }

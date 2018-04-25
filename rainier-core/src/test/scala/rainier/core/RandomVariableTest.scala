@@ -19,7 +19,7 @@ class RandomVariableTest extends FunSuite {
 
   def sampleOnce[S, T](x: RandomVariable[S], paramValue: Double)(
       implicit s: Sampleable[S, T]): (T, Double) = {
-    val variables = Real.variables(x.density)
+    val variables = x.density.variables
     implicit val num = new Evaluator(variables.map { v =>
       v -> paramValue
     }.toMap)
