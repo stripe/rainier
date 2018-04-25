@@ -4,6 +4,7 @@ import rainier.compute._
 
 case class HamiltonianChain(
     accepted: Boolean,
+    acceptanceProb: Double,
     hParams: HParams,
     cf: Array[Double] => (Double, Array[Double]))(implicit rng: RNG) {
 
@@ -25,13 +26,18 @@ case class HamiltonianChain(
       finalParams.hamiltonian - initialParams.hamiltonian
 
     //we accept the proposal with probability min{1, exp(-deltaH)}
+    val newAcceptanceProb = Math.exp(-deltaH).min(1.0)
     val (newParams, newAccepted) = {
-      if (deltaH < 0 || rng.standardUniform < Math.exp(-deltaH))
+      if (rng.standardUniform < newAcceptanceProb)
         (finalParams, true)
       else
         (initialParams, false)
     }
-    copy(hParams = newParams, accepted = newAccepted)
+    copy(
+      hParams = newParams,
+      accepted = newAccepted,
+      acceptanceProb = newAcceptanceProb
+    )
   }
 
   def nextNUTS(stepSize: Double, maxDepth: Int = 6): HamiltonianChain = {
@@ -56,7 +62,7 @@ object HamiltonianChain {
     val negativeDensity = density * -1
     val cf = Compiler.default.compileGradient(variables, negativeDensity)
     val hParams = initialize(variables.size, cf)
-    HamiltonianChain(true, hParams, cf)
+    HamiltonianChain(true, 1.0, hParams, cf)
   }
 
   def initialize(nVars: Int, cf: Array[Double] => (Double, Array[Double]))(

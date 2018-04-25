@@ -9,7 +9,6 @@ case object SampleHMC extends SampleMethod
 
 case class Hamiltonian(iterations: Int,
                        burnIn: Int,
-                       tuneEvery: Int,
                        nSteps: Int,
                        sampleMethod: SampleMethod = SampleNUTS,
                        chains: Int = 4,
@@ -21,18 +20,17 @@ case class Hamiltonian(iterations: Int,
                        "initialStepSize" -> initialStepSize,
                        "iterations" -> iterations.toDouble,
                        "burnIn" -> burnIn.toDouble,
-                       "tuneEvery" -> tuneEvery.toDouble,
                        "chains" -> chains.toDouble
                      ))
 
   def sample(density: Real)(implicit rng: RNG): Iterator[Sample] = {
-    val tuned = take(HamiltonianChain(density.variables, density),
-                     burnIn + 1,
-                     initialStepSize,
-                     sampleMethod).last
-    val stepSize = findReasonableStepSize(tuned, initialStepSize)
+    val (tunedChain, tunedStepSize) =
+      dualAvgStepSize(HamiltonianChain(density.variables, density),
+                      0.65,
+                      nSteps * initialStepSize,
+                      burnIn)
     0.until(chains).iterator.flatMap { i =>
-      take(tuned, iterations, initialStepSize, sampleMethod).map { c =>
+      take(tunedChain, iterations, tunedStepSize, sampleMethod).map { c =>
         val eval = new Evaluator(density.variables.zip(c.hParams.qs).toMap)
         Sample(i, c.accepted, eval)
       }.iterator
@@ -81,8 +79,8 @@ case class Hamiltonian(iterations: Int,
     } else { stepSize }
   }
 
-  private def findReasonableStepSize(chain: HamiltonianChain,
-                                     initialStepSize: Double): Double = {
+  private def findReasonableStepSize(chain: HamiltonianChain): Double = {
+    val initialStepSize = 1.0
     val nextChain = chain.stepOnce(initialStepSize)
     val deltaH = computeDeltaH(chain, nextChain)
     val exponent = computeExponent(deltaH)
@@ -103,5 +101,25 @@ case class Hamiltonian(iterations: Int,
         case _ => list.take(iterations)
       }
     go(List(chain), iterations)
+  }
+
+  private def dualAvgStepSize(chain: HamiltonianChain,
+                              delta: Double,
+                              lambda: Double,
+                              iterations: Int): (HamiltonianChain, Double) = {
+    val stepSize0 = findReasonableStepSize(chain)
+    val dualAvg = DualAvg(delta, lambda, stepSize0)
+    def go(chain: HamiltonianChain,
+           dualAvg: DualAvg,
+           remaining: Int): (HamiltonianChain, DualAvg) = {
+      if (remaining > 0) {
+        val nextChain = chain.nextHMC(dualAvg.stepSize, dualAvg.nSteps)
+        val nextAcceptanceProb = nextChain.acceptanceProb
+        val nextDualAvg = dualAvg.update(nextAcceptanceProb)
+        go(nextChain, nextDualAvg, remaining - 1)
+      } else (chain, dualAvg)
+    }
+    val (tunedChain, finalDualAvg) = go(chain, dualAvg, iterations)
+    (tunedChain, finalDualAvg.finalStepSize)
   }
 }
