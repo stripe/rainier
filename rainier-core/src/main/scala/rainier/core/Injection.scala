@@ -38,7 +38,7 @@ case class Scale(a: Real) extends Injection {
   def forwards(x: Real) = x * a
   def backwards(y: Real) = y / a
   def isDefinedAt(y: Double) = true
-  def logJacobian(x: Real) = Real.zero
+  def logJacobian(x: Real) = a.log * -1
 }
 
 case class Translate(b: Real) extends Injection {
