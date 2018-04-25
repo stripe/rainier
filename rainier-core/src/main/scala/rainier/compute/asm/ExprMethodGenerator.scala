@@ -16,8 +16,6 @@ private case class ExprMethodGenerator(method: MethodDef,
   traverse(method.rhs)
   returnDouble()
 
-  //could almost use ForEachTraverse here but the operand ordering for
-  //array stores makes that not really work
   def traverse(ir: IR): Unit = {
     ir match {
       case Const(value) =>
