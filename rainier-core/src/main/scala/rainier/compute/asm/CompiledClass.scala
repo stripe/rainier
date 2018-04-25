@@ -14,7 +14,7 @@ private class CompiledClass(name: String, methods: Seq[MethodNode]) {
 
   val classNode = createClass
   val bytes = writeBytecode
-  val instance = createInstance
+  lazy val instance = createInstance
 
   def writeToTmpFile: Unit =
     FileUtils.writeByteArrayToFile(new File("/tmp/" + name + ".class"), bytes)

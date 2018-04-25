@@ -37,6 +37,7 @@ trait MethodGenerator {
     methodNode.visitLdcInsn(pos)
     fn
     methodNode.visitInsn(DASTORE)
+    loadGlobalVar(pos)
   }
 
   def loadParameter(pos: Int): Unit = {

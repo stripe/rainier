@@ -37,11 +37,11 @@ class IRTest extends FunSuite {
     val t = x * 3
     compareToEvaluator(t + t, 2.0)
   }
-  /*
+
   test("poisson") {
     compareToEvaluator(Poisson(x).logDensities(0.to(10).toList), 2.0)
   }
-   */
+
   test("normal") {
     compareToEvaluator(Normal(x, 1).logDensities(0d.to(2d).by(0.01).toList),
                        2.0)
