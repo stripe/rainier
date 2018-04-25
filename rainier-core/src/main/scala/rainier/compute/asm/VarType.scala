@@ -1,22 +1,23 @@
 package rainier.compute.asm
 
+import scala.collection.mutable
+
 sealed trait VarType
 object Inline extends VarType
 case class Local(id: Int) extends VarType
 case class Global(id: Int) extends VarType
 
-case class VarTypes(depStats: IR.DepStats) {
+case class VarTypes(numReferences: Map[Sym, Int],
+                    referringMethods: Map[Sym, Set[Sym]]) {
   var globals = Map.empty[Sym, Global]
   var locals = Map.empty[Sym, Map[Sym, Local]]
 
   def apply(sym: Sym): VarType = {
-    val symStats = depStats.symStats(sym)
-    if (symStats.numReferences == 1)
+    if (numReferences(sym) == 1)
       Inline
     else {
-      val referringMethods = symStats.referringMethods
-      if (referringMethods.size == 1)
-        local(sym, referringMethods.head)
+      if (referringMethods(sym).size == 1)
+        local(sym, referringMethods(sym).head)
       else
         global(sym)
     }
@@ -48,4 +49,46 @@ case class VarTypes(depStats: IR.DepStats) {
       case Some(global) =>
         global
     }
+}
+
+object VarTypes {
+  def methods(seq: Seq[MethodDef]): VarTypes = {
+    val allReferences = seq.map { md =>
+      md.sym -> references(md)
+    }
+    val numReferences = mutable.Map.empty[Sym, Int].withDefaultValue(0)
+    val referringMethods =
+      mutable.Map.empty[Sym, Set[Sym]].withDefaultValue(Set.empty)
+
+    for {
+      (meth, refs) <- allReferences
+      (sym, count) <- refs
+    } {
+      numReferences(sym) += count
+      referringMethods(sym) += meth
+    }
+
+    VarTypes(numReferences.toMap, referringMethods.toMap)
+  }
+
+  private def references(meth: MethodDef): Map[Sym, Int] = {
+    val map = mutable.Map.empty[Sym, Int].withDefaultValue(0)
+    def traverse(ir: IR): Unit =
+      ir match {
+        case MethodDef(_, _) => sys.error("Should not have nested defs")
+        case VarDef(sym, rhs) =>
+          map(sym) += 1
+          traverse(rhs)
+        case VarRef(sym) =>
+          map(sym) += 1
+        case BinaryIR(left, right, _) =>
+          traverse(left)
+          traverse(right)
+        case UnaryIR(original, _) =>
+          traverse(original)
+        case _ => ()
+      }
+    traverse(meth.rhs)
+    map.toMap
+  }
 }

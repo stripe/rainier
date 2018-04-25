@@ -15,5 +15,5 @@ private case class ApplyMethodGenerator(className: String,
   newArray(outputMethods) { n =>
     callExprMethod(n)
   }
-  ret()
+  returnArray()
 }

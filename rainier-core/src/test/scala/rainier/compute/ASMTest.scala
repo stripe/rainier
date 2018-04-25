@@ -19,7 +19,7 @@ class ASMTest extends FunSuite {
     val gradActual = (new Evaluator(Map(x -> xVal, y -> yVal))).toDouble(grad)
     assert(gradResult == gradActual)
   }
-
+  /*
   test("handle plus") {
     compareToEvaluator(x + 11, 4.0)
   }
@@ -49,4 +49,5 @@ class ASMTest extends FunSuite {
   test("two args") {
     compareToEvaluator(x + y, 1.0, 2.0)
   }
+ */
 }

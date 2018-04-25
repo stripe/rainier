@@ -5,7 +5,7 @@ import org.objectweb.asm.tree.MethodNode
 import rainier.compute._
 
 trait MethodGenerator {
-  val methodNode: MethodNode =
+  lazy val methodNode: MethodNode =
     new MethodNode(ASM6, //api
                    if (isPrivate) ACC_PRIVATE else ACC_PUBLIC, //access
                    methodName, //name
@@ -81,8 +81,11 @@ trait MethodGenerator {
                                false)
   }
 
-  def ret(): Unit =
+  def returnArray(): Unit =
     methodNode.visitInsn(ARETURN)
+
+  def returnDouble(): Unit =
+    methodNode.visitInsn(DRETURN)
 
   def constant(value: Double): Unit =
     methodNode.visitLdcInsn(value)

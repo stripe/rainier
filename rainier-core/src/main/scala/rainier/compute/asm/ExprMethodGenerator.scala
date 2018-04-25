@@ -9,12 +9,12 @@ private case class ExprMethodGenerator(method: MethodDef,
     extends MethodGenerator {
   val isPrivate = true
   val methodName = exprMethodName(method.sym.id)
-  val methodDesc = "([D[D])D"
+  val methodDesc = "([D[D)D"
 
   private val varIndices = inputs.zipWithIndex.toMap
 
   traverse(method.rhs)
-  ret()
+  returnDouble()
 
   //could almost use ForEachTraverse here but the operand ordering for
   //array stores makes that not really work
