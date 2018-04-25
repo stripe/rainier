@@ -9,7 +9,7 @@ class ContinuousTest extends FunSuite {
 
   def check(description: String)(fn: Real => Continuous) = {
     println(description)
-    List(0.1, 1.0, 10.0).foreach { trueValue =>
+    List(0.1, 1.0, 2.0).foreach { trueValue =>
       val trueDist = fn(Real(trueValue))
       val syntheticData = RandomVariable(trueDist.generator).sample().take(1000)
       val sampledData = trueDist.param.sample()
@@ -20,18 +20,18 @@ class ContinuousTest extends FunSuite {
         } yield x
       val fitValues = model.sample()
 
-      val syntheticMedian =
-        syntheticData.toList.sorted.apply(syntheticData.size / 2)
-      val sampledMedian = sampledData.toList.sorted.apply(sampledData.size / 2)
-      val yErr = (sampledMedian - syntheticMedian) / syntheticMedian
+      val syntheticMean = syntheticData.sum / syntheticData.size
+      val syntheticStdDev = Math.sqrt(syntheticData.map { n =>
+        Math.pow(n - syntheticMean, 2)
+      }.sum / syntheticData.size)
+      val sampledMean = sampledData.sum / sampledData.size
+      val yErr = (sampledMean - syntheticMean) / syntheticStdDev
 
       val fitMean = fitValues.sum / fitValues.size
       val xErr = (fitMean - trueValue) / trueValue
 
-      println(syntheticMedian, sampledMedian, fitMean)
-
-      test(s"y ~ $description, x = $trueValue, y50 within 5%") {
-        assert(yErr.abs < 0.05)
+      test(s"y ~ $description, x = $trueValue, E(y) within 0.1 SD") {
+        assert(yErr.abs < 0.1)
       }
 
       test(s"y ~ $description, x = $trueValue, E(x) within 5%") {
