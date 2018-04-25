@@ -27,7 +27,7 @@ case class Hamiltonian(iterations: Int,
     val variables = Real.variables(density).toList
     val chain = HamiltonianChain(variables, density)
     val tunedStepSize =
-      dualAvgStepSize(chain, 0.6, nSteps * initialStepSize, burnIn)
+      dualAvgStepSize(chain, 0.65, nSteps * initialStepSize, burnIn)
     0.until(chains).iterator.flatMap { i =>
       take(chain, iterations, tunedStepSize, sampleMethod).map { c =>
         val eval = new Evaluator(variables.zip(c.hParams.qs).toMap)
