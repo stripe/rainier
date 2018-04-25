@@ -11,7 +11,7 @@ object Benchmarks {
 
     def setup = {
       val expr = expression
-      val vars = Real.variables(expr).toList
+      val vars = expr.variables
       val cf = ArrayCompiler.compile(vars, expr)
       val a = asm.ASMCompiler.compile(vars, expr)
       (cf, a, vars)

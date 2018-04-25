@@ -2,7 +2,7 @@ package rainier.compute
 
 import scala.collection.mutable.HashMap
 
-object Gradient {
+private object Gradient {
   def derive(variables: Seq[Variable], output: Real): Seq[Real] = {
     val diffs = HashMap.empty[Real, CompoundDiff]
     def diff(real: Real): CompoundDiff = {
@@ -78,17 +78,17 @@ object Gradient {
             gradient.toReal * -1 * child.left / (child.right * child.right)
         case OrOp =>
           if (isLeft)
-            gradient.toReal && child.left
+            BinaryReal(gradient.toReal, child.left, AndOp)
           else
-            gradient.toReal &&! child.left
+            BinaryReal(gradient.toReal, child.left, AndNot)
         case AndOp =>
           if (isLeft)
-            gradient.toReal && child.right
+            BinaryReal(gradient.toReal, child.right, AndOp)
           else
             Real.zero
         case AndNotOp =>
           if (isLeft)
-            gradient.toReal &&! child.right
+            BinaryReal(gradient.toReal, child.right, AndNot)
           else
             Real.zero
       }
@@ -98,7 +98,7 @@ object Gradient {
     def toReal = child.op match {
       case LogOp => gradient.toReal * (Real.one / child.original)
       case ExpOp => gradient.toReal * child
-      case AbsOp => gradient.toReal * child.original / (child || Real.one)
+      case AbsOp => gradient.toReal * child.original / BinaryReal(child, Real.one, OrOp)
     }
   }
 }

@@ -20,9 +20,8 @@ object MAP {
   def optimize(density: Real,
                iterations: Int,
                stepSize: Double): Map[Variable, Double] = {
-    val variables = Real.variables(density).toList
-    val cf = Compiler.default.compileGradient(variables, density)
-    val initialValues = variables.map { v =>
+    val cf = Compiler.default.compileGradient(density.variables, density)
+    val initialValues = density.variables.map { v =>
       0.0
     }.toArray
     val finalValues = 1.to(iterations).foldLeft(initialValues) {
@@ -33,6 +32,6 @@ object MAP {
             v + (stepSize * g)
         }
     }
-    variables.zip(finalValues).toMap
+    density.variables.zip(finalValues).toMap
   }
 }
