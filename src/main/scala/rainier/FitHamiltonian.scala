@@ -14,6 +14,6 @@ object FitHamiltonian {
   def main(args: Array[String]) {
     Report.printReport(model, MAP(10000, 0.001))
     Report.printReport(model, Emcee(10000, 1000, 10))
-    Report.printReport(model, Hamiltonian(10000, 20, 10))
+    Report.printReport(model, Hamiltonian(10000, 100, 10, SampleHMC))
   }
 }

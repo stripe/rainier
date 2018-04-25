@@ -54,6 +54,6 @@ object FitPriors {
       )
 
     Report.printReport(prior, Emcee(1000, 100, 100))
-    Report.printReport(prior, Hamiltonian(1000, 10, 10, SampleHMC))
+    Report.printReport(prior, Hamiltonian(1000, 100, 10, SampleHMC))
   }
 }

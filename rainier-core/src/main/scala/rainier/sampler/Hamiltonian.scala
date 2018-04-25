@@ -24,15 +24,11 @@ case class Hamiltonian(iterations: Int,
                      ))
 
   def sample(density: Real)(implicit rng: RNG): Iterator[Sample] = {
-    val tuned = take(HamiltonianChain(density),
-                     burnIn + 1,
-                     initialStepSize,
-                     sampleMethod).last
-    val stepSize = findReasonableStepSize(tuned)
-    val daStepSize =
-      dualAvgStepSize(tuned, 0.6, nSteps * initialStepSize, burnIn)
+    val chain = HamiltonianChain(density)
+    val tunedStepSize =
+      dualAvgStepSize(chain, 0.6, nSteps * initialStepSize, burnIn)
     0.until(chains).iterator.flatMap { i =>
-      take(tuned, iterations, initialStepSize, sampleMethod).map { c =>
+      take(chain, iterations, tunedStepSize, sampleMethod).map { c =>
         val eval = new Evaluator(c.variables.zip(c.hParams.qs).toMap)
         Sample(i, c.accepted, eval)
       }.iterator
@@ -77,8 +73,6 @@ case class Hamiltonian(iterations: Int,
     if (continueTuningStepSize(deltaH, exponent)) {
       val newStepSize = updateStepSize(stepSize, exponent)
       val newNextChain = chain.stepOnce(newStepSize)
-      println(s"step size: ${stepSize}")
-      println(s"new step size: ${newStepSize}")
       tuneStepSize(chain, newNextChain, exponent, newStepSize)
     } else { stepSize }
   }
@@ -120,10 +114,6 @@ case class Hamiltonian(iterations: Int,
         val nextChain = chain.nextHMC(dualAvg.stepSize, dualAvg.nSteps)
         val nextAcceptanceProb = nextChain.acceptanceProb
         val nextDualAvg = dualAvg.update(nextAcceptanceProb)
-//        println(s"pre-update stepsize: ${dualAvg.finalStepSize}")
-//        println(s"pre-update acceptance prob: ${ dualAvg.acceptanceProb}")
-//        println(s"next stepsize: ${nextDualAvg.finalStepSize}")
-//        println(s"next acceptance prob: ${nextAcceptanceProb}")
         go(nextChain, nextDualAvg, remaining - 1)
       } else (chain, dualAvg)
     }
