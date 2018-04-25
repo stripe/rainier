@@ -24,11 +24,13 @@ case class Hamiltonian(iterations: Int,
                      ))
 
   def sample(density: Real)(implicit rng: RNG): Iterator[Sample] = {
-    val chain = HamiltonianChain(density.variables, density)
-    val tunedStepSize =
-      dualAvgStepSize(chain, 0.65, nSteps * initialStepSize, burnIn)
+    val (tunedChain, tunedStepSize) =
+      dualAvgStepSize(HamiltonianChain(density.variables, density),
+                      0.65,
+                      nSteps * initialStepSize,
+                      burnIn)
     0.until(chains).iterator.flatMap { i =>
-      take(chain, iterations, tunedStepSize, sampleMethod).map { c =>
+      take(tunedChain, iterations, tunedStepSize, sampleMethod).map { c =>
         val eval = new Evaluator(density.variables.zip(c.hParams.qs).toMap)
         Sample(i, c.accepted, eval)
       }.iterator
@@ -104,7 +106,7 @@ case class Hamiltonian(iterations: Int,
   private def dualAvgStepSize(chain: HamiltonianChain,
                               delta: Double,
                               lambda: Double,
-                              iterations: Int): Double = {
+                              iterations: Int): (HamiltonianChain, Double) = {
     val stepSize0 = findReasonableStepSize(chain)
     val dualAvg = DualAvg(delta, lambda, stepSize0)
     def go(chain: HamiltonianChain,
@@ -117,7 +119,7 @@ case class Hamiltonian(iterations: Int,
         go(nextChain, nextDualAvg, remaining - 1)
       } else (chain, dualAvg)
     }
-    val (_, finalDualAvg) = go(chain, dualAvg, iterations)
-    finalDualAvg.finalStepSize
+    val (tunedChain, finalDualAvg) = go(chain, dualAvg, iterations)
+    (tunedChain, finalDualAvg.finalStepSize)
   }
 }

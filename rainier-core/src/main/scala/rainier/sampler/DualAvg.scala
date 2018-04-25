@@ -6,12 +6,12 @@ case class DualAvg(
     logStepSize: Double,
     logStepSizeBar: Double,
     acceptanceProb: Double,
-    hBar: Double,
+    avgAcceptanceProb: Double,
     iteration: Int,
-    mu: Double,
-    gamma: Double = 0.05,
-    t: Int = 10,
-    kappa: Double = 0.75
+    shrinkageTarget: Double,
+    stepSizeUpdateDenom: Double = 0.05,
+    acceptanceProbUpdateDenom: Int = 10,
+    decayRate: Double = 0.75
 ) {
   val stepSize = Math.exp(logStepSize)
   val finalStepSize = Math.exp(logStepSizeBar)
@@ -19,24 +19,29 @@ case class DualAvg(
 
   def update(newAcceptanceProb: Double): DualAvg = {
     val newIteration = iteration + 1
-    val hBarMultiplier = 1.0 / (newIteration + t)
-    val stepSizeMultiplier = Math.pow(newIteration, -kappa)
-    val newHBar = (
-      (1.0 - hBarMultiplier) * hBar
-        + (hBarMultiplier * (delta - newAcceptanceProb))
+    val avgAcceptanceProbMultiplier =
+      1.0 / (newIteration + acceptanceProbUpdateDenom)
+    val stepSizeMultiplier = Math.pow(newIteration, -decayRate)
+    val newAvgAcceptanceProb = (
+      (1.0 - avgAcceptanceProbMultiplier) * avgAcceptanceProb
+        + (avgAcceptanceProbMultiplier * (delta - newAcceptanceProb))
     )
 
-    val newLogStepSize =
-      mu - (newHBar * Math.sqrt(newIteration) / gamma)
+    val newLogStepSize = (
+      shrinkageTarget
+        - (newAvgAcceptanceProb * Math.sqrt(newIteration) / stepSizeUpdateDenom)
+    )
 
     val newLogStepSizeBar = (stepSizeMultiplier * newLogStepSize
       + (1.0 - stepSizeMultiplier) * logStepSizeBar)
 
-    copy(iteration = newIteration,
-         acceptanceProb = newAcceptanceProb,
-         hBar = newHBar,
-         logStepSize = newLogStepSize,
-         logStepSizeBar = newLogStepSizeBar)
+    copy(
+      iteration = newIteration,
+      acceptanceProb = newAcceptanceProb,
+      avgAcceptanceProb = newAvgAcceptanceProb,
+      logStepSize = newLogStepSize,
+      logStepSizeBar = newLogStepSizeBar
+    )
   }
 }
 
@@ -48,8 +53,8 @@ object DualAvg {
       logStepSize = Math.log(stepSize),
       logStepSizeBar = 0.0,
       acceptanceProb = 1.0,
-      hBar = 0.0,
+      avgAcceptanceProb = 0.0,
       iteration = 0,
-      mu = Math.log(10 * stepSize)
+      shrinkageTarget = Math.log(10 * stepSize)
     )
 }
