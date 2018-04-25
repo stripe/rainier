@@ -115,7 +115,7 @@ object IR {
   abstract class ForeachDagTraverse {
     def traverse(ir: IR): Unit = ir match {
       // atomic values
-      case (_: Const | _: Parameter ) =>
+      case (_: Const | _: Parameter) =>
       case VarRef(sym) =>
         traverse(symVarDef(sym))
       case MethodRef(sym) =>
@@ -140,8 +140,8 @@ object IR {
   case class DepStats(symStats: Map[Sym, SymStats])
   object DepStats {
     def apply(p: MethodRef): DepStats = {
-      val m: mutable.Map[Sym, mutable.Map[Sym, Int]] = mutable.Map.empty.withDefaultValue(
-        mutable.Map.empty.withDefaultValue(0))
+      val m: mutable.Map[Sym, mutable.Map[Sym, Int]] = mutable.Map.empty
+        .withDefaultValue(mutable.Map.empty.withDefaultValue(0))
       object markDeps extends ForeachDagTraverse {
         var currentMethodDef: Sym = _
         override def traverse(ir: IR): Unit = ir match {
@@ -162,7 +162,8 @@ object IR {
       }
       markDeps.traverse(symMethodDef(p.sym))
       val symStats = m.toMap.map {
-        case (sym, rawSingleSymStats) => (sym, SymStats(sym, rawSingleSymStats.toMap))
+        case (sym, rawSingleSymStats) =>
+          (sym, SymStats(sym, rawSingleSymStats.toMap))
       }
       DepStats(symStats)
     }
