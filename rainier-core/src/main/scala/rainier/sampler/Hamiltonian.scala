@@ -115,7 +115,13 @@ case class Hamiltonian(iterations: Int,
       if (remaining > 0) {
         val nextChain = chain.nextHMC(dualAvg.stepSize, dualAvg.nSteps)
         val nextAcceptanceProb = nextChain.acceptanceProb
-        val nextDualAvg = dualAvg.update(nextAcceptanceProb)
+        val nextNNodes = nextChain.nNodes
+        val dualAvgAcceptanceProb = nextNNodes
+          .map { n =>
+            nextAcceptanceProb / n
+          }
+          .getOrElse(nextAcceptanceProb)
+        val nextDualAvg = dualAvg.update(dualAvgAcceptanceProb)
         go(nextChain, nextDualAvg, remaining - 1)
       } else (chain, dualAvg)
     }
