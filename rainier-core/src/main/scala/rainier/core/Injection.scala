@@ -17,7 +17,7 @@ trait Injection {
   def transform(dist: Continuous): Continuous = new Continuous {
     override def logDensity(t: Double) =
       if (isDefinedAt(t))
-        realLogDensity(Constant(t))
+        realLogDensity(Real(t))
       else
         Real.zero
 

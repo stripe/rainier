@@ -8,7 +8,7 @@ trait Continuous extends Distribution[Double] { self =>
   def param: RandomVariable[Real]
   def realLogDensity(real: Real): Real
 
-  def logDensity(t: Double) = realLogDensity(Constant(t))
+  def logDensity(t: Double) = realLogDensity(Real(t))
 
   def scale(a: Real): Continuous = Scale(a).transform(this)
   def translate(b: Real): Continuous = Translate(b).transform(this)
