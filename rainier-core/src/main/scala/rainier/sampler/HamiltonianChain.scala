@@ -22,11 +22,10 @@ case class HamiltonianChain(
       .foldLeft(initialParams) {
         case (params, _) => integrator.step(params, stepSize)
       }
-    val deltaH =
-      finalParams.hamiltonian - initialParams.hamiltonian
 
-    //we accept the proposal with probability min{1, exp(-deltaH)}
-    val newAcceptanceProb = Math.exp(-deltaH).min(1.0)
+    val newAcceptanceProb =
+      HParams.acceptanceProb(initialParams, finalParams)
+
     val (newParams, newAccepted) = {
       if (rng.standardUniform < newAcceptanceProb)
         (finalParams, true)
@@ -110,5 +109,11 @@ object HParams {
     }
 
     HParams(qs, ps, gradPotential, potential)
+  }
+
+  //we accept the proposal with probability min{1, exp(-deltaH)}
+  def acceptanceProb(initialParams: HParams, finalParams: HParams): Double = {
+    val deltaH = finalParams.hamiltonian - initialParams.hamiltonian
+    Math.exp(-deltaH).min(1.0)
   }
 }

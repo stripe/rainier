@@ -5,6 +5,8 @@ import rainier.compute._
 case class TreeParams(minus: HParams,
                       plus: HParams,
                       candidates: Set[HParams],
+                      acceptanceProb: Double,
+                      nNodes: Int,
                       keepGoing: Boolean) {
   def noUTurn: Boolean = NUTSTree.noUTurn(minus, plus)
 }
@@ -33,8 +35,9 @@ object NUTSTree {
       if (logSlice < nextParams.hamiltonian) { Set(nextParams) } else {
         Set[HParams]()
       }
+    val acceptanceProb = HParams.acceptanceProb(hParams, nextParams)
     val keepGoing = logSlice < nextParams.hamiltonian + 1000
-    TreeParams(nextParams, nextParams, candidates, keepGoing)
+    TreeParams(nextParams, nextParams, candidates, acceptanceProb, 1, keepGoing)
   }
 
   def buildNextTree(minus: HParams,
@@ -76,6 +79,9 @@ object NUTSTree {
                         integrator)
         nextTreeParams.copy(
           candidates = treeParams.candidates.union(nextTreeParams.candidates),
+          acceptanceProb =
+            treeParams.acceptanceProb + nextTreeParams.acceptanceProb,
+          nNodes = treeParams.nNodes + nextTreeParams.nNodes,
           keepGoing =
             treeParams.keepGoing
               && nextTreeParams.keepGoing

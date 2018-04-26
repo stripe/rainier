@@ -52,7 +52,9 @@ object NUTS {
             integrator: HamiltonianIntegrator,
             maxDepth: Int)(implicit rng: RNG): NUTS = {
     NUTS(
-      treeParams = TreeParams(hParams, hParams, Set(hParams), true),
+      //TODO: we add the acceptance probs and nNodes so starting at 0
+      //makes sense. If something seems wonky, reconsider this.
+      treeParams = TreeParams(hParams, hParams, Set(hParams), 0.0, 0, true),
       logSlice = Math.log(rng.standardUniform) + hParams.hamiltonian,
       depth = 0,
       stepSize = stepSize,
