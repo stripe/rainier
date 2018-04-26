@@ -25,7 +25,7 @@ object FitSparse {
         .fit(data)
     } yield (w1, w2)
 
-    println(DensityPlot().plot2D(normalModel.sample()).mkString("\n"))
+    plot2D(normalModel.sample())
 
     val laplaceModel = for {
       w1 <- Laplace(0, 0.01).param
