@@ -36,12 +36,15 @@ case class NUTS(treeParams: TreeParams,
 
   def toStream: Stream[NUTS] = this #:: next.toStream
 
-  def run(implicit rng: RNG): HParams = {
+  def run(implicit rng: RNG): (HParams, Double, Int) = {
     val finalNUTS =
       toStream.dropWhile(_.treeParams.keepGoing).head
     val candidates = finalNUTS.treeParams.candidates
     val index = (rng.standardUniform * candidates.size).toInt
-    candidates.toList(index)
+    val finalParams = candidates.toList(index)
+    val acceptanceProb = finalNUTS.treeParams.acceptanceProb
+    val nNodes = finalNUTS.treeParams.nNodes
+    (finalParams, acceptanceProb, nNodes)
   }
 }
 
