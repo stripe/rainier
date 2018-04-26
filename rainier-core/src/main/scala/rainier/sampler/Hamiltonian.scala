@@ -29,8 +29,12 @@ case class Hamiltonian(iterations: Int,
                       0.65,
                       nSteps * initialStepSize,
                       burnIn)
+    val stepSize = sampleMethod match {
+      case SampleNUTS => initialStepSize
+      case SampleHMC  => tunedStepSize
+    }
     0.until(chains).iterator.flatMap { i =>
-      take(tunedChain, iterations, tunedStepSize, sampleMethod).map { c =>
+      take(tunedChain, iterations, stepSize, sampleMethod).map { c =>
         val eval = new Evaluator(density.variables.zip(c.hParams.qs).toMap)
         Sample(i, c.accepted, eval)
       }.iterator
