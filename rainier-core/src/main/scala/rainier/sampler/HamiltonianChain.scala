@@ -2,7 +2,7 @@ package rainier.sampler
 
 import rainier.compute._
 
-case class HamiltonianChain(
+private case class HamiltonianChain(
     accepted: Boolean,
     acceptanceProb: Double,
     hParams: HParams,
@@ -40,11 +40,11 @@ case class HamiltonianChain(
     )
   }
 
-  def nextNUTS(stepSize: Double, maxDepth: Int = 6): HamiltonianChain = {
+  def nextNUTS(stepSize: Double, maxDepth: Int): HamiltonianChain = {
     val initialParams =
       HParams(hParams.qs, hParams.gradPotential, hParams.potential)
     val newParams =
-      NUTS(initialParams, stepSize, integrator, maxDepth).run
+      NUTSStep(initialParams, stepSize, integrator, maxDepth).run
     val newAccepted = (hParams.qs != newParams.qs)
     copy(
       hParams = newParams,
@@ -55,7 +55,7 @@ case class HamiltonianChain(
   private def integrator = LeapFrogIntegrator(cf)
 }
 
-object HamiltonianChain {
+private object HamiltonianChain {
 
   def apply(variables: Seq[Variable], density: Real)(
       implicit rng: RNG): HamiltonianChain = {
@@ -80,7 +80,7 @@ object HamiltonianChain {
   }
 }
 
-case class HParams(
+private case class HParams(
     qs: Array[Double],
     ps: Array[Double],
     gradPotential: Array[Double],
@@ -101,7 +101,7 @@ case class HParams(
   val hamiltonian = kinetic + potential
 }
 
-object HParams {
+private object HParams {
 
   def apply(qs: Array[Double], gradPotential: Array[Double], potential: Double)(
       implicit rng: RNG): HParams = {

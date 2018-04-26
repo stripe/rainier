@@ -8,11 +8,12 @@ import rainier.compute._
   * a full step to update the qs with the half-updated ps,
   * then another half step to update the ps using the new qs.
   */
-trait HamiltonianIntegrator {
+private trait HamiltonianIntegrator {
   def step(hParams: HParams, stepSize: Double): HParams
 }
 
-case class LeapFrogIntegrator(cf: Array[Double] => (Double, Array[Double]))
+private case class LeapFrogIntegrator(
+    cf: Array[Double] => (Double, Array[Double]))
     extends HamiltonianIntegrator {
 
   private def halfStepPs(hParams: HParams, stepSize: Double): HParams = {

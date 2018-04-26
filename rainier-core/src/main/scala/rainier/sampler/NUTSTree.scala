@@ -2,18 +2,18 @@ package rainier.sampler
 
 import rainier.compute._
 
-case class TreeParams(minus: HParams,
-                      plus: HParams,
-                      candidates: Set[HParams],
-                      keepGoing: Boolean) {
+private case class TreeParams(minus: HParams,
+                              plus: HParams,
+                              candidates: Set[HParams],
+                              keepGoing: Boolean) {
   def noUTurn: Boolean = NUTSTree.noUTurn(minus, plus)
 }
 
-sealed trait Direction { def toDouble: Double }
-case object Forward extends Direction { def toDouble = 1D }
-case object Backward extends Direction { def toDouble = -1D }
+private sealed trait Direction { def toDouble: Double }
+private case object Forward extends Direction { def toDouble = 1D }
+private case object Backward extends Direction { def toDouble = -1D }
 
-object NUTSTree {
+private object NUTSTree {
 
   def dot(v: Seq[Double], w: Seq[Double]) =
     v.zip(w).map { case (a, b) => a * b }.sum

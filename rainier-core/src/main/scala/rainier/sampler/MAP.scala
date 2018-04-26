@@ -3,7 +3,8 @@ package rainier.sampler
 import rainier.compute._
 
 case class MAP(stepSize: Double) extends Sampler {
-  def sample(density: Real, warmupIterations: Int)(implicit rng: RNG): Stream[Sample] =
+  def sample(density: Real, warmupIterations: Int)(
+      implicit rng: RNG): Stream[Sample] = {
     val values = MAP.optimize(density, warmupIterations, stepSize)
     val eval = new Evaluator(values)
     Stream.continually(Sample(true, eval))

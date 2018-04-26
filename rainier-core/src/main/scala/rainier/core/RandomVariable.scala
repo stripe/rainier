@@ -38,29 +38,30 @@ class RandomVariable[+T](private val value: T,
              num: Numeric[Real]): V =
     sampleable.get(value)(rng, num)
 
-  def sample[V]()(implicit rng: RNG,
-      sampleable: Sampleable[T, V]): List[V] = 
-      sample(Sampler.Default.sampler, Sampler.Default.warmupIterations, Sampler.Default.iterations)
+  def sample[V]()(implicit rng: RNG, sampleable: Sampleable[T, V]): List[V] =
+    sample(Sampler.Default.sampler,
+           Sampler.Default.warmupIterations,
+           Sampler.Default.iterations)
 
-  def sample[V](sampler: Sampler, warmupIterations: Int, iterations: Int, keepEvery: Int = 1)(
+  def sample[V](sampler: Sampler,
+                warmupIterations: Int,
+                iterations: Int,
+                keepEvery: Int = 1)(implicit rng: RNG,
+                                    sampleable: Sampleable[T, V]): List[V] =
+    toStream(sampler, warmupIterations)
+      .take(iterations)
+      .sliding(1, keepEvery)
+      .map(_.head.apply())
+      .toList
+
+  def toStream[V](sampler: Sampler, warmupIterations: Int)(
       implicit rng: RNG,
-      sampleable: Sampleable[T, V]): List[V] =
-      toStream(sampler, warmupIterations)
-        .take(iterations)
-        .sliding(1, keepEvery)
-        .map(._head.apply())
-        .toList
-
-
-    sampler.sample(density).toList.map { s =>
-      get(rng, sampleable, s.evaluator)
-    }
-
-  def toStream[V](sampler: Sampler, warmupIterations: Int)(implicit rng: RNG,
-      sampleable: Sampleable[T, V]): Stream[() => T] = 
-      sampler.sample(density, warmupIterations).map{s =>
+      sampleable: Sampleable[T, V]): Stream[() => V] =
+    sampler.sample(density, warmupIterations).map { s =>
+      { () =>
         get(rng, sampleable, s.evaluator)
       }
+    }
 
   val density = Real.sum(densities.toList.map(_.toReal))
 }
