@@ -1,4 +1,4 @@
-package rainier.report
+package rainier.repl
 
 case class DensityPlot(nRows: Int = 20,
                        nColumns: Int = 80,
