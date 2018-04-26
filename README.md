@@ -4,7 +4,7 @@ Rainier provides an idiomatic functional Scala API for bayesian inference via Ma
 
 Rainier allows you to describe a complex prior distribution by composing primitive distributions using familiar combinators like `map`, `flatMap`, and `zip`; condition that prior on your observed data; and, after an inference step, sample from the resulting posterior distribution.
 
-It is implemented in pure Scala, with no external dependencies, JNI libs, or reliance on GPUs, and as such is convenient to deploy to Spark or Hadoop clusters.
+It is implemented in pure Scala, with minimal external dependencies, and no JNI libs or reliance on GPUs, and as such is convenient to deploy to Spark or Hadoop clusters.
 
 Rainier currently provides two samplers: `affine-invariant MCMC`, an ensemble method popularized by the [Emcee](https://github.com/dfm/emcee) package in Python, and `Hamiltonian Monte Carlo` (along with its `NUTS` variant), a gradient-based method used in [Stan](http://mc-stan.org/) and [PyMC3](https://github.com/pymc-devs/pymc3).
 
@@ -18,10 +18,10 @@ If you're more familiar with deep learning systems like TensorFlow or PyTorch, y
 
 ## Building
 
-Rainier uses [SBT](https://www.scala-sbt.org/) to build. If you have SBT installed, you can build Rainier and test that it's working by executing `sbt run` and then choosing `3` to run `FitNormal`. You should see output something like this:
+Rainier uses [SBT](https://www.scala-sbt.org/) to build. If you have SBT installed, you can build Rainier and test that it's working by executing `sbt "project rainierExample" run` and then selecting `rainier.example.FitNormal`. You should see output something like this:
 
 ```
-[info] Running rainier.models.FitNormal 
+[info] Running rainier.example.FitNormal 
     2.19 |                                                                                
          |                                 ·           ··                                 
          |               ·           ·  · ·· ·  ···  ·  ·· ·  ·    · · ·                  
@@ -49,4 +49,6 @@ Rainier uses [SBT](https://www.scala-sbt.org/) to build. If you have SBT install
 
 ## Authors 
 
-Rainier was written primarily by [Avi Bryant](http://twitter.com/avibryant), with help and guidance from [Roban Kramer](https://twitter.com/robanhk) and [Mio Alter](https://twitter.com/mioalter).
+Rainier was written primarily by [Avi Bryant](http://twitter.com/avibryant), with guidance and contributions from [Roban Kramer](https://twitter.com/robanhk), [Mio Alter](https://twitter.com/mioalter), and [Grzegorz Kossakowski](https://twitter.com/gkossakowski).
+
+Thanks also to Aaron Steele and Michael Manapat for organizational support.
