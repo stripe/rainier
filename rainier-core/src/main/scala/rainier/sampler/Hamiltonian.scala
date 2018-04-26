@@ -11,17 +11,15 @@ case class Hamiltonian(nSteps: Int,
                        sampleMethod: SampleMethod = SampleNUTS,
                        initialStepSize: Double = 1.0)
     extends Sampler {
-  def sample(density: Real)(implicit rng: RNG): Iterator[Sample] = {
+  def sample(density: Real, warmupIterations: Int)(implicit rng: RNG): Stream[Sample] =
     val (tunedChain, tunedStepSize) =
       dualAvgStepSize(HamiltonianChain(density.variables, density),
                       0.65,
                       nSteps * initialStepSize,
-                      burnIn)
-    0.until(chains).iterator.flatMap { i =>
-      take(tunedChain, iterations, tunedStepSize, sampleMethod).map { c =>
-        val eval = new Evaluator(density.variables.zip(c.hParams.qs).toMap)
-        Sample(i, c.accepted, eval)
-      }.iterator
+                      warmupIterations)
+    take(tunedChain, iterations, tunedStepSize, sampleMethod).map { c =>
+      val eval = new Evaluator(density.variables.zip(c.hParams.qs).toMap)
+      Sample(i, c.accepted, eval)
     }
   }
 
