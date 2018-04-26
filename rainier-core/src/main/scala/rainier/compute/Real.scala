@@ -5,9 +5,15 @@ sealed trait Real {
   def *(other: Real): Real = BinaryReal(this, other, MultiplyOp)
   def -(other: Real): Real = BinaryReal(this, other, SubtractOp)
   def /(other: Real): Real = BinaryReal(this, other, DivideOp)
+
   def exp: Real = UnaryReal(this, ExpOp)
   def log: Real = UnaryReal(this, LogOp)
   def abs: Real = UnaryReal(this, AbsOp)
+
+  def >(other: Real): Real = Real.isPositive(this - other)
+  def <(other: Real): Real = Real.isNegative(this - other)
+  def >=(other: Real): Real = Real.one - (this < other)
+  def <=(other: Real): Real = Real.one - (this > other)
 
   lazy val variables: Seq[Variable] = Real.variables(this).toList
   def gradient: Seq[Real] = Gradient.derive(variables, this)
@@ -37,6 +43,15 @@ object Real {
     sum(seq.map(_.exp)).log //TODO: special case this
   val zero: Real = Real(0.0)
   val one: Real = Real(1.0)
+
+  private def nonZeroIsPositive(real: Real): Real =
+    ((real.abs / real) + 1) / 2
+
+  private def isPositive(real: Real): Real =
+    nonZeroIsPositive(BinaryReal(real, -1, OrOp))
+
+  private def isNegative(real: Real): Real =
+    Real.one - nonZeroIsPositive(BinaryReal(real, 1, OrOp))
 
   private def variables(real: Real): Set[Variable] = {
     def loop(r: Real, acc: Set[Variable]): Set[Variable] =

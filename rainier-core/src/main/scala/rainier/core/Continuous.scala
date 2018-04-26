@@ -58,7 +58,9 @@ object Gamma {
 
   def standard(shape: Real): Continuous = new Continuous {
     def realLogDensity(real: Real) =
-      (shape - 1) * real.log - Combinatrics.gamma(shape) - real
+      (real > 0).log +
+        (shape - 1) * real.log -
+        Combinatrics.gamma(shape) - real
 
     def param = {
       val x = new Variable
@@ -110,7 +112,9 @@ object LogNormal {
 
 object Uniform {
   val standard: Continuous = new Continuous {
-    def realLogDensity(real: Real) = Real.one
+    def realLogDensity(real: Real) =
+      (real >= 0).log + (real <= 1).log
+
     val generator = Generator.from { (r, n) =>
       r.standardUniform
     }
