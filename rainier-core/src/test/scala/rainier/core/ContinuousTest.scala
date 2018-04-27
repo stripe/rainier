@@ -18,7 +18,7 @@ class ContinuousTest extends FunSuite {
           val sampledData = trueDist.param.sample()
           val model =
             for {
-              x <- LogNormal(0, 10).param
+              x <- LogNormal(0, 1).param
               _ <- fn(x).fit(syntheticData)
             } yield x
           val fitValues = model.sample()

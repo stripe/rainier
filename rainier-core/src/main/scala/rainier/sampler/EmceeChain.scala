@@ -9,7 +9,7 @@ private case class EmceeChain(density: Real,
                               right: EmceeSet,
                               walker: Int)(implicit rng: RNG) {
 
-  val (variables, accepted) =
+  val (variables, accepted, score) =
     if (walker < (walkers / 2))
       left.walker(walker)
     else
@@ -111,8 +111,8 @@ private case class EmceeSet(
     accepted: Vector[Boolean],
     scores: Vector[Double]
 ) {
-  def walker(w: Int): (Array[Double], Boolean) =
-    (params(w), accepted(w))
+  def walker(w: Int): (Array[Double], Boolean, Double) =
+    (params(w), accepted(w), scores(w))
 
   def propose(other: EmceeSet): EmceeSet = {
     def merge[V](a: Seq[V], b: Seq[V]) = {
