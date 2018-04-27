@@ -143,7 +143,7 @@ private case object AbsOp extends UnaryOp {
 
 private case object ZeroToOne extends UnaryOp {
   def apply(original: Double) =
-    if(original == 0.0)
+    if (original == 0.0)
       1.0
     else
       original

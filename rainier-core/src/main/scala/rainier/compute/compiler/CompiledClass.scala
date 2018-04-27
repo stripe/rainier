@@ -1,4 +1,4 @@
-package rainier.compute.asm
+package rainier.compute.compiler
 
 import org.objectweb.asm.Opcodes._
 import java.io.File
@@ -26,7 +26,7 @@ private class CompiledClass(name: String, methods: Seq[MethodNode]) {
               name,
               null,
               "java/lang/Object",
-              Array("rainier/compute/asm/CompiledFunction"))
+              Array("rainier/compute/compiler/CompiledFunction"))
     cls.methods.add(createInit)
     methods.foreach { m =>
       cls.methods.add(m)
