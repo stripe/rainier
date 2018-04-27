@@ -4,6 +4,10 @@ import org.objectweb.asm.Opcodes._
 import org.objectweb.asm.tree.MethodNode
 import rainier.compute._
 
+object Helpers {
+  def zeroOrOne(x: Double) = if (x == 0.0) 1.0 else x
+}
+
 private trait MethodGenerator {
   lazy val methodNode: MethodNode =
     new MethodNode(ASM6, //api
@@ -58,13 +62,14 @@ private trait MethodGenerator {
   }
 
   def unaryOp(op: UnaryOp): Unit = {
-    val methodName = op match {
-      case LogOp => "log"
-      case ExpOp => "exp"
-      case AbsOp => "abs"
+    val (objectName, methodName) = op match {
+      case LogOp     => ("java/lang/Math", "log")
+      case ExpOp     => ("java/lang/Math", "exp")
+      case AbsOp     => ("java/lang/Math", "abs")
+      case ZeroToOne => ("rainier/compute/compiler/Helpers$", "zeroToOne")
     }
     methodNode.visitMethodInsn(INVOKESTATIC,
-                               "java/lang/Math",
+                               objectName,
                                methodName,
                                "(D)D",
                                false)

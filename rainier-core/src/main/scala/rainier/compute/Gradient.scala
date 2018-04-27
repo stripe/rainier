@@ -86,7 +86,8 @@ private object Gradient {
       case AbsOp =>
         gradient.toReal * child.original / UnaryReal(child, ZeroToOne)
       case ZeroToOne =>
-        gradient.toReal * (child.original / UnaryReal(child.original, ZeroToOne))
+        gradient.toReal * (child.original / UnaryReal(child.original,
+                                                      ZeroToOne))
     }
   }
 }
