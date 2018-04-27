@@ -125,30 +125,6 @@ private case object DivideOp extends BinaryOp {
   def apply(left: Double, right: Double) = left / right
 }
 
-private case object OrOp extends BinaryOp {
-  def apply(left: Double, right: Double) =
-    if (left == 0.0)
-      right
-    else
-      left
-}
-
-private case object AndOp extends BinaryOp {
-  def apply(left: Double, right: Double) =
-    if (right == 0.0)
-      0.0
-    else
-      left
-}
-
-private case object AndNotOp extends BinaryOp {
-  def apply(left: Double, right: Double) =
-    if (right == 0.0)
-      left
-    else
-      0.0
-}
-
 private sealed trait UnaryOp {
   def apply(original: Double): Double
 }
@@ -163,4 +139,12 @@ private case object LogOp extends UnaryOp {
 
 private case object AbsOp extends UnaryOp {
   def apply(original: Double) = original.abs
+}
+
+private case object ZeroToOne extends UnaryOp {
+  def apply(original: Double) =
+    if(original == 0.0)
+      1.0
+    else
+      original
 }
