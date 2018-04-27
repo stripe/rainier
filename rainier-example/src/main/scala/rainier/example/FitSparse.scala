@@ -3,7 +3,7 @@ package rainier.example
 import rainier.compute._
 import rainier.core._
 import rainier.sampler._
-import rainier.report._
+import rainier.repl._
 
 object FitSparse {
   def main(args: Array[String]) {
@@ -25,8 +25,7 @@ object FitSparse {
         .fit(data)
     } yield (w1, w2)
 
-    implicit val rng = RNG.default
-    println(DensityPlot().plot2D(normalModel.sample()).mkString("\n"))
+    plot2D(normalModel.sample())
 
     val laplaceModel = for {
       w1 <- Laplace(0, 0.01).param
@@ -40,6 +39,6 @@ object FitSparse {
         .fit(data)
     } yield (w1, w2)
 
-    println(DensityPlot().plot2D(laplaceModel.sample()).mkString("\n"))
+    plot2D(laplaceModel.sample())
   }
 }

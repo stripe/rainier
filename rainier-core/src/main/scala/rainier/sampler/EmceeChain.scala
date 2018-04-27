@@ -2,12 +2,12 @@ package rainier.sampler
 
 import rainier.compute._
 
-case class EmceeChain(density: Real,
-                      cf: Array[Double] => Double,
-                      walkers: Int,
-                      left: EmceeSet,
-                      right: EmceeSet,
-                      walker: Int)(implicit rng: RNG) {
+private case class EmceeChain(density: Real,
+                              cf: Array[Double] => Double,
+                              walkers: Int,
+                              left: EmceeSet,
+                              right: EmceeSet,
+                              walker: Int)(implicit rng: RNG) {
 
   val (variables, accepted) =
     if (walker < (walkers / 2))
@@ -69,7 +69,7 @@ case class EmceeChain(density: Real,
   }
 }
 
-object EmceeChain {
+private object EmceeChain {
   def apply(density: Real, variables: Seq[Variable], walkers: Int)(
       implicit rng: RNG): EmceeChain = {
     require(walkers % 2 == 0)
@@ -106,7 +106,7 @@ object EmceeChain {
   }
 }
 
-case class EmceeSet(
+private case class EmceeSet(
     params: Vector[Array[Double]],
     accepted: Vector[Boolean],
     scores: Vector[Double]

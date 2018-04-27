@@ -1,6 +1,5 @@
 package rainier
 
-import rainier.report._
 import rainier.sampler._
 
 package object repl {

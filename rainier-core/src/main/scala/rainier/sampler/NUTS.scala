@@ -2,62 +2,16 @@ package rainier.sampler
 
 import rainier.compute._
 
-case class NUTS(treeParams: TreeParams,
-                logSlice: Double,
-                depth: Int,
-                stepSize: Double,
-                integrator: HamiltonianIntegrator,
-                maxDepth: Int)(implicit rng: RNG) {
+case class NUTS(stepSize: Double = 1.0, maxDepth: Int) extends Sampler {
+  def sample(density: Real, warmupIterations: Int)(
+      implicit rng: RNG): Stream[Sample] =
+    toStream(density, HamiltonianChain(density.variables, density))
 
-  def next: NUTS = {
-
-    val direction = if (rng.standardUniform < 0.5) Backward else Forward
-    val nextTreeParams = NUTSTree.buildNextTree(treeParams.minus,
-                                                treeParams.plus,
-                                                logSlice,
-                                                direction,
-                                                stepSize,
-                                                depth,
-                                                integrator)
-    val nextCandidates = if (nextTreeParams.keepGoing) {
-      treeParams.candidates.union(nextTreeParams.candidates)
-    } else { treeParams.candidates }
-    copy(
-      treeParams = nextTreeParams.copy(
-        keepGoing =
-          nextTreeParams.keepGoing
-            && nextTreeParams.noUTurn
-            && depth <= maxDepth,
-        candidates = nextCandidates
-      ),
-      depth = depth + 1
-    )
-  }
-
-  def toStream: Stream[NUTS] = this #:: next.toStream
-
-  def run(implicit rng: RNG): HParams = {
-    val finalNUTS =
-      toStream.dropWhile(_.treeParams.keepGoing).head
-    val candidates = finalNUTS.treeParams.candidates
-    val index = (rng.standardUniform * candidates.size).toInt
-    candidates.toList(index)
-  }
-}
-
-object NUTS {
-
-  def apply(hParams: HParams,
-            stepSize: Double,
-            integrator: HamiltonianIntegrator,
-            maxDepth: Int)(implicit rng: RNG): NUTS = {
-    NUTS(
-      treeParams = TreeParams(hParams, hParams, Set(hParams), true),
-      logSlice = Math.log(rng.standardUniform) + hParams.hamiltonian,
-      depth = 0,
-      stepSize = stepSize,
-      integrator = integrator,
-      maxDepth = maxDepth
-    )
+  private def toStream(density: Real,
+                       chain: HamiltonianChain): Stream[Sample] = {
+    val eval = new Evaluator(density.variables.zip(chain.hParams.qs).toMap)
+    Sample(chain.accepted, eval) #:: toStream(
+      density,
+      chain.nextNUTS(stepSize, maxDepth))
   }
 }

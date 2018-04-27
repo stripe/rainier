@@ -2,22 +2,13 @@ package rainier.sampler
 
 import rainier.compute._
 
-case class Emcee(iterations: Int, burnIn: Int, walkers: Int) extends Sampler {
-  val description = ("Emcee",
-                     Map(
-                       "Walkers" -> walkers.toDouble,
-                       "Iterations" -> iterations.toDouble,
-                       "Burn In" -> burnIn.toDouble
-                     ))
-
-  def sample(density: Real)(implicit rng: RNG): Iterator[Sample] = {
+case class Emcee(walkers: Int) extends Sampler {
+  def sample(density: Real, warmupIterations: Int)(
+      implicit rng: RNG): Stream[Sample] =
     EmceeChain(density, density.variables, walkers).toStream
-      .drop(burnIn * walkers)
-      .take(iterations * walkers)
+      .drop(warmupIterations)
       .map { c =>
         val map = density.variables.zip(c.variables).toMap
-        Sample(c.walker, c.accepted, new Evaluator(map))
+        Sample(c.accepted, new Evaluator(map))
       }
-      .iterator
-  }
 }

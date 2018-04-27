@@ -3,12 +3,16 @@ package rainier.sampler
 import rainier.compute._
 
 trait Sampler {
-  def description: (String, Map[String, Double])
-  def sample(density: Real)(implicit rng: RNG): Iterator[Sample]
+  def sample(density: Real, warmupIterations: Int)(
+      implicit rng: RNG): Stream[Sample]
 }
 
-case class Sample(chain: Int, accepted: Boolean, evaluator: Numeric[Real])
+case class Sample(accepted: Boolean, evaluator: Numeric[Real])
 
 object Sampler {
-  val default: Sampler = Emcee(1000, 1000, 100)
+  object Default {
+    val sampler = Emcee(100)
+    val iterations = 10000
+    val warmupIterations = 10000
+  }
 }
