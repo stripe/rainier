@@ -10,18 +10,18 @@ class ContinuousTest extends FunSuite {
   def check(description: String)(fn: Real => Continuous) = {
     println(description)
     List(0.1, 1.0, 2.0).foreach { trueValue =>
-      List(Hamiltonian(10000, 1000, 100, SampleHMC, 1), Emcee(100, 100, 100))
+      List(HMC(100), Emcee(100))
         .foreach { sampler =>
           val trueDist = fn(Real(trueValue))
           val syntheticData =
             RandomVariable(trueDist.generator).sample().take(1000)
-          val sampledData = trueDist.param.sample()
+          val sampledData = trueDist.param.sample(sampler, 1000, 1000)
           val model =
             for {
               x <- LogNormal(0, 1).param
               _ <- fn(x).fit(syntheticData)
             } yield x
-          val fitValues = model.sample()
+          val fitValues = model.sample(sampler, 1000, 1000)
 
           val syntheticMean = syntheticData.sum / syntheticData.size
           val syntheticStdDev = Math.sqrt(syntheticData.map { n =>
