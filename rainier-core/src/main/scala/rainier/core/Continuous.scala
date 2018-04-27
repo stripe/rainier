@@ -6,13 +6,14 @@ import scala.annotation.tailrec
 
 trait Continuous extends Distribution[Double] { self =>
   def param: RandomVariable[Real]
-  def realLogDensity(real: Real): Real
 
   def logDensity(t: Double) = realLogDensity(Real(t))
 
   def scale(a: Real): Continuous = Scale(a).transform(this)
   def translate(b: Real): Continuous = Translate(b).transform(this)
   def exp: Continuous = Exp.transform(this)
+
+  private[core] def realLogDensity(real: Real): Real
 }
 
 trait LocationScaleFamily { self =>
@@ -62,6 +63,11 @@ object Gamma {
         (shape - 1) * real.log -
         Combinatrics.gamma(shape) - real
 
+    /*
+    Jacobian time: we need pdf(x) and we have pdf(f(x)) where f(x) = e^x.
+    This is pdf(f(x))f'(x) which is pdf(e^x)e^x.
+    If we take the logs we get logPDF(e^x) + x.
+     */
     def param = {
       val x = new Variable
       RandomVariable(x.exp, x + realLogDensity(x.exp))
