@@ -1,5 +1,5 @@
 package rainier.compute
-import rainier.core.Distributions
+import rainier.core._
 
 import org.scalatest.FunSuite
 
@@ -20,6 +20,6 @@ class CompilerTest extends FunSuite {
   }
 
   test("x ~ normal(0,1)") {
-    assertMatchesEvaluator(Distributions.normal(x, 0, 1))
+    assertMatchesEvaluator(Normal.standard.realLogDensity(x))
   }
 }

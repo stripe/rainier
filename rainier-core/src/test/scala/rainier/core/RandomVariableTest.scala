@@ -68,6 +68,6 @@ class RandomVariableTest extends FunSuite {
                   Real.one,
                   (x: Real) => x.exp,
                   (x: Real) => Uniform(0, x).param,
-                  (x: Real) => NonNegative.param)
+                  (x: Real) => Exponential(x).param)
   }
 }
