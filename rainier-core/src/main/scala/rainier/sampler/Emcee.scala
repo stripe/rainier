@@ -7,9 +7,6 @@ case class Emcee(walkers: Int) extends Sampler {
       implicit rng: RNG): Stream[Sample] =
     EmceeChain(density, density.variables, walkers).toStream
       .drop(warmupIterations)
-      .filterNot { c =>
-        c.score.isNegInfinity
-      }
       .map { c =>
         val map = density.variables.zip(c.variables).toMap
         Sample(c.accepted, new Evaluator(map))
