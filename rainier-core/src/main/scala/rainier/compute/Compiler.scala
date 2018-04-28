@@ -122,10 +122,11 @@ object ArrayCompiler extends Compiler {
   }
 
   private def deps(real: Real): Seq[Real] = real match {
-    case b: BinaryReal => List(b.left, b.right)
-    case u: UnaryReal  => List(u.original)
-    case c: Constant   => Nil
-    case v: Variable   => Nil
+    case b: BinaryReal   => List(b.left, b.right)
+    case u: UnaryReal    => List(u.original)
+    case If(test, nz, z) => List(test, nz, z)
+    case c: Constant     => Nil
+    case v: Variable     => Nil
   }
 
   private def topologicalSort(targets: Seq[Real]): Seq[Info] = {
@@ -188,6 +189,11 @@ object ArrayCompiler extends Compiler {
           binary(info.deps(0).address, info.deps(1).address, info.address, b.op)
         case u: UnaryReal =>
           unary(info.deps.head.address, info.address, u.op)
+        case If(test, nz, z) =>
+          ifExpr(info.deps(0).address,
+                 info.deps(1).address,
+                 info.deps(2).address,
+                 info.address)
         case _ => Nil
       })
     }
@@ -207,9 +213,6 @@ object ArrayCompiler extends Compiler {
       case DivideOp   => 1
       case MultiplyOp => 2
       case SubtractOp => 3
-      case OrOp       => 4
-      case AndOp      => 5
-      case AndNotOp   => 6
     }
     List(encode(store, opcode), left, right)
   }
@@ -221,6 +224,14 @@ object ArrayCompiler extends Compiler {
       case AbsOp => 9
     }
     List(encode(store, opcode), load)
+  }
+
+  private def ifExpr(test: Int,
+                     whenNonZero: Int,
+                     whenZero: Int,
+                     store: Int): Seq[Int] = {
+    val opcode = 4
+    List(encode(store, opcode), test, whenNonZero, whenZero)
   }
 
   private val bitmask = ((1 << addressBits) - 1)
@@ -245,18 +256,14 @@ object ArrayCompiler extends Compiler {
           heap(next()) * heap(next())
         case 3 => //Subtract
           heap(next()) - heap(next())
-        case 4 => //Or
-          val left = heap(next())
-          val right = heap(next())
-          if (left == 0) right else left
-        case 5 => //And
-          val left = heap(next())
-          val right = heap(next())
-          if (right == 0) 0 else left
-        case 6 => //AndNot
-          val left = heap(next())
-          val right = heap(next())
-          if (right == 0) left else 0
+        case 4 => //If
+          val test = heap(next())
+          val nz = heap(next())
+          val z = heap(next())
+          if (test == 0.0)
+            z
+          else
+            nz
         case 7 => //Exp
           math.exp(heap(next()))
         case 8 => //Log

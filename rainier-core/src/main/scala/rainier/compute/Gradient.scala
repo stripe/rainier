@@ -27,6 +27,14 @@ private object Gradient {
           case u: UnaryReal =>
             diff(u.original).register(UnaryDiff(u, diff(u)))
             visit(u.original)
+
+          case f: If =>
+            diff(f.test).register(TrinaryDiff(f, diff(f), 0))
+            diff(f.whenNonZero).register(TrinaryDiff(f, diff(f), 1))
+            diff(f.whenZero).register(TrinaryDiff(f, diff(f), 2))
+            visit(f.test)
+            visit(f.whenNonZero)
+            visit(f.whenZero)
         }
       }
     }
@@ -76,21 +84,6 @@ private object Gradient {
             gradient.toReal * (Real.one / child.right)
           else
             gradient.toReal * -1 * child.left / (child.right * child.right)
-        case OrOp =>
-          if (isLeft)
-            BinaryReal(gradient.toReal, child.left, AndOp)
-          else
-            BinaryReal(gradient.toReal, child.left, AndNotOp)
-        case AndOp =>
-          if (isLeft)
-            BinaryReal(gradient.toReal, child.right, AndOp)
-          else
-            Real.zero
-        case AndNotOp =>
-          if (isLeft)
-            BinaryReal(gradient.toReal, child.right, AndNotOp)
-          else
-            Real.zero
       }
   }
 
@@ -99,7 +92,17 @@ private object Gradient {
       case LogOp => gradient.toReal * (Real.one / child.original)
       case ExpOp => gradient.toReal * child
       case AbsOp =>
-        gradient.toReal * child.original / BinaryReal(child, Real.one, OrOp)
+        If(child.original, gradient.toReal * child.original / child, Real.zero)
+    }
+  }
+
+  private case class TrinaryDiff(child: If, gradient: Diff, pos: Int)
+      extends Diff {
+    def toReal = pos match {
+      case 0 => Real.zero
+      case 1 => If(child.test, gradient.toReal, Real.zero)
+      case 2 => If(child.test, Real.zero, gradient.toReal)
+      case _ => sys.error("Invalid trinary position")
     }
   }
 }

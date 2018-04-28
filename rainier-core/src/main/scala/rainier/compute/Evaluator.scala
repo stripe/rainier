@@ -15,10 +15,15 @@ class Evaluator(variables: Map[Variable, Double]) extends Numeric[Real] {
   }
 
   private def eval(real: Real): Double = real match {
-    case c: Constant   => c.value
-    case b: BinaryReal => b.op(toDouble(b.left), toDouble(b.right))
-    case u: UnaryReal  => u.op(toDouble(u.original))
-    case v: Variable   => variables(v)
+    case b: BinaryReal   => b.op(toDouble(b.left), toDouble(b.right))
+    case u: UnaryReal    => u.op(toDouble(u.original))
+    case v: Variable     => variables(v)
+    case Constant(value) => value
+    case If(test, nz, z) =>
+      if (toDouble(test) == 0.0)
+        toDouble(z)
+      else
+        toDouble(nz)
   }
 
   def compare(x: Real, y: Real) = toDouble(x).compare(toDouble(y))
