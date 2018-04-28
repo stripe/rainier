@@ -76,21 +76,6 @@ private object Gradient {
             gradient.toReal * (Real.one / child.right)
           else
             gradient.toReal * -1 * child.left / (child.right * child.right)
-        case OrOp =>
-          if (isLeft)
-            BinaryReal(gradient.toReal, child.left, AndOp)
-          else
-            BinaryReal(gradient.toReal, child.left, AndNotOp)
-        case AndOp =>
-          if (isLeft)
-            BinaryReal(gradient.toReal, child.right, AndOp)
-          else
-            Real.zero
-        case AndNotOp =>
-          if (isLeft)
-            BinaryReal(gradient.toReal, child.right, AndNotOp)
-          else
-            Real.zero
       }
   }
 
@@ -99,7 +84,9 @@ private object Gradient {
       case LogOp => gradient.toReal * (Real.one / child.original)
       case ExpOp => gradient.toReal * child
       case AbsOp =>
-        gradient.toReal * child.original / BinaryReal(child, Real.one, OrOp)
+        gradient.toReal * child.original / UnaryReal(child, ZeroToOne)
+      case ZeroToOne =>
+        gradient.toReal * (child.original / UnaryReal(child.original, ZeroToOne))
     }
   }
 }
