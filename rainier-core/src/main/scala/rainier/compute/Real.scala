@@ -1,14 +1,27 @@
 package rainier.compute
 
 sealed trait Real {
-  def +(other: Real): Real = BinaryReal(this, other, AddOp)
-  def *(other: Real): Real = BinaryReal(this, other, MultiplyOp)
-  def -(other: Real): Real = BinaryReal(this, other, SubtractOp)
-  def /(other: Real): Real = BinaryReal(this, other, DivideOp)
+  def +(other: Real): Real = other match {
+    case Constant(0.0) => this
+    case Constant(v) => Line(Map(this -> 1.0), v)
+    case _ => Line(Map(this -> 1.0, other -> 1.0), 0.0)
+  }
+    
+  def *(other: Real): Real = other match {
+    case Constant(1.0) => this
+    case Constant(v) => Line(Map(this -> v), 0.0)
+    case _ => Multiply(this, other)
+  }
 
-  def exp: Real = UnaryReal(this, ExpOp)
-  def log: Real = UnaryReal(this, LogOp)
-  def abs: Real = UnaryReal(this, AbsOp)
+  def -(other: Real): Real = this + (other * -1)
+  def /(other: Real): Real = this * other.reciprocal
+
+  def exp: Real = unary(ExpOp)
+  def log: Real = unary(LogOp)
+  def abs: Real = unary(AbsOp)
+  def reciprocal: Real = unary(RecipOp)
+
+  protected def unary(op: UnaryOp) = UnaryReal(this, op)
 
   def >(other: Real): Real = Real.isPositive(this - other)
   def <(other: Real): Real = Real.isNegative(this - other)
@@ -106,25 +119,6 @@ object Real {
       }, op)
 }
 
-private case class Constant(value: Double) extends Real
-
-private class BinaryReal private (val left: Real,
-                                  val right: Real,
-                                  val op: BinaryOp)
-    extends Real
-
-private object BinaryReal {
-  def apply(left: Real, right: Real, op: BinaryOp): Real =
-    Real.optimize(new BinaryReal(left, right, op))
-}
-
-private class UnaryReal private (val original: Real, val op: UnaryOp)
-    extends Real
-private object UnaryReal {
-  def apply(original: Real, op: UnaryOp): Real =
-    Real.optimize(new UnaryReal(original, op))
-}
-
 class Variable extends Real
 
 case class If private (test: Real, whenNonZero: Real, whenZero: Real)
@@ -134,26 +128,48 @@ object If {
     Real.optimize(new If(test, whenNonZero, whenZero))
 }
 
-private sealed trait BinaryOp {
-  def apply(left: Double, right: Double): Double
+private case class Constant(value: Double) extends Real {
+  override def +(other: Real): Real = other match {
+    case Constant(v) => Constant(value + v)
+    case l: Line     => l + this
+    case _           => new Line(Map(other -> 1.0), value)
+  }
+
+  override def *(other: Real): Real = other match {
+    case Constant(v) => Constant(value + v)
+    case l: Line     => l * this
+    case _           => new Line(Map(other -> value), 0.0)
+  }
+
+  override protected def unary(op: UnaryOp) = Constant(op(value))
 }
 
-private sealed trait CommutativeOp extends BinaryOp
+private class UnaryReal private (val original: Real, val op: UnaryOp)
+    extends Real {
 
-private case object AddOp extends CommutativeOp {
-  def apply(left: Double, right: Double) = left + right
+  override protected def unary(nextOp: UnaryOp): Real =
+    (op, nextOp) match {
+      case (LogOp,ExpOp) => original
+      case (ExpOp, LogOp) => original
+      case (RecipOp, RecipOp) => original
+      case (AbsOp, AbsOp) => this
+      //1/e^x => e^-x??
+      case _ => super.unary(nextOp)
+    }
+  }
 }
 
-private case object MultiplyOp extends CommutativeOp {
-  def apply(left: Double, right: Double) = left * right
-}
-
-private case object SubtractOp extends BinaryOp {
-  def apply(left: Double, right: Double) = left - right
-}
-
-private case object DivideOp extends BinaryOp {
-  def apply(left: Double, right: Double) = left / right
+private class Line(val ax: Map[Real, Double], val b: Double) extends Real {
+  override def +(other: Real): Real = other match {
+    case Constant(v) => new Line(ax, b + v)
+    case l: Line     => new Line(merge(ax, l.ax), l.b + b)
+    case _           => new Line(ax + (other -> 1.0), b)
+  }
+  def *(other: Real): Real = other match {
+    case Constant(v) => new Line(ax.map { case (r, d) => r -> d * v }, b * v)
+    case _           => super.*(other)
+  }
+//  def log: Real = if a > 0 && b == 0, log(a) + log(x)
 }
 
 private sealed trait UnaryOp {
@@ -170,4 +186,8 @@ private case object LogOp extends UnaryOp {
 
 private case object AbsOp extends UnaryOp {
   def apply(original: Double) = original.abs
+}
+
+private case object RecipOp extends UnaryOp {
+  def apply(original: Double) = 1.0 / original
 }
