@@ -3,14 +3,15 @@ package rainier.compute
 sealed trait Real {
   def +(other: Real): Real = other match {
     case Constant(0.0) => this
-    case Constant(v) => Line(Map(this -> 1.0), v)
-    case _ => Line(Map(this -> 1.0, other -> 1.0), 0.0)
+    case Constant(v)   => new Line(Map(this -> 1.0), v)
+    case _             => new Line(Map(this -> 1.0, other -> 1.0), 0.0)
   }
-    
+
   def *(other: Real): Real = other match {
     case Constant(1.0) => this
-    case Constant(v) => Line(Map(this -> v), 0.0)
-    case _ => Multiply(this, other)
+    case Constant(0.0) => Real.zero
+    case Constant(v)   => new Line(Map(this -> v), 0.0)
+    case _             => new Product(this, other)
   }
 
   def -(other: Real): Real = this + (other * -1)
@@ -21,7 +22,7 @@ sealed trait Real {
   def abs: Real = unary(AbsOp)
   def reciprocal: Real = unary(RecipOp)
 
-  protected def unary(op: UnaryOp) = UnaryReal(this, op)
+  protected def unary(op: UnaryOp): Real = new UnaryReal(this, op)
 
   def >(other: Real): Real = Real.isPositive(this - other)
   def <(other: Real): Real = Real.isNegative(this - other)
@@ -33,27 +34,14 @@ sealed trait Real {
 }
 
 object Real {
-  import scala.language.implicitConversions
-
   implicit def apply[N](value: N)(implicit toReal: ToReal[N]): Real =
     toReal(value)
   def seq[A](as: Seq[A])(implicit toReal: ToReal[A]): Seq[Real] =
     as.map(toReal(_))
 
   def sum(seq: Seq[Real]): Real =
-    if (seq.isEmpty)
-      Real.zero
-    else
-      reduceCommutative(seq, AddOp)
+    seq.foldLeft(Real.zero)(_ + _)
 
-  def product(seq: Seq[Real]): Real =
-    if (seq.isEmpty)
-      Real.one
-    else
-      reduceCommutative(seq, MultiplyOp)
-
-  def logSumExp(seq: Seq[Real]): Real =
-    sum(seq.map(_.exp)).log //TODO: special case this
   val zero: Real = Real(0.0)
   val one: Real = Real(1.0)
 
@@ -69,10 +57,10 @@ object Real {
   private def variables(real: Real): Set[Variable] = {
     def loop(r: Real, acc: Set[Variable]): Set[Variable] =
       r match {
-        case Constant(_)   => acc
-        case b: BinaryReal => loop(b.right, loop(b.left, acc))
-        case u: UnaryReal  => loop(u.original, acc)
-        case v: Variable   => acc + v
+        case Constant(_)  => acc
+        case p: Product   => loop(p.right, loop(p.left, acc))
+        case u: UnaryReal => loop(u.original, acc)
+        case v: Variable  => acc + v
         case If(test, nz, z) =>
           val acc2 = loop(test, acc)
           val acc3 = loop(nz, acc2)
@@ -81,83 +69,50 @@ object Real {
 
     loop(real, Set.empty)
   }
-
-  def print(real: Real, depth: Int = 0): Unit = {
-    val padding = "  " * depth
-    real match {
-      case Constant(v) => println(padding + v)
-      case b: BinaryReal =>
-        println(padding + b.op)
-        print(b.left, depth + 1)
-        print(b.right, depth + 1)
-      case u: UnaryReal =>
-        println(padding + u.op)
-        print(u.original, depth + 1)
-      case v: Variable =>
-        println(padding + v)
-      case If(test, nz, z) =>
-        println(padding + "If ")
-        print(test, depth + 1)
-        print(nz, depth + 1)
-        print(z, depth + 1)
-    }
-  }
-
-  private[compute] def optimize(real: Real): Real =
-    Table.intern(Pruner.prune(real))
-
-  private def reduceCommutative(seq: Seq[Real], op: CommutativeOp): Real =
-    if (seq.size == 1)
-      seq.head
-    else
-      reduceCommutative(seq.grouped(2).toList.map {
-        case oneOrTwo =>
-          if (oneOrTwo.size == 1)
-            oneOrTwo.head
-          else
-            BinaryReal(oneOrTwo(0), oneOrTwo(1), op)
-      }, op)
 }
 
 class Variable extends Real
 
 case class If private (test: Real, whenNonZero: Real, whenZero: Real)
     extends Real
+
 object If {
   def apply(test: Real, whenNonZero: Real, whenZero: Real): Real =
-    Real.optimize(new If(test, whenNonZero, whenZero))
+    test match {
+      case Constant(0.0) => whenZero
+      case Constant(v)   => whenNonZero
+      case _             => new If(test, whenNonZero, whenZero)
+    }
 }
 
 private case class Constant(value: Double) extends Real {
   override def +(other: Real): Real = other match {
     case Constant(v) => Constant(value + v)
-    case l: Line     => l + this
-    case _           => new Line(Map(other -> 1.0), value)
+    case _           => other + this
   }
 
   override def *(other: Real): Real = other match {
-    case Constant(v) => Constant(value + v)
-    case l: Line     => l * this
-    case _           => new Line(Map(other -> value), 0.0)
+    case Constant(v) => Constant(value * v)
+    case _           => other * this
   }
 
   override protected def unary(op: UnaryOp) = Constant(op(value))
 }
 
-private class UnaryReal private (val original: Real, val op: UnaryOp)
-    extends Real {
+private class UnaryReal(val original: Real, val op: UnaryOp) extends Real {
 
   override protected def unary(nextOp: UnaryOp): Real =
     (op, nextOp) match {
-      case (LogOp,ExpOp) => original
-      case (ExpOp, LogOp) => original
+      case (LogOp, ExpOp)     => original
+      case (ExpOp, LogOp)     => original
       case (RecipOp, RecipOp) => original
-      case (AbsOp, AbsOp) => this
+      case (AbsOp, AbsOp)     => this
       //1/e^x => e^-x??
       case _ => super.unary(nextOp)
     }
-  }
 }
+
+private class Product(val left: Real, val right: Real) extends Real
 
 private class Line(val ax: Map[Real, Double], val b: Double) extends Real {
   override def +(other: Real): Real = other match {
@@ -169,7 +124,10 @@ private class Line(val ax: Map[Real, Double], val b: Double) extends Real {
     case Constant(v) => new Line(ax.map { case (r, d) => r -> d * v }, b * v)
     case _           => super.*(other)
   }
-//  def log: Real = if a > 0 && b == 0, log(a) + log(x)
+
+  private def merge(left: Map[Real, Double],
+                    right: Map[Real, Double]): Map[Real, Double] = ???
+//  def log: Real = if ax.size == 1 && a > 0 && b == 0, log(a) + log(x)
 }
 
 private sealed trait UnaryOp {
