@@ -81,9 +81,6 @@ object Real {
     }
   }
 
-  private[compute] def optimize(real: Real): Real =
-    Table.intern(Pruner.prune(real))
-
   private def reduceCommutative(seq: Seq[Real], op: CommutativeOp): Real =
     if (seq.size == 1)
       seq.head
@@ -106,14 +103,14 @@ private class BinaryReal private (val left: Real,
 
 private object BinaryReal {
   def apply(left: Real, right: Real, op: BinaryOp): Real =
-    Real.optimize(new BinaryReal(left, right, op))
+    Pruner.prune(new BinaryReal(left, right, op))
 }
 
 private class UnaryReal private (val original: Real, val op: UnaryOp)
     extends Real
 private object UnaryReal {
   def apply(original: Real, op: UnaryOp): Real =
-    Real.optimize(new UnaryReal(original, op))
+    Pruner.prune(new UnaryReal(original, op))
 }
 
 class Variable extends Real
