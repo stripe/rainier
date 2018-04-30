@@ -102,7 +102,11 @@ private case class Constant(value: Double) extends Real
 private class BinaryReal private (val left: Real,
                                   val right: Real,
                                   val op: BinaryOp)
-    extends Real
+    extends Real {
+//  override def toString: String = "BinaryReal"
+
+  override def toString = s"BinaryReal($left, $right, $op)"
+}
 
 private object BinaryReal {
   def apply(left: Real, right: Real, op: BinaryOp): Real =
@@ -110,7 +114,10 @@ private object BinaryReal {
 }
 
 private class UnaryReal private (val original: Real, val op: UnaryOp)
-    extends Real
+    extends Real {
+
+  override def toString = s"UnaryReal($original, $op)"
+}
 private object UnaryReal {
   def apply(original: Real, op: UnaryOp): Real =
     Real.optimize(new UnaryReal(original, op))
