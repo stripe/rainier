@@ -22,23 +22,23 @@ private case class ExprMethodGenerator(method: MethodDef,
         constant(value)
       case Parameter(variable) =>
         loadParameter(varIndices(variable))
-      case BinaryIR(left, right, op) =>
-        traverse(left)
-        traverse(right)
-        binaryOp(op)
-      case UnaryIR(original, op) =>
-        traverse(original)
-        unaryOp(op)
-      case VarDef(sym, rhs) =>
-        varTypes(sym) match {
+      case b: BinaryIR =>
+        traverse(b.left)
+        traverse(b.right)
+        binaryOp(b.op)
+      case u: UnaryIR =>
+        traverse(u.original)
+        unaryOp(u.op)
+      case v: VarDef =>
+        varTypes(v.sym) match {
           case Inline =>
-            traverse(rhs)
+            traverse(v.rhs)
           case Local(i) =>
-            traverse(rhs)
+            traverse(v.rhs)
             storeLocalVar(i)
           case Global(i) =>
             storeGlobalVar(i) {
-              traverse(rhs)
+              traverse(v.rhs)
             }
         }
       case VarRef(sym) =>
@@ -52,7 +52,7 @@ private case class ExprMethodGenerator(method: MethodDef,
         }
       case MethodRef(sym) =>
         callExprMethod(sym.id)
-      case MethodDef(sym, rhs) =>
+      case m: MethodDef =>
         sys.error("Should not have nested method defs")
     }
   }
