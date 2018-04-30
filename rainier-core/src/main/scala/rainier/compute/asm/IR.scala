@@ -26,8 +26,18 @@ private case class VarRef(sym: Sym) extends IR
 private class MethodDef(val sym: Sym, val rhs: IR) extends IR
 private case class MethodRef(sym: Sym) extends IR
 
-private sealed trait BinaryOp
-private object AddOp extends BinaryOp
-private object MultiplyOp extends BinaryOp
-private object SubtractOp extends BinaryOp
-private object DivideOp extends BinaryOp
+private sealed trait BinaryOp {
+  def isCommutative: Boolean
+}
+private object AddOp extends BinaryOp {
+  val isCommutative = true
+}
+private object MultiplyOp extends BinaryOp {
+  val isCommutative = true
+}
+private object SubtractOp extends BinaryOp {
+  val isCommutative = false
+}
+private object DivideOp extends BinaryOp {
+  val isCommutative = false
+}

@@ -137,6 +137,11 @@ private class Line(val ax: Map[NonConstant, Double], val b: Double)
     case nc: NonConstant => new Product(this.simplify, nc.simplify)
   }
 
+  /*
+  The very simplest case for Line is to have a single x with a > 0 and b == 0.
+  In particular, this occurs often as a result of `simplify`.
+  In this case we can decompose to log(a) + log(x), which remains a Line.
+  */
   def log: Real = {
     val line = simplify
     if(line.ax.size == 1) {
