@@ -115,8 +115,8 @@ private class Unary(val original: NonConstant, val op: UnaryOp)
       case (LogOp, ExpOp)     => original
       case (ExpOp, LogOp)     => original
       case (RecipOp, RecipOp) => original
+      case (RecipOp, LogOp) => original.log * -1
       case (AbsOp, AbsOp)     => this
-      //1/e^x => e^-x??
       case _ => super.unary(nextOp)
     }
 }
