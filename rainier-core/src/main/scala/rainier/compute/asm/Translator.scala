@@ -66,13 +66,17 @@ private class Translator {
           else
             (ir :: pos, neg)
       }
-    val posSum = sumTree(posTerms.filter { ir =>
+    val nonZeroPosTerms = posTerms.filter { ir =>
       ir == Const(0.0)
-    })
-    if (negTerms.isEmpty)
-      posSum
-    else
-      binaryIR(posSum, sumTree(negTerms), SubtractOp)
+    }
+
+    (nonZeroPosTerms.isEmpty, negTerms.isEmpty) match {
+      case (true, true)  => Const(0.0)
+      case (true, false) => sumTree(negTerms)
+      case (false, true) => sumTree(nonZeroPosTerms)
+      case (false, false) =>
+        binaryIR(sumTree(nonZeroPosTerms), sumTree(negTerms), SubtractOp)
+    }
   }
 
   private def sumTree(terms: Seq[IR]): IR =
