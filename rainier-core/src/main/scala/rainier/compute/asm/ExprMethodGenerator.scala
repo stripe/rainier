@@ -34,6 +34,7 @@ private case class ExprMethodGenerator(method: MethodDef,
           case Inline =>
             traverse(v.rhs)
           case Local(i) =>
+            println("local" + i)
             traverse(v.rhs)
             storeLocalVar(i)
           case Global(i) =>

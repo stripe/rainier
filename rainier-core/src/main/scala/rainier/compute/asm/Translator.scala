@@ -10,10 +10,26 @@ private class Translator {
   def toIR(r: Real): IR = r match {
     case Constant(value) => Const(value)
     case v: Variable     => Parameter(v)
-    case u: Unary        => unaryIR(toIR(u.original), u.op)
-    case p: Product      => binaryIR(toIR(p.left), toIR(p.right), MultiplyOp)
-    case i: If           => toIR(i.whenNonZero) //will lead to NaNs for now
-    case l: Line         => lineIR(l)
+    case u: Unary =>
+      u.op match {
+        case RecipOp => binaryIR(Const(1.0), toIR(u.original), DivideOp)
+        case _       => unaryIR(toIR(u.original), u.op)
+      }
+    case p: Product =>
+      (p.left, p.right) match {
+        case (u1: Unary, u2: Unary) if u1.op == RecipOp && u2.op == RecipOp =>
+          binaryIR(Const(1.0),
+                   binaryIR(toIR(u1.original), toIR(u2.original), MultiplyOp),
+                   DivideOp)
+        case (u: Unary, _) if u.op == RecipOp =>
+          binaryIR(toIR(p.right), toIR(u.original), DivideOp)
+        case (_, u: Unary) if u.op == RecipOp =>
+          binaryIR(toIR(p.left), toIR(u.original), DivideOp)
+        case _ =>
+          binaryIR(toIR(p.left), toIR(p.right), MultiplyOp)
+      }
+    case i: If   => toIR(i.whenNonZero) //will lead to NaNs for now
+    case l: Line => lineIR(l)
   }
 
   private def unaryIR(original: IR, op: UnaryOp): IR = {
@@ -46,9 +62,9 @@ private class Translator {
   }
 
   private def lineIR(line: Line): IR = {
-    val (posTerms, negTerms) =
-      line.ax.foldLeft((List[IR](Const(line.b)), List.empty[IR])) {
-        case ((pos, neg), (x, a)) =>
+    val terms =
+      line.ax.foldLeft(List[(IR, Boolean)]((Const(line.b), true))) {
+        case (terms, (x, a)) =>
           val (ir, isNeg) = a match {
             case 0.0  => (Const(0.0), false)
             case 1.0  => (toIR(x), false)
@@ -61,25 +77,19 @@ private class Translator {
                   binaryIR(toIR(x), Const(a), MultiplyOp)
               }, false)
           }
-          if (isNeg)
-            (pos, ir :: neg)
-          else
-            (ir :: pos, neg)
+          (ir, isNeg) :: terms
       }
-    val nonZeroPosTerms = posTerms.filter { ir =>
-      ir == Const(0.0)
-    }
 
-    (nonZeroPosTerms.isEmpty, negTerms.isEmpty) match {
-      case (true, true)  => Const(0.0)
-      case (true, false) => sumTree(negTerms)
-      case (false, true) => sumTree(nonZeroPosTerms)
-      case (false, false) =>
-        binaryIR(sumTree(nonZeroPosTerms), sumTree(negTerms), SubtractOp)
-    }
+    val (ir, isNeg) = sumTree(terms.reverse.filterNot { x =>
+      x._1 == Const(0.0)
+    })
+    if (isNeg)
+      binaryIR(ir, Const(-1), MultiplyOp)
+    else
+      ir
   }
 
-  private def sumTree(terms: Seq[IR]): IR =
+  private def sumTree(terms: Seq[(IR, Boolean)]): (IR, Boolean) =
     if (terms.size == 1)
       terms.head
     else
@@ -87,7 +97,19 @@ private class Translator {
         case oneOrTwo =>
           if (oneOrTwo.size == 1)
             oneOrTwo.head
-          else
-            binaryIR(oneOrTwo(0), oneOrTwo(1), AddOp)
+          else {
+            val left = oneOrTwo(0)
+            val right = oneOrTwo(1)
+            (left._2, right._2) match {
+              case (false, false) =>
+                (binaryIR(left._1, right._1, AddOp), false)
+              case (true, false) =>
+                (binaryIR(left._1, right._1, SubtractOp), false)
+              case (false, true) =>
+                (binaryIR(right._1, left._1, SubtractOp), false)
+              case (true, true) =>
+                (binaryIR(left._1, right._1, AddOp), true)
+            }
+          }
       })
 }
