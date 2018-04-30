@@ -15,8 +15,9 @@ class Evaluator(variables: Map[Variable, Double]) extends Numeric[Real] {
   }
 
   private def eval(real: Real): Double = real match {
-    case b: BinaryReal   => b.op(toDouble(b.left), toDouble(b.right))
-    case u: UnaryReal    => u.op(toDouble(u.original))
+    case l: Line         => l.ax.map { case (r, d) => toDouble(r) * d }.sum + l.b
+    case p: Product      => toDouble(p.left) * toDouble(p.right)
+    case u: Unary        => u.op(toDouble(u.original))
     case v: Variable     => variables(v)
     case Constant(value) => value
     case If(test, nz, z) =>

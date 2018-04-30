@@ -1,18 +1,8 @@
 package rainier.compute
 
 sealed trait Real {
-  def +(other: Real): Real = other match {
-    case Constant(0.0) => this
-    case Constant(v)   => new Line(Map(this -> 1.0), v)
-    case _             => new Line(Map(this -> 1.0, other -> 1.0), 0.0)
-  }
-
-  def *(other: Real): Real = other match {
-    case Constant(1.0) => this
-    case Constant(0.0) => Real.zero
-    case Constant(v)   => new Line(Map(this -> v), 0.0)
-    case _             => new Product(this, other)
-  }
+  def +(other: Real): Real
+  def *(other: Real): Real
 
   def -(other: Real): Real = this + (other * -1)
   def /(other: Real): Real = this * other.reciprocal
@@ -22,7 +12,7 @@ sealed trait Real {
   def abs: Real = unary(AbsOp)
   def reciprocal: Real = unary(RecipOp)
 
-  protected def unary(op: UnaryOp): Real = new UnaryReal(this, op)
+  private[compute] def unary(op: UnaryOp): Real
 
   def >(other: Real): Real = Real.isPositive(this - other)
   def <(other: Real): Real = Real.isNegative(this - other)
@@ -57,10 +47,11 @@ object Real {
   private def variables(real: Real): Set[Variable] = {
     def loop(r: Real, acc: Set[Variable]): Set[Variable] =
       r match {
-        case Constant(_)  => acc
-        case p: Product   => loop(p.right, loop(p.left, acc))
-        case u: UnaryReal => loop(u.original, acc)
-        case v: Variable  => acc + v
+        case Constant(_) => acc
+        case p: Product  => loop(p.right, loop(p.left, acc))
+        case u: Unary    => loop(u.original, acc)
+        case v: Variable => acc + v
+        case l: Line     => l.ax.foldLeft(acc) { case (a, (r, d)) => loop(r, a) }
         case If(test, nz, z) =>
           val acc2 = loop(test, acc)
           val acc3 = loop(nz, acc2)
@@ -71,37 +62,55 @@ object Real {
   }
 }
 
-class Variable extends Real
+sealed trait NonConstant extends Real {
+  def +(other: Real) = other match {
+    case Constant(0.0)   => this
+    case Constant(v)     => new Line(Map(this -> 1.0), v)
+    case nc: NonConstant => new Line(Map(this -> 1.0, nc -> 1.0), 0.0)
+  }
 
-case class If private (test: Real, whenNonZero: Real, whenZero: Real)
-    extends Real
+  def *(other: Real): Real = other match {
+    case Constant(1.0)   => this
+    case Constant(0.0)   => Real.zero
+    case Constant(v)     => new Line(Map(this -> v), 0.0)
+    case nc: NonConstant => new Product(this, nc)
+  }
+
+  private[compute] def unary(op: UnaryOp): Real = new Unary(this, op)
+}
+
+class Variable extends NonConstant
+
+case class If private (test: NonConstant, whenNonZero: Real, whenZero: Real)
+    extends NonConstant
 
 object If {
   def apply(test: Real, whenNonZero: Real, whenZero: Real): Real =
     test match {
-      case Constant(0.0) => whenZero
-      case Constant(v)   => whenNonZero
-      case _             => new If(test, whenNonZero, whenZero)
+      case Constant(0.0)   => whenZero
+      case Constant(v)     => whenNonZero
+      case nc: NonConstant => new If(nc, whenNonZero, whenZero)
     }
 }
 
 private case class Constant(value: Double) extends Real {
-  override def +(other: Real): Real = other match {
-    case Constant(v) => Constant(value + v)
-    case _           => other + this
+  def +(other: Real): Real = other match {
+    case Constant(v)     => Constant(value + v)
+    case nc: NonConstant => nc + this
   }
 
-  override def *(other: Real): Real = other match {
-    case Constant(v) => Constant(value * v)
-    case _           => other * this
+  def *(other: Real): Real = other match {
+    case Constant(v)     => Constant(value * v)
+    case nc: NonConstant => nc * this
   }
 
-  override protected def unary(op: UnaryOp) = Constant(op(value))
+  private[compute] def unary(op: UnaryOp): Real = Constant(op(value))
 }
 
-private class UnaryReal(val original: Real, val op: UnaryOp) extends Real {
+private class Unary(val original: NonConstant, val op: UnaryOp)
+    extends NonConstant {
 
-  override protected def unary(nextOp: UnaryOp): Real =
+  override private[compute] def unary(nextOp: UnaryOp): Real =
     (op, nextOp) match {
       case (LogOp, ExpOp)     => original
       case (ExpOp, LogOp)     => original
@@ -112,21 +121,24 @@ private class UnaryReal(val original: Real, val op: UnaryOp) extends Real {
     }
 }
 
-private class Product(val left: Real, val right: Real) extends Real
+private class Product(val left: NonConstant, val right: NonConstant)
+    extends NonConstant
 
-private class Line(val ax: Map[Real, Double], val b: Double) extends Real {
+private class Line(val ax: Map[NonConstant, Double], val b: Double)
+    extends NonConstant {
   override def +(other: Real): Real = other match {
-    case Constant(v) => new Line(ax, b + v)
-    case l: Line     => new Line(merge(ax, l.ax), l.b + b)
-    case _           => new Line(ax + (other -> 1.0), b)
+    case Constant(v)     => new Line(ax, b + v)
+    case l: Line         => new Line(merge(ax, l.ax), l.b + b)
+    case nc: NonConstant => new Line(ax + (nc -> 1.0), b)
   }
-  def *(other: Real): Real = other match {
-    case Constant(v) => new Line(ax.map { case (r, d) => r -> d * v }, b * v)
-    case _           => super.*(other)
+  override def *(other: Real): Real = other match {
+    case Constant(v)     => new Line(ax.map { case (r, d) => r -> d * v }, b * v)
+    case nc: NonConstant => new Product(this, nc)
   }
 
-  private def merge(left: Map[Real, Double],
-                    right: Map[Real, Double]): Map[Real, Double] = ???
+  private def merge(left: Map[NonConstant, Double],
+                    right: Map[NonConstant, Double]): Map[NonConstant, Double] =
+    ???
 //  def log: Real = if ax.size == 1 && a > 0 && b == 0, log(a) + log(x)
 }
 
