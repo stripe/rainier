@@ -64,9 +64,10 @@ object Real {
 
 sealed trait NonConstant extends Real {
   def +(other: Real) = other match {
-    case Constant(0.0)   => this
-    case Constant(v)     => new Line(Map(simplify -> 1.0), v)
-    case nc: NonConstant => new Line(Map(simplify -> 1.0, nc.simplify -> 1.0), 0.0)
+    case Constant(0.0) => this
+    case Constant(v)   => new Line(Map(simplify -> 1.0), v)
+    case nc: NonConstant =>
+      new Line(Map(simplify -> 1.0, nc.simplify -> 1.0), 0.0)
   }
 
   def *(other: Real): Real = other match {
@@ -141,12 +142,12 @@ private class Line(val ax: Map[NonConstant, Double], val b: Double)
   The very simplest case for Line is to have a single x with a > 0 and b == 0.
   In particular, this occurs often as a result of `simplify`.
   In this case we can decompose to log(a) + log(x), which remains a Line.
-  */
-  def log: Real = {
+   */
+  override def log: Real = {
     val line = simplify
-    if(line.ax.size == 1) {
+    if (line.ax.size == 1) {
       val a = line.ax.head._2
-      if(a > 0 && line.b == 0)
+      if (a > 0 && line.b == 0)
         line.ax.head._1.log + Math.log(a)
       else
         line.unary(LogOp)
@@ -154,27 +155,46 @@ private class Line(val ax: Map[NonConstant, Double], val b: Double)
       line.unary(LogOp)
   }
 
-  private def simplify: Line = {
-    this
+  override private[compute] def simplify: Line = {
+    val mostSimplifyingFactor =
+      ax.values
+        .groupBy(_.abs)
+        .map { case (d, l) => d -> l.size }
+        .toList
+        .sortBy(_._2)
+        .last
+        ._1
+    if (mostSimplifyingFactor == 1.0)
+      this
+    else {
+      val reduced = new Line(ax.map {
+        case (r, d) => r -> d / mostSimplifyingFactor
+      }, b / mostSimplifyingFactor)
+      new Line(Map(reduced -> mostSimplifyingFactor), 0.0)
+    }
   }
 
-  private def merge(left: Map[NonConstant, Double],
-                    right: Map[NonConstant, Double]): Map[NonConstant, Double] = {
+  private def merge(
+      left: Map[NonConstant, Double],
+      right: Map[NonConstant, Double]): Map[NonConstant, Double] = {
     val (big, small) =
       if (left.size > right.size)
         (left, right)
       else
         (right, left)
-    
-    small.foldLeft(big) { case (acc, (k,v)) =>
-      val newV = big
-        .get(k)
-        .map { bigV => bigV + v}
-        .getOrElse(v)
-      if (newV == 0.0)
-       acc - k
-      else
-       acc + (k -> newV)
+
+    small.foldLeft(big) {
+      case (acc, (k, v)) =>
+        val newV = big
+          .get(k)
+          .map { bigV =>
+            bigV + v
+          }
+          .getOrElse(v)
+        if (newV == 0.0)
+          acc - k
+        else
+          acc + (k -> newV)
     }
   }
 }
