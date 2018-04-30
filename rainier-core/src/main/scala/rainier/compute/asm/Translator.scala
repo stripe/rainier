@@ -63,7 +63,7 @@ private class Translator {
 
   private def lineIR(line: Line): IR = {
     val terms =
-      line.ax.foldLeft(List[(IR, Boolean)]((Const(line.b), true))) {
+      line.ax.foldLeft(List[(IR, Boolean)]((Const(line.b), false))) {
         case (terms, (x, a)) =>
           val (ir, isNeg) = a match {
             case 0.0  => (Const(0.0), false)
