@@ -59,9 +59,10 @@ private trait MethodGenerator {
 
   def unaryOp(op: UnaryOp): Unit = {
     val methodName = op match {
-      case LogOp => "log"
-      case ExpOp => "exp"
-      case AbsOp => "abs"
+      case LogOp   => "log"
+      case ExpOp   => "exp"
+      case AbsOp   => "abs"
+      case RecipOp => sys.error("RecipOp should be replaced with division")
     }
     methodNode.visitMethodInsn(INVOKESTATIC,
                                "java/lang/Math",

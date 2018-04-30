@@ -23,7 +23,7 @@ private class Translator {
     case p: Product =>
       val left = toIR(p.left)
       val right = toIR(p.right)
-      val key = (left, right, b.op)
+      val key = (left, right, MultiplyOp)
       binary.get(key) match {
         case Some(sym) => VarRef(sym)
         case None =>
@@ -32,6 +32,6 @@ private class Translator {
           new VarDef(sym, new BinaryIR(left, right, MultiplyOp))
       }
     case l: Line => ???
-    case i: If => ???
+    case i: If   => ???
   }
 }

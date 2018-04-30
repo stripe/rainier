@@ -65,18 +65,19 @@ object Real {
 sealed trait NonConstant extends Real {
   def +(other: Real) = other match {
     case Constant(0.0)   => this
-    case Constant(v)     => new Line(Map(this -> 1.0), v)
-    case nc: NonConstant => new Line(Map(this -> 1.0, nc -> 1.0), 0.0)
+    case Constant(v)     => new Line(Map(simplify -> 1.0), v)
+    case nc: NonConstant => new Line(Map(simplify -> 1.0, nc.simplify -> 1.0), 0.0)
   }
 
   def *(other: Real): Real = other match {
     case Constant(1.0)   => this
     case Constant(0.0)   => Real.zero
-    case Constant(v)     => new Line(Map(this -> v), 0.0)
-    case nc: NonConstant => new Product(this, nc)
+    case Constant(v)     => new Line(Map(simplify -> v), 0.0)
+    case nc: NonConstant => new Product(simplify, nc.simplify)
   }
 
   private[compute] def unary(op: UnaryOp): Real = new Unary(this, op)
+  private[compute] def simplify: NonConstant = this
 }
 
 class Variable extends NonConstant
@@ -89,7 +90,7 @@ object If {
     test match {
       case Constant(0.0)   => whenZero
       case Constant(v)     => whenNonZero
-      case nc: NonConstant => new If(nc, whenNonZero, whenZero)
+      case nc: NonConstant => new If(nc.simplify, whenNonZero, whenZero)
     }
 }
 
@@ -115,9 +116,9 @@ private class Unary(val original: NonConstant, val op: UnaryOp)
       case (LogOp, ExpOp)     => original
       case (ExpOp, LogOp)     => original
       case (RecipOp, RecipOp) => original
-      case (RecipOp, LogOp) => original.log * -1
+      case (RecipOp, LogOp)   => original.log * -1
       case (AbsOp, AbsOp)     => this
-      case _ => super.unary(nextOp)
+      case _                  => super.unary(nextOp)
     }
 }
 
@@ -133,13 +134,44 @@ private class Line(val ax: Map[NonConstant, Double], val b: Double)
   }
   override def *(other: Real): Real = other match {
     case Constant(v)     => new Line(ax.map { case (r, d) => r -> d * v }, b * v)
-    case nc: NonConstant => new Product(this, nc)
+    case nc: NonConstant => new Product(this.simplify, nc.simplify)
+  }
+
+  def log: Real = {
+    val line = simplify
+    if(line.ax.size == 1) {
+      val a = line.ax.head._2
+      if(a > 0 && line.b == 0)
+        line.ax.head._1.log + Math.log(a)
+      else
+        line.unary(LogOp)
+    } else
+      line.unary(LogOp)
+  }
+
+  private def simplify: Line = {
+    this
   }
 
   private def merge(left: Map[NonConstant, Double],
-                    right: Map[NonConstant, Double]): Map[NonConstant, Double] =
-    ???
-//  def log: Real = if ax.size == 1 && a > 0 && b == 0, log(a) + log(x)
+                    right: Map[NonConstant, Double]): Map[NonConstant, Double] = {
+    val (big, small) =
+      if (left.size > right.size)
+        (left, right)
+      else
+        (right, left)
+    
+    small.foldLeft(big) { case (acc, (k,v)) =>
+      val newV = big
+        .get(k)
+        .map { bigV => bigV + v}
+        .getOrElse(v)
+      if (newV == 0.0)
+       acc - k
+      else
+       acc + (k -> newV)
+    }
+  }
 }
 
 private sealed trait UnaryOp {

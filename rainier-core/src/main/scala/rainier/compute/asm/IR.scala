@@ -25,3 +25,9 @@ private case class VarRef(sym: Sym) extends IR
 
 private class MethodDef(val sym: Sym, val rhs: IR) extends IR
 private case class MethodRef(sym: Sym) extends IR
+
+private sealed trait BinaryOp
+private object AddOp extends BinaryOp
+private object MultiplyOp extends BinaryOp
+private object SubtractOp extends BinaryOp
+private object DivideOp extends BinaryOp
