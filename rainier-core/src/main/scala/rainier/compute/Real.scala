@@ -133,7 +133,31 @@ private class Line(val ax: Map[NonConstant, Double], val b: Double)
     case nc: NonConstant => new Line(ax + (nc -> 1.0), b)
   }
   override def *(other: Real): Real = other match {
-    case Constant(v)     => new Line(ax.map { case (r, d) => r -> d * v }, b * v)
+    case Constant(v) => new Line(ax.map { case (r, d) => r -> d * v }, b * v)
+    case l: Line =>
+      if (ax.size == 1 && l.ax.size == 1) {
+        val (x, a) = ax.head
+        val (y, c) = l.ax.head
+        val d = l.b
+        //(ax + b)(cy + d)
+        if (x == y || b == 0.0) { //acx^2 + (ad+bc)x + bd || acxy + adx
+          val xy: NonConstant = new Product(x, y)
+          val adbc = (a * d) + (b * c)
+          val newAx =
+            if (adbc == 0.0)
+              Map(xy -> a * c)
+            else
+              Map(xy -> a * c, x -> adbc)
+          new Line(newAx, b * d)
+        } else if (d == 0.0) { //acxy + bcy
+          val xy: NonConstant = new Product(x, y)
+          new Line(Map(xy -> a * c, y -> b * c), 0.0)
+        } else {
+          new Product(this, l)
+        }
+      } else {
+        new Product(this, l)
+      }
     case nc: NonConstant => new Product(this, nc)
   }
 
