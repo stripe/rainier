@@ -65,9 +65,9 @@ private class Translator {
   private def lineIR(line: Line): IR = {
     val (simplified, factor) = line.simplify
 
-    val posTerms = simplified.ax.filter(_._2 < 0.0).toList
+    val posTerms = simplified.ax.filter(_._2 > 0.0).toList
     val negTerms =
-      simplified.ax.filter(_._2 > 0.0).map { case (r, d) => r -> d.abs }.toList
+      simplified.ax.filter(_._2 < 0.0).map { case (r, d) => r -> d.abs }.toList
 
     val allPosTerms =
       if (simplified.b == 0.0)
