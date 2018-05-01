@@ -59,9 +59,10 @@ object Gamma {
 
   def standard(shape: Real): Continuous = new Continuous {
     def realLogDensity(real: Real) =
-      (real > 0).log +
+      If(real > 0,
         (shape - 1) * real.log -
-        Combinatrics.gamma(shape) - real
+        Combinatrics.gamma(shape) - real,
+        Real.zero.log)
 
     /*
     Jacobian time: we need pdf(x) and we have pdf(f(x)) where f(x) = e^x.
@@ -119,7 +120,7 @@ object LogNormal {
 object Uniform {
   val standard: Continuous = new Continuous {
     def realLogDensity(real: Real) =
-      (real >= 0).log + (real <= 1).log
+      If(real >= 0, If(real <= 1, Real.zero, Real.zero.log), Real.zero.log)
 
     val generator = Generator.from { (r, n) =>
       r.standardUniform

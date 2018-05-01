@@ -48,10 +48,10 @@ object Real {
     ((real.abs / real) + 1) / 2
 
   private def isPositive(real: Real): Real =
-    nonZeroIsPositive(BinaryReal(real, -1, OrOp))
+    If(real, nonZeroIsPositive(real), Real.zero)
 
   private def isNegative(real: Real): Real =
-    Real.one - nonZeroIsPositive(BinaryReal(real, 1, OrOp))
+    If(real, Real.one - nonZeroIsPositive(real), Real.zero)
 
   private def variables(real: Real): Set[Variable] = {
     def loop(r: Real, acc: Set[Variable]): Set[Variable] =
@@ -60,6 +60,10 @@ object Real {
         case b: BinaryReal => loop(b.right, loop(b.left, acc))
         case u: UnaryReal  => loop(u.original, acc)
         case v: Variable   => acc + v
+        case If(test, nz, z) =>
+          val acc2 = loop(test, acc)
+          val acc3 = loop(nz, acc2)
+          loop(z, acc3)
       }
 
     loop(real, Set.empty)
@@ -78,6 +82,11 @@ object Real {
         print(u.original, depth + 1)
       case v: Variable =>
         println(padding + v)
+      case If(test, nz, z) =>
+        println(padding + "If ")
+        print(test, depth + 1)
+        print(nz, depth + 1)
+        print(z, depth + 1)
     }
   }
 
@@ -118,6 +127,13 @@ private object UnaryReal {
 
 class Variable extends Real
 
+case class If private (test: Real, whenNonZero: Real, whenZero: Real)
+    extends Real
+object If {
+  def apply(test: Real, whenNonZero: Real, whenZero: Real): Real =
+    Real.optimize(new If(test, whenNonZero, whenZero))
+}
+
 private sealed trait BinaryOp {
   def apply(left: Double, right: Double): Double
 }
@@ -138,30 +154,6 @@ private case object SubtractOp extends BinaryOp {
 
 private case object DivideOp extends BinaryOp {
   def apply(left: Double, right: Double) = left / right
-}
-
-private case object OrOp extends BinaryOp {
-  def apply(left: Double, right: Double) =
-    if (left == 0.0)
-      right
-    else
-      left
-}
-
-private case object AndOp extends BinaryOp {
-  def apply(left: Double, right: Double) =
-    if (right == 0.0)
-      0.0
-    else
-      left
-}
-
-private case object AndNotOp extends BinaryOp {
-  def apply(left: Double, right: Double) =
-    if (right == 0.0)
-      left
-    else
-      0.0
 }
 
 private sealed trait UnaryOp {

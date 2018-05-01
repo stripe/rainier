@@ -52,6 +52,11 @@ private object Pruner {
           }
         case _ => b
       }
+    case If(Constant(v), nz, z) =>
+      if (v == 0.0)
+        z
+      else
+        nz
     case _ => real
   }
 }
