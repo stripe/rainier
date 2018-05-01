@@ -12,20 +12,20 @@ private class Packer(methodSizeLimit: Int) {
   }
 
   private def traverse(p: IR): (IR, Int) = p match {
-    case VarDef(sym, rhs) =>
+    case v: VarDef =>
       val (rhsIR, rhsSize) =
-        traverseAndMaybePack(rhs, methodSizeLimit - 1)
-      (VarDef(sym, rhsIR), rhsSize + 1)
-    case BinaryIR(left, right, op) =>
+        traverseAndMaybePack(v.rhs, methodSizeLimit - 1)
+      (new VarDef(v.sym, rhsIR), rhsSize + 1)
+    case b: BinaryIR =>
       val (leftIR, leftSize) =
-        traverseAndMaybePack(left, methodSizeLimit / 2)
+        traverseAndMaybePack(b.left, methodSizeLimit / 2)
       val (rightIR, rightSize) =
-        traverseAndMaybePack(right, methodSizeLimit / 2)
-      (BinaryIR(leftIR, rightIR, op), leftSize + rightSize + 1)
-    case UnaryIR(original, op) =>
+        traverseAndMaybePack(b.right, methodSizeLimit / 2)
+      (new BinaryIR(leftIR, rightIR, b.op), leftSize + rightSize + 1)
+    case u: UnaryIR =>
       val (originalIR, irSize) =
-        traverseAndMaybePack(original, methodSizeLimit - 1)
-      (UnaryIR(originalIR, op), irSize + 1)
+        traverseAndMaybePack(u.original, methodSizeLimit - 1)
+      (new UnaryIR(originalIR, u.op), irSize + 1)
     case _ => (p, 1)
   }
 
@@ -39,7 +39,7 @@ private class Packer(methodSizeLimit: Int) {
 
   private def createMethod(rhs: IR): MethodRef = {
     val s = Sym.freshSym()
-    val md = MethodDef(s, rhs)
+    val md = new MethodDef(s, rhs)
     methodDefs(s) = md
     MethodRef(s)
   }

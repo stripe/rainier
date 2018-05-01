@@ -46,16 +46,19 @@ private trait MethodGenerator {
     methodNode.visitInsn(DALOAD)
   }
 
-  def binaryOp(op: BinaryOp): Unit = {
-    val insn = op match {
-      case AddOp      => DADD
-      case SubtractOp => DSUB
-      case MultiplyOp => DMUL
-      case DivideOp   => DDIV
-      case _          => ???
+  def binaryOp(op: BinaryOp): Unit =
+    op match {
+      case AddOp      => methodNode.visitInsn(DADD)
+      case SubtractOp => methodNode.visitInsn(DSUB)
+      case MultiplyOp => methodNode.visitInsn(DMUL)
+      case DivideOp   => methodNode.visitInsn(DDIV)
+      case PowOp =>
+        methodNode.visitMethodInsn(INVOKESTATIC,
+                                   "java/lang/Math",
+                                   "pow",
+                                   "(DD)D",
+                                   false)
     }
-    methodNode.visitInsn(insn)
-  }
 
   def unaryOp(op: UnaryOp): Unit = {
     val methodName = op match {
