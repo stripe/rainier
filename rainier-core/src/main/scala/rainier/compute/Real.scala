@@ -65,20 +65,19 @@ object Real {
 sealed trait NonConstant extends Real {
   def +(other: Real) = other match {
     case Constant(0.0) => this
-    case Constant(v)   => new Line(Map(simplify -> 1.0), v)
+    case Constant(v)   => new Line(Map(this -> 1.0), v)
     case nc: NonConstant =>
-      new Line(Map(simplify -> 1.0, nc.simplify -> 1.0), 0.0)
+      new Line(Map(this -> 1.0, nc -> 1.0), 0.0)
   }
 
   def *(other: Real): Real = other match {
     case Constant(1.0)   => this
     case Constant(0.0)   => Real.zero
-    case Constant(v)     => new Line(Map(simplify -> v), 0.0)
-    case nc: NonConstant => new Product(simplify, nc.simplify)
+    case Constant(v)     => new Line(Map(this -> v), 0.0)
+    case nc: NonConstant => new Product(this, nc)
   }
 
   private[compute] def unary(op: UnaryOp): Real = new Unary(this, op)
-  private[compute] def simplify: NonConstant = this
 }
 
 class Variable extends NonConstant
@@ -91,7 +90,7 @@ object If {
     test match {
       case Constant(0.0)   => whenZero
       case Constant(v)     => whenNonZero
-      case nc: NonConstant => new If(nc.simplify, whenNonZero, whenZero)
+      case nc: NonConstant => new If(nc, whenNonZero, whenZero)
     }
 }
 
@@ -135,27 +134,15 @@ private class Line(val ax: Map[NonConstant, Double], val b: Double)
   }
   override def *(other: Real): Real = other match {
     case Constant(v)     => new Line(ax.map { case (r, d) => r -> d * v }, b * v)
-    case nc: NonConstant => new Product(this.simplify, nc.simplify)
+    case nc: NonConstant => new Product(this, nc)
   }
 
-  /*
-  The very simplest case for Line is to have a single x with a > 0 and b == 0.
-  In particular, this occurs often as a result of `simplify`.
-  In this case we can decompose to log(a) + log(x), which remains a Line.
-   */
   override def log: Real = {
-    val line = simplify
-    if (line.ax.size == 1) {
-      val a = line.ax.head._2
-      if (a > 0 && line.b == 0)
-        line.ax.head._1.log + Math.log(a)
-      else
-        line.unary(LogOp)
-    } else
-      line.unary(LogOp)
+    val (line, factor) = simplify
+    line.unary(LogOp) + Math.log(factor)
   }
 
-  override private[compute] def simplify: Line = {
+  def simplify: (Line, Double) = {
     val mostSimplifyingFactor =
       ax.values
         .groupBy(_.abs)
@@ -164,14 +151,14 @@ private class Line(val ax: Map[NonConstant, Double], val b: Double)
         .sortBy(_._2)
         .last
         ._1
-    if (mostSimplifyingFactor == 1.0)
-      this
-    else {
-      val reduced = new Line(ax.map {
-        case (r, d) => r -> d / mostSimplifyingFactor
-      }, b / mostSimplifyingFactor)
-      new Line(Map(reduced -> mostSimplifyingFactor), 0.0)
+
+    val newAx = ax.map {
+      case (r, d) => r -> d / mostSimplifyingFactor
     }
+
+    val newB = b / mostSimplifyingFactor
+
+    (new Line(newAx, newB), mostSimplifyingFactor)
   }
 
   private def merge(

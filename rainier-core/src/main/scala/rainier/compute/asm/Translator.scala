@@ -62,8 +62,9 @@ private class Translator {
   }
 
   private def lineIR(line: Line): IR = {
+    val (simplified, factor) = line.simplify
     val terms =
-      line.ax.foldLeft(List[(IR, Boolean)]((Const(line.b), false))) {
+      simplified.ax.foldLeft(List[(IR, Boolean)]((Const(simplified.b), false))) {
         case (terms, (x, a)) =>
           val (ir, isNeg) = a match {
             case 0.0  => (Const(0.0), false)
@@ -83,10 +84,17 @@ private class Translator {
     val (ir, isNeg) = sumTree(terms.reverse.filterNot { x =>
       x._1 == Const(0.0)
     })
-    if (isNeg)
-      binaryIR(ir, Const(-1), MultiplyOp)
-    else
+
+    val newFactor =
+      if (isNeg)
+        factor * -1
+      else
+        factor
+
+    if (newFactor == 1.0)
       ir
+    else
+      binaryIR(ir, Const(newFactor), MultiplyOp)
   }
 
   private def sumTree(terms: Seq[(IR, Boolean)]): (IR, Boolean) =
@@ -106,7 +114,7 @@ private class Translator {
               case (true, false) =>
                 (binaryIR(left._1, right._1, SubtractOp), false)
               case (false, true) =>
-                (binaryIR(right._1, left._1, SubtractOp), false)
+                (binaryIR(left._1, right._1, SubtractOp), true)
               case (true, true) =>
                 (binaryIR(left._1, right._1, AddOp), true)
             }

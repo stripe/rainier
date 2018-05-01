@@ -28,9 +28,10 @@ trait Injection { self =>
 }
 
 case class Scale(a: Real) extends Injection {
+  private val lj = a.log * -1
   def forwards(x: Real) = x * a
   def backwards(y: Real) = y / a
-  def logJacobian(y: Real) = a.log * -1
+  def logJacobian(y: Real) = lj
 }
 
 case class Translate(b: Real) extends Injection {
