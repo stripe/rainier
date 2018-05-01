@@ -28,6 +28,12 @@ private object Gradient {
             diff(u.original).register(UnaryDiff(u, diff(u)))
             visit(u.original)
 
+          case w: Pow =>
+            diff(w.original).register(PowDiff(w, diff(w), false))
+            diff(w.exponent).register(PowDiff(w, diff(w), true))
+            visit(w.original)
+            visit(w.exponent)
+
           case l: Line =>
             l.ax.foreach {
               case (r, d) =>
@@ -78,8 +84,6 @@ private object Gradient {
       case ExpOp => gradient.toReal * child
       case AbsOp =>
         If(child.original, gradient.toReal * child.original / child, Real.zero)
-      case RecipOp =>
-        gradient.toReal * -1 / (child.original * child.original)
     }
   }
 
@@ -90,5 +94,18 @@ private object Gradient {
         If(child.test, gradient.toReal, Real.zero)
       else
         If(child.test, Real.zero, gradient.toReal)
+  }
+
+  private case class PowDiff(child: Pow, gradient: Diff, isExponent: Boolean)
+      extends Diff {
+    def toReal =
+      if (isExponent)
+        gradient.toReal *
+          (If(child.original, child.original, Real.one) * child.original.pow(
+            child.exponent)).log
+      else
+        gradient.toReal *
+          child.exponent *
+          child.original.pow(If(child.exponent, child.exponent - 1, Real.one))
   }
 }

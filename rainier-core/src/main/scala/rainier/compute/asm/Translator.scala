@@ -8,25 +8,23 @@ private class Translator {
   private val unary = mutable.Map.empty[(IR, UnaryOp), Sym]
 
   def toIR(r: Real): IR = r match {
-    case v: Variable     => Parameter(v)
-    case Constant(value) => Const(value)
-    case Unary(original, op) =>
-      op match {
-        case PowOp(Constant(-1.0)) =>
-          binaryIR(Const(1.0), toIR(original), DivideOp)
-        case PowOp(Constant(2.0)) =>
-          val x = toIR(original)
-          binaryIR(x, x, MultiplyOp)
-        case _ => unaryIR(toIR(original), op)
-      }
+    case v: Variable         => Parameter(v)
+    case Constant(value)     => Const(value)
+    case Unary(original, op) => unaryIR(toIR(original), op)
+    case Pow(original, Constant(-1.0)) =>
+      binaryIR(Const(1.0), toIR(original), DivideOp)
+    case Pow(original, Constant(2.0)) =>
+      val x = toIR(original)
+      binaryIR(x, x, MultiplyOp)
+    case Pow(original, exponent) =>
+      binaryIR(toIR(original), toIR(exponent), PowOp)
     case p: Product =>
       (p.left, p.right) match {
-        case (Unary(a, PowOp(Constant(-1.0))),
-              Unary(b, PowOp(Constant(-1.0)))) =>
+        case (Pow(a, Constant(-1.0)), Pow(b, Constant(-1.0))) =>
           binaryIR(Const(1.0), binaryIR(toIR(a), toIR(b), MultiplyOp), DivideOp)
-        case (Unary(a, PowOp(Constant(-1.0))), right) =>
+        case (Pow(a, Constant(-1.0)), right) =>
           binaryIR(toIR(right), toIR(a), DivideOp)
-        case (left, Unary(b, PowOp(Constant(-1.0)))) =>
+        case (left, Pow(b, Constant(-1.0))) =>
           binaryIR(toIR(left), toIR(b), DivideOp)
         case _ =>
           binaryIR(toIR(p.left), toIR(p.right), MultiplyOp)
@@ -99,7 +97,7 @@ private class Translator {
   private def sumTerms(terms: Seq[(Real, Double)]): IR = {
     val ir = terms.map {
       case (r, 1.0) => toIR(r)
-      case (Unary(d, PowOp(Constant(-1.0))), n) =>
+      case (Pow(d, Constant(-1.0)), n) =>
         binaryIR(Const(n), toIR(d), DivideOp)
       case (r, d) =>
         binaryIR(toIR(r), Const(d), MultiplyOp)

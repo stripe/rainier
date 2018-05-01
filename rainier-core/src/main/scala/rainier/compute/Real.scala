@@ -10,11 +10,7 @@ sealed trait Real {
   def exp: Real = unary(ExpOp)
   def log: Real = unary(LogOp)
   def abs: Real = unary(AbsOp)
-  def pow(power: Real) = power match {
-    case Constant(1.0) => this
-    case Constant(0.0) => Real.one
-    case _             => unary(PowOp(power))
-  }
+  def pow(power: Real): Real
 
   private[compute] def unary(op: UnaryOp): Real
 
@@ -53,6 +49,7 @@ object Real {
       r match {
         case Constant(_) => acc
         case p: Product  => loop(p.right, loop(p.left, acc))
+        case w: Pow      => loop(w.original, loop(w.exponent, acc))
         case u: Unary    => loop(u.original, acc)
         case v: Variable => acc + v
         case l: Line     => l.ax.foldLeft(acc) { case (a, (r, d)) => loop(r, a) }
@@ -79,6 +76,12 @@ sealed trait NonConstant extends Real {
     case Constant(0.0)   => Real.zero
     case Constant(v)     => new Line(Map(this -> v), 0.0)
     case nc: NonConstant => new Product(this, nc)
+  }
+
+  def pow(power: Real) = power match {
+    case Constant(1.0) => this
+    case Constant(0.0) => Real.one
+    case _             => Pow(this, power)
   }
 
   private[compute] def unary(op: UnaryOp): Real = Unary(this, op)
@@ -109,30 +112,34 @@ private case class Constant(value: Double) extends Real {
     case nc: NonConstant => nc * this
   }
 
+  def pow(power: Real): Real =
+    power match {
+      case Constant(p) => Math.pow(value, p)
+      case _           => Pow(this, power)
+    }
+
   private[compute] def unary(op: UnaryOp): Real = op match {
     case ExpOp => Constant(Math.exp(value))
     case LogOp => Constant(Math.log(value))
     case AbsOp => Constant(Math.abs(value))
-    case PowOp(power) =>
-      power match {
-        case Constant(p) => Math.pow(value, p)
-        case _           => Unary(this, op)
-      }
   }
 }
 
-private case class Unary(val original: Real, val op: UnaryOp)
+private case class Unary(original: NonConstant, op: UnaryOp)
     extends NonConstant {
 
   override private[compute] def unary(nextOp: UnaryOp): Real =
     (op, nextOp) match {
-      case (LogOp, ExpOp)       => original
-      case (ExpOp, LogOp)       => original
-      case (PowOp(a), PowOp(b)) => original.pow(a + b)
-      case (PowOp(a), LogOp)    => original.log * a
-      case (AbsOp, AbsOp)       => this
-      case _                    => super.unary(nextOp)
+      case (LogOp, ExpOp) => original
+      case (ExpOp, LogOp) => original
+      case (AbsOp, AbsOp) => this
+      case _              => super.unary(nextOp)
     }
+}
+
+private case class Pow(original: Real, exponent: Real) extends NonConstant {
+  override def pow(power: Real): Real = original.pow(exponent * power)
+  override def log: Real = original.log * exponent
 }
 
 private class Product(val left: NonConstant, val right: NonConstant)
@@ -153,16 +160,25 @@ private class Line(val ax: Map[NonConstant, Double], val b: Double)
         val (y, c) = l.ax.head
         val d = l.b
         //(ax + b)(cy + d)
-        if (x == y || b == 0.0) { //acx^2 + (ad+bc)x + bd || acxy + adx
-          val xy: NonConstant = new Product(x, y)
+        if (x == y) { //acx^2 + (ad+bc)x + bd
+          val x2: NonConstant = Pow(x, Constant(2.0))
           val adbc = (a * d) + (b * c)
           val newAx =
             if (adbc == 0.0)
+              Map(x2 -> a * c)
+            else
+              Map(x2 -> a * c, x -> adbc)
+          new Line(newAx, b * d)
+        } else if (b == 0.0) { //acxy + adx
+          val xy: NonConstant = new Product(x, y)
+          val ad = a * d
+          val newAx =
+            if (ad == 0.0)
               Map(xy -> a * c)
             else
-              Map(xy -> a * c, x -> adbc)
-          new Line(newAx, b * d)
-        } else if (d == 0.0) { //acxy + bcy
+              Map(xy -> a * c, x -> ad)
+          new Line(newAx, 0.0)
+        } else if (d == 0.0) { //acxy + bcy, b != 0
           val xy: NonConstant = new Product(x, y)
           new Line(Map(xy -> a * c, y -> b * c), 0.0)
         } else {
@@ -228,4 +244,3 @@ private sealed trait UnaryOp
 private case object ExpOp extends UnaryOp
 private case object LogOp extends UnaryOp
 private case object AbsOp extends UnaryOp
-private case class PowOp(power: Real) extends UnaryOp

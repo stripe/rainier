@@ -45,3 +45,6 @@ private object SubtractOp extends BinaryOp {
 private object DivideOp extends BinaryOp {
   val isCommutative = false
 }
+private object PowOp extends BinaryOp {
+  val isCommutative = false
+}
