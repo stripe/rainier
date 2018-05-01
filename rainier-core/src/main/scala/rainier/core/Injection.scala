@@ -23,7 +23,7 @@ trait Injection { self =>
       n.toDouble(forwards(dist.generator.get(r, n)))
     }
 
-    def param = dist.param.map(forwards)
+    val param = dist.param.map(forwards)
   }
 }
 

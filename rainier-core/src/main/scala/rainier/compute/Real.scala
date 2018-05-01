@@ -191,27 +191,36 @@ private class Line(val ax: Map[NonConstant, Double], val b: Double)
   }
 
   override def log: Real = {
-    val (line, factor) = simplify
-    line.unary(LogOp) + Math.log(factor)
+    val (c, y) = factor
+    c.unary(LogOp) + Math.log(y)
   }
 
-  def simplify: (Line, Double) = {
-    val mostSimplifyingFactor =
-      ax.values
-        .groupBy(_.abs)
-        .map { case (d, l) => d -> l.size }
-        .toList
-        .sortBy(_._2)
-        .last
-        ._1
+  override def pow(power: Real): Real = {
+    val (c, y) = factor
+    Pow(c, power) * Constant(y).pow(power)
+  }
 
-    val newAx = ax.map {
-      case (r, d) => r -> d / mostSimplifyingFactor
+  def factor: (NonConstant, Double) = {
+    if (ax.size == 1 && b == 0)
+      (ax.head._1, ax.head._2)
+    else {
+      val mostSimplifyingFactor =
+        ax.values
+          .groupBy(_.abs)
+          .map { case (d, l) => d -> l.size }
+          .toList
+          .sortBy(_._2)
+          .last
+          ._1
+
+      val newAx = ax.map {
+        case (r, d) => r -> d / mostSimplifyingFactor
+      }
+
+      val newB = b / mostSimplifyingFactor
+
+      (new Line(newAx, newB), mostSimplifyingFactor)
     }
-
-    val newB = b / mostSimplifyingFactor
-
-    (new Line(newAx, newB), mostSimplifyingFactor)
   }
 
   private def merge(

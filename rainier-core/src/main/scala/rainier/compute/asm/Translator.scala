@@ -64,34 +64,41 @@ private class Translator {
   }
 
   private def lineIR(line: Line): IR = {
-    val (simplified, factor) = line.simplify
+    val (c, y) = line.factor
+    c match {
+      case l: Line =>
+        val posTerms = l.ax.filter(_._2 > 0.0).toList
+        val negTerms =
+          l.ax.filter(_._2 < 0.0).map { case (r, d) => r -> d.abs }.toList
 
-    val posTerms = simplified.ax.filter(_._2 > 0.0).toList
-    val negTerms =
-      simplified.ax.filter(_._2 < 0.0).map { case (r, d) => r -> d.abs }.toList
+        val allPosTerms =
+          if (l.b == 0.0)
+            posTerms
+          else
+            (Constant(l.b), 1.0) :: posTerms
 
-    val allPosTerms =
-      if (simplified.b == 0.0)
-        posTerms
-      else
-        (Constant(simplified.b), 1.0) :: posTerms
+        val (ir, sign) =
+          (allPosTerms.isEmpty, negTerms.isEmpty) match {
+            case (true, true)  => (Const(0.0), 1.0)
+            case (true, false) => (sumTerms(negTerms), -1.0)
+            case (false, true) => (sumTerms(allPosTerms), 1.0)
+            case (false, false) =>
+              val posSum = sumTerms(allPosTerms)
+              val negSum = sumTerms(negTerms)
+              (binaryIR(posSum, negSum, SubtractOp), 1.0)
+          }
 
-    val (ir, sign) =
-      (allPosTerms.isEmpty, negTerms.isEmpty) match {
-        case (true, true)  => (Const(0.0), 1.0)
-        case (true, false) => (sumTerms(negTerms), -1.0)
-        case (false, true) => (sumTerms(allPosTerms), 1.0)
-        case (false, false) =>
-          val posSum = sumTerms(allPosTerms)
-          val negSum = sumTerms(negTerms)
-          (binaryIR(posSum, negSum, SubtractOp), 1.0)
-      }
-
-    val newFactor = factor * sign
-    if (newFactor == 1.0)
-      ir
-    else
-      binaryIR(ir, Const(newFactor), MultiplyOp)
+        val newY = y * sign
+        if (newY == 1.0)
+          ir
+        else
+          binaryIR(ir, Const(newY), MultiplyOp)
+      case _ =>
+        if (y == 1.0)
+          toIR(c)
+        else
+          binaryIR(toIR(c), Const(y), MultiplyOp)
+    }
   }
 
   private def sumTerms(terms: Seq[(Real, Double)]): IR = {
