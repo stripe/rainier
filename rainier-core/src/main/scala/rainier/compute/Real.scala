@@ -7,10 +7,11 @@ sealed trait Real {
   def -(other: Real): Real = this + (other * -1)
   def /(other: Real): Real = this * other.pow(-1)
 
+  def pow(power: Real): Real = Pow(this, power)
+
   def exp: Real = unary(ExpOp)
   def log: Real = unary(LogOp)
   def abs: Real = unary(AbsOp)
-  def pow(power: Real): Real
 
   private[compute] def unary(op: UnaryOp): Real
 
@@ -78,12 +79,6 @@ sealed trait NonConstant extends Real {
     case nc: NonConstant => new Product(this, nc)
   }
 
-  def pow(power: Real) = power match {
-    case Constant(1.0) => this
-    case Constant(0.0) => Real.one
-    case _             => Pow(this, power)
-  }
-
   private[compute] def unary(op: UnaryOp): Real = Unary(this, op)
 }
 
@@ -112,12 +107,6 @@ private case class Constant(value: Double) extends Real {
     case nc: NonConstant => nc * this
   }
 
-  def pow(power: Real): Real =
-    power match {
-      case Constant(p) => Math.pow(value, p)
-      case _           => Pow(this, power)
-    }
-
   private[compute] def unary(op: UnaryOp): Real = op match {
     case ExpOp => Constant(Math.exp(value))
     case LogOp => Constant(Math.log(value))
@@ -125,128 +114,15 @@ private case class Constant(value: Double) extends Real {
   }
 }
 
-private case class Unary(original: NonConstant, op: UnaryOp)
-    extends NonConstant {
+private case class Unary(original: NonConstant, op: UnaryOp) extends NonConstant
 
-  override private[compute] def unary(nextOp: UnaryOp): Real =
-    (op, nextOp) match {
-      case (LogOp, ExpOp) => original
-      case (ExpOp, LogOp) => original
-      case (AbsOp, AbsOp) => this
-      case _              => super.unary(nextOp)
-    }
-}
-
-private case class Pow(original: Real, exponent: Real) extends NonConstant {
-  override def pow(power: Real): Real = original.pow(exponent * power)
-  override def log: Real = original.log * exponent
-}
+private case class Pow(original: Real, exponent: Real) extends NonConstant
 
 private class Product(val left: NonConstant, val right: NonConstant)
     extends NonConstant
 
 private class Line(val ax: Map[NonConstant, Double], val b: Double)
-    extends NonConstant {
-  override def +(other: Real): Real = other match {
-    case Constant(v)     => new Line(ax, b + v)
-    case l: Line         => new Line(merge(ax, l.ax), l.b + b)
-    case nc: NonConstant => new Line(ax + (nc -> 1.0), b)
-  }
-  override def *(other: Real): Real = other match {
-    case Constant(v) => new Line(ax.map { case (r, d) => r -> d * v }, b * v)
-    case l: Line =>
-      if (ax.size == 1 && l.ax.size == 1) {
-        val (x, a) = ax.head
-        val (y, c) = l.ax.head
-        val d = l.b
-        //(ax + b)(cy + d)
-        if (x == y) { //acx^2 + (ad+bc)x + bd
-          val x2: NonConstant = Pow(x, Constant(2.0))
-          val adbc = (a * d) + (b * c)
-          val newAx =
-            if (adbc == 0.0)
-              Map(x2 -> a * c)
-            else
-              Map(x2 -> a * c, x -> adbc)
-          new Line(newAx, b * d)
-        } else if (b == 0.0) { //acxy + adx
-          val xy: NonConstant = new Product(x, y)
-          val ad = a * d
-          val newAx =
-            if (ad == 0.0)
-              Map(xy -> a * c)
-            else
-              Map(xy -> a * c, x -> ad)
-          new Line(newAx, 0.0)
-        } else if (d == 0.0) { //acxy + bcy, b != 0
-          val xy: NonConstant = new Product(x, y)
-          new Line(Map(xy -> a * c, y -> b * c), 0.0)
-        } else {
-          new Product(this, l)
-        }
-      } else {
-        new Product(this, l)
-      }
-    case nc: NonConstant => new Product(this, nc)
-  }
-
-  override def log: Real = {
-    val (c, y) = factor
-    c.unary(LogOp) + Math.log(y)
-  }
-
-  override def pow(power: Real): Real = {
-    val (c, y) = factor
-    Pow(c, power) * Constant(y).pow(power)
-  }
-
-  def factor: (NonConstant, Double) = {
-    if (ax.size == 1 && b == 0)
-      (ax.head._1, ax.head._2)
-    else {
-      val mostSimplifyingFactor =
-        ax.values
-          .groupBy(_.abs)
-          .map { case (d, l) => d -> l.size }
-          .toList
-          .sortBy(_._2)
-          .last
-          ._1
-
-      val newAx = ax.map {
-        case (r, d) => r -> d / mostSimplifyingFactor
-      }
-
-      val newB = b / mostSimplifyingFactor
-
-      (new Line(newAx, newB), mostSimplifyingFactor)
-    }
-  }
-
-  private def merge(
-      left: Map[NonConstant, Double],
-      right: Map[NonConstant, Double]): Map[NonConstant, Double] = {
-    val (big, small) =
-      if (left.size > right.size)
-        (left, right)
-      else
-        (right, left)
-
-    small.foldLeft(big) {
-      case (acc, (k, v)) =>
-        val newV = big
-          .get(k)
-          .map { bigV =>
-            bigV + v
-          }
-          .getOrElse(v)
-        if (newV == 0.0)
-          acc - k
-        else
-          acc + (k -> newV)
-    }
-  }
-}
+    extends NonConstant
 
 private sealed trait UnaryOp
 
