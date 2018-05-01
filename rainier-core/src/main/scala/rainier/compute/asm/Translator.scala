@@ -33,7 +33,7 @@ private class Translator {
   }
 
   private def unaryIR(original: IR, op: UnaryOp): IR = {
-    val key = (original, op)
+    val key = (original.consKey, op)
     unary.get(key) match {
       case Some(sym) => VarRef(sym)
       case None =>
@@ -44,16 +44,17 @@ private class Translator {
   }
 
   private def binaryIR(left: IR, right: IR, op: BinaryOp): IR = {
-    val key = (left, right, op)
+    val key = (left.consKey, right.consKey, op)
     val cached = binary.get(key).orElse {
       if (op.isCommutative) {
-        val newKey = (right, left, op)
+        val newKey = (right.consKey, left.consKey, op)
         binary.get(newKey)
       } else
         None
     }
     cached match {
-      case Some(sym) => VarRef(sym)
+      case Some(sym) =>
+        VarRef(sym)
       case None =>
         val sym = Sym.freshSym()
         binary(key) = sym
@@ -63,41 +64,47 @@ private class Translator {
 
   private def lineIR(line: Line): IR = {
     val (simplified, factor) = line.simplify
-    val terms =
-      simplified.ax.foldLeft(List[(IR, Boolean)]((Const(simplified.b), false))) {
-        case (terms, (x, a)) =>
-          val (ir, isNeg) = a match {
-            case 0.0  => (Const(0.0), false)
-            case 1.0  => (toIR(x), false)
-            case -1.0 => (toIR(x), true)
-            case _ =>
-              (x match {
-                case u: Unary if u.op == RecipOp =>
-                  binaryIR(Const(a), toIR(u.original), DivideOp)
-                case _ =>
-                  binaryIR(toIR(x), Const(a), MultiplyOp)
-              }, false)
-          }
-          (ir, isNeg) :: terms
+
+    val posTerms = simplified.ax.filter(_._2 < 0.0).toList
+    val negTerms =
+      simplified.ax.filter(_._2 > 0.0).map { case (r, d) => r -> d.abs }.toList
+
+    val allPosTerms =
+      if (simplified.b == 0.0)
+        posTerms
+      else
+        (Constant(simplified.b), 1.0) :: posTerms
+
+    val (ir, sign) =
+      (allPosTerms.isEmpty, negTerms.isEmpty) match {
+        case (true, true)  => (Const(0.0), 1.0)
+        case (true, false) => (sumTerms(negTerms), -1.0)
+        case (false, true) => (sumTerms(allPosTerms), 1.0)
+        case (false, false) =>
+          val posSum = sumTerms(allPosTerms)
+          val negSum = sumTerms(negTerms)
+          (binaryIR(posSum, negSum, SubtractOp), 1.0)
       }
 
-    val (ir, isNeg) = sumTree(terms.reverse.filterNot { x =>
-      x._1 == Const(0.0)
-    })
-
-    val newFactor =
-      if (isNeg)
-        factor * -1
-      else
-        factor
-
+    val newFactor = factor * sign
     if (newFactor == 1.0)
       ir
     else
       binaryIR(ir, Const(newFactor), MultiplyOp)
   }
 
-  private def sumTree(terms: Seq[(IR, Boolean)]): (IR, Boolean) =
+  private def sumTerms(terms: Seq[(Real, Double)]): IR = {
+    val ir = terms.map {
+      case (r, 1.0) => toIR(r)
+      case (u: Unary, n) if u.op == RecipOp =>
+        binaryIR(Const(n), toIR(u.original), DivideOp)
+      case (r, d) =>
+        binaryIR(toIR(r), Const(d), MultiplyOp)
+    }
+    sumTree(ir)
+  }
+
+  private def sumTree(terms: Seq[IR]): IR =
     if (terms.size == 1)
       terms.head
     else
@@ -108,16 +115,7 @@ private class Translator {
           else {
             val left = oneOrTwo(0)
             val right = oneOrTwo(1)
-            (left._2, right._2) match {
-              case (false, false) =>
-                (binaryIR(left._1, right._1, AddOp), false)
-              case (true, false) =>
-                (binaryIR(left._1, right._1, SubtractOp), false)
-              case (false, true) =>
-                (binaryIR(left._1, right._1, SubtractOp), true)
-              case (true, true) =>
-                (binaryIR(left._1, right._1, AddOp), true)
-            }
+            binaryIR(left, right, AddOp)
           }
       })
 }

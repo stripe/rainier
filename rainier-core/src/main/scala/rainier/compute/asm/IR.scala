@@ -2,7 +2,9 @@ package rainier.compute.asm
 
 import rainier.compute._
 
-private sealed trait IR
+private sealed trait IR {
+  def consKey: IR = this
+}
 
 private case class Parameter(original: Variable) extends IR
 private case class Const(value: Double) extends IR
@@ -20,7 +22,9 @@ private object Sym {
   }
 }
 
-private class VarDef(val sym: Sym, val rhs: IR) extends IR
+private class VarDef(val sym: Sym, val rhs: IR) extends IR {
+  override def consKey = VarRef(sym)
+}
 private case class VarRef(sym: Sym) extends IR
 
 private class MethodDef(val sym: Sym, val rhs: IR) extends IR
