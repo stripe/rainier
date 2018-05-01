@@ -8,23 +8,26 @@ private class Translator {
   private val unary = mutable.Map.empty[(IR, UnaryOp), Sym]
 
   def toIR(r: Real): IR = r match {
-    case Constant(value) => Const(value)
     case v: Variable     => Parameter(v)
-    case u: Unary =>
-      u.op match {
-        case RecipOp => binaryIR(Const(1.0), toIR(u.original), DivideOp)
-        case _       => unaryIR(toIR(u.original), u.op)
+    case Constant(value) => Const(value)
+    case Unary(original, op) =>
+      op match {
+        case PowOp(Constant(-1.0)) =>
+          binaryIR(Const(1.0), toIR(original), DivideOp)
+        case PowOp(Constant(2.0)) =>
+          val x = toIR(original)
+          binaryIR(x, x, MultiplyOp)
+        case _ => unaryIR(toIR(original), op)
       }
     case p: Product =>
       (p.left, p.right) match {
-        case (u1: Unary, u2: Unary) if u1.op == RecipOp && u2.op == RecipOp =>
-          binaryIR(Const(1.0),
-                   binaryIR(toIR(u1.original), toIR(u2.original), MultiplyOp),
-                   DivideOp)
-        case (u: Unary, _) if u.op == RecipOp =>
-          binaryIR(toIR(p.right), toIR(u.original), DivideOp)
-        case (_, u: Unary) if u.op == RecipOp =>
-          binaryIR(toIR(p.left), toIR(u.original), DivideOp)
+        case (Unary(a, PowOp(Constant(-1.0))),
+              Unary(b, PowOp(Constant(-1.0)))) =>
+          binaryIR(Const(1.0), binaryIR(toIR(a), toIR(b), MultiplyOp), DivideOp)
+        case (Unary(a, PowOp(Constant(-1.0))), right) =>
+          binaryIR(toIR(right), toIR(a), DivideOp)
+        case (left, Unary(b, PowOp(Constant(-1.0)))) =>
+          binaryIR(toIR(left), toIR(b), DivideOp)
         case _ =>
           binaryIR(toIR(p.left), toIR(p.right), MultiplyOp)
       }
@@ -96,8 +99,8 @@ private class Translator {
   private def sumTerms(terms: Seq[(Real, Double)]): IR = {
     val ir = terms.map {
       case (r, 1.0) => toIR(r)
-      case (u: Unary, n) if u.op == RecipOp =>
-        binaryIR(Const(n), toIR(u.original), DivideOp)
+      case (Unary(d, PowOp(Constant(-1.0))), n) =>
+        binaryIR(Const(n), toIR(d), DivideOp)
       case (r, d) =>
         binaryIR(toIR(r), Const(d), MultiplyOp)
     }

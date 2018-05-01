@@ -5,12 +5,16 @@ sealed trait Real {
   def *(other: Real): Real
 
   def -(other: Real): Real = this + (other * -1)
-  def /(other: Real): Real = this * other.reciprocal
+  def /(other: Real): Real = this * other.pow(-1)
 
   def exp: Real = unary(ExpOp)
   def log: Real = unary(LogOp)
   def abs: Real = unary(AbsOp)
-  def reciprocal: Real = unary(RecipOp)
+  def pow(power: Real) = power match {
+    case Constant(1.0) => this
+    case Constant(0.0) => Real.one
+    case _             => unary(PowOp(power))
+  }
 
   private[compute] def unary(op: UnaryOp): Real
 
@@ -77,7 +81,7 @@ sealed trait NonConstant extends Real {
     case nc: NonConstant => new Product(this, nc)
   }
 
-  private[compute] def unary(op: UnaryOp): Real = new Unary(this, op)
+  private[compute] def unary(op: UnaryOp): Real = Unary(this, op)
 }
 
 class Variable extends NonConstant
@@ -105,20 +109,29 @@ private case class Constant(value: Double) extends Real {
     case nc: NonConstant => nc * this
   }
 
-  private[compute] def unary(op: UnaryOp): Real = Constant(op(value))
+  private[compute] def unary(op: UnaryOp): Real = op match {
+    case ExpOp => Constant(Math.exp(value))
+    case LogOp => Constant(Math.log(value))
+    case AbsOp => Constant(Math.abs(value))
+    case PowOp(power) =>
+      power match {
+        case Constant(p) => Math.pow(value, p)
+        case _           => Unary(this, op)
+      }
+  }
 }
 
-private class Unary(val original: NonConstant, val op: UnaryOp)
+private case class Unary(val original: Real, val op: UnaryOp)
     extends NonConstant {
 
   override private[compute] def unary(nextOp: UnaryOp): Real =
     (op, nextOp) match {
-      case (LogOp, ExpOp)     => original
-      case (ExpOp, LogOp)     => original
-      case (RecipOp, RecipOp) => original
-      case (RecipOp, LogOp)   => original.log * -1
-      case (AbsOp, AbsOp)     => this
-      case _                  => super.unary(nextOp)
+      case (LogOp, ExpOp)       => original
+      case (ExpOp, LogOp)       => original
+      case (PowOp(a), PowOp(b)) => original.pow(a + b)
+      case (PowOp(a), LogOp)    => original.log * a
+      case (AbsOp, AbsOp)       => this
+      case _                    => super.unary(nextOp)
     }
 }
 
@@ -210,22 +223,9 @@ private class Line(val ax: Map[NonConstant, Double], val b: Double)
   }
 }
 
-private sealed trait UnaryOp {
-  def apply(original: Double): Double
-}
+private sealed trait UnaryOp
 
-private case object ExpOp extends UnaryOp {
-  def apply(original: Double) = math.exp(original)
-}
-
-private case object LogOp extends UnaryOp {
-  def apply(original: Double) = math.log(original)
-}
-
-private case object AbsOp extends UnaryOp {
-  def apply(original: Double) = original.abs
-}
-
-private case object RecipOp extends UnaryOp {
-  def apply(original: Double) = 1.0 / original
-}
+private case object ExpOp extends UnaryOp
+private case object LogOp extends UnaryOp
+private case object AbsOp extends UnaryOp
+private case class PowOp(power: Real) extends UnaryOp
