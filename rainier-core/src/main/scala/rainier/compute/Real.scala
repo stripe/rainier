@@ -67,16 +67,16 @@ object Real {
 sealed trait NonConstant extends Real {
   def +(other: Real) = other match {
     case Constant(0.0) => this
-    case Constant(v)   => new Line(Map(this -> 1.0), v)
+    case Constant(v)   => Line(Map(this -> 1.0), v)
     case nc: NonConstant =>
-      new Line(Map(this -> 1.0, nc -> 1.0), 0.0)
+      Line(Map(this -> 1.0, nc -> 1.0), 0.0)
   }
 
   def *(other: Real): Real = other match {
     case Constant(1.0)   => this
     case Constant(0.0)   => Real.zero
-    case Constant(v)     => new Line(Map(this -> v), 0.0)
-    case nc: NonConstant => new Product(this, nc)
+    case Constant(v)     => Line(Map(this -> v), 0.0)
+    case nc: NonConstant => Product(this, nc)
   }
 
   private[compute] def unary(op: UnaryOp): Real = Unary(this, op)
@@ -114,18 +114,35 @@ private case class Constant(value: Double) extends Real {
   }
 }
 
-private case class Unary(original: NonConstant, op: UnaryOp) extends NonConstant
-
-private case class Pow(original: Real, exponent: Real) extends NonConstant
-
-private class Product(val left: NonConstant, val right: NonConstant)
+private case class Unary private (original: NonConstant, op: UnaryOp)
     extends NonConstant
+private object Unary {
+  def apply(original: NonConstant, op: UnaryOp): Real =
+    Optimizer(new Unary(original, op))
+}
 
-private class Line(val ax: Map[NonConstant, Double], val b: Double)
+private case class Pow private (original: Real, exponent: Real)
     extends NonConstant
+private object Pow {
+  def apply(original: Real, exponent: Real): Real =
+    Optimizer(new Pow(original, exponent))
+}
+
+private class Product private (val left: NonConstant, val right: NonConstant)
+    extends NonConstant
+private object Product {
+  def apply(left: NonConstant, right: NonConstant): Real =
+    Optimizer(new Product(left, right))
+}
+
+private class Line private (val ax: Map[NonConstant, Double], val b: Double)
+    extends NonConstant
+private object Line {
+  def apply(ax: Map[NonConstant, Double], b: Double): Real =
+    Optimizer(new Line(ax, b))
+}
 
 private sealed trait UnaryOp
-
 private case object ExpOp extends UnaryOp
 private case object LogOp extends UnaryOp
 private case object AbsOp extends UnaryOp
