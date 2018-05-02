@@ -6,7 +6,7 @@ private object LineOps {
     new Line(merge(left.ax, right.ax), left.b + right.b)
 
   def scale(line: Line, v: Double): Line =
-    new Line(line.ax.map { case (r, d) => r -> d * v }, line.b * v)
+    new Line(line.ax.map { case (x, a) => x -> a * v }, line.b * v)
 
   def translate(line: Line, v: Double): Line =
     new Line(line.ax, line.b + v)
@@ -77,7 +77,7 @@ private object LineOps {
                          b: Double,
                          c: Double,
                          y: NonConstant,
-                         d: Double): Option[Real] = ???
+                         d: Double): Option[Real] = None
 
   private def merge(
       left: Map[NonConstant, Double],

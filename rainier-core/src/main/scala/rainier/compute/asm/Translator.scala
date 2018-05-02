@@ -63,7 +63,15 @@ private class Translator {
     }
   }
 
-  private def lineIR(l: Line): IR = {
+  private def lineIR(line: Line): IR =
+    LineOps.factor(line) match {
+      case Some((l: Line, scale)) => scaledLine(l, scale)
+      case Some((nc, scale)) =>
+        binaryIR(toIR(nc), Const(scale), MultiplyOp)
+      case None => scaledLine(line, 1.0)
+    }
+
+  private def scaledLine(l: Line, scale: Double): IR = {
     val posTerms = l.ax.filter(_._2 > 0.0).toList
     val negTerms =
       l.ax.filter(_._2 < 0.0).map { case (r, d) => r -> d.abs }.toList
@@ -85,10 +93,11 @@ private class Translator {
           (binaryIR(posSum, negSum, SubtractOp), 1.0)
       }
 
-    if (sign == 1.0)
+    val newScale = scale * sign
+    if (newScale == 1.0)
       ir
     else
-      binaryIR(ir, Const(sign), MultiplyOp)
+      binaryIR(ir, Const(newScale), MultiplyOp)
   }
 
   private def sumTerms(terms: Seq[(Real, Double)]): IR = {
