@@ -85,10 +85,12 @@ case class Binomial(p: Real, k: Int) extends Distribution[Int] {
 case class Mixture[T, D](pmf: Map[D, Real])(implicit ev: D <:< Distribution[T])
     extends Distribution[T] {
   def logDensity(t: T) =
-    Real.logSumExp(pmf.toList.map {
-      case (dist, prob) =>
-        (ev(dist).logDensity(t) + prob.log)
-    })
+    Real
+      .sum(pmf.toList.map {
+        case (dist, prob) =>
+          (ev(dist).logDensity(t) + prob.log).exp
+      })
+      .log
 
   def generator = Categorical(pmf).generator.flatMap { d =>
     d.generator
