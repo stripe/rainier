@@ -5,25 +5,19 @@ private object LineOptimizer {
   def apply(line: Line): Real = ???
 
 /*
-  def +(other: Real) = other match {
+  def +(other: Real) = LineOptimizer.sum(this.toLine, other.toLine)
+  
+  other match {
     case Constant(v)   => Line(Map(this -> 1.0), v)
     case nc: NonConstant =>
       Line(Map(this -> 1.0, nc -> 1.0), 0.0)
   }
 
   def *(other: Real): Real = other match {
-    case Constant(v)     => Line(Map(this -> v), 0.0)
+    case Constant(v)     => LineOptimizer.multiply(this.toLine, other.toLine)
   }
-
-
-	+
--    case Constant(v)     => new Line(ax, b + v)	
--    case l: Line         => new Line(merge(ax, l.ax), l.b + b)	
--    case nc: NonConstant => new Line(ax + (nc -> 1.0), b)	
--  }	
--  override def *(other: Real): Real = other match {	
--    case Constant(v) => new Line(ax.map { case (r, d) => r -> d * v }, b * v)
-*/
+  */
+  
 
   def log(line: Line): Option[Real] =
     factor(line)
@@ -55,6 +49,11 @@ private object LineOptimizer {
         right.b)
     else
       None
+
+  /*
+  -  override def *(other: Real): Real = other match {	
+-    case Constant(v) => new Line(ax.map { case (r, d) => r -> d * v }, b * v)
+*/
 
   //if the result is Some((y,k)), then y*k==line, k != 1
   def factor(line: Line): Option[(NonConstant, Double)] =
