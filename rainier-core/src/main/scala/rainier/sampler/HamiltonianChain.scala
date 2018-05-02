@@ -6,7 +6,7 @@ private case class HamiltonianChain(
     accepted: Boolean,
     acceptanceProb: Double,
     hParams: HParams,
-    cf: Array[Double] => (Double, Array[Double]))(implicit rng: RNG) {
+    integrator: HamiltonianIntegrator)(implicit rng: RNG) {
 
   // Take a single leapfrog step without re-initializing momenta
   // for use in tuning the step size
@@ -52,7 +52,7 @@ private case class HamiltonianChain(
     )
   }
 
-  private def integrator = LeapFrogIntegrator(cf)
+//  private def integrator = LeapFrogIntegrator(cf)
 }
 
 private object HamiltonianChain {
@@ -62,7 +62,8 @@ private object HamiltonianChain {
     val negativeDensity = density * -1
     val cf = Compiler.default.compileGradient(variables, negativeDensity)
     val hParams = initialize(variables.size, cf)
-    HamiltonianChain(true, 1.0, hParams, cf)
+    val integrator = LeapFrogIntegrator(cf)
+    HamiltonianChain(true, 1.0, hParams, integrator)
   }
 
   def initialize(nVars: Int, cf: Array[Double] => (Double, Array[Double]))(
