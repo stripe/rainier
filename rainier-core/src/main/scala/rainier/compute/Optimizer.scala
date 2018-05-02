@@ -2,26 +2,39 @@ package rainier.compute
 
 private object Optimizer {
   def apply(unary: Unary): Real =
-    unary match {
-      case Unary(Unary(x, LogOp), ExpOp) => x
-      case Unary(Unary(x, ExpOp), LogOp) => x
-      case Unary(u @ Unary(_, AbsOp), AbsOp) => u
-      case Unary(u @ Unary(_, ExpOp), AbsOp) => u
-      case Unary(Pow(x,y),LogOp) => x.log * y
+    (unary.op, unary.original) match {
+      case (ExpOp, Unary(x, LogOp)) => x
+      case (AbsOp, u @ Unary(_, AbsOp)) => u
+      case (AbsOp, u @ Unary(_, ExpOp)) => u
+      case (LogOp, Unary(x, ExpOp)) => x
+      case (LogOp, Pow(x,y)) => x.log * y
+      case (LogOp, l: Line) =>
+        LineOptimizer.log(l).getOrElse(unary)
       case _ => unary
     }
 
   def apply(pow: Pow): Real =
-    pow match {
-      case Pow(x, Constant(1.0)) => x
-      case Pow(_, Constant(0.0)) => Real.one
-      case Pow(Constant(x), Constant(y)) => Constant(Math.pow(x,y))
-      case Pow(Pow(x,y),z) => x.pow(y*z)
-      case Pow(Unary(x, ExpOp),y) => (x*y).exp
+    (pow.original, pow.exponent) match {
+      case (x, Constant(1.0)) => x
+      case (_, Constant(0.0)) => Real.one
+      case (Constant(1.0), _) => Real.one
+      case (Constant(x), Constant(y)) => Constant(Math.pow(x,y))
+      case (Pow(x,y),z) => x.pow(y*z)
+      case (Unary(y, ExpOp),z) => (y*z).exp
+      case (l: Line, y) =>
+        LineOptimizer.pow(l, y).getOrElse(pow)
       case _ => pow
     }
 
-  def apply(product: Product): Real = product
+  def apply(product: Product): Real =
+    (product.left, product.right) match {
+      case (Pow(x,Constant(-1.0)), Pow(y,Constant(-1.0))) =>
+        (x*y).pow(-1)
+      case (left: Line, right: Line) =>
+        LineOptimizer.multiply(left,right).getOrElse(product)
+      case _ => product
+    }
 
-  def apply(line: Line): Real = line
+  def apply(line: Line): Real = 
+    LineOptimizer(line)
 }
