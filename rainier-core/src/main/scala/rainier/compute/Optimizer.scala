@@ -32,6 +32,8 @@ private object Optimizer {
         (x * y).pow(-1)
       case (left: Line, right: Line) =>
         LineOps.multiply(left, right).getOrElse(product)
+      case (left, right) if left == right =>
+        left.pow(2)
       case _ => product
     }
 }

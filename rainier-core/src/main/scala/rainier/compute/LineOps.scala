@@ -13,12 +13,12 @@ private object LineOps {
 
   def multiply(left: Line, right: Line): Option[Real] =
     if (left.ax.size == 1 && right.ax.size == 1)
-      multiply1D(left.ax.head._2,
-                 left.ax.head._1,
-                 left.b,
-                 right.ax.head._2,
-                 right.ax.head._1,
-                 right.b)
+      foil(left.ax.head._2,
+           left.ax.head._1,
+           left.b,
+           right.ax.head._2,
+           right.ax.head._1,
+           right.b)
     else
       None
 
@@ -72,13 +72,6 @@ private object LineOps {
       }
     }
 
-  private def multiply1D(a: Double,
-                         x: NonConstant,
-                         b: Double,
-                         c: Double,
-                         y: NonConstant,
-                         d: Double): Option[Real] = None
-
   private def merge(
       left: Map[NonConstant, Double],
       right: Map[NonConstant, Double]): Map[NonConstant, Double] = {
@@ -102,5 +95,22 @@ private object LineOps {
         else
           acc + (k -> newV)
     }
+  }
+
+  private def foil(a: Double,
+                   x: NonConstant,
+                   b: Double,
+                   c: Double,
+                   y: NonConstant,
+                   d: Double): Option[Real] = {
+    //(ax + b)(cy + d)
+    if (x == y || b == 0.0 || d == 0.0) {
+      Some(
+        (x * y) * (a * c) + //F
+          x * (a * d) + //O
+          y * (b * c) + //I
+          (b * d)) //L
+    } else //too many terms
+      None
   }
 }
