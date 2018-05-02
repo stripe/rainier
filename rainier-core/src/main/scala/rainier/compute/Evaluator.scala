@@ -21,7 +21,7 @@ class Evaluator(variables: Map[Variable, Double]) extends Numeric[Real] {
     case Pow(original, exponent) =>
       Math.pow(toDouble(original), toDouble(exponent))
     case Unary(original, op) =>
-      eval(Constant(toDouble(original)).unary(op))
+      eval(RealOps.unary(Constant(toDouble(original)), op))
     case Constant(value) => value
     case If(test, nz, z) =>
       if (toDouble(test) == 0.0)
