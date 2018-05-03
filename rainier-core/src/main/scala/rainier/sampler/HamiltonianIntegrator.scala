@@ -46,54 +46,80 @@ private case class LeapFrogIntegrator(
 }
 
 private case class RealLeapFrogIntegrator(
-    variables: Seq[Variable],
-    cf: Array[Double] => (Double, Array[Double]))
-    extends HamiltonianIntegrator {
+  variables: Seq[Variable],
+  cf: Array[Double] => (Double, Array[Double])) extends HamiltonianIntegrator {
 
   val nVars = variables.size
-  val momenta = (1 to nVars).map { _ =>
-    new Variable
-  }
-  val inputs = variables ++ momenta
+  val stepSize = new Variable
+  val potential = new Variable
+  val qs = (1 to nVars).map{ _ => new Variable }
+  val ps = (1 to nVars).map { _ => new Variable }
+  val grad = (1 to nVars).map{ _ => new Variable }
+  val inputs = combineSeq(stepSize, potential, qs, ps, grad)
 
-  private def halfStepPs(inputs: Seq[Variable],
-                         realGrad: Seq[Real],
-                         stepSize: Double) = {
-    val (qs, ps) = (inputs.take(nVars), inputs.drop(nVars))
+  def combineSeq[A](stepSize: A, potential: A, qs: Seq[A], ps: Seq[A], grad: Seq[A]): Seq[A] = {
+    stepSize +: potential +: (qs ++ ps ++ grad)
+  }
+
+  def componentsSeq[A](inputs: Seq[A]): (A, A, Seq[A], Seq[A], Seq[A]) = {
+    require(((inputs.size - 2).toDouble / 3).toInt == 0, "must have 3n + 2 elements!")
+      (inputs(0),
+        inputs(1),
+        inputs.slice(2, nVars + 2),
+        inputs.slice(nVars + 2, 2 * nVars + 2),
+        inputs.slice(2 * nVars + 2, 3 * nVars + 2)
+      )
+   }
+
+  def componentsArray[A](inputs: Array[A]): (A, A, Array[A], Array[A], Array[A]) = {
+    require(((inputs.size - 2).toDouble / 3).toInt == 0, "must have 3n + 2 elements!")
+      (inputs(0),
+        inputs(1),
+        inputs.slice(2, nVars + 2),
+        inputs.slice(nVars + 2, 2 * nVars + 2),
+        inputs.slice(2 * nVars + 2, 3 * nVars + 2)
+      )
+   }
+
+  private def halfStepPs(inputs: Seq[Variable]) = {
+    val (stepSize, potential, qs, ps, grad) = componentsSeq(inputs)
     val newPs = ps
-      .zip(realGrad)
+      .zip(grad)
       .map { case (p, grad) => p - (stepSize / 2) * grad }
 
-    Compiler.default.compile(inputs, qs ++ newPs)
+   combineSeq(stepSize, potential, qs, newPs, grad)
   }
 
-  private def fullStepQs(inputs: Seq[Variable], stepSize: Double) = {
-    val (qs, ps) = (inputs.take(nVars), inputs.drop(nVars))
+  private def fullStepQs(inputs: Seq[Real]) = {
+    val (stepSize, potential, qs, ps, grad) = componentsSeq(inputs)
     val newQs = qs
       .zip(ps)
       .map { case (q, p) => q + (stepSize * p) }
-    Compiler.default.compile(inputs, newQs ++ ps)
+    combineSeq(stepSize, potential, newQs, ps, grad)
   }
 
-  def step(hParams: HParams, stepSize: Double): HParams = {
-    val inputArray = hParams.qs ++ hParams.ps
-    val initialRealGrad = hParams.gradPotential.map { Real(_) }
-    val cf0 = halfStepPs(inputs, initialRealGrad, stepSize)
-    val cf1 = fullStepQs(inputs, stepSize)
+  private val output1 = (halfStepPs _ andThen fullStepQs _)(inputs)
+  private val cf1 = Compiler.default.compile(inputs, output1)
 
-    val newQsHalfNewPs = (cf0 andThen cf1)(inputArray)
-    val newQs = newQsHalfNewPs.take(nVars)
-    val (potential, gradPotential) = cf(newQs)
+  private val output2 = halfStepPs(inputs)
+  private val cf2 = Compiler.default.compile(inputs, output2)
 
-    val updatedRealGrad = gradPotential.map { Real(_) }
-    val cf2 = halfStepPs(inputs, updatedRealGrad, stepSize)
+  private val leapFrogCF: Array[Double] => Array[Double] = { array =>
+    val (stepSize, _, newQs, halfNewPs, _) = componentsArray(cf1(array))
+    val (potential, grad) = cf(newQs)
+    cf2(stepSize +: potential +: (newQs ++ halfNewPs ++ grad))
+ }
 
-    val newQsAndPs = cf2(newQsHalfNewPs)
-    hParams.copy(
-      potential = potential,
-      gradPotential = gradPotential,
-      qs = newQsAndPs.take(nVars),
-      ps = newQsAndPs.drop(nVars),
-    )
-  }
+ def step(hParams: HParams, stepSize: Double): HParams = {
+   val inputArray =
+     stepSize +: hParams.potential +: (hParams.qs ++ hParams.ps ++ hParams.gradPotential)
+   println(inputArray.size)
+   val (_, newPotential, newQs, newPs, newGrad) = componentsArray(leapFrogCF(inputArray))
+   hParams.copy(
+     potential = newPotential,
+     qs = newQs,
+     ps = newPs,
+     gradPotential = newGrad
+   )
+ }
 }
