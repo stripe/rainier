@@ -1,16 +1,15 @@
 package rainier.sampler
 
-
 import rainier.core._
 import rainier.compute._
 
-
 case class Variational(tolerance: Double, maxIterations: Int) extends Sampler {
-  override def description: (String, Map[String, Double]) = ("Variational",
-    Map(
-      "Tolerance" -> tolerance,
-      "MaxIterations" -> maxIterations.toDouble,
-    ))
+  override def description: (String, Map[String, Double]) =
+    ("Variational",
+     Map(
+       "Tolerance" -> tolerance,
+       "MaxIterations" -> maxIterations.toDouble,
+     ))
 
   override def sample(density: Real)(implicit rng: RNG): Iterator[Sample] = {
     //VariationalOptimizer(tolerance, maxIterations)
@@ -23,51 +22,57 @@ case class Variational(tolerance: Double, maxIterations: Int) extends Sampler {
     val nsamples = 100
     val stepsize = .1
 
-
-    def sampleFromGuide(): List[Double] = {
+    def sampleFromGuide(): Seq[Double] = {
       1.to(K).map { _ =>
         rng.standardNormal
       }
     }
 
-
-    val guideParams = modelVariables.map(_ => (Unbounded.param, NonNegative.param)) // guide mu and sigma
-    val eps: List[RandomVariable[Real]] = guideParams.map {
-      case (mu, sigma) => mu + sigma * Normal(0., 1.).param
+//    val guideParams = modelVariables.map(_ =>
+//      (Unbounded.param, )) // guide mu and sigma
+    val eps: List[RandomVariable[Real]] = List.fill(K) {
+      for {
+        // TODO(gkk): i think we need to collect mus, sigmas and epss in collections for later reference
+        mu <- Unbounded.param
+        sigma <- NonNegative.param
+        eps <- Normal(0.0, 1.0).param
+      } yield mu + sigma * eps
     }
 
-    val guideDensity = eps.foldLeft(Real(0.)) {case (d, e) => d + e.density}
+    val guideLogDensity = eps.foldLeft(Real(0.0)) {
+      case (d, e) => d + e.density
+    }
     // need to change this to density wrt fixed eps.
     // can I just modify the gradients?
     // are gradients/variables ordered in any way?
     val transformedDensity = density
-    val surrogateLoss = transformedDensity + guideDensity
+    val surrogateLoss = transformedDensity + guideLogDensity
     val variables = Real.variables(surrogateLoss).toList
-    val guideVariables = Real.variables(guideDensity).toList
+    val guideVariables = Real.variables(guideLogDensity).toList
     val gradients = Gradient.derive(variables, surrogateLoss)
-    val cf = Compiler(surrogateLoss :: gradients)
+    val cf = Compiler(gradients)
 
-    val initialValues = guideVariables.flatMap(_ => List(0., 1.))
+    val initialValues = guideVariables.flatMap(_ => List(0.0, 1.0))
+
+    def collectMaps[T, U](m: Seq[Map[T, U]]): Map[T, Seq[U]] = {
+      m.flatten.groupBy(_._1).mapValues(seqTuples => seqTuples.map(_._2))
+    }
 
     val finalValues = 1.to(niterations).foldLeft(initialValues) {
       case (values, _) =>
-        val grads = 1.to(nsamples).foldLeft(values) {
-          case(grad, _) => {
-            val samples = sampleFromGuide()
-            val inputs = variables.zip(samples ++ values).toMap
-            val outputs = cf(inputs)
-            // how to get just the guide gradients?
-            values.zip(grad).map {
-              case (_, g) => grad + (1. / nsamples) * outputs(g)
-            }
-          }
+        val grads: Seq[Map[Real, Double]] = (1 to nsamples) map { _ =>
+          val samples = sampleFromGuide()
+          val inputs = variables.zip(samples ++ values).toMap
+          val outputs = cf(inputs)
+          outputs
         }
-        values.zip(grads).map {
-          case(v, g) => v + stepsize * g
+        val perDimGradSamples = collectMaps(grads)
+        val perDimGrads = perDimGradSamples.mapValues(samples =>
+          samples.sum * 1.0 / nsamples.toDouble)
+        (values zip variables.map(perDimGrads)).map {
+          case (v, g) => v + stepsize * g
         }
-
     }
-
 
   }
 }
