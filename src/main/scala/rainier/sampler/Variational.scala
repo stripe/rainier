@@ -28,15 +28,17 @@ case class Variational(tolerance: Double, maxIterations: Int) extends Sampler {
       }
     }
 
-//    val guideParams = modelVariables.map(_ =>
-//      (Unbounded.param, )) // guide mu and sigma
-    val eps: List[RandomVariable[Real]] = List.fill(K) {
-      for {
-        // TODO(gkk): i think we need to collect mus, sigmas and epss in collections for later reference
-        mu <- Unbounded.param
-        sigma <- NonNegative.param
-        eps <- Normal(0.0, 1.0).param
-      } yield mu + sigma * eps
+    val mus = List.fill(K)(Unbounded.param)
+    val sigmas = List.fill(K)(NonNegative.param)
+    val epsilons = List.fill(K)(Normal(0.0, 1.0).param)
+
+    val eps: List[RandomVariable[Real]] = (mus zip sigmas zip epsilons) map {
+      case ((mu, sigma), epsilon) =>
+        for {
+          muS <- mu
+          sigmaS <- sigma
+          epsS <- epsilon
+        } yield muS + sigmaS * epsS
     }
 
     val guideLogDensity = eps.foldLeft(Real(0.0)) {
