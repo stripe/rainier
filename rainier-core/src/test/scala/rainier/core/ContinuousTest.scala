@@ -40,7 +40,7 @@ class ContinuousTest extends FunSuite {
       }
     }
   }
-  /*
+
   check("Normal(x,x)") { x =>
     Normal(x, x)
   }
@@ -60,5 +60,4 @@ class ContinuousTest extends FunSuite {
   check("Laplace(x,x)") { x =>
     Laplace(x, x)
   }
- */
 }

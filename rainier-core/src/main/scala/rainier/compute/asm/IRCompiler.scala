@@ -25,7 +25,7 @@ object IRCompiler extends Compiler {
                                        outputMeths.map(_.sym.id),
                                        varTypes.globals.size)
     val cc = new CompiledClass(className, amg.methodNode :: methodNodes.toList)
-    cc.writeToTmpFile
+    //cc.writeToTmpFile
     cc.instance.apply(_)
   }
 }

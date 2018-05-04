@@ -4,8 +4,11 @@ private object LogLineOps {
   def multiply(left: LogLine, right: LogLine): LogLine =
     new LogLine(LineOps.merge(left.ax, right.ax))
 
-  def log(line: LogLine): Line =
-    new Line(line.ax, 0.0)
+  def log(line: LogLine): Real =
+    Real.sum(line.ax.toList.map {
+      case (x, a) =>
+        x.log * a
+    })
 
   def pow(line: LogLine, v: Double): LogLine =
     new LogLine(line.ax.map { case (x, a) => x -> a * v })
