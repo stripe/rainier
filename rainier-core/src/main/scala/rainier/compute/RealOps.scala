@@ -70,13 +70,13 @@ private object RealOps {
   private def line(nc: NonConstant): Line =
     nc match {
       case l: Line => l
-      case _       => new Line(Map(nc -> 1.0), 0.0)
+      case _       => Line(Map(nc -> 1.0), 0.0)
     }
 
   private def logLine(nc: NonConstant): LogLine =
     nc match {
       case l: LogLine => l
-      case _          => new LogLine(Map(nc -> 1.0))
+      case _          => LogLine(Map(nc -> 1.0))
     }
 
   def isPositive(real: Real): Real =

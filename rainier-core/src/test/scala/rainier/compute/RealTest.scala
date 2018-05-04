@@ -22,7 +22,7 @@ class RealTest extends FunSuite {
   }
 
   def assertWithinEpsilon(x: Double, y: Double, clue: String): Unit = {
-    assert(x == y || (x - y) < 0.000000001, clue)
+    assert(x == y || (x - y).abs < 0.000000001, clue)
   }
 
   run("plus") { x =>
@@ -47,8 +47,7 @@ class RealTest extends FunSuite {
 
   run("logistic") { x =>
     val logistic = Real.one / (Real.one + (x * -1).exp)
-    val density = (logistic * (Real.one - logistic)).log
-    density
+    (logistic * (Real.one - logistic)).log
   }
 
   run("poisson") { x =>

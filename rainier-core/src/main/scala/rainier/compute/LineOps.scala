@@ -2,14 +2,19 @@ package rainier.compute
 
 private object LineOps {
 
-  def sum(left: Line, right: Line): Line =
-    new Line(merge(left.ax, right.ax), left.b + right.b)
+  def sum(left: Line, right: Line): Real = {
+    val merged = merge(left.ax, right.ax)
+    if (merged.isEmpty)
+      Constant(left.b + right.b)
+    else
+      Line(merged, left.b + right.b)
+  }
 
   def scale(line: Line, v: Double): Line =
-    new Line(line.ax.map { case (x, a) => x -> a * v }, line.b * v)
+    Line(line.ax.map { case (x, a) => x -> a * v }, line.b * v)
 
   def translate(line: Line, v: Double): Line =
-    new Line(line.ax, line.b + v)
+    Line(line.ax, line.b + v)
 
   def multiply(left: Line, right: Line): Option[Real] =
     if (left.ax.size == 1 && right.ax.size == 1)
@@ -43,7 +48,7 @@ private object LineOps {
   //if the result is Some((y,k)), then y*k==line, k != 1
   def factor(line: Line): Option[(NonConstant, Double)] =
     factor(line.ax, line.b) {
-      case (newAx, newB) => new Line(newAx, newB)
+      case (newAx, newB) => Line(newAx, newB)
     }
 
   def factor(ax: Map[NonConstant, Double], b: Double)(

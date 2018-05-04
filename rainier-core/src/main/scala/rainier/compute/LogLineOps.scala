@@ -1,8 +1,13 @@
 package rainier.compute
 
 private object LogLineOps {
-  def multiply(left: LogLine, right: LogLine): LogLine =
-    new LogLine(LineOps.merge(left.ax, right.ax))
+  def multiply(left: LogLine, right: LogLine): Real = {
+    val merged = LineOps.merge(left.ax, right.ax)
+    if (merged.isEmpty)
+      Real.one
+    else
+      LogLine(LineOps.merge(left.ax, right.ax))
+  }
 
   def log(line: LogLine): Real =
     Real.sum(line.ax.toList.map {
@@ -11,7 +16,7 @@ private object LogLineOps {
     })
 
   def pow(line: LogLine, v: Double): LogLine =
-    new LogLine(line.ax.map { case (x, a) => x -> a * v })
+    LogLine(line.ax.map { case (x, a) => x -> a * v })
 
   //if the result is Some((y,k)), then y.pow(k)==line, k != 1
   def factor(line: LogLine): Option[(NonConstant, Double)] =

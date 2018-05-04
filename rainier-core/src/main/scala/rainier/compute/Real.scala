@@ -49,10 +49,25 @@ private case object ExpOp extends UnaryOp
 private case object LogOp extends UnaryOp
 private case object AbsOp extends UnaryOp
 
-private class Line(val ax: Map[NonConstant, Double], val b: Double)
+private class Line private (val ax: Map[NonConstant, Double], val b: Double)
     extends NonConstant
 
-private case class LogLine(ax: Map[NonConstant, Double]) extends NonConstant
+private object Line {
+  def apply(ax: Map[NonConstant, Double], b: Double): Line = {
+    require(ax.size > 0)
+    new Line(ax, b)
+  }
+}
+
+private case class LogLine private (ax: Map[NonConstant, Double])
+    extends NonConstant
+
+private object LogLine {
+  def apply(ax: Map[NonConstant, Double]): LogLine = {
+    require(ax.size > 0)
+    new LogLine(ax)
+  }
+}
 
 case class If private (test: NonConstant, whenNonZero: Real, whenZero: Real)
     extends NonConstant

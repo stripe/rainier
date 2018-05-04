@@ -52,11 +52,11 @@ class ContinuousTest extends FunSuite {
   check("Exponential(x)") { x =>
     Exponential(x)
   }
-
+  /*
   check("Uniform(x,x*2)") { x =>
     Uniform(x, x * 2)
   }
-
+   */
   check("Laplace(x,x)") { x =>
     Laplace(x, x)
   }
