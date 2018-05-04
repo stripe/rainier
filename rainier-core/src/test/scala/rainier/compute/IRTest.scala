@@ -26,7 +26,7 @@ class IRTest extends FunSuite {
     val err = delta.abs / y
     assert(err < 0.00001)
   }
-
+  /*
   test("handle plus") {
     compareToEvaluator(x + 11, 4.0)
   }
@@ -47,13 +47,13 @@ class IRTest extends FunSuite {
   test("poisson") {
     compareToEvaluator(Poisson(x).logDensities(0.to(10).toList), 2.0)
   }
-
+   */
   test("normal") {
     compareToEvaluator(Normal(x, 1).logDensities(0d.to(2d).by(1).toList), 2.0)
   }
-
+  /*
   test("two args") {
     compareToEvaluator(x + y, 1.0, 2.0)
   }
-
+ */
 }

@@ -43,7 +43,7 @@ object Benchmarks {
       val r = new scala.util.Random
       val trueMean = 3.0
       val trueStddev = 2.0
-      val data = 1.to(1000).map { i =>
+      val data = 1.to(3).map { i =>
         (r.nextGaussian * trueStddev) + trueMean
       }
 
@@ -58,9 +58,9 @@ object Benchmarks {
   }
 }
 
-@Warmup(iterations = 4)
-@Measurement(iterations = 10)
-@Fork(3)
+@Warmup(iterations = 0)
+@Measurement(iterations = 1)
+@Fork(1)
 class Benchmarks {
   import Benchmarks._
 
@@ -68,7 +68,7 @@ class Benchmarks {
   def runFullNormalAsm(state: FullNormalBenchmark): Unit = {
     state.runAsm
   }
-
+  /*
   @Benchmark
   def runNormalAsm(state: NormalBenchmark): Unit = {
     state.runAsm
@@ -88,4 +88,5 @@ class Benchmarks {
   def compilePoissonAsm(state: PoissonBenchmark): Unit = {
     state.compileAsm
   }
+ */
 }

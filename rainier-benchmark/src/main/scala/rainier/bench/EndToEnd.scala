@@ -24,10 +24,11 @@ class EndToEnd {
       _ <- Normal(mean, stddev).fit(data)
     } yield (mean, stddev)
   }
-
+  /*
   @Benchmark
   def fitNormalAsm: Unit = {
     implicit val rng = RNG.default
     normal(1000).sample()
   }
+ */
 }
