@@ -77,4 +77,18 @@ case class Variational(tolerance: Double, maxIterations: Int) extends Sampler {
     }
 
   }
+
+  def substituteVariable(x: Real, f: Variable => Real): Real = x match {
+    case v: Variable => f(v)
+    case c: Constant => c
+    case b: BinaryReal =>
+      BinaryReal()
+    case u: UnaryReal =>
+      println(padding + u.op)
+      print(u.original, depth + 1)
+    case s: SumReal =>
+      println(padding + "Sum{" + s.seq.size + "}")
+      print(s.seq.head, depth + 1)
+
+  }
 }
