@@ -50,7 +50,7 @@ object Benchmarks {
       val model = for {
         mean <- Uniform(0, 10).param
         stddev <- Uniform(0, 10).param
-        _ <- Normal(mean, 1).fit(data)
+        _ <- Normal(mean, stddev).fit(data)
       } yield (mean, stddev)
 
       model.density
@@ -63,12 +63,12 @@ object Benchmarks {
 @Fork(3)
 class Benchmarks {
   import Benchmarks._
-  /*
+
   @Benchmark
   def runFullNormalAsm(state: FullNormalBenchmark): Unit = {
     state.runAsm
   }
-
+  /*
   @Benchmark
   def runNormalAsm(state: NormalBenchmark): Unit = {
     state.runAsm
