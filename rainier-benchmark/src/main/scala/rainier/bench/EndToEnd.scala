@@ -7,8 +7,8 @@ import rainier.core._
 import rainier.sampler._
 
 @Warmup(iterations = 3)
-@Measurement(iterations = 10)
-@Fork(3)
+@Measurement(iterations = 100)
+@Fork(1)
 class EndToEnd {
   def normal(k: Int) = {
     val r = new scala.util.Random

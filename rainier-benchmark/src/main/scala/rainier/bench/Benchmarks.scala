@@ -63,7 +63,7 @@ object Benchmarks {
 @Fork(3)
 class Benchmarks {
   import Benchmarks._
-
+  /*
   @Benchmark
   def runFullNormalAsm(state: FullNormalBenchmark): Unit = {
     state.runAsm
@@ -88,4 +88,5 @@ class Benchmarks {
   def compilePoissonAsm(state: PoissonBenchmark): Unit = {
     state.compileAsm
   }
+ */
 }
