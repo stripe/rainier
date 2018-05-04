@@ -7,7 +7,8 @@ sealed trait Real {
   def -(other: Real): Real = this + (other * -1)
   def /(other: Real): Real = this * other.pow(-1)
 
-  def pow(power: Real): Real = Optimizer(Pow(this, power))
+  def pow[N](exponent: N)(implicit num: Numeric[N]): Real =
+    RealOps.pow(this, num.toDouble(exponent))
 
   def exp: Real = RealOps.unary(this, ExpOp)
   def log: Real = RealOps.unary(this, LogOp)
@@ -48,13 +49,10 @@ private case object ExpOp extends UnaryOp
 private case object LogOp extends UnaryOp
 private case object AbsOp extends UnaryOp
 
-private case class Pow(original: Real, exponent: Real) extends NonConstant
-
-private class Product(val left: NonConstant, val right: NonConstant)
-    extends NonConstant
-
 private class Line(val ax: Map[NonConstant, Double], val b: Double)
     extends NonConstant
+
+private case class LogLine(ax: Map[NonConstant, Double]) extends NonConstant
 
 case class If private (test: NonConstant, whenNonZero: Real, whenZero: Real)
     extends NonConstant

@@ -11,26 +11,9 @@ private class Translator {
     case v: Variable         => Parameter(v)
     case Constant(value)     => Const(value)
     case Unary(original, op) => unaryIR(toIR(original), op)
-    case Pow(original, Constant(-1.0)) =>
-      binaryIR(Const(1.0), toIR(original), DivideOp)
-    case Pow(original, Constant(2.0)) =>
-      val x = toIR(original)
-      binaryIR(x, x, MultiplyOp)
-    case Pow(original, exponent) =>
-      binaryIR(toIR(original), toIR(exponent), PowOp)
-    case p: Product =>
-      (p.left, p.right) match {
-        case (Pow(a, Constant(-1.0)), Pow(b, Constant(-1.0))) =>
-          binaryIR(Const(1.0), binaryIR(toIR(a), toIR(b), MultiplyOp), DivideOp)
-        case (Pow(a, Constant(-1.0)), right) =>
-          binaryIR(toIR(right), toIR(a), DivideOp)
-        case (left, Pow(b, Constant(-1.0))) =>
-          binaryIR(toIR(left), toIR(b), DivideOp)
-        case _ =>
-          binaryIR(toIR(p.left), toIR(p.right), MultiplyOp)
-      }
-    case i: If   => toIR(i.whenNonZero) //will lead to NaNs for now
-    case l: Line => lineIR(l)
+    case i: If               => toIR(i.whenNonZero) //will lead to NaNs for now
+    case l: Line             => lineIR(l)
+    case l: LogLine          => logLineIR(l)
   }
 
   private def unaryIR(original: IR, op: UnaryOp): IR = {
@@ -65,64 +48,86 @@ private class Translator {
 
   private def lineIR(line: Line): IR =
     LineOps.factor(line) match {
-      case Some((l: Line, scale)) => scaledLine(l, scale)
-      case Some((nc, scale)) =>
-        binaryIR(toIR(nc), Const(scale), MultiplyOp)
-      case None => scaledLine(line, 1.0)
+      case Some((l: Line, factor)) =>
+        factoredLine(l.ax, l.b, factor, multiplyRing)
+      case Some((nc, factor)) =>
+        binaryIR(toIR(nc), Const(factor), MultiplyOp)
+      case None => factoredLine(line.ax, line.b, 1.0, multiplyRing)
     }
 
-  private def scaledLine(l: Line, scale: Double): IR = {
-    val posTerms = l.ax.filter(_._2 > 0.0).toList
+  private def logLineIR(line: LogLine): IR =
+    LogLineOps.factor(line) match {
+      case Some((l: Line, factor)) => factoredLine(l.ax, 0.0, factor, powRing)
+      case Some((nc, factor)) =>
+        binaryIR(toIR(nc), Const(factor), PowOp)
+      case None => factoredLine(line.ax, 0.0, 1.0, powRing)
+    }
+
+  private def factoredLine(ax: Map[NonConstant, Double],
+                           b: Double,
+                           factor: Double,
+                           ring: Ring): IR = {
+    val posTerms = ax.filter(_._2 > 0.0).toList
     val negTerms =
-      l.ax.filter(_._2 < 0.0).map { case (r, d) => r -> d.abs }.toList
+      ax.filter(_._2 < 0.0).map { case (x, a) => x -> a.abs }.toList
 
     val allPosTerms =
-      if (l.b == 0.0)
+      if (b == 0.0)
         posTerms
       else
-        (Constant(l.b), 1.0) :: posTerms
+        (Constant(b), 1.0) :: posTerms
 
     val (ir, sign) =
       (allPosTerms.isEmpty, negTerms.isEmpty) match {
         case (true, true)  => (Const(0.0), 1.0)
-        case (true, false) => (sumTerms(negTerms), -1.0)
-        case (false, true) => (sumTerms(allPosTerms), 1.0)
+        case (true, false) => (combineTerms(negTerms, ring), -1.0)
+        case (false, true) => (combineTerms(allPosTerms, ring), 1.0)
         case (false, false) =>
-          val posSum = sumTerms(allPosTerms)
-          val negSum = sumTerms(negTerms)
-          (binaryIR(posSum, negSum, SubtractOp), 1.0)
+          val posSum = combineTerms(allPosTerms, ring)
+          val negSum = combineTerms(negTerms, ring)
+          (binaryIR(posSum, negSum, ring.minus), 1.0)
       }
 
-    val newScale = scale * sign
-    if (newScale == 1.0)
+    val newFactor = factor * sign
+    if (newFactor == 1.0)
       ir
     else
-      binaryIR(ir, Const(newScale), MultiplyOp)
+      binaryIR(ir, Const(newFactor), ring.times)
   }
 
-  private def sumTerms(terms: Seq[(Real, Double)]): IR = {
+  private def combineTerms(terms: Seq[(Real, Double)], ring: Ring): IR = {
     val ir = terms.map {
-      case (r, 1.0) => toIR(r)
-      case (Pow(d, Constant(-1.0)), n) =>
-        binaryIR(Const(n), toIR(d), DivideOp)
-      case (r, d) =>
-        binaryIR(toIR(r), Const(d), MultiplyOp)
+      case (x, 1.0) => toIR(x)
+      case (x, 2.0) =>
+        val xIR = toIR(x)
+        binaryIR(xIR, xIR, ring.plus)
+      case (l: LogLine, a) => //this can only happen for a Line's terms
+        factoredLine(l.ax, a, 1.0, powRing)
+      case (x, a) =>
+        binaryIR(toIR(x), Const(a), ring.times)
     }
-    sumTree(ir)
+    combineTree(ir, ring)
   }
 
-  private def sumTree(terms: Seq[IR]): IR =
+  private def combineTree(terms: Seq[IR], ring: Ring): IR =
     if (terms.size == 1)
       terms.head
     else
-      sumTree(terms.grouped(2).toList.map {
-        case oneOrTwo =>
-          if (oneOrTwo.size == 1)
-            oneOrTwo.head
-          else {
-            val left = oneOrTwo(0)
-            val right = oneOrTwo(1)
-            binaryIR(left, right, AddOp)
-          }
-      })
+      combineTree(
+        terms.grouped(2).toList.map {
+          case oneOrTwo =>
+            if (oneOrTwo.size == 1)
+              oneOrTwo.head
+            else {
+              val left = oneOrTwo(0)
+              val right = oneOrTwo(1)
+              binaryIR(left, right, ring.plus)
+            }
+        },
+        ring
+      )
+
+  case class Ring(times: BinaryOp, plus: BinaryOp, minus: BinaryOp)
+  val multiplyRing = Ring(MultiplyOp, AddOp, SubtractOp)
+  val powRing = Ring(PowOp, MultiplyOp, DivideOp)
 }

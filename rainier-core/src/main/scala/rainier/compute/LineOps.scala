@@ -42,16 +42,23 @@ private object LineOps {
 
   //if the result is Some((y,k)), then y*k==line, k != 1
   def factor(line: Line): Option[(NonConstant, Double)] =
-    if (line.ax.size == 1 && line.b == 0) {
-      val a = line.ax.head._2
-      val x = line.ax.head._1
+    factor(line.ax, line.b) {
+      case (newAx, newB) => new Line(newAx, newB)
+    }
+
+  def factor(ax: Map[NonConstant, Double], b: Double)(
+      fn: (Map[NonConstant, Double], Double) => NonConstant)
+    : Option[(NonConstant, Double)] =
+    if (ax.size == 1 && b == 0) {
+      val a = ax.head._2
+      val x = ax.head._1
       if (a == 1.0)
         None
       else
         Some((x, a))
     } else {
-      val mostSimplifyingFactor =
-        line.ax.values
+      val mostSimplifying =
+        ax.values
           .groupBy(_.abs)
           .map { case (d, l) => d -> l.size }
           .toList
@@ -59,22 +66,21 @@ private object LineOps {
           .last
           ._1
 
-      if (mostSimplifyingFactor == 1.0)
+      if (mostSimplifying == 1.0)
         None
       else {
-        val newAx = line.ax.map {
-          case (r, d) => r -> d / mostSimplifyingFactor
+        val newAx = ax.map {
+          case (x, a) => x -> a / mostSimplifying
         }
 
-        val newB = line.b / mostSimplifyingFactor
+        val newB = b / mostSimplifying
 
-        Some((new Line(newAx, newB), mostSimplifyingFactor))
+        Some((fn(newAx, newB), mostSimplifying))
       }
     }
 
-  private def merge(
-      left: Map[NonConstant, Double],
-      right: Map[NonConstant, Double]): Map[NonConstant, Double] = {
+  def merge(left: Map[NonConstant, Double],
+            right: Map[NonConstant, Double]): Map[NonConstant, Double] = {
     val (big, small) =
       if (left.size > right.size)
         (left, right)

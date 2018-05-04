@@ -18,28 +18,24 @@ private object Gradient {
         real match {
           case v: Variable     => ()
           case Constant(value) => ()
-          case p: Product =>
-            diff(p.left).register(ProductDiff(p.right, diff(p)))
-            diff(p.right).register(ProductDiff(p.left, diff(p)))
-            visit(p.left)
-            visit(p.right)
 
           case u: Unary =>
             diff(u.original).register(UnaryDiff(u, diff(u)))
             visit(u.original)
 
-          case w: Pow =>
-            diff(w.original).register(PowDiff(w, diff(w), false))
-            diff(w.exponent).register(PowDiff(w, diff(w), true))
-            visit(w.original)
-            visit(w.exponent)
-
           case l: Line =>
             l.ax.foreach {
-              case (r, d) =>
-                diff(r).register(ProductDiff(Constant(d), diff(l)))
+              case (x, a) =>
+                diff(x).register(ProductDiff(a, diff(l)))
             }
-            l.ax.foreach { case (r, d) => visit(r) }
+            l.ax.foreach { case (x, _) => visit(x) }
+
+          case l: LogLine =>
+            l.ax.foreach {
+              case (x, a) =>
+                diff(x).register(LogLineDiff(l, diff(l), x))
+            }
+            l.ax.foreach { case (x, _) => visit(x) }
 
           case f: If =>
             diff(f.whenNonZero).register(IfDiff(f, diff(f), true))
@@ -74,7 +70,7 @@ private object Gradient {
     }
   }
 
-  private case class ProductDiff(other: Real, gradient: Diff) extends Diff {
+  private case class ProductDiff(other: Double, gradient: Diff) extends Diff {
     def toReal = gradient.toReal * other
   }
 
@@ -96,16 +92,21 @@ private object Gradient {
         If(child.test, Real.zero, gradient.toReal)
   }
 
-  private case class PowDiff(child: Pow, gradient: Diff, isExponent: Boolean)
+  private case class LogLineDiff(child: LogLine,
+                                 gradient: Diff,
+                                 term: NonConstant)
       extends Diff {
-    def toReal =
-      if (isExponent)
-        gradient.toReal *
-          (If(child.original, child.original, Real.one) * child.original.pow(
-            child.exponent)).log
-      else
-        gradient.toReal *
-          child.exponent *
-          child.original.pow(If(child.exponent, child.exponent - 1, Real.one))
+    def toReal = {
+      val exponent = child.ax(term)
+      val otherTerms =
+        if (child.ax.size == 1)
+          Real.one
+        else
+          LogLine(child.ax - term)
+      gradient.toReal *
+        exponent *
+        term.pow(exponent - 1) *
+        otherTerms
+    }
   }
 }
