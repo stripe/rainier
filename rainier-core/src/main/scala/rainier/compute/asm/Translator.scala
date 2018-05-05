@@ -88,19 +88,20 @@ private class Translator {
           (binaryIR(posSum, negSum, ring.minus), 1.0)
       }
 
-    val newFactor = factor * sign
-    if (newFactor == 1.0)
-      ir
-    else
-      binaryIR(ir, Const(newFactor), ring.times)
+    (factor * sign) match {
+      case 1.0 => ir
+      case -1.0 =>
+        binaryIR(Const(ring.zero), ir, ring.minus)
+      case k =>
+        binaryIR(ir, Const(k), ring.times)
+    }
   }
 
   private def combineTerms(terms: Seq[(Real, Double)], ring: Ring): IR = {
     val ir = terms.map {
       case (x, 1.0) => toIR(x)
       case (x, 2.0) =>
-        val xIR = toIR(x)
-        binaryIR(xIR, xIR, ring.plus)
+        binaryIR(toIR(x), toIR(x), ring.plus)
       case (l: LogLine, a) => //this can only happen for a Line's terms
         factoredLine(l.ax, a, 1.0, powRing)
       case (x, a) =>
@@ -127,7 +128,10 @@ private class Translator {
         ring
       )
 
-  case class Ring(times: BinaryOp, plus: BinaryOp, minus: BinaryOp)
-  val multiplyRing = Ring(MultiplyOp, AddOp, SubtractOp)
-  val powRing = Ring(PowOp, MultiplyOp, DivideOp)
+  case class Ring(times: BinaryOp,
+                  plus: BinaryOp,
+                  minus: BinaryOp,
+                  zero: Double)
+  val multiplyRing = Ring(MultiplyOp, AddOp, SubtractOp, 0.0)
+  val powRing = Ring(PowOp, MultiplyOp, DivideOp, 1.0)
 }
