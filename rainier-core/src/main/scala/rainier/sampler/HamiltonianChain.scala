@@ -63,7 +63,7 @@ private object HamiltonianChain {
     val cf = Compiler.default.compileGradient(variables, negativeDensity)
     val hParams = initialize(variables.size, cf)
 //    val integrator = LeapFrogIntegrator(cf)
-    val integrator = RealLeapFrogIntegrator(variables, cf)
+    val integrator = RealLeapFrogIntegrator(variables.size, cf)
     HamiltonianChain(true, 1.0, hParams, integrator)
   }
 
