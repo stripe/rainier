@@ -4,7 +4,7 @@ import rainier.core._
 import rainier.compute._
 
 case class Variational(tolerance: Double, maxIterations: Int) extends Sampler {
-  override def description: (String, Map[String, Double]) =
+  def description: (String, Map[String, Double]) =
     ("Variational",
      Map(
        "Tolerance" -> tolerance,
@@ -14,7 +14,7 @@ case class Variational(tolerance: Double, maxIterations: Int) extends Sampler {
   override def sample(density: Real)(implicit rng: RNG): Iterator[Sample] = {
     //VariationalOptimizer(tolerance, maxIterations)
 
-    val modelVariables = Real.variables(density).toList
+    val modelVariables = density.variables
 
     // use a set of independent normals as the guide
     val K = modelVariables.length
@@ -22,23 +22,20 @@ case class Variational(tolerance: Double, maxIterations: Int) extends Sampler {
     val nsamples = 100
     val stepsize = .1
 
-    def sampleFromGuide(): Seq[Double] = {
-      1.to(K).map { _ =>
-        rng.standardNormal
-      }
-    }
+    val mus = List.fill(K)(new Variable)
+    val sigmas = List.fill(K)(new Variable)
+    val epsilonDistribution = Normal(0.0, 1.0)
+    val epsilons = List.fill(K)(epsilonDistribution.param)
 
-    val mus = List.fill(K)(Unbounded.param)
-    val sigmas = List.fill(K)(NonNegative.param)
-    val epsilons = List.fill(K)(Normal(0.0, 1.0).param)
+    def sampleFromGuide(): Seq[(Variable, Double)] = {
+      epsilons.map(eps => eps.density.variables.head -> epsilonDistribution.generator.get)
+    }
 
     val eps: List[RandomVariable[Real]] = (mus zip sigmas zip epsilons) map {
       case ((mu, sigma), epsilon) =>
         for {
-          muS <- mu
-          sigmaS <- sigma
           epsS <- epsilon
-        } yield muS + sigmaS * epsS
+        } yield mu + sigma * epsS
     }
 
     val guideLogDensity = eps.foldLeft(Real(0.0)) {
@@ -49,12 +46,16 @@ case class Variational(tolerance: Double, maxIterations: Int) extends Sampler {
     // are gradients/variables ordered in any way?
     val transformedDensity = density
     val surrogateLoss = transformedDensity + guideLogDensity
-    val variables = Real.variables(surrogateLoss).toList
-    val guideVariables = Real.variables(guideLogDensity).toList
-    val gradients = Gradient.derive(variables, surrogateLoss)
-    val cf = Compiler(gradients)
+    val variables = surrogateLoss.variables
+//    val guideVariables = guideLogDensity.variables
+    val muSigmaVariables = mus ++ sigmas
+    val gradientsWithVariables = (surrogateLoss.gradient zip surrogateLoss.variables) filter {
+      case (gradient, variable) => muSigmaVariables.contains(variable)
+    }
+    val (gradients, variablesForCompiling) = gradientsWithVariables.unzip
+    val cf = Compiler.default(variables, gradients)
 
-    val initialValues = guideVariables.flatMap(_ => List(0.0, 1.0))
+    val initialValues = muSigmaVariables.flatMap(_ => List(0.0, 1.0))
 
     def collectMaps[T, U](m: Seq[Map[T, U]]): Map[T, Seq[U]] = {
       m.flatten.groupBy(_._1).mapValues(seqTuples => seqTuples.map(_._2))
@@ -62,33 +63,33 @@ case class Variational(tolerance: Double, maxIterations: Int) extends Sampler {
 
     val finalValues = 1.to(niterations).foldLeft(initialValues) {
       case (values, _) =>
-        val grads: Seq[Map[Real, Double]] = (1 to nsamples) map { _ =>
+        val gradSamples: Seq[Array[Double]] = (1 to nsamples) map { _ =>
           val samples = sampleFromGuide()
-          val inputs = variables.zip(samples ++ values).toMap
-          val outputs = cf(inputs)
+          val inputs = variables.map((samples ++ (muSigmaVariables zip values)).toMap)
+          val outputs = cf(inputs.toArray)
           outputs
         }
-        val perDimGradSamples = collectMaps(grads)
-        val perDimGrads = perDimGradSamples.mapValues(samples =>
+        val perDimGradSamples = gradSamples.transpose
+        val perDimGrads = perDimGradSamples.map(samples =>
           samples.sum * 1.0 / nsamples.toDouble)
         (values zip variables.map(perDimGrads)).map {
           case (v, g) => v + stepsize * g
         }
     }
-
+    ???
   }
 
-  def substituteVariable(x: Real, f: Variable => Real): Real = x match {
-    case v: Variable => f(v)
-    case c: Constant => c
-    case b: BinaryReal =>
-      BinaryReal()
-    case u: UnaryReal =>
-      println(padding + u.op)
-      print(u.original, depth + 1)
-    case s: SumReal =>
-      println(padding + "Sum{" + s.seq.size + "}")
-      print(s.seq.head, depth + 1)
-
-  }
+//  def substituteVariable(x: Real, f: Variable => Real): Real = x match {
+//    case v: Variable => f(v)
+//    case c: Constant => c
+//    case b: BinaryReal =>
+//      BinaryReal()
+//    case u: UnaryReal =>
+//      println(padding + u.op)
+//      print(u.original, depth + 1)
+//    case s: SumReal =>
+//      println(padding + "Sum{" + s.seq.size + "}")
+//      print(s.seq.head, depth + 1)
+//
+//  }
 }
