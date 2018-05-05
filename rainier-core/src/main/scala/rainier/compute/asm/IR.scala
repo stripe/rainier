@@ -22,10 +22,13 @@ private object Sym {
   }
 }
 
-private class VarDef(val sym: Sym, val rhs: IR) extends IR {
+private sealed trait Var extends IR {
+  def sym: Sym
+}
+private class VarDef(val sym: Sym, val rhs: IR) extends Var {
   override def consKey = VarRef(sym)
 }
-private case class VarRef(sym: Sym) extends IR
+private case class VarRef(sym: Sym) extends Var
 
 private class MethodDef(val sym: Sym, val rhs: IR) extends IR
 private case class MethodRef(sym: Sym) extends IR
