@@ -57,10 +57,12 @@ private class Translator {
 
   private def logLineIR(line: LogLine): IR =
     LogLineOps.factor(line) match {
-      case Some((l: Line, factor)) => factoredLine(l.ax, 0.0, factor, powRing)
+      case Some((l: LogLine, factor)) =>
+        factoredLine(l.ax, 0.0, factor, powRing)
       case Some((nc, factor)) =>
         binaryIR(toIR(nc), Const(factor), PowOp)
-      case None => factoredLine(line.ax, 0.0, 1.0, powRing)
+      case None =>
+        factoredLine(line.ax, 0.0, 1.0, powRing)
     }
 
   private def factoredLine(ax: Map[NonConstant, Double],

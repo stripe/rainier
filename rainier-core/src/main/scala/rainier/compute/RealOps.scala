@@ -16,8 +16,8 @@ private object RealOps {
           case (AbsOp, u @ Unary(_, AbsOp)) => u
           case (AbsOp, u @ Unary(_, ExpOp)) => u
           case (LogOp, Unary(x, ExpOp))     => x
-          case (LogOp, l: LogLine) =>
-            LogLineOps.log(l)
+          //case (LogOp, l: LogLine) =>
+          //  LogLineOps.log(l)
           case (LogOp, l: Line) =>
             LineOps.log(l).getOrElse {
               Unary(nc, op)

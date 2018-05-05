@@ -9,7 +9,8 @@ class RealTest extends FunSuite {
     test(description) {
       val x = new Variable
       val result = fn(x)
-      List(0.0, -1.0, 1.0, 2.0, -2.0, 0.5, -0.5).foreach { n =>
+      val c = asm.IRCompiler.compile(List(x), result)
+      List(1.0, 0.0, -1.0, 2.0, -2.0, 0.5, -0.5).foreach { n =>
         val constant = fn(Constant(n))
         assert(constant.isInstanceOf[Constant], s"[n=$n]")
         val eval = new Evaluator(Map(x -> n))
@@ -17,12 +18,14 @@ class RealTest extends FunSuite {
         assertWithinEpsilon(constant.asInstanceOf[Constant].value,
                             withVar,
                             s"[n=$n]")
+        val compiled = c(Array(n))
+        assertWithinEpsilon(withVar, compiled, s"[ir, n=$n]")
       }
     }
   }
 
   def assertWithinEpsilon(x: Double, y: Double, clue: String): Unit = {
-    assert(x == y || (x - y).abs < 0.000000001, clue)
+    assert(x.isNaN && y.isNaN || x == y || (x - y).abs < 0.000000001, clue)
   }
 
   run("plus") { x =>
@@ -48,6 +51,14 @@ class RealTest extends FunSuite {
   run("logistic") { x =>
     val logistic = Real.one / (Real.one + (x * -1).exp)
     (logistic * (Real.one - logistic)).log
+  }
+
+  run("minimal logistic") { x =>
+    Real.one / (x.exp + 1)
+  }
+
+  run("log x^2") { x =>
+    x.pow(2).log
   }
 
   run("poisson") { x =>
