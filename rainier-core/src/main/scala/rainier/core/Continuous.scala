@@ -60,9 +60,9 @@ object Gamma {
   def standard(shape: Real): Continuous = new Continuous {
     def realLogDensity(real: Real) =
       If(real > 0,
-        (shape - 1) * real.log -
-        Combinatrics.gamma(shape) - real,
-        Real.zero.log)
+         (shape - 1) * real.log -
+           Combinatrics.gamma(shape) - real,
+         Real.zero.log)
 
     /*
     Jacobian time: we need pdf(x) and we have pdf(f(x)) where f(x) = e^x.

@@ -23,14 +23,15 @@ trait Injection { self =>
       n.toDouble(forwards(dist.generator.get(r, n)))
     }
 
-    def param = dist.param.map(forwards)
+    val param = dist.param.map(forwards)
   }
 }
 
 case class Scale(a: Real) extends Injection {
+  private val lj = a.log * -1
   def forwards(x: Real) = x * a
   def backwards(y: Real) = y / a
-  def logJacobian(y: Real) = a.log * -1
+  def logJacobian(y: Real) = lj
 }
 
 case class Translate(b: Real) extends Injection {
