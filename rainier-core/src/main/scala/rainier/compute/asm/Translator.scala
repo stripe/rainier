@@ -14,8 +14,7 @@ private class Translator {
     case Pow(original, Constant(-1.0)) =>
       binaryIR(Const(1.0), toIR(original), DivideOp)
     case Pow(original, Constant(2.0)) =>
-      val x = toIR(original)
-      binaryIR(x, x, MultiplyOp)
+      binaryIR(toIR(original), toIR(original), MultiplyOp)
     case Pow(original, exponent) =>
       binaryIR(toIR(original), toIR(exponent), PowOp)
     case p: Product =>

@@ -24,9 +24,9 @@ object IRTracer {
 
   private def traceApply(outputs: Seq[Int], globalSize: Int) = {
     println("def apply(params: Array[Double]): Array[Double] = {")
-    println(" val globals = new Array[Double](" + globalSize + ")")
+    println("  val globals = new Array[Double](" + globalSize + ")")
     println(
-      " Array(" + outputs
+      "  Array(" + outputs
         .map { i =>
           "f" + i + "(params, globals)"
         }
@@ -41,59 +41,61 @@ object IRTracer {
 
     println(
       "def f" + method.sym.id + "(params: Array[Double], globals: Array[Double]): Double = {")
-    traverse(method.rhs)
-    println("")
+    println("  " + traverse(method.rhs))
     println("}")
 
-    def traverse(ir: IR): Unit = {
+    def traverse(ir: IR, needsParens: Boolean = false): String = {
       ir match {
-        case Const(value) =>
-          print(value)
+        case Const(value) => value.toString
         case Parameter(variable) =>
-          print("params(" + varIndices(variable) + ")")
+          val i = varIndices(variable)
+          s"params($i)"
         case b: BinaryIR =>
           b.op match {
             case PowOp =>
-              print("Math.pow(")
-              traverse(b.left)
-              print(",")
-              traverse(b.right)
+              val l = traverse(b.left)
+              val r = traverse(b.right)
+              s"Math.pow($l,$r)"
             case _ =>
-              print("(")
-              traverse(b.left)
-              print(name(b.op))
-              traverse(b.right)
-              print(")")
+              val l = traverse(b.left, true)
+              val r = traverse(b.right, true)
+              val n = name(b.op)
+              if (needsParens)
+                s"($l $n $r)"
+              else
+                s"$l $n $r"
           }
         case u: UnaryIR =>
-          print(name(u.op))
-          print("(")
-          traverse(u.original)
-          print(")")
+          val n = name(u.op)
+          val o = traverse(u.original)
+          s"$n($o)"
         case v: VarDef =>
           varTypes(v.sym) match {
             case Inline =>
-              traverse(v.rhs)
+              traverse(v.rhs, needsParens)
             case Local(i) =>
-              print("  val tmp" + i + " = ")
-              traverse(v.rhs)
-              println("")
+              val r = traverse(v.rhs)
+              val n = "tmp" + i
+              println(s"  val $n = $r")
+              n
             case Global(i) =>
-              print("  globals(" + i + ") = ")
-              traverse(v.rhs)
-              println("")
+              val r = traverse(v.rhs)
+              val n = s"globals($i)"
+              println(s"  val $n = $r")
+              n
           }
         case VarRef(sym) =>
           varTypes(sym) match {
             case Inline =>
               sys.error("Should not have references to inlined vars")
             case Local(i) =>
-              print("tmp" + i)
+              s"tmp$i"
             case Global(i) =>
-              print("globals(" + i + ")")
+              s"globals($i)"
           }
         case MethodRef(sym) =>
-          print("f" + sym.id + "(params, globals)")
+          val i = sym.id
+          s"f$i(params, globals)"
         case m: MethodDef =>
           sys.error("Should not have nested method defs")
       }
