@@ -28,7 +28,7 @@ private object LineOps {
       None
 
   def log(line: Line): Option[Real] =
-    factor(line)
+    factorOpt(line)
       .filter(_._2 >= 0)
       .map {
         case (y, k) =>
@@ -38,22 +38,22 @@ private object LineOps {
   def pow(line: Line, exponent: Real): Option[Real] =
     exponent match {
       case Constant(p) =>
-        factor(line).map {
+        factorOpt(line).map {
           case (y, k) =>
             y.pow(p) * Math.pow(k, p)
         }
       case _ => None
     }
 
-  def factor2(line: Line): (Line, Double) =
-    factor(line) match {
+  def factor(line: Line): (Line, Double) =
+    factorOpt(line) match {
       case Some((y: Line, k)) => (y, k)
       case Some((nc: NonConstant, k)) =>
         (Line(Map(nc -> 1.0), 0.0), k)
       case None => (line, 1.0)
     }
 
-  def factor(line: Line): Option[(NonConstant, Double)] =
+  def factorOpt(line: Line): Option[(NonConstant, Double)] =
     if (line.ax.size == 1 && line.b == 0) {
       val a = line.ax.head._2
       val x = line.ax.head._1

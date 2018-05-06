@@ -49,7 +49,7 @@ private class Translator {
     }
 
   private def lineIR(line: Line): IR = {
-    val (y, k) = LineOps.factor2(line)
+    val (y, k) = LineOps.factor(line)
     factoredLine(y.ax, y.b, k, multiplyRing)
   }
 
