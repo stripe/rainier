@@ -45,25 +45,25 @@ private object LineOps {
       case _ => None
     }
 
-  //if the result is Some((y,k)), then y*k==line, k != 1
-  def factor(line: Line): Option[(NonConstant, Double)] =
-    factor(line.ax, line.b) {
-      case (newAx, newB) => Line(newAx, newB)
+  def factor2(line: Line): (Line, Double) =
+    factor(line) match {
+      case Some((y: Line, k)) => (y, k)
+      case Some((nc: NonConstant, k)) =>
+        (Line(Map(nc -> 1.0), 0.0), k)
+      case None => (line, 1.0)
     }
 
-  def factor(ax: Map[NonConstant, Double], b: Double)(
-      fn: (Map[NonConstant, Double], Double) => NonConstant)
-    : Option[(NonConstant, Double)] =
-    if (ax.size == 1 && b == 0) {
-      val a = ax.head._2
-      val x = ax.head._1
+  def factor(line: Line): Option[(NonConstant, Double)] =
+    if (line.ax.size == 1 && line.b == 0) {
+      val a = line.ax.head._2
+      val x = line.ax.head._1
       if (a == 1.0)
         None
       else
         Some((x, a))
     } else {
       val mostSimplifying =
-        ax.values
+        line.ax.values
           .groupBy(_.abs)
           .map { case (d, l) => d -> l.size }
           .toList
@@ -74,13 +74,13 @@ private object LineOps {
       if (mostSimplifying == 1.0)
         None
       else {
-        val newAx = ax.map {
+        val newAx = line.ax.map {
           case (x, a) => x -> a / mostSimplifying
         }
 
-        val newB = b / mostSimplifying
+        val newB = line.b / mostSimplifying
 
-        Some((fn(newAx, newB), mostSimplifying))
+        Some((Line(newAx, newB), mostSimplifying))
       }
     }
 

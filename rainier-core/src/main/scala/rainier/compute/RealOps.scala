@@ -11,19 +11,16 @@ private object RealOps {
           case AbsOp => Constant(Math.abs(value))
         }
       case nc: NonConstant =>
-        (op, nc) match {
-          case (ExpOp, Unary(x, LogOp))     => x
-          case (AbsOp, u @ Unary(_, AbsOp)) => u
-          case (AbsOp, u @ Unary(_, ExpOp)) => u
-          case (LogOp, Unary(x, ExpOp))     => x
-          //case (LogOp, l: LogLine) =>
-          //  LogLineOps.log(l)
-          case (LogOp, l: Line) =>
-            LineOps.log(l).getOrElse {
-              Unary(nc, op)
-            }
-          case _ => Unary(nc, op)
+        val opt = (op, nc) match {
+          case (ExpOp, Unary(x, LogOp))     => Some(x)
+          case (AbsOp, u @ Unary(_, AbsOp)) => Some(u)
+          case (AbsOp, u @ Unary(_, ExpOp)) => Some(u)
+          case (LogOp, Unary(x, ExpOp))     => Some(x)
+          case (LogOp, l: Line)             => LineOps.log(l)
+          case (LogOp, l: LogLine)          => LogLineOps.log(l)
+          case _                            => None
         }
+        opt.getOrElse(Unary(nc, op))
     }
 
   def add(left: Real, right: Real): Real =
