@@ -15,9 +15,10 @@ trait Injection { self =>
 
   def transform(dist: Continuous): Continuous = new Continuous {
     def realLogDensity(real: Real) =
-      dist.realLogDensity(backwards(real)) +
-        logJacobian(real) +
-        isDefinedAt(real).log
+      If(isDefinedAt(real),
+         dist.realLogDensity(backwards(real)) +
+           logJacobian(real),
+         Real.zero.log)
 
     val generator = Generator.from { (r, n) =>
       n.toDouble(forwards(dist.generator.get(r, n)))
