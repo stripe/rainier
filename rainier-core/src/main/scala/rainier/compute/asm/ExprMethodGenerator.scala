@@ -29,6 +29,12 @@ private case class ExprMethodGenerator(method: MethodDef,
       case u: UnaryIR =>
         traverse(u.original)
         unaryOp(u.op)
+      case i: IfIR =>
+        traverse(i.whenNonZero)
+        traverse(i.whenZero)
+        traverse(i.test)
+        constant(0.0)
+        swapIfEqThenPop()
       case v: VarDef =>
         varTypes(v.sym) match {
           case Inline =>

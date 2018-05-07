@@ -69,6 +69,14 @@ object IRTracer {
           val n = name(u.op)
           val o = traverse(u.original)
           s"$n($o)"
+        case i: IfIR =>
+          val t = traverse(i.test)
+          val nz = traverse(i.whenNonZero)
+          val z = traverse(i.whenZero)
+          if (needsParens)
+            s"if($t == 0.0) $z else $nz"
+          else
+            s"(if($t == 0.0) $z else $nz)"
         case v: VarDef =>
           varTypes(v.sym) match {
             case Inline =>

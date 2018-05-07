@@ -2,6 +2,7 @@ package rainier.compute.asm
 
 import org.objectweb.asm.Opcodes._
 import org.objectweb.asm.tree.MethodNode
+import org.objectweb.asm.Label
 import rainier.compute._
 
 private trait MethodGenerator {
@@ -108,6 +109,16 @@ private trait MethodGenerator {
         fn(v)
         methodNode.visitInsn(DASTORE)
     }
+  }
+
+  def swapIfEqThenPop(): Unit = {
+    val label = new Label
+    methodNode.visitInsn(DCMPL)
+    methodNode.visitJumpInsn(IFNE, label)
+    methodNode.visitInsn(DUP2_X2)
+    methodNode.visitInsn(POP2)
+    methodNode.visitLabel(label)
+    methodNode.visitInsn(POP2)
   }
 
   /**

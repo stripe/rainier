@@ -84,6 +84,10 @@ private object VarTypes {
         case b: BinaryIR =>
           traverse(b.left)
           traverse(b.right)
+        case i: IfIR =>
+          traverse(i.whenNonZero)
+          traverse(i.whenZero)
+          traverse(i.test)
         case u: UnaryIR =>
           traverse(u.original)
         case _ => ()

@@ -1,59 +1,38 @@
 package rainier.compute.asm
 
 import rainier.compute._
-import scala.collection.mutable
 
 private class Translator {
-  private val binary = mutable.Map.empty[(Ref, Ref, BinaryOp), Sym]
-  private val unary = mutable.Map.empty[(Ref, UnaryOp), Sym]
+  private val binary = new SymCache[BinaryOp]
+  private val unary = new SymCache[UnaryOp]
+  private val ifs = new SymCache[Unit]
 
   def toIR(r: Real): IR = r match {
     case v: Variable         => Parameter(v)
     case Constant(value)     => Const(value)
     case Unary(original, op) => unaryIR(toIR(original), op)
-    case i: If               => toIR(i.whenNonZero) //will lead to NaNs for now
+    case i: If               => ifIR(toIR(i.whenNonZero), toIR(i.whenZero), toIR(i.test))
     case l: Line             => lineIR(l)
     case l: LogLine          => logLineIR(l)
   }
 
-  def ref(ir: IR): Ref =
-    ir match {
-      case r: Ref         => r
-      case VarDef(sym, _) => VarRef(sym)
-      case _              => sys.error("Should only see refs and vardefs")
-    }
-
-  private def memoize[K](cache: mutable.Map[K, Sym], keys: Seq[K])(
-      ir: => IR): IR = {
-    val hit = keys.foldLeft(Option.empty[Sym]) {
-      case (opt, k) =>
-        opt.orElse { cache.get(k) }
-    }
-    hit match {
-      case Some(sym) => VarRef(sym)
-      case None =>
-        val sym = Sym.freshSym()
-        cache(keys.head) = sym
-        new VarDef(sym, ir)
-    }
-  }
-
   private def unaryIR(original: IR, op: UnaryOp): IR =
-    memoize(unary, List((ref(original), op))) {
-      new UnaryIR(original, op)
-    }
+    unary.memoize(List(List(original)), op, new UnaryIR(original, op))
 
   private def binaryIR(left: IR, right: IR, op: BinaryOp): IR = {
-    val key = (ref(left), ref(right), op)
+    val key = List(left, right)
     val keys =
-      if(op.isCommutative)
-        List(key, (ref(left), ref(right), op))
-      else
+      if (op.isCommutative)
         List(key)
-    memoize(binary, keys) {
-      new BinaryIR(left, right, op)
-    }
+      else
+        List(key, key.reverse)
+    binary.memoize(keys, op, new BinaryIR(left, right, op))
   }
+
+  private def ifIR(whenZero: IR, whenNonZero: IR, test: IR): IR =
+    ifs.memoize(List(List(test, whenZero, whenNonZero)),
+                (),
+                new IfIR(test, whenZero, whenNonZero))
 
   private def lineIR(line: Line): IR = {
     val (y, k) = LineOps.factor(line)
@@ -132,10 +111,37 @@ private class Translator {
         ring
       )
 
-  case class Ring(times: BinaryOp,
-                  plus: BinaryOp,
-                  minus: BinaryOp,
-                  zero: Double)
-  val multiplyRing = Ring(MultiplyOp, AddOp, SubtractOp, 0.0)
-  val powRing = Ring(PowOp, MultiplyOp, DivideOp, 1.0)
+  private def ref(ir: IR): Ref =
+    ir match {
+      case r: Ref         => r
+      case VarDef(sym, _) => VarRef(sym)
+      case _              => sys.error("Should only see refs and vardefs")
+    }
+
+  private case class Ring(times: BinaryOp,
+                          plus: BinaryOp,
+                          minus: BinaryOp,
+                          zero: Double)
+  private val multiplyRing = Ring(MultiplyOp, AddOp, SubtractOp, 0.0)
+  private val powRing = Ring(PowOp, MultiplyOp, DivideOp, 1.0)
+
+  private class SymCache[K] {
+    var cache = Map.empty[(List[Ref], K), Sym]
+    def memoize(irKeys: Seq[List[IR]], opKey: K, ir: => IR): IR = {
+      val refKeys = irKeys.map { l =>
+        l.map(ref)
+      }
+      val hit = refKeys.foldLeft(Option.empty[Sym]) {
+        case (opt, k) =>
+          opt.orElse { cache.get((k, opKey)) }
+      }
+      hit match {
+        case Some(sym) => VarRef(sym)
+        case None =>
+          val sym = Sym.freshSym()
+          cache += (refKeys.head, opKey) -> sym
+          new VarDef(sym, ir)
+      }
+    }
+  }
 }

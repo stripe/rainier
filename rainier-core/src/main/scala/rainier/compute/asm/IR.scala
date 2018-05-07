@@ -11,6 +11,7 @@ private case class VarRef(sym: Sym) extends Ref
 
 private case class BinaryIR(left: IR, right: IR, op: BinaryOp) extends IR
 private case class UnaryIR(original: IR, op: UnaryOp) extends IR
+private case class IfIR(test: IR, whenNonZero: IR, whenZero: IR) extends IR
 
 private case class VarDef(sym: Sym, rhs: IR) extends IR
 

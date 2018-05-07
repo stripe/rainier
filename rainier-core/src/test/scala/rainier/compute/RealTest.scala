@@ -61,6 +61,9 @@ class RealTest extends FunSuite {
     x.pow(2).log
   }
 
+  run("if") { x =>
+    If(x, x * 2, x * 3) * 5
+  }
   run("poisson") { x =>
     Poisson(x.abs + 1).logDensities(0.to(10).toList)
   }
