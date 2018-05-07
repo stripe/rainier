@@ -68,7 +68,7 @@ class Benchmarks {
   def runFullNormalAsm(state: FullNormalBenchmark): Unit = {
     state.runAsm
   }
-  /*
+
   @Benchmark
   def runNormalAsm(state: NormalBenchmark): Unit = {
     state.runAsm
@@ -88,5 +88,4 @@ class Benchmarks {
   def compilePoissonAsm(state: PoissonBenchmark): Unit = {
     state.compileAsm
   }
- */
 }
