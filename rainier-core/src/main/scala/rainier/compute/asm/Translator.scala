@@ -23,7 +23,7 @@ private class Translator {
       case _              => sys.error("Should only see refs and vardefs")
     }
 
-  private def memoize[K](cache: mutable.Map[K, Sym], keys: K*)(
+  private def memoize[K](cache: mutable.Map[K, Sym], keys: Seq[K])(
       ir: => IR): IR = {
     val hit = keys.foldLeft(Option.empty[Sym]) {
       case (opt, k) =>
@@ -39,14 +39,21 @@ private class Translator {
   }
 
   private def unaryIR(original: IR, op: UnaryOp): IR =
-    memoize(unary, (ref(original), op)) {
+    memoize(unary, List((ref(original), op))) {
       new UnaryIR(original, op)
     }
 
-  private def binaryIR(left: IR, right: IR, op: BinaryOp): IR =
-    memoize(binary, (ref(left), ref(right), op), (ref(right), ref(left), op)) {
+  private def binaryIR(left: IR, right: IR, op: BinaryOp): IR = {
+    val key = (ref(left), ref(right), op)
+    val keys =
+      if(op.isCommutative)
+        List(key, (ref(left), ref(right), op))
+      else
+        List(key)
+    memoize(binary, keys) {
       new BinaryIR(left, right, op)
     }
+  }
 
   private def lineIR(line: Line): IR = {
     val (y, k) = LineOps.factor(line)
