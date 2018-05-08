@@ -1,5 +1,18 @@
 package rainier.compute
 
+/*
+A Real is a DAG which represents a mathematical function
+from 0 or more real-valued input parameters to a single real-valued output.
+
+You can create new single-node DAGs either like `Real(2.0)`, for a constant,
+or with `new Variable` to introduce an input parameter. You can create more interesting DAGs
+by combining Reals using the standard mathematical operators, eg `(new Variable) + Real(2.0)`
+is the function f(x) = x+2, or `(new Variable) * (new Variable).log` is the function f(x,y) = xlog(y).
+Every such operation on Real results in a new Real.
+Apart from Variable and a simple ternary If expression, all of the subtypes of Real are private to this package.
+
+You can also automatically derive the gradient of a Real with respect to its variables.
+*/
 sealed trait Real {
   def +(other: Real): Real = RealOps.add(this, other)
   def *(other: Real): Real = RealOps.multiply(this, other)
@@ -12,6 +25,8 @@ sealed trait Real {
 
   def exp: Real = RealOps.unary(this, ExpOp)
   def log: Real = RealOps.unary(this, LogOp)
+
+  //because abs does not have a smooth derivative, try to avoid using it
   def abs: Real = RealOps.unary(this, AbsOp)
 
   def >(other: Real): Real = RealOps.isPositive(this - other)
@@ -85,6 +100,12 @@ private object LogLine {
   }
 }
 
+/*
+This node type represents an expression which is equal to `whenZero` when
+test is equal to zero, and `whenNotZero` otherwise. Because this expression
+does not have a smooth derivative, it is not recommended that you use this
+unless absolutely necessary.
+*/
 case class If private (test: NonConstant, whenNonZero: Real, whenZero: Real)
     extends NonConstant
 
@@ -115,6 +136,9 @@ z*z
 //#4
 (x+y+3)*(y+x+3)
 
-In the third and fourth cases, 
-
+In the second case, because z == z, the multiplication can be collapsed into an exponent. In the third and
+fourth cases, although the expressions are equivalent, the objects are not equal, and so this will not happen.
+However, in the third case, at the compilation stage the common sub-expressions will still be recognized and so there
+will not be any double computation. In the fourth case, because of the reordering, this won't happen, and so
+`x+y+3` will be computed twice (in two different orders).
 */
