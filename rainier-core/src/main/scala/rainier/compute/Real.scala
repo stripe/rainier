@@ -49,6 +49,17 @@ private case object ExpOp extends UnaryOp
 private case object LogOp extends UnaryOp
 private case object AbsOp extends UnaryOp
 
+/*
+This node type represents any linear transformation from an input vector to an output
+scalar as the function `ax + b`, where x is the input vector, a is a constant vector, ax is their dot product,
+and b is a constant scalar.
+
+This is used to represent all additions and any multiplications by constants.
+
+Because it is common for ax to have a large number of terms, this is deliberately not a case class,
+as equality comparisons would be too expensive. The impact of this is subtle, see [0] at the bottom of this file
+for an example.
+*/
 private class Line private (val ax: Map[NonConstant, Double], val b: Double)
     extends NonConstant
 
@@ -59,6 +70,11 @@ private object Line {
   }
 }
 
+/*
+This node type represents non-linear transformations from an input vector to a scalar,
+of the form `x^a * y^b * z^c ...` where x,y,z are the elements of the input vector,
+and a,b,c are constant exponents.
+*/
 private case class LogLine private (ax: Map[NonConstant, Double])
     extends NonConstant
 
@@ -80,3 +96,25 @@ object If {
       case nc: NonConstant => new If(nc, whenNonZero, whenZero)
     }
 }
+
+
+/*
+[0] For example, of the following four ways of computing the same result, only the first two will have the most efficient
+representation:
+
+//#1
+(x+y+3).pow(2)
+
+//#2
+val z = x+y+3
+z*z
+
+//#3
+(x+y+3)*(x+y+3)
+
+//#4
+(x+y+3)*(y+x+3)
+
+In the third and fourth cases, 
+
+*/
