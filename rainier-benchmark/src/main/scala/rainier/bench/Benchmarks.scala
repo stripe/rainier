@@ -70,6 +70,11 @@ class Benchmarks {
   }
 
   @Benchmark
+  def compileFullNormalAsm(state: FullNormalBenchmark): Unit = {
+    state.compileAsm
+  }
+
+  @Benchmark
   def runNormalAsm(state: NormalBenchmark): Unit = {
     state.runAsm
   }
