@@ -67,7 +67,7 @@ private object LineOps {
     }
 
   private def singleTermOpt(line: Line): Option[(NonConstant, Double)] =
-    if (line.ax.size == 1 && line.b == 0 && line.ax.head._2)
+    if (line.ax.size == 1 && line.b == 0)
       Some(line.ax.head)
     else
       None
@@ -81,13 +81,16 @@ private object LineOps {
   We want to pick the k that maximizes how many get reduced that way.
    */
   def factor(line: Line): (Line, Double) = {
-    val k =
+    val coefficientFreqs =
       line.ax.values
         .groupBy(_.abs)
-        .maxBy(_._2.size)
-        ._1
+        .map { case (a, xs) => (a, xs.size) }
 
-    (scale(line, 1.0 / k), k)
+    val (k, cnt) = coefficientFreqs.maxBy(_._2)
+    if (cnt > coefficientFreqs.getOrElse(1.0, 0))
+      (scale(line, 1.0 / k), k)
+    else
+      (line, 1.0)
   }
 
   def merge(left: Map[NonConstant, Double],
