@@ -16,6 +16,14 @@ private object LineOps {
   def translate(line: Line, v: Double): Line =
     Line(line.ax, line.b + v)
 
+  /*
+  Return Some(real) if an optimization is possible here,
+  otherwise None will fall back to the default multiplication behavior.
+
+  If the ax dot-product has only a single term on each side, it's worth trying to expand
+  out the multiplication. Otherwise, the combinatorial explosion means the number of terms
+  becomes too great.
+   */
   def multiply(left: Line, right: Line): Option[Real] =
     if (left.ax.size == 1 && right.ax.size == 1)
       foil(left.ax.head._2,
@@ -27,62 +35,60 @@ private object LineOps {
     else
       None
 
+  /*
+  Return Some(real) if an optimization is possible here,
+  otherwise None will fall back to the default log behavior.
+
+  If this line is just a single a*x term with positive a, we can simplify log(ax) to
+  log(a) + log(x). Since we can precompute log(a), this just trades a
+  multiply for an add, and there's a chance that log(x) will simplify further.
+   */
+
   def log(line: Line): Option[Real] =
-    factorOpt(line)
+    singleTermOpt(line)
       .filter(_._2 >= 0)
       .map {
-        case (y, k) =>
-          y.log + Math.log(k)
+        case (x, a) =>
+          x.log + Math.log(a)
       }
 
-  def pow(line: Line, exponent: Real): Option[Real] =
-    exponent match {
-      case Constant(p) =>
-        factorOpt(line).map {
-          case (y, k) =>
-            y.pow(p) * Math.pow(k, p)
-        }
-      case _ => None
+  /*
+  Return Some(real) if an optimization is possible here,
+  otherwise None will fall back to the default log behavior.
+
+  If this line is just a single a*x term, we can simplify ax.pow(k) to
+  a.pow(k) * x.pow(k). Since we can precompute a.pow(k), this just moves
+  a multiply around, and there's a chance that a.pow(k) will simplify further.
+   */
+  def pow(line: Line, exponent: Double): Option[Real] =
+    singleTermOpt(line).map {
+      case (x, a) =>
+        x.pow(exponent) * Math.pow(a, exponent)
     }
 
-  def factor(line: Line): (Line, Double) =
-    factorOpt(line) match {
-      case Some((y: Line, k)) => (y, k)
-      case Some((nc: NonConstant, k)) =>
-        (Line(Map(nc -> 1.0), 0.0), k)
-      case None => (line, 1.0)
-    }
+  private def singleTermOpt(line: Line): Option[(NonConstant, Double)] =
+    if (line.ax.size == 1 && line.b == 0 && line.ax.head._2)
+      Some(line.ax.head)
+    else
+      None
 
-  def factorOpt(line: Line): Option[(NonConstant, Double)] =
-    if (line.ax.size == 1 && line.b == 0) {
-      val a = line.ax.head._2
-      val x = line.ax.head._1
-      if (a == 1.0)
-        None
-      else
-        Some((x, a))
-    } else {
-      val mostSimplifying =
-        line.ax.values
-          .groupBy(_.abs)
-          .map { case (d, l) => d -> l.size }
-          .toList
-          .sortBy(_._2)
-          .last
-          ._1
+  /*
+  Factor a scalar constant k out of ax+b and return it along with
+  (a/k)x + b/k. We don't want to do this while we're building up the
+  computation because we want terms to aggregate and cancel out as much as possible.
+  But at the last minute before compilation, this can reduce the total number of
+  multiplication ops needed, by reducing some of the weights in ax down to 1 or -1.
+  We want to pick the k that maximizes how many get reduced that way.
+   */
+  def factor(line: Line): (Line, Double) = {
+    val k =
+      line.ax.values
+        .groupBy(_.abs)
+        .maxBy(_._2.size)
+        ._1
 
-      if (mostSimplifying == 1.0)
-        None
-      else {
-        val newAx = line.ax.map {
-          case (x, a) => x -> a / mostSimplifying
-        }
-
-        val newB = line.b / mostSimplifying
-
-        Some((Line(newAx, newB), mostSimplifying))
-      }
-    }
+    (scale(line, 1.0 / k), k)
+  }
 
   def merge(left: Map[NonConstant, Double],
             right: Map[NonConstant, Double]): Map[NonConstant, Double] = {
