@@ -41,9 +41,36 @@ private class Translator {
 
   private def logLineIR(line: LogLine): IR = {
     val (y, k) = LogLineOps.factor(line)
-    factoredLine(y.ax, 0.0, k, powRing)
+    factoredLine(y.ax, 1.0, k, powRing)
   }
 
+  /**
+  factoredLine(), along with combineTerms() and combineTree(),
+  is responsible for producing IR for both Line and LogLine.
+  It is expressed, and most easily understood, in terms of the Line case,
+  where it is computing ax + b. The LogLine case uses the same logic, but
+  under a non-standard ring, where the + operation is multiplication,
+  the * operation is exponentiation, and the identity element is 1.0. All
+  of the logic and optimizations work just the same for either ring.
+
+  (Pedantic note: what LogLine uses is technically a Rig not a Ring because you can't
+  divide by zero, but this code will not introduce any divisions by zero that
+  were not already there to begin with.)
+
+  In general, the strategy is to split the summation into a set of positively-weighted
+  terms and negatively-weighted terms, sum the positive terms to get x, sum the
+  absolute value of the negative terms to get y, and return x-y.
+
+  Each of the sub-summations proceeds by recursively producing a balanced binary tree
+  where every interior node is the sum of its two children; this keeps the tree-depth
+  of the AST small.
+
+  Since the summation is a dot product, most of the terms will be of the form a*x.
+  If a=1, we can just take x. If a=2, it can be a minor optimization to take x+x.
+
+  The result may also be multiplied by a constant scaling factor (generally 
+  factored out of the original summation).
+  **/
   private def factoredLine(ax: Map[NonConstant, Double],
                            b: Double,
                            factor: Double,
@@ -53,7 +80,7 @@ private class Translator {
       ax.filter(_._2 < 0.0).map { case (x, a) => x -> a.abs }.toList
 
     val allPosTerms =
-      if (b == 0.0)
+      if (b == ring.zero)
         posTerms
       else
         (Constant(b), 1.0) :: posTerms
@@ -125,6 +152,14 @@ private class Translator {
   private val multiplyRing = Ring(MultiplyOp, AddOp, SubtractOp, 0.0)
   private val powRing = Ring(PowOp, MultiplyOp, DivideOp, 1.0)
 
+  /*
+  This performs hash-consing aka the flyweight pattern to ensure that we don't
+  generate code to compute the same quantity twice. It keeps a cache keyed by one or more IR objects
+  along with some operation that will combine them to form a new IR. The IR keys are required
+  to be in their lightweight Ref form rather than VarDefs - this is both to avoid the expensive
+  recursive equality/hashing of a def, and also to ensure that we can memoize values derived from a def
+  and its ref equally well.
+  */
   private class SymCache[K] {
     var cache = Map.empty[(List[Ref], K), Sym]
     def memoize(irKeys: Seq[List[IR]], opKey: K, ir: => IR): IR = {
