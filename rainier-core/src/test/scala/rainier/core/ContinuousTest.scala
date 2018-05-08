@@ -19,7 +19,7 @@ class ContinuousTest extends FunSuite {
           x <- LogNormal(0, 1).param
           _ <- fn(x).fit(syntheticData)
         } yield x
-      val fitValues = model.sample()
+      val fitValues = model.sample(HMC(10), 200, 200)
 
       val syntheticMean = syntheticData.sum / syntheticData.size
       val syntheticStdDev = Math.sqrt(syntheticData.map { n =>

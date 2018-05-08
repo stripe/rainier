@@ -22,10 +22,7 @@ private case class HamiltonianChain(
       .foldLeft(initialParams) {
         case (params, _) => integrator.step(params, stepSize)
       }
-    println(s"initialParams: ${initialParams.ps.toList}")
-    println(s"finalParams: ${finalParams.ps.toList}")
     val logAcceptanceProb = initialParams.logAcceptanceProb(finalParams)
-    println(s"logAcceptanceProb: $logAcceptanceProb")
     val (newParams, newAccepted) = {
       if (Math.log(rng.standardUniform) < logAcceptanceProb)
         (finalParams, true)
@@ -53,8 +50,6 @@ private case class HamiltonianChain(
 
   def logAcceptanceProb(nextChain: HamiltonianChain): Double =
     this.hParams.logAcceptanceProb(nextChain.hParams)
-
-//  private def integrator = LeapFrogIntegrator(cf)
 }
 
 private object HamiltonianChain {
