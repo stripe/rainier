@@ -12,7 +12,7 @@ Every such operation on Real results in a new Real.
 Apart from Variable and a simple ternary If expression, all of the subtypes of Real are private to this package.
 
 You can also automatically derive the gradient of a Real with respect to its variables.
-*/
+ */
 sealed trait Real {
   def +(other: Real): Real = RealOps.add(this, other)
   def *(other: Real): Real = RealOps.multiply(this, other)
@@ -74,7 +74,7 @@ This is used to represent all additions and any multiplications by constants.
 Because it is common for ax to have a large number of terms, this is deliberately not a case class,
 as equality comparisons would be too expensive. The impact of this is subtle, see [0] at the bottom of this file
 for an example.
-*/
+ */
 private class Line private (val ax: Map[NonConstant, Double], val b: Double)
     extends NonConstant
 
@@ -89,7 +89,7 @@ private object Line {
 This node type represents non-linear transformations from an input vector to a scalar,
 of the form `x^a * y^b * z^c ...` where x,y,z are the elements of the input vector,
 and a,b,c are constant exponents.
-*/
+ */
 private case class LogLine private (ax: Map[NonConstant, Double])
     extends NonConstant
 
@@ -105,7 +105,7 @@ This node type represents an expression which is equal to `whenZero` when
 test is equal to zero, and `whenNotZero` otherwise. Because this expression
 does not have a smooth derivative, it is not recommended that you use this
 unless absolutely necessary.
-*/
+ */
 case class If private (test: NonConstant, whenNonZero: Real, whenZero: Real)
     extends NonConstant
 
@@ -117,8 +117,6 @@ object If {
       case nc: NonConstant => new If(nc, whenNonZero, whenZero)
     }
 }
-
-
 /*
 [0] For example, of the following four ways of computing the same result, only the first two will have the most efficient
 representation:
@@ -141,4 +139,4 @@ fourth cases, although the expressions are equivalent, the objects are not equal
 However, in the third case, at the compilation stage the common sub-expressions will still be recognized and so there
 will not be any double computation. In the fourth case, because of the reordering, this won't happen, and so
 `x+y+3` will be computed twice (in two different orders).
-*/
+ */

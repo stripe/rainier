@@ -68,7 +68,7 @@ private class Translator {
   Since the summation is a dot product, most of the terms will be of the form a*x.
   If a=1, we can just take x. If a=2, it can be a minor optimization to take x+x.
 
-  The result may also be multiplied by a constant scaling factor (generally 
+  The result may also be multiplied by a constant scaling factor (generally
   factored out of the original summation).
   **/
   private def factoredLine(ax: Map[NonConstant, Double],
@@ -159,7 +159,7 @@ private class Translator {
   to be in their lightweight Ref form rather than VarDefs - this is both to avoid the expensive
   recursive equality/hashing of a def, and also to ensure that we can memoize values derived from a def
   and its ref equally well.
-  */
+   */
   private class SymCache[K] {
     var cache = Map.empty[(List[Ref], K), Sym]
     def memoize(irKeys: Seq[List[IR]], opKey: K, ir: => IR): IR = {
