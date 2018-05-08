@@ -22,13 +22,12 @@ private case class HamiltonianChain(
       .foldLeft(initialParams) {
         case (params, _) => integrator.step(params, stepSize)
       }
-    val deltaH =
-      finalParams.hamiltonian - initialParams.hamiltonian
-
-    //we accept the proposal with probability min{1, exp(-deltaH)}
-    val newAcceptanceProb = Math.exp(-deltaH).min(1.0)
+    println(s"initialParams: ${initialParams.ps.toList}")
+    println(s"finalParams: ${finalParams.ps.toList}")
+    val logAcceptanceProb = initialParams.logAcceptanceProb(finalParams)
+    println(s"logAcceptanceProb: $logAcceptanceProb")
     val (newParams, newAccepted) = {
-      if (rng.standardUniform < newAcceptanceProb)
+      if (Math.log(rng.standardUniform) < logAcceptanceProb)
         (finalParams, true)
       else
         (initialParams, false)
@@ -36,7 +35,7 @@ private case class HamiltonianChain(
     copy(
       hParams = newParams,
       accepted = newAccepted,
-      acceptanceProb = newAcceptanceProb
+      acceptanceProb = Math.exp(logAcceptanceProb)
     )
   }
 
@@ -51,6 +50,9 @@ private case class HamiltonianChain(
       accepted = newAccepted
     )
   }
+
+  def logAcceptanceProb(nextChain: HamiltonianChain): Double =
+    this.hParams.logAcceptanceProb(nextChain.hParams)
 
 //  private def integrator = LeapFrogIntegrator(cf)
 }
@@ -101,6 +103,11 @@ private case class HParams(
   }.sum / 2
 
   val hamiltonian = kinetic + potential
+
+  def logAcceptanceProb(nextParams: HParams): Double = {
+    val deltaH = nextParams.hamiltonian - this.hamiltonian
+    if (deltaH.isNaN) { Math.log(0.0) } else { (-deltaH).min(0.0) }
+  }
 }
 
 private object HParams {

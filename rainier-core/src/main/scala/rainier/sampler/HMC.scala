@@ -10,6 +10,7 @@ case class HMC(nSteps: Int, initialStepSize: Double = 1.0) extends Sampler {
                            0.65,
                            nSteps * initialStepSize,
                            warmupIterations)
+    println(s"tunedStepSize: $tunedStepSize")
     toStream(density, tunedChain, tunedStepSize)
   }
 

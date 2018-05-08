@@ -65,6 +65,7 @@ private object DualAvg {
                    lambda: Double,
                    iterations: Int): (HamiltonianChain, Double) = {
     val stepSize0 = findReasonableStepSize(chain)
+    println(s"result of findReasonableStepSize: $stepSize0")
     val dualAvg = DualAvg(delta, lambda, stepSize0)
     def go(chain: HamiltonianChain,
            dualAvg: DualAvg,
@@ -80,32 +81,15 @@ private object DualAvg {
     (tunedChain, finalDualAvg.finalStepSize)
   }
 
-  /**
-    * @note: Let U(Θ) be the potential, K(r) the kinetic.
-    * The NUTS paper defines
-    * H(Θ,r) = U(Θ) - K(r) as the difference
-    * p(Θ,r) = exp(H)
-    * and for ΔH = H(Θ',r') - H(Θ,r)
-    * defines the acceptance ratio as min{1, exp(ΔH)}.
-    * Neal and McKay, on the other hand, define
-    * H(Θ,r) = U(Θ) + K(r) as the sum
-    * and the acceptance ratio as min{1, exp(-ΔH)}.
-    * These are the definitions we use in the rest of HMC and NUTS
-    * so we similarly use -ΔH to tune the stepSize here.
-    */
-  private def computeDeltaH(chain: HamiltonianChain,
-                            nextChain: HamiltonianChain): Double =
-    nextChain.hParams.hamiltonian - chain.hParams.hamiltonian
-
-  private def computeExponent(deltaH: Double): Double =
-    if (-deltaH > Math.log(0.5)) { 1.0 } else { -1.0 }
+  private def computeExponent(logAcceptanceProb: Double): Double =
+    if (logAcceptanceProb > Math.log(0.5)) { 1.0 } else { -1.0 }
 
   private def updateStepSize(stepSize: Double, exponent: Double): Double =
     stepSize * Math.pow(2, exponent)
 
-  private def continueTuningStepSize(deltaH: Double,
+  private def continueTuningStepSize(logAcceptanceProb: Double,
                                      exponent: Double): Boolean =
-    exponent * (-deltaH) > -exponent * Math.log(2)
+    exponent * logAcceptanceProb > -exponent * Math.log(2)
 
   @tailrec
   private def tuneStepSize(
@@ -114,8 +98,8 @@ private object DualAvg {
       exponent: Double,
       stepSize: Double
   ): Double = {
-    val deltaH = computeDeltaH(chain, nextChain)
-    if (continueTuningStepSize(deltaH, exponent)) {
+    val logAcceptanceProb = chain.logAcceptanceProb(nextChain)
+    if (continueTuningStepSize(logAcceptanceProb, exponent)) {
       val newStepSize = updateStepSize(stepSize, exponent)
       val newNextChain = chain.stepOnce(newStepSize)
       tuneStepSize(chain, newNextChain, exponent, newStepSize)
@@ -125,8 +109,8 @@ private object DualAvg {
   private def findReasonableStepSize(chain: HamiltonianChain): Double = {
     val initialStepSize = 1.0
     val nextChain = chain.stepOnce(initialStepSize)
-    val deltaH = computeDeltaH(chain, nextChain)
-    val exponent = computeExponent(deltaH)
+    val logAcceptanceProb = chain.logAcceptanceProb(nextChain)
+    val exponent = computeExponent(logAcceptanceProb)
     tuneStepSize(chain, nextChain, exponent, initialStepSize)
   }
 }

@@ -39,9 +39,19 @@ private case class LeapFrogIntegrator(
   }
 
   def step(hParams: HParams, stepSize: Double): HParams = {
+    println(
+      s"before step: ${hParams.qs.toList}, ${hParams.ps.toList}, ${hParams.gradPotential.toList}, ${hParams.potential}")
     val halfNewPs = halfStepPs(hParams, stepSize)
+    println(
+      s"after first half step: ${halfNewPs.qs.toList}, ${halfNewPs.ps.toList}, ${halfNewPs.gradPotential.toList}, ${halfNewPs.potential}")
     val newQs = fullStepQs(halfNewPs, stepSize)
-    halfStepPs(newQs, stepSize)
+    println(
+      s"after full step: ${newQs.qs.toList}, ${newQs.ps.toList}, ${newQs.gradPotential.toList}, ${newQs.potential}")
+    val result = halfStepPs(newQs, stepSize)
+    println(
+      s"result: ${result.qs.toList}, ${result.ps.toList}, ${result.gradPotential.toList}, ${result.potential}")
+    result
+
   }
 }
 
@@ -122,6 +132,8 @@ private case class RealLeapFrogIntegrator(
   def step(hParams: HParams, stepSize: Double): HParams = {
     val inputArray =
       stepSize +: hParams.potential +: (hParams.qs ++ hParams.ps ++ hParams.gradPotential)
+    println(
+      s"${hParams.qs.toList}, ${hParams.ps.toList}, ${hParams.gradPotential.toList}, ${hParams.potential}")
     val (_, newPotential, newQs, newPs, newGrad) = componentsArray(
       leapFrogCF(inputArray))
     hParams.copy(
