@@ -2,7 +2,7 @@ package rainier.sampler
 
 import rainier.compute._
 
-private case class EmceeChain(cf: Array[Double] => Double,
+private case class WalkersChain(cf: Array[Double] => Double,
                               walkers: Vector[Array[Double]],
                               scores: Vector[Double],
                               accepted: Boolean,
@@ -11,10 +11,10 @@ private case class EmceeChain(cf: Array[Double] => Double,
   val variables = walkers(walker)
   val score = scores(walker)
 
-  def toStream: Stream[EmceeChain] =
+  def toStream: Stream[WalkersChain] =
     this #:: next.toStream
 
-  def next: EmceeChain = {
+  def next: WalkersChain = {
     var target = rng.int(walkers.size)
     while (target == walker) target = rng.int(walkers.size)
     val (newWalker, newScore, newAccepted) = update(walkers(target))
@@ -46,9 +46,9 @@ private case class EmceeChain(cf: Array[Double] => Double,
   }
 }
 
-private object EmceeChain {
+private object WalkersChain {
   def apply(density: Real, variables: Seq[Variable], nWalkers: Int)(
-      implicit rng: RNG): EmceeChain = {
+      implicit rng: RNG): WalkersChain = {
     val cf = Compiler.default.compile(variables, density)
     val walkers = 1
       .to(nWalkers)
@@ -61,6 +61,6 @@ private object EmceeChain {
       }
       .toVector
     val scores = walkers.map(cf)
-    EmceeChain(cf, walkers, scores, true, 0)
+    WalkersChain(cf, walkers, scores, true, 0)
   }
 }
