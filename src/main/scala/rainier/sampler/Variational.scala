@@ -25,26 +25,32 @@ case class Variational(tolerance: Double, maxIterations: Int) extends Sampler {
     val mus = List.fill(K)(new Variable)
     val sigmas = List.fill(K)(new Variable)
     val epsilonDistribution = Normal(0.0, 1.0)
-    val epsilons = List.fill(K)(epsilonDistribution.param)
+    val epsilons: List[(Variable, Real)] = List.fill(K) {
+      val p = epsilonDistribution.param
+      (p.density.variables.head, p.density)
+    }
 
     def sampleFromGuide(): Seq[(Variable, Double)] = {
-      epsilons.map(eps => eps.density.variables.head -> epsilonDistribution.generator.get)
+      epsilons.map { case (v, d) => v -> epsilonDistribution.generator.get }
     }
 
-    val eps: List[RandomVariable[Real]] = (mus zip sigmas zip epsilons) map {
-      case ((mu, sigma), epsilon) =>
-        for {
-          epsS <- epsilon
-        } yield mu + sigma * epsS
+    val eps
+      : List[(Real, RandomVariable[Real])] = (mus zip sigmas zip epsilons) map {
+      case ((mu, sigma), (epsilon, _)) => {
+        val f = mu + sigma * epsilon
+        (f, RandomVariable(f))
+      }
     }
+
+    val variablesToEps = (modelVariables zip eps.map(_._1)).toMap
 
     val guideLogDensity = eps.foldLeft(Real(0.0)) {
-      case (d, e) => d + e.density
+      case (d, (_, rv)) => d + rv.density
     }
     // need to change this to density wrt fixed eps.
     // can I just modify the gradients?
     // are gradients/variables ordered in any way?
-    val transformedDensity = density
+    val transformedDensity = Real.substituteVariable(density, variablesToEps)
     val surrogateLoss = transformedDensity + guideLogDensity
     val variables = surrogateLoss.variables
 //    val guideVariables = guideLogDensity.variables
@@ -55,7 +61,7 @@ case class Variational(tolerance: Double, maxIterations: Int) extends Sampler {
     val (gradients, variablesForCompiling) = gradientsWithVariables.unzip
     val cf = Compiler.default(variables, gradients)
 
-    val initialValues = muSigmaVariables.flatMap(_ => List(0.0, 1.0))
+    val initialValues = gradients.flatMap(_ => List(0.0, 1.0))
 
     def collectMaps[T, U](m: Seq[Map[T, U]]): Map[T, Seq[U]] = {
       m.flatten.groupBy(_._1).mapValues(seqTuples => seqTuples.map(_._2))
@@ -65,31 +71,30 @@ case class Variational(tolerance: Double, maxIterations: Int) extends Sampler {
       case (values, _) =>
         val gradSamples: Seq[Array[Double]] = (1 to nsamples) map { _ =>
           val samples = sampleFromGuide()
-          val inputs = variables.map((samples ++ (muSigmaVariables zip values)).toMap)
+          val inputs =
+            variables.map((samples ++ (muSigmaVariables zip values)).toMap)
           val outputs = cf(inputs.toArray)
           outputs
         }
         val perDimGradSamples = gradSamples.transpose
         val perDimGrads = perDimGradSamples.map(samples =>
           samples.sum * 1.0 / nsamples.toDouble)
-        (values zip variables.map(perDimGrads)).map {
+        (values zip perDimGrads).map {
           case (v, g) => v + stepsize * g
         }
     }
-    ???
+
+    val finalValuesMap = (variables zip finalValues).toMap
+    val muValues = mus.map(finalValuesMap)
+    val sigmaValues = sigmas.map(finalValuesMap)
+    val variationals = muValues zip sigmaValues
+    Iterator.continually {
+      val samples = variationals.map {
+        case (mu, sigma) => Normal(mu, sigma).generator.get
+      }
+      val map = (modelVariables zip samples).toMap
+      Sample(true, new Evaluator(map))
+    }
   }
 
-//  def substituteVariable(x: Real, f: Variable => Real): Real = x match {
-//    case v: Variable => f(v)
-//    case c: Constant => c
-//    case b: BinaryReal =>
-//      BinaryReal()
-//    case u: UnaryReal =>
-//      println(padding + u.op)
-//      print(u.original, depth + 1)
-//    case s: SumReal =>
-//      println(padding + "Sum{" + s.seq.size + "}")
-//      print(s.seq.head, depth + 1)
-//
-//  }
 }
