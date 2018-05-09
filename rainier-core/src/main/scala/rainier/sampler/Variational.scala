@@ -1,7 +1,7 @@
 package rainier.sampler
 
-import rainier.core._
 import rainier.compute._
+import rainier.core._
 
 case class Variational(tolerance: Double, maxIterations: Int) extends Sampler {
   def description: (String, Map[String, Double]) =
@@ -11,7 +11,12 @@ case class Variational(tolerance: Double, maxIterations: Int) extends Sampler {
        "MaxIterations" -> maxIterations.toDouble,
      ))
 
-  override def sample(density: Real)(implicit rng: RNG): Iterator[Sample] = {
+  def sampleNormal(mean: Double, std: Double)(implicit rng: RNG): Double = {
+    mean + std * rng.standardNormal
+  }
+
+  override def sample(density: Real, warmUpIterations: Int)(
+      implicit rng: RNG): Stream[Sample] = {
     //VariationalOptimizer(tolerance, maxIterations)
 
     val modelVariables = density.variables
@@ -31,7 +36,7 @@ case class Variational(tolerance: Double, maxIterations: Int) extends Sampler {
     }
 
     def sampleFromGuide(): Seq[(Variable, Double)] = {
-      epsilons.map { case (v, d) => v -> epsilonDistribution.generator.get }
+      epsilons.map { case (v, d) => v -> sampleNormal(0.0, 1.0) }
     }
 
     val eps
@@ -59,7 +64,7 @@ case class Variational(tolerance: Double, maxIterations: Int) extends Sampler {
       case (gradient, variable) => muSigmaVariables.contains(variable)
     }
     val (gradients, variablesForCompiling) = gradientsWithVariables.unzip
-    val cf = Compiler.default(variables, gradients)
+    val cf = Compiler.default.compile(variables, gradients)
 
     val initialValues = gradients.flatMap(_ => List(0.0, 1.0))
 
@@ -88,9 +93,9 @@ case class Variational(tolerance: Double, maxIterations: Int) extends Sampler {
     val muValues = mus.map(finalValuesMap)
     val sigmaValues = sigmas.map(finalValuesMap)
     val variationals = muValues zip sigmaValues
-    Iterator.continually {
+    Stream.continually {
       val samples = variationals.map {
-        case (mu, sigma) => Normal(mu, sigma).generator.get
+        case (mu, sigma) => sampleNormal(mu, sigma)
       }
       val map = (modelVariables zip samples).toMap
       Sample(true, new Evaluator(map))
