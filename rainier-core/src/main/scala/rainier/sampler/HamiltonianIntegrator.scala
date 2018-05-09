@@ -28,7 +28,7 @@ private case class LeapFrogIntegrator(
   val grad = (1 to nVars).map { _ =>
     new Variable
   }
-  val inputs = combineSeq(stepSize, potential, qs, ps, grad)
+  val inputs = (stepSize, potential, qs, ps, grad)
 
   def combineSeq[A](stepSize: A,
                     potential: A,
@@ -36,15 +36,6 @@ private case class LeapFrogIntegrator(
                     ps: Seq[A],
                     grad: Seq[A]): Seq[A] = {
     stepSize +: potential +: (qs ++ ps ++ grad)
-  }
-
-  def componentsSeq[A](inputs: Seq[A]): (A, A, Seq[A], Seq[A], Seq[A]) = {
-    require(inputs.size == 3 * nVars + 2, "must have 3nVars + 2 elements!")
-    (inputs(0),
-     inputs(1),
-     inputs.slice(2, nVars + 2),
-     inputs.slice(nVars + 2, 2 * nVars + 2),
-     inputs.slice(2 * nVars + 2, 3 * nVars + 2))
   }
 
   def componentsArray[A](
@@ -57,28 +48,38 @@ private case class LeapFrogIntegrator(
      inputs.slice(2 * nVars + 2, 3 * nVars + 2))
   }
 
-  private def halfStepPs(inputs: Seq[Variable]) = {
-    val (stepSize, potential, qs, ps, grad) = componentsSeq(inputs)
+  private def halfStepPs(stepSize: Variable,
+                         potential: Variable,
+                         qs: Seq[Variable],
+                         ps: Seq[Variable],
+                         grad: Seq[Variable]) = {
     val newPs = ps
       .zip(grad)
       .map { case (p, grad) => p - (stepSize / 2) * grad }
 
-    combineSeq(stepSize, potential, qs, newPs, grad)
+    (stepSize, potential, qs, newPs, grad)
   }
 
-  private def fullStepQs(inputs: Seq[Real]) = {
-    val (stepSize, potential, qs, ps, grad) = componentsSeq(inputs)
+  private def fullStepQs(stepSize: Variable,
+                         potential: Variable,
+                         qs: Seq[Variable],
+                         ps: Seq[Real],
+                         grad: Seq[Variable]) = {
     val newQs = qs
       .zip(ps)
       .map { case (q, p) => q + (stepSize * p) }
-    combineSeq(stepSize, potential, newQs, ps, grad)
+    (stepSize, potential, newQs, ps, grad)
   }
 
-  private val output1 = (halfStepPs _ andThen fullStepQs _)(inputs)
-  private val cf1 = Compiler.default.compile(inputs, output1)
+  private val inputsSeq = (combineSeq[Variable] _).tupled(inputs)
+  private val output1 =
+    ((halfStepPs _).tupled andThen (fullStepQs _).tupled)(inputs)
+  private val output1Seq = (combineSeq[Real] _).tupled(output1)
+  private val cf1 = Compiler.default.compile(inputsSeq, output1Seq)
 
-  private val output2 = halfStepPs(inputs)
-  private val cf2 = Compiler.default.compile(inputs, output2)
+  private val output2 = (halfStepPs _).tupled(inputs)
+  private val output2Seq = (combineSeq[Real] _).tupled(output2)
+  private val cf2 = Compiler.default.compile(inputsSeq, output2Seq)
 
   private val leapFrogCF: Array[Double] => Array[Double] = { array =>
     val (stepSize, _, newQs, halfNewPs, _) = componentsArray(cf1(array))
