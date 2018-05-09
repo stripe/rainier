@@ -6,7 +6,7 @@ private case class HamiltonianChain(
     accepted: Boolean,
     acceptanceProb: Double,
     hParams: HParams,
-    cf: Array[Double] => (Double, Array[Double]))(implicit rng: RNG) {
+    integrator: HamiltonianIntegrator)(implicit rng: RNG) {
 
   // Take a single leapfrog step without re-initializing momenta
   // for use in tuning the step size
@@ -22,13 +22,9 @@ private case class HamiltonianChain(
       .foldLeft(initialParams) {
         case (params, _) => integrator.step(params, stepSize)
       }
-    val deltaH =
-      finalParams.hamiltonian - initialParams.hamiltonian
-
-    //we accept the proposal with probability min{1, exp(-deltaH)}
-    val newAcceptanceProb = Math.exp(-deltaH).min(1.0)
+    val logAcceptanceProb = initialParams.logAcceptanceProb(finalParams)
     val (newParams, newAccepted) = {
-      if (rng.standardUniform < newAcceptanceProb)
+      if (Math.log(rng.standardUniform) < logAcceptanceProb)
         (finalParams, true)
       else
         (initialParams, false)
@@ -36,7 +32,7 @@ private case class HamiltonianChain(
     copy(
       hParams = newParams,
       accepted = newAccepted,
-      acceptanceProb = newAcceptanceProb
+      acceptanceProb = Math.exp(logAcceptanceProb)
     )
   }
 
@@ -52,7 +48,8 @@ private case class HamiltonianChain(
     )
   }
 
-  private def integrator = LeapFrogIntegrator(cf)
+  def logAcceptanceProb(nextChain: HamiltonianChain): Double =
+    this.hParams.logAcceptanceProb(nextChain.hParams)
 }
 
 private object HamiltonianChain {
@@ -62,7 +59,8 @@ private object HamiltonianChain {
     val negativeDensity = density * -1
     val cf = Compiler.default.compileGradient(variables, negativeDensity)
     val hParams = initialize(variables.size, cf)
-    HamiltonianChain(true, 1.0, hParams, cf)
+    val integrator = LeapFrogIntegrator(variables.size, cf)
+    HamiltonianChain(true, 1.0, hParams, integrator)
   }
 
   def initialize(nVars: Int, cf: Array[Double] => (Double, Array[Double]))(
@@ -99,6 +97,11 @@ private case class HParams(
   }.sum / 2
 
   val hamiltonian = kinetic + potential
+
+  def logAcceptanceProb(nextParams: HParams): Double = {
+    val deltaH = nextParams.hamiltonian - this.hamiltonian
+    if (deltaH.isNaN) { Math.log(0.0) } else { (-deltaH).min(0.0) }
+  }
 }
 
 private object HParams {
