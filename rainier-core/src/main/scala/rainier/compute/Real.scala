@@ -89,6 +89,10 @@ private object Line {
 This node type represents non-linear transformations from an input vector to a scalar,
 of the form `x^a * y^b * z^c ...` where x,y,z are the elements of the input vector,
 and a,b,c are constant exponents.
+
+Unlike for Line, it is not expected that ax will have a large number of terms, and performance will suffer if it does.
+Luckily, this aligns well with the demands of numerical stability: if you have to multiply a lot of numbers
+together, you are better off adding their logs.
  */
 private case class LogLine private (ax: Map[NonConstant, Double])
     extends NonConstant
