@@ -8,7 +8,7 @@ case class Poisson(lambda: Real) extends Distribution[Int] {
     lambda.log * t - lambda - Combinatrics.factorial(t)
   }
 
-  val generator = Generator.from { (r, n) =>
+  val generator = Generator.require(Set(lambda)) { (r, n) =>
     val l = math.exp(-n.toDouble(lambda))
     var k = 0
     var p = 1.0

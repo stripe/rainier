@@ -30,7 +30,7 @@ case class Categorical[T](pmf: Map[T, Real]) extends Distribution[T] {
         }
         .collect { case (Some(t), p) => (t, p) }
 
-    Generator.from { (r, n) =>
+    Generator.require(cdf.map(_._2).toSet) { (r, n) =>
       val v = r.standardUniform
       cdf.find { case (t, p) => n.toDouble(p) >= v }.getOrElse(cdf.last)._1
     }

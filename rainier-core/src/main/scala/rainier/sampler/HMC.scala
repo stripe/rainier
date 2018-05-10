@@ -15,10 +15,9 @@ case class HMC(nSteps: Int, initialStepSize: Double = 1.0) extends Sampler {
 
   private def toStream(density: Real,
                        chain: HamiltonianChain,
-                       stepSize: Double): Stream[Sample] = {
-    val eval = new Evaluator(density.variables.zip(chain.hParams.qs).toMap)
-    Sample(chain.accepted, eval) #:: toStream(density,
-                                              chain.nextHMC(stepSize, nSteps),
-                                              stepSize)
-  }
+                       stepSize: Double): Stream[Sample] =
+    Sample(chain.accepted, chain.hParams.qs) #:: toStream(
+      density,
+      chain.nextHMC(stepSize, nSteps),
+      stepSize)
 }

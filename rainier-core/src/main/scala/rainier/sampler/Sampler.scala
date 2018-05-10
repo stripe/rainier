@@ -7,7 +7,7 @@ trait Sampler {
       implicit rng: RNG): Stream[Sample]
 }
 
-case class Sample(accepted: Boolean, evaluator: Numeric[Real])
+case class Sample(accepted: Boolean, parameters: Array[Double])
 
 object Sampler {
   object Default {

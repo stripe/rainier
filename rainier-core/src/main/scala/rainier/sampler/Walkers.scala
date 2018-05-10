@@ -8,7 +8,6 @@ case class Walkers(walkers: Int) extends Sampler {
     WalkersChain(density, density.variables, walkers).toStream
       .drop(warmupIterations)
       .map { c =>
-        val map = density.variables.zip(c.variables).toMap
-        Sample(c.accepted, new Evaluator(map))
+        Sample(c.accepted, c.variables)
       }
 }
