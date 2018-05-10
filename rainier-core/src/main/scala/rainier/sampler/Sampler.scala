@@ -11,7 +11,7 @@ case class Sample(accepted: Boolean, evaluator: Numeric[Real])
 
 object Sampler {
   object Default {
-    val sampler = Emcee(100)
+    val sampler = Walkers(100)
     val iterations = 10000
     val warmupIterations = 10000
   }
