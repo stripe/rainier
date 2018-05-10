@@ -3,10 +3,10 @@ package rainier.sampler
 import rainier.compute._
 
 private case class WalkersChain(cf: Array[Double] => Double,
-                              walkers: Vector[Array[Double]],
-                              scores: Vector[Double],
-                              accepted: Boolean,
-                              walker: Int)(implicit rng: RNG) {
+                                walkers: Vector[Array[Double]],
+                                scores: Vector[Double],
+                                accepted: Boolean,
+                                walker: Int)(implicit rng: RNG) {
 
   val variables = walkers(walker)
   val score = scores(walker)

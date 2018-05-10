@@ -15,7 +15,6 @@ class Evaluator(var cache: Map[Real, Double]) extends Numeric[Real] {
     case l: Line => l.ax.map { case (r, d) => toDouble(r) * d }.sum + l.b
     case l: LogLine =>
       l.ax.map { case (r, d) => Math.pow(toDouble(r), d) }.reduce(_ * _)
-    case v: Variable => variables(v)
     case Unary(original, op) =>
       eval(RealOps.unary(Constant(toDouble(original)), op))
     case Constant(value) => value
