@@ -18,20 +18,28 @@ private object Gradient {
         real match {
           case v: Variable     => ()
           case Constant(value) => ()
-          case b: BinaryReal =>
-            diff(b.left).register(BinaryDiff(b, diff(b), true))
-            diff(b.right).register(BinaryDiff(b, diff(b), false))
-            visit(b.left)
-            visit(b.right)
 
-          case u: UnaryReal =>
+          case u: Unary =>
             diff(u.original).register(UnaryDiff(u, diff(u)))
             visit(u.original)
 
+          case l: Line =>
+            l.ax.foreach {
+              case (x, a) =>
+                diff(x).register(ProductDiff(a, diff(l)))
+            }
+            l.ax.foreach { case (x, _) => visit(x) }
+
+          case l: LogLine =>
+            l.ax.foreach {
+              case (x, a) =>
+                diff(x).register(LogLineDiff(l, diff(l), x))
+            }
+            l.ax.foreach { case (x, _) => visit(x) }
+
           case f: If =>
-            diff(f.test).register(TrinaryDiff(f, diff(f), 0))
-            diff(f.whenNonZero).register(TrinaryDiff(f, diff(f), 1))
-            diff(f.whenZero).register(TrinaryDiff(f, diff(f), 2))
+            diff(f.whenNonZero).register(IfDiff(f, diff(f), true))
+            diff(f.whenZero).register(IfDiff(f, diff(f), false))
             visit(f.test)
             visit(f.whenNonZero)
             visit(f.whenZero)
@@ -62,32 +70,11 @@ private object Gradient {
     }
   }
 
-  private case class BinaryDiff(child: BinaryReal,
-                                gradient: Diff,
-                                isLeft: Boolean)
-      extends Diff {
-    def toReal =
-      child.op match {
-        case AddOp => gradient.toReal
-        case MultiplyOp =>
-          if (isLeft)
-            gradient.toReal * child.right
-          else
-            gradient.toReal * child.left
-        case SubtractOp =>
-          if (isLeft)
-            gradient.toReal
-          else
-            gradient.toReal * -1
-        case DivideOp =>
-          if (isLeft)
-            gradient.toReal * (Real.one / child.right)
-          else
-            gradient.toReal * -1 * child.left / (child.right * child.right)
-      }
+  private case class ProductDiff(other: Double, gradient: Diff) extends Diff {
+    def toReal = gradient.toReal * other
   }
 
-  private case class UnaryDiff(child: UnaryReal, gradient: Diff) extends Diff {
+  private case class UnaryDiff(child: Unary, gradient: Diff) extends Diff {
     def toReal = child.op match {
       case LogOp => gradient.toReal * (Real.one / child.original)
       case ExpOp => gradient.toReal * child
@@ -96,13 +83,30 @@ private object Gradient {
     }
   }
 
-  private case class TrinaryDiff(child: If, gradient: Diff, pos: Int)
+  private case class IfDiff(child: If, gradient: Diff, nzBranch: Boolean)
       extends Diff {
-    def toReal = pos match {
-      case 0 => Real.zero
-      case 1 => If(child.test, gradient.toReal, Real.zero)
-      case 2 => If(child.test, Real.zero, gradient.toReal)
-      case _ => sys.error("Invalid trinary position")
+    def toReal =
+      if (nzBranch)
+        If(child.test, gradient.toReal, Real.zero)
+      else
+        If(child.test, Real.zero, gradient.toReal)
+  }
+
+  private case class LogLineDiff(child: LogLine,
+                                 gradient: Diff,
+                                 term: NonConstant)
+      extends Diff {
+    def toReal = {
+      val exponent = child.ax(term)
+      val otherTerms =
+        if (child.ax.size == 1)
+          Real.one
+        else
+          LogLine(child.ax - term)
+      gradient.toReal *
+        exponent *
+        term.pow(exponent - 1) *
+        otherTerms
     }
   }
 }

@@ -2,6 +2,7 @@ package rainier.compute.asm
 
 import org.objectweb.asm.Opcodes._
 import org.objectweb.asm.tree.MethodNode
+import org.objectweb.asm.Label
 import rainier.compute._
 
 private trait MethodGenerator {
@@ -46,16 +47,19 @@ private trait MethodGenerator {
     methodNode.visitInsn(DALOAD)
   }
 
-  def binaryOp(op: BinaryOp): Unit = {
-    val insn = op match {
-      case AddOp      => DADD
-      case SubtractOp => DSUB
-      case MultiplyOp => DMUL
-      case DivideOp   => DDIV
-      case _          => ???
+  def binaryOp(op: BinaryOp): Unit =
+    op match {
+      case AddOp      => methodNode.visitInsn(DADD)
+      case SubtractOp => methodNode.visitInsn(DSUB)
+      case MultiplyOp => methodNode.visitInsn(DMUL)
+      case DivideOp   => methodNode.visitInsn(DDIV)
+      case PowOp =>
+        methodNode.visitMethodInsn(INVOKESTATIC,
+                                   "java/lang/Math",
+                                   "pow",
+                                   "(DD)D",
+                                   false)
     }
-    methodNode.visitInsn(insn)
-  }
 
   def unaryOp(op: UnaryOp): Unit = {
     val methodName = op match {
@@ -105,6 +109,16 @@ private trait MethodGenerator {
         fn(v)
         methodNode.visitInsn(DASTORE)
     }
+  }
+
+  def swapIfEqThenPop(): Unit = {
+    val label = new Label
+    methodNode.visitInsn(DCMPL)
+    methodNode.visitJumpInsn(IFNE, label)
+    methodNode.visitInsn(DUP2_X2)
+    methodNode.visitInsn(POP2)
+    methodNode.visitLabel(label)
+    methodNode.visitInsn(POP2)
   }
 
   /**

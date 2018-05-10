@@ -6,9 +6,9 @@ import rainier.compute._
 import rainier.core._
 import rainier.sampler._
 
-@Warmup(iterations = 1)
-@Measurement(iterations = 5)
-@Fork(1)
+@Warmup(iterations = 3)
+@Measurement(iterations = 10)
+@Fork(3)
 class EndToEnd {
   def normal(k: Int) = {
     val r = new scala.util.Random
@@ -26,16 +26,8 @@ class EndToEnd {
   }
 
   @Benchmark
-  def fitNormal: Unit = {
-    implicit val rng = RNG.default
-    Compiler.default = ArrayCompiler
-    normal(1000).sample()
-  }
-
-  @Benchmark
   def fitNormalAsm: Unit = {
     implicit val rng = RNG.default
-    Compiler.default = asm.IRCompiler
     normal(1000).sample()
   }
 }

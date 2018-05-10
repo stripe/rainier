@@ -21,7 +21,7 @@ private class CompiledClass(name: String, methods: Seq[MethodNode]) {
 
   private def createClass: ClassNode = {
     val cls = new ClassNode()
-    cls.visit(V1_8,
+    cls.visit(V1_5,
               ACC_PUBLIC | ACC_SUPER,
               name,
               null,

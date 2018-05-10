@@ -16,22 +16,24 @@ trait Injection { self =>
 
   def transform(dist: Continuous): Continuous = new Continuous {
     def realLogDensity(real: Real) =
-      dist.realLogDensity(backwards(real)) +
-        logJacobian(real) +
-        isDefinedAt(real).log
+      If(isDefinedAt(real),
+         dist.realLogDensity(backwards(real)) +
+           logJacobian(real),
+         Real.zero.log)
 
     val generator = Generator.require(self.requirements) { (r, n) =>
       n.toDouble(forwards(dist.generator.get(r, n)))
     }
 
-    def param = dist.param.map(forwards)
+    val param = dist.param.map(forwards)
   }
 }
 
 case class Scale(a: Real) extends Injection {
+  private val lj = a.log * -1
   def forwards(x: Real) = x * a
   def backwards(y: Real) = y / a
-  def logJacobian(y: Real) = a.log * -1
+  def logJacobian(y: Real) = lj
   val requirements = Set(a)
 }
 
