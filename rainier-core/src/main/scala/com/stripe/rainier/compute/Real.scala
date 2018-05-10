@@ -66,13 +66,10 @@ object Real {
   def trace(real: Real): Unit = trace(List(real))
 }
 
-private case class Constant(value: Double) extends Real
-
-sealed trait NonConstant extends Real
-
-class Variable extends NonConstant {
+class Variable extends Real {
   private[compute] val param = new ir.Parameter
 }
+private case class Unary(original: Real, op: UnaryOp) extends Real
 
 private case class Unary(original: NonConstant, op: ir.UnaryOp)
     extends NonConstant
@@ -88,20 +85,31 @@ Because it is common for ax to have a large number of terms, this is deliberatel
 as equality comparisons would be too expensive. The impact of this is subtle, see [0] at the bottom of this file
 for an example.
  */
-private class Line private (val ax: Map[NonConstant, Double], val b: Double)
-    extends NonConstant
+private class Line private (val ax: Map[Real, Double], val b: Double)
+    extends Real
 
 private object Line {
-  def apply(ax: Map[NonConstant, Double], b: Double): Line = {
-    require(ax.size > 0)
+  def apply(ax: Map[Real, Double], b: Double): Line =
     new Line(ax, b)
-  }
 
-  def apply(nc: NonConstant): Line =
+  def apply(nc: Real): Line =
     nc match {
       case l: Line => l
       case _       => Line(Map(nc -> 1.0), 0.0)
     }
+}
+
+/*
+Constant looks like a node type but in fact is just a special case of Line
+where ax is empty.
+ */
+private object Constant {
+  def apply(value: Double) = Line(Map.empty, value)
+  def unapply(real: Real): Option[Double] = real match {
+    case l: Line if l.ax.isEmpty =>
+      Some(l.b)
+    case _ => None
+  }
 }
 
 /*
@@ -113,16 +121,15 @@ Unlike for Line, it is not expected that ax will have a large number of terms, a
 Luckily, this aligns well with the demands of numerical stability: if you have to multiply a lot of numbers
 together, you are better off adding their logs.
  */
-private case class LogLine private (ax: Map[NonConstant, Double])
-    extends NonConstant
+private case class LogLine private (ax: Map[Real, Double]) extends Real
 
 private object LogLine {
-  def apply(ax: Map[NonConstant, Double]): LogLine = {
+  def apply(ax: Map[Real, Double]): LogLine = {
     require(ax.size > 0)
     new LogLine(ax)
   }
 
-  def apply(nc: NonConstant): LogLine =
+  def apply(nc: Real): LogLine =
     nc match {
       case l: LogLine => l
       case _          => LogLine(Map(nc -> 1.0))
@@ -135,15 +142,15 @@ test is equal to zero, and `whenNotZero` otherwise. Because this expression
 does not have a smooth derivative, it is not recommended that you use this
 unless absolutely necessary.
  */
-case class If private (test: NonConstant, whenNonZero: Real, whenZero: Real)
-    extends NonConstant
+case class If private (test: Real, whenNonZero: Real, whenZero: Real)
+    extends Real
 
 object If {
   def apply(test: Real, whenNonZero: Real, whenZero: Real): Real =
     test match {
-      case Constant(0.0)   => whenZero
-      case Constant(v)     => whenNonZero
-      case nc: NonConstant => new If(nc, whenNonZero, whenZero)
+      case Constant(0.0) => whenZero
+      case Constant(v)   => whenNonZero
+      case nc: Real      => new If(nc, whenNonZero, whenZero)
     }
 }
 /*

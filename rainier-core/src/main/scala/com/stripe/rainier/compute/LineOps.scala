@@ -3,18 +3,18 @@ package com.stripe.rainier.compute
 private object LineOps {
 
   def sum(left: Line, right: Line): Real = {
-    val merged = merge(left.ax, right.ax)
-    if (merged.isEmpty)
-      Constant(left.b + right.b)
-    else
-      Line(merged, left.b + right.b)
+    val newLine = Line(merge(left.ax, right.ax), left.b + right.b)
+    newLine match {
+      case Line1(1.0, x, 0.0) => x
+      case _                  => newLine
+    }
   }
 
-  def scale(line: Line, v: Double): Line =
-    Line(line.ax.map { case (x, a) => (x, a * v) }, line.b * v)
+  val zero = Line(Map.empty, 0.0)
 
-  def translate(line: Line, v: Double): Line =
-    Line(line.ax, line.b + v)
+  //we use sum here to trigger its simplification rules
+  def scale(line: Line, v: Double): Real =
+    sum(Line(line.ax.map { case (x, a) => (x, a * v) }, line.b * v), zero)
 
   /*
   Return Some(real) if an optimization is possible here,
@@ -78,13 +78,13 @@ private object LineOps {
 
     val (k, cnt) = coefficientFreqs.maxBy(_._2)
     if (cnt > coefficientFreqs.getOrElse(1.0, 0))
-      (scale(line, 1.0 / k), k)
+      (Line(line / k), k)
     else
       (line, 1.0)
   }
 
-  def merge(left: Map[NonConstant, Double],
-            right: Map[NonConstant, Double]): Map[NonConstant, Double] = {
+  def merge(left: Map[Real, Double],
+            right: Map[Real, Double]): Map[Real, Double] = {
     val (big, small) =
       if (left.size > right.size)
         (left, right)
@@ -108,10 +108,10 @@ private object LineOps {
   }
 
   private def foil(a: Double,
-                   x: NonConstant,
+                   x: Real,
                    b: Double,
                    c: Double,
-                   y: NonConstant,
+                   y: Real,
                    d: Double): Option[Real] = {
     //(ax + b)(cy + d)
     if (x == y || b == 0.0 || d == 0.0) {
@@ -125,7 +125,7 @@ private object LineOps {
   }
 
   object Line1 {
-    def unapply(line: Line): Option[(Double, NonConstant, Double)] = {
+    def unapply(line: Line): Option[(Double, Real, Double)] = {
       if (line.ax.size == 1)
         Some((line.ax.head._2, line.ax.head._1, line.b))
       else

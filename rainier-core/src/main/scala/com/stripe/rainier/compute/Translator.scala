@@ -71,7 +71,7 @@ private class Translator {
   The result may also be multiplied by a constant scaling factor (generally
   factored out of the original summation).
   **/
-  private def factoredLine(ax: Map[NonConstant, Double],
+  private def factoredLine(ax: Map[Real, Double],
                            b: Double,
                            factor: Double,
                            ring: Ring): IR = {

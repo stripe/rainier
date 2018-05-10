@@ -18,7 +18,6 @@ private object Gradient {
         visited += real
         real match {
           case v: Variable     => ()
-          case Constant(value) => ()
 
           case u: Unary =>
             diff(u.original).register(UnaryDiff(u, diff(u)))
@@ -93,9 +92,7 @@ private object Gradient {
         If(child.test, Real.zero, gradient.toReal)
   }
 
-  private case class LogLineDiff(child: LogLine,
-                                 gradient: Diff,
-                                 term: NonConstant)
+  private case class LogLineDiff(child: LogLine, gradient: Diff, term: Real)
       extends Diff {
     def toReal = {
       val exponent = child.ax(term)
