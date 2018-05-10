@@ -6,6 +6,7 @@ trait Injection { self =>
   def forwards(x: Real): Real
   def backwards(y: Real): Real
   def isDefinedAt(y: Real): Real = Real.one
+  def requirements: Set[Real]
 
   /*
     See https://en.wikipedia.org/wiki/Probability_density_function#Dependent_variables_and_change_of_variables
@@ -19,7 +20,7 @@ trait Injection { self =>
         logJacobian(real) +
         isDefinedAt(real).log
 
-    val generator = Generator.from { (r, n) =>
+    val generator = Generator.require(self.requirements) { (r, n) =>
       n.toDouble(forwards(dist.generator.get(r, n)))
     }
 
@@ -31,12 +32,14 @@ case class Scale(a: Real) extends Injection {
   def forwards(x: Real) = x * a
   def backwards(y: Real) = y / a
   def logJacobian(y: Real) = a.log * -1
+  val requirements = Set(a)
 }
 
 case class Translate(b: Real) extends Injection {
   def forwards(x: Real) = x + b
   def backwards(y: Real) = y - b
   def logJacobian(y: Real) = Real.zero
+  val requirements = Set(b)
 }
 
 object Exp extends Injection {
@@ -47,4 +50,5 @@ object Exp extends Injection {
   def logJacobian(y: Real) = y.log * -1
 
   override def isDefinedAt(y: Real) = y > 0
+  val requirements = Set.empty
 }

@@ -7,11 +7,8 @@ case class NUTS(stepSize: Double = 1.0, maxDepth: Int) extends Sampler {
       implicit rng: RNG): Stream[Sample] =
     toStream(density, HamiltonianChain(density.variables, density))
 
-  private def toStream(density: Real,
-                       chain: HamiltonianChain): Stream[Sample] = {
-    val eval = new Evaluator(density.variables.zip(chain.hParams.qs).toMap)
-    Sample(chain.accepted, eval) #:: toStream(
+  private def toStream(density: Real, chain: HamiltonianChain): Stream[Sample] =
+    Sample(chain.accepted, chain.hParams.qs) #:: toStream(
       density,
       chain.nextNUTS(stepSize, maxDepth))
-  }
 }

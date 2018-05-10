@@ -74,7 +74,7 @@ object Gamma {
       RandomVariable(x.exp, x + realLogDensity(x.exp))
     }
 
-    def generator = Generator.from { (r, n) =>
+    def generator = Generator.require(Set(shape)) { (r, n) =>
       val a = n.toDouble(shape)
       if (a < 1) {
         val u = r.standardUniform

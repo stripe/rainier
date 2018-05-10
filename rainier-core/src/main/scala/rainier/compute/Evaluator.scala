@@ -1,15 +1,12 @@
 package rainier.compute
 
-import scala.collection.mutable.HashMap
-
-class Evaluator(variables: Map[Variable, Double]) extends Numeric[Real] {
-  private val cache = HashMap.empty[Real, Double]
+class Evaluator(var cache: Map[Real, Double]) extends Numeric[Real] {
 
   def toDouble(x: Real): Double = cache.get(x) match {
     case Some(v) => v
     case None => {
       val v = eval(x)
-      cache.update(x, v)
+      cache += x -> v
       v
     }
   }
@@ -17,13 +14,13 @@ class Evaluator(variables: Map[Variable, Double]) extends Numeric[Real] {
   private def eval(real: Real): Double = real match {
     case b: BinaryReal   => b.op(toDouble(b.left), toDouble(b.right))
     case u: UnaryReal    => u.op(toDouble(u.original))
-    case v: Variable     => variables(v)
     case Constant(value) => value
     case If(test, nz, z) =>
       if (toDouble(test) == 0.0)
         toDouble(z)
       else
         toDouble(nz)
+    case v: Variable => sys.error(s"No value provided for $v")
   }
 
   def compare(x: Real, y: Real) = toDouble(x).compare(toDouble(y))

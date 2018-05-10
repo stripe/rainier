@@ -56,12 +56,14 @@ class RandomVariable[+T](private val value: T,
 
   def toStream[V](sampler: Sampler, warmupIterations: Int)(
       implicit rng: RNG,
-      sampleable: Sampleable[T, V]): Stream[() => V] =
+      sampleable: Sampleable[T, V]): Stream[() => V] = {
+    val fn = sampleable.prepare(value, density.variables)
     sampler.sample(density, warmupIterations).map { s =>
       { () =>
-        get(rng, sampleable, s.evaluator)
+        fn(s.parameters)
       }
     }
+  }
 
   val density = Real.sum(densities.toList.map(_.toReal))
 }
