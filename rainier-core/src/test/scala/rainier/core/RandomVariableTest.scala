@@ -13,7 +13,7 @@ class RandomVariableTest extends FunSuite {
       val (yValue, yDensity) = sampleOnce(y, paramValue)
 
       assert(xValue == yValue)
-      assert(xDensity == yDensity)
+      assert((xDensity - yDensity).abs < 0.000001)
     }
   }
 

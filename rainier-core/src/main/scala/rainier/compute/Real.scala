@@ -1,173 +1,158 @@
 package rainier.compute
 
+/*
+A Real is a DAG which represents a mathematical function
+from 0 or more real-valued input parameters to a single real-valued output.
+
+You can create new single-node DAGs either like `Real(2.0)`, for a constant,
+or with `new Variable` to introduce an input parameter. You can create more interesting DAGs
+by combining Reals using the standard mathematical operators, eg `(new Variable) + Real(2.0)`
+is the function f(x) = x+2, or `(new Variable) * (new Variable).log` is the function f(x,y) = xlog(y).
+Every such operation on Real results in a new Real.
+Apart from Variable and a simple ternary If expression, all of the subtypes of Real are private to this package.
+
+You can also automatically derive the gradient of a Real with respect to its variables.
+ */
 sealed trait Real {
-  def +(other: Real): Real = BinaryReal(this, other, AddOp)
-  def *(other: Real): Real = BinaryReal(this, other, MultiplyOp)
-  def -(other: Real): Real = BinaryReal(this, other, SubtractOp)
-  def /(other: Real): Real = BinaryReal(this, other, DivideOp)
+  def +(other: Real): Real = RealOps.add(this, other)
+  def *(other: Real): Real = RealOps.multiply(this, other)
 
-  def exp: Real = UnaryReal(this, ExpOp)
-  def log: Real = UnaryReal(this, LogOp)
-  def abs: Real = UnaryReal(this, AbsOp)
+  def -(other: Real): Real = this + (other * -1)
+  def /(other: Real): Real = this * other.pow(-1)
 
-  def >(other: Real): Real = Real.isPositive(this - other)
-  def <(other: Real): Real = Real.isNegative(this - other)
+  def pow[N](exponent: N)(implicit num: Numeric[N]): Real =
+    RealOps.pow(this, num.toDouble(exponent))
+
+  def exp: Real = RealOps.unary(this, ExpOp)
+  def log: Real = RealOps.unary(this, LogOp)
+
+  //because abs does not have a smooth derivative, try to avoid using it
+  def abs: Real = RealOps.unary(this, AbsOp)
+
+  def >(other: Real): Real = RealOps.isPositive(this - other)
+  def <(other: Real): Real = RealOps.isNegative(this - other)
   def >=(other: Real): Real = Real.one - (this < other)
   def <=(other: Real): Real = Real.one - (this > other)
 
-  lazy val variables: Seq[Variable] = Real.variables(this).toList
+  lazy val variables: Seq[Variable] = RealOps.variables(this).toList
   def gradient: Seq[Real] = Gradient.derive(variables, this)
 }
 
 object Real {
-  import scala.language.implicitConversions
-
   implicit def apply[N](value: N)(implicit toReal: ToReal[N]): Real =
     toReal(value)
   def seq[A](as: Seq[A])(implicit toReal: ToReal[A]): Seq[Real] =
     as.map(toReal(_))
 
   def sum(seq: Seq[Real]): Real =
-    if (seq.isEmpty)
-      Real.zero
-    else
-      reduceCommutative(seq, AddOp)
+    seq.foldLeft(Real.zero)(_ + _)
 
-  def product(seq: Seq[Real]): Real =
-    if (seq.isEmpty)
-      Real.one
-    else
-      reduceCommutative(seq, MultiplyOp)
-
-  def logSumExp(seq: Seq[Real]): Real =
-    sum(seq.map(_.exp)).log //TODO: special case this
   val zero: Real = Real(0.0)
   val one: Real = Real(1.0)
-
-  private def nonZeroIsPositive(real: Real): Real =
-    ((real.abs / real) + 1) / 2
-
-  private def isPositive(real: Real): Real =
-    If(real, nonZeroIsPositive(real), Real.zero)
-
-  private def isNegative(real: Real): Real =
-    If(real, Real.one - nonZeroIsPositive(real), Real.zero)
-
-  private def variables(real: Real): Set[Variable] = {
-    def loop(r: Real, acc: Set[Variable]): Set[Variable] =
-      r match {
-        case Constant(_)   => acc
-        case b: BinaryReal => loop(b.right, loop(b.left, acc))
-        case u: UnaryReal  => loop(u.original, acc)
-        case v: Variable   => acc + v
-        case If(test, nz, z) =>
-          val acc2 = loop(test, acc)
-          val acc3 = loop(nz, acc2)
-          loop(z, acc3)
-      }
-
-    loop(real, Set.empty)
-  }
-
-  def print(real: Real, depth: Int = 0): Unit = {
-    val padding = "  " * depth
-    real match {
-      case Constant(v) => println(padding + v)
-      case b: BinaryReal =>
-        println(padding + b.op)
-        print(b.left, depth + 1)
-        print(b.right, depth + 1)
-      case u: UnaryReal =>
-        println(padding + u.op)
-        print(u.original, depth + 1)
-      case v: Variable =>
-        println(padding + v)
-      case If(test, nz, z) =>
-        println(padding + "If ")
-        print(test, depth + 1)
-        print(nz, depth + 1)
-        print(z, depth + 1)
-    }
-  }
-
-  private[compute] def optimize(real: Real): Real =
-    Table.intern(Pruner.prune(real))
-
-  private def reduceCommutative(seq: Seq[Real], op: CommutativeOp): Real =
-    if (seq.size == 1)
-      seq.head
-    else
-      reduceCommutative(seq.grouped(2).toList.map {
-        case oneOrTwo =>
-          if (oneOrTwo.size == 1)
-            oneOrTwo.head
-          else
-            BinaryReal(oneOrTwo(0), oneOrTwo(1), op)
-      }, op)
 }
 
 private case class Constant(value: Double) extends Real
 
-private class BinaryReal private (val left: Real,
-                                  val right: Real,
-                                  val op: BinaryOp)
-    extends Real
+sealed trait NonConstant extends Real
 
-private object BinaryReal {
-  def apply(left: Real, right: Real, op: BinaryOp): Real =
-    Real.optimize(new BinaryReal(left, right, op))
+class Variable extends NonConstant
+
+private case class Unary(original: NonConstant, op: UnaryOp) extends NonConstant
+
+private sealed trait UnaryOp
+private case object ExpOp extends UnaryOp
+private case object LogOp extends UnaryOp
+private case object AbsOp extends UnaryOp
+
+/*
+This node type represents any linear transformation from an input vector to an output
+scalar as the function `ax + b`, where x is the input vector, a is a constant vector, ax is their dot product,
+and b is a constant scalar.
+
+This is used to represent all additions and any multiplications by constants.
+
+Because it is common for ax to have a large number of terms, this is deliberately not a case class,
+as equality comparisons would be too expensive. The impact of this is subtle, see [0] at the bottom of this file
+for an example.
+ */
+private class Line private (val ax: Map[NonConstant, Double], val b: Double)
+    extends NonConstant
+
+private object Line {
+  def apply(ax: Map[NonConstant, Double], b: Double): Line = {
+    require(ax.size > 0)
+    new Line(ax, b)
+  }
+
+  def apply(nc: NonConstant): Line =
+    nc match {
+      case l: Line => l
+      case _       => Line(Map(nc -> 1.0), 0.0)
+    }
 }
 
-private class UnaryReal private (val original: Real, val op: UnaryOp)
-    extends Real
-private object UnaryReal {
-  def apply(original: Real, op: UnaryOp): Real =
-    Real.optimize(new UnaryReal(original, op))
+/*
+This node type represents non-linear transformations from an input vector to a scalar,
+of the form `x^a * y^b * z^c ...` where x,y,z are the elements of the input vector,
+and a,b,c are constant exponents.
+
+Unlike for Line, it is not expected that ax will have a large number of terms, and performance will suffer if it does.
+Luckily, this aligns well with the demands of numerical stability: if you have to multiply a lot of numbers
+together, you are better off adding their logs.
+ */
+private case class LogLine private (ax: Map[NonConstant, Double])
+    extends NonConstant
+
+private object LogLine {
+  def apply(ax: Map[NonConstant, Double]): LogLine = {
+    require(ax.size > 0)
+    new LogLine(ax)
+  }
+
+  def apply(nc: NonConstant): LogLine =
+    nc match {
+      case l: LogLine => l
+      case _          => LogLine(Map(nc -> 1.0))
+    }
 }
 
-class Variable extends Real
+/*
+This node type represents an expression which is equal to `whenZero` when
+test is equal to zero, and `whenNotZero` otherwise. Because this expression
+does not have a smooth derivative, it is not recommended that you use this
+unless absolutely necessary.
+ */
+case class If private (test: NonConstant, whenNonZero: Real, whenZero: Real)
+    extends NonConstant
 
-case class If private (test: Real, whenNonZero: Real, whenZero: Real)
-    extends Real
 object If {
   def apply(test: Real, whenNonZero: Real, whenZero: Real): Real =
-    Real.optimize(new If(test, whenNonZero, whenZero))
+    test match {
+      case Constant(0.0)   => whenZero
+      case Constant(v)     => whenNonZero
+      case nc: NonConstant => new If(nc, whenNonZero, whenZero)
+    }
 }
+/*
+[0] For example, of the following four ways of computing the same result, only the first two will have the most efficient
+representation:
 
-private sealed trait BinaryOp {
-  def apply(left: Double, right: Double): Double
-}
+//#1
+(x+y+3).pow(2)
 
-private sealed trait CommutativeOp extends BinaryOp
+//#2
+val z = x+y+3
+z*z
 
-private case object AddOp extends CommutativeOp {
-  def apply(left: Double, right: Double) = left + right
-}
+//#3
+(x+y+3)*(x+y+3)
 
-private case object MultiplyOp extends CommutativeOp {
-  def apply(left: Double, right: Double) = left * right
-}
+//#4
+(x+y+3)*(y+x+3)
 
-private case object SubtractOp extends BinaryOp {
-  def apply(left: Double, right: Double) = left - right
-}
-
-private case object DivideOp extends BinaryOp {
-  def apply(left: Double, right: Double) = left / right
-}
-
-private sealed trait UnaryOp {
-  def apply(original: Double): Double
-}
-
-private case object ExpOp extends UnaryOp {
-  def apply(original: Double) = math.exp(original)
-}
-
-private case object LogOp extends UnaryOp {
-  def apply(original: Double) = math.log(original)
-}
-
-private case object AbsOp extends UnaryOp {
-  def apply(original: Double) = original.abs
-}
+In the second case, because z == z, the multiplication can be collapsed into an exponent. In the third and
+fourth cases, although the expressions are equivalent, the objects are not equal, and so this will not happen.
+However, in the third case, at the compilation stage the common sub-expressions will still be recognized and so there
+will not be any double computation. In the fourth case, because of the reordering, this won't happen, and so
+`x+y+3` will be computed twice (in two different orders).
+ */
