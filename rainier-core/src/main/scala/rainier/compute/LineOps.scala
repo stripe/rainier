@@ -11,7 +11,7 @@ private object LineOps {
   }
 
   def scale(line: Line, v: Double): Line =
-    Line(line.ax.map { case (x, a) => x -> a * v }, line.b * v)
+    Line(line.ax.map { case (x, a) => (x, a * v) }, line.b * v)
 
   def translate(line: Line, v: Double): Line =
     Line(line.ax, line.b + v)
@@ -25,15 +25,11 @@ private object LineOps {
   becomes too great.
    */
   def multiply(left: Line, right: Line): Option[Real] =
-    if (left.ax.size == 1 && right.ax.size == 1)
-      foil(left.ax.head._2,
-           left.ax.head._1,
-           left.b,
-           right.ax.head._2,
-           right.ax.head._1,
-           right.b)
-    else
-      None
+    (left, right) match {
+      case (Line1(a, x, b), Line1(c, y, d)) =>
+        foil(a, x, b, c, y, d)
+      case _ => None
+    }
 
   /*
   Return Some(real) if an optimization is possible here,
@@ -45,12 +41,11 @@ private object LineOps {
    */
 
   def log(line: Line): Option[Real] =
-    singleTermOpt(line)
-      .filter(_._2 >= 0)
-      .map {
-        case (x, a) =>
-          x.log + Math.log(a)
-      }
+    line match {
+      case Line1(a, x, 0) if a >= 0 =>
+        Some(x.log + Math.log(a))
+      case _ => None
+    }
 
   /*
   Return Some(real) if an optimization is possible here,
@@ -61,16 +56,11 @@ private object LineOps {
   a multiply around, and there's a chance that a.pow(k) will simplify further.
    */
   def pow(line: Line, exponent: Double): Option[Real] =
-    singleTermOpt(line).map {
-      case (x, a) =>
-        x.pow(exponent) * Math.pow(a, exponent)
+    line match {
+      case Line1(a, x, 0) =>
+        Some(x.pow(exponent) * Math.pow(a, exponent))
+      case _ => None
     }
-
-  private def singleTermOpt(line: Line): Option[(NonConstant, Double)] =
-    if (line.ax.size == 1 && line.b == 0)
-      Some(line.ax.head)
-    else
-      None
 
   /*
   Factor a scalar constant k out of ax+b and return it along with
@@ -132,5 +122,14 @@ private object LineOps {
           (b * d)) //L
     } else //too many terms
       None
+  }
+
+  object Line1 {
+    def unapply(line: Line): Option[(Double, NonConstant, Double)] = {
+      if (line.ax.size == 1)
+        Some((line.ax.head._2, line.ax.head._1, line.b))
+      else
+        None
+    }
   }
 }
