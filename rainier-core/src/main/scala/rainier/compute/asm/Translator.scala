@@ -121,22 +121,19 @@ private class Translator {
   }
 
   private def combineTree(terms: Seq[IR], ring: Ring): IR =
-    if (terms.size == 1)
-      terms.head
-    else
-      combineTree(
-        terms.grouped(2).toList.map {
-          case oneOrTwo =>
-            if (oneOrTwo.size == 1)
-              oneOrTwo.head
-            else {
-              val left = oneOrTwo(0)
-              val right = oneOrTwo(1)
+    terms match {
+      case Seq(t) => t
+      case _ =>
+        combineTree(
+          terms.grouped(2).toList.map {
+            case Seq(t) => t
+            case Seq(left, right) =>
               binaryIR(left, right, ring.plus)
-            }
-        },
-        ring
-      )
+            case _ => sys.error("Should only have 1 or 2 elems")
+          },
+          ring
+        )
+    }
 
   private def ref(ir: IR): Ref =
     ir match {
