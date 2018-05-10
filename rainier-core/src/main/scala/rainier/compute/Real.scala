@@ -83,6 +83,12 @@ private object Line {
     require(ax.size > 0)
     new Line(ax, b)
   }
+
+  def apply(nc: NonConstant): Line =
+    nc match {
+      case l: Line => l
+      case _       => Line(Map(nc -> 1.0), 0.0)
+    }
 }
 
 /*
@@ -102,6 +108,12 @@ private object LogLine {
     require(ax.size > 0)
     new LogLine(ax)
   }
+
+  def apply(nc: NonConstant): LogLine =
+    nc match {
+      case l: LogLine => l
+      case _          => LogLine(Map(nc -> 1.0))
+    }
 }
 
 /*

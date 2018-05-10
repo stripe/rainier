@@ -28,10 +28,10 @@ private object RealOps {
       case (_, Constant(0.0))             => left
       case (Constant(0.0), _)             => right
       case (Constant(x), Constant(y))     => Constant(x + y)
-      case (Constant(x), nc: NonConstant) => LineOps.translate(line(nc), x)
-      case (nc: NonConstant, Constant(x)) => LineOps.translate(line(nc), x)
+      case (Constant(x), nc: NonConstant) => LineOps.translate(Line(nc), x)
+      case (nc: NonConstant, Constant(x)) => LineOps.translate(Line(nc), x)
       case (nc1: NonConstant, nc2: NonConstant) =>
-        LineOps.sum(line(nc1), line(nc2))
+        LineOps.sum(Line(nc1), Line(nc2))
     }
 
   def multiply(left: Real, right: Real): Real =
@@ -41,14 +41,14 @@ private object RealOps {
       case (_, Constant(1.0))             => left
       case (Constant(1.0), _)             => right
       case (Constant(x), Constant(y))     => Constant(x * y)
-      case (Constant(x), nc: NonConstant) => LineOps.scale(line(nc), x)
-      case (nc: NonConstant, Constant(x)) => LineOps.scale(line(nc), x)
+      case (Constant(x), nc: NonConstant) => LineOps.scale(Line(nc), x)
+      case (nc: NonConstant, Constant(x)) => LineOps.scale(Line(nc), x)
       case (l1: Line, l2: Line) =>
         LineOps.multiply(l1, l2).getOrElse {
-          LogLineOps.multiply(logLine(l1), logLine(l2))
+          LogLineOps.multiply(LogLine(l1), LogLine(l2))
         }
       case (nc1: NonConstant, nc2: NonConstant) =>
-        LogLineOps.multiply(logLine(nc1), logLine(nc2))
+        LogLineOps.multiply(LogLine(nc1), LogLine(nc2))
     }
 
   def pow(original: Real, exponent: Double): Real =
@@ -58,22 +58,10 @@ private object RealOps {
       case (_, 1.0)         => original
       case (l: Line, _) =>
         LineOps.pow(l, exponent).getOrElse {
-          LogLineOps.pow(logLine(l), exponent)
+          LogLineOps.pow(LogLine(l), exponent)
         }
       case (nc: NonConstant, _) =>
-        LogLineOps.pow(logLine(nc), exponent)
-    }
-
-  private def line(nc: NonConstant): Line =
-    nc match {
-      case l: Line => l
-      case _       => Line(Map(nc -> 1.0), 0.0)
-    }
-
-  private def logLine(nc: NonConstant): LogLine =
-    nc match {
-      case l: LogLine => l
-      case _          => LogLine(Map(nc -> 1.0))
+        LogLineOps.pow(LogLine(nc), exponent)
     }
 
   def isPositive(real: Real): Real =
