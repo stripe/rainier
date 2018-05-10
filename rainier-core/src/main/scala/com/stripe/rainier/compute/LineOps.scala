@@ -16,6 +16,9 @@ private object LineOps {
   def scale(line: Line, v: Double): Real =
     sum(Line(line.ax.map { case (x, a) => (x, a * v) }, line.b * v), zero)
 
+  def translate(line: Line, v: Double): Line =
+    Line(line.ax, line.b + v)
+
   /*
   Return Some(real) if an optimization is possible here,
   otherwise None will fall back to the default multiplication behavior.

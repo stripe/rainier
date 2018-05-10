@@ -20,10 +20,38 @@ private object RealOps {
       }
     optimized.getOrElse(Unary(original, op))
   }
+  /*
+  def add(left: Real, right: Real): Real =
+    (left, right) match {
+      case (_, Constant(0.0))         => left
+      case (Constant(0.0), _)         => right
+      case (Constant(x), Constant(y)) => Constant(x + y)
+      case (Constant(x), nc: Real)    => LineOps.translate(Line(nc), x)
+      case (nc: Real, Constant(x))    => LineOps.translate(Line(nc), x)
+      case (nc1: Real, nc2: Real) =>
+        LineOps.sum(Line(nc1), Line(nc2))
+    }
+   */
+  def multiply(left: Real, right: Real): Real =
+    (left, right) match {
+      case (_, Constant(0.0))         => Real.zero
+      case (Constant(0.0), _)         => Real.zero
+      case (_, Constant(1.0))         => left
+      case (Constant(1.0), _)         => right
+      case (Constant(x), Constant(y)) => Constant(x * y)
+      case (Constant(x), nc: Real)    => LineOps.scale(Line(nc), x)
+      case (nc: Real, Constant(x))    => LineOps.scale(Line(nc), x)
+      case (l1: Line, l2: Line) =>
+        LineOps.multiply(l1, l2).getOrElse {
+          LogLineOps.multiply(LogLine(l1), LogLine(l2))
+        }
+      case (nc1: Real, nc2: Real) =>
+        LogLineOps.multiply(LogLine(nc1), LogLine(nc2))
+    }
 
   def add(left: Real, right: Real): Real =
     LineOps.sum(Line(left), Line(right))
-
+  /*
   def multiply(left: Real, right: Real): Real = {
     val optimized =
       (left, right) match {
@@ -35,7 +63,7 @@ private object RealOps {
       LogLineOps.multiply(LogLine(left), LogLine(right))
     }
   }
-
+   */
   def pow(original: Real, exponent: Double): Real = {
     val optimized =
       (original, exponent) match {
