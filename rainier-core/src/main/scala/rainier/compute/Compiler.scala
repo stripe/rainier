@@ -18,10 +18,10 @@ trait Compiler {
 }
 
 object Compiler {
-  var default: Compiler = InstrumentingCompiler(asm.IRCompiler)
+  var default: Compiler = asm.IRCompiler
 }
 
-case class InstrumentingCompiler(orig: Compiler) extends Compiler {
+case class InstrumentingCompiler(orig: Compiler, printEvery: Int) extends Compiler {
   var count = 0L
   var nanos = 0L
   def compile(inputs: Seq[Variable],
@@ -33,7 +33,7 @@ case class InstrumentingCompiler(orig: Compiler) extends Compiler {
       val result = cf(array)
       val t2 = System.nanoTime
       nanos += (t2 - t1)
-      if (count % 1000000 == 0) {
+      if (count % printEvery == 0) {
         println(s"[InstrumentingCompiler] $count runs, ${nanos / count} ns/run")
       }
       result
