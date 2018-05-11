@@ -14,6 +14,7 @@ object Benchmarks {
 
     val a = compileAsm
     val g = Compiler.default.compileGradient(vars, expr)
+    //asm.IRTracer.trace(expr)
 
     implicit val rng = RNG.default
     def runAsm =

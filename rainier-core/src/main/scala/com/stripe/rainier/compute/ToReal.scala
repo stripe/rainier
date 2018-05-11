@@ -14,7 +14,7 @@ object ToReal {
 
   implicit def numeric[N: Numeric]: ToReal[N] =
     new ToReal[N] {
-      def apply(n: N): Real = Constant(implicitly[Numeric[N]].toDouble(n))
+      def apply(n: N): Real = Line(implicitly[Numeric[N]].toDouble(n))
     }
 
   implicit val fromReal: ToReal[Real] =

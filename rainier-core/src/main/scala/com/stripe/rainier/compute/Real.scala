@@ -97,19 +97,8 @@ private object Line {
       case l: Line => l
       case _       => Line(Map(nc -> 1.0), 0.0)
     }
-}
 
-/*
-Constant looks like a node type but in fact is just a special case of Line
-where ax is empty.
- */
-private object Constant {
-  def apply(value: Double) = Line(Map.empty, value)
-  def unapply(real: Real): Option[Double] = real match {
-    case l: Line if l.ax.isEmpty =>
-      Some(l.b)
-    case _ => None
-  }
+  def apply(b: Double): Line = Line(Map.empty, b)
 }
 
 /*
@@ -142,16 +131,11 @@ test is equal to zero, and `whenNotZero` otherwise. Because this expression
 does not have a smooth derivative, it is not recommended that you use this
 unless absolutely necessary.
  */
-case class If private (test: Real, whenNonZero: Real, whenZero: Real)
-    extends Real
+case class If(test: Real, whenNonZero: Real, whenZero: Real) extends Real
 
 object If {
   def apply(test: Real, whenNonZero: Real, whenZero: Real): Real =
-    test match {
-      case Constant(0.0) => whenZero
-      case Constant(v)   => whenNonZero
-      case nc: Real      => new If(nc, whenNonZero, whenZero)
-    }
+    RealOps._if(test, whenZero, whenNonZero)
 }
 /*
 [0] For example, of the following four ways of computing the same result, only the first two will have the most efficient

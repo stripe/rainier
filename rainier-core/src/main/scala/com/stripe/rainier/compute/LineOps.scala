@@ -19,13 +19,32 @@ private object LineOps {
   becomes too great.
    */
   def multiply(left: Line, right: Line): Option[Real] =
-    (left, right) match {
-      case (Constant(b), _) => Some(scale(right, b))
-      case (_, Constant(b)) => Some(scale(left, b))
-      case (Line1(a, x, b), Line1(c, y, d)) =>
-        foil(a, x, b, c, y, d)
-      case _ => None
-    }
+    if (left.ax.size * right.ax.size < 10) {
+      val axyc =
+        left.ax.toList.flatMap {
+          case (x, a) =>
+            right.ax.toList.map {
+              case (y, c) =>
+                Map(x * y -> (a * c))
+            }
+        }
+      val axd =
+        left.ax.toList.map { case (x, a) => Map(x -> (a * right.b)) }
+      val ycb =
+        right.ax.toList.map { case (y, c) => Map(y -> (c * left.b)) }
+      val bd = left.b * right.b
+      val newAx = (axyc ++ axd ++ ycb)
+        .reduceOption { (l, r) =>
+          merge(l, r)
+        }
+        .getOrElse(Map.empty)
+      val newLine = Line(newAx, bd)
+      newLine match {
+        case Line1(1.0, x, 0.0) => Some(x)
+        case _                  => Some(newLine)
+      }
+    } else
+      None
 
   /*
   Return Some(real) if an optimization is possible here,
@@ -52,9 +71,15 @@ private object LineOps {
   a multiply around, and there's a chance that a.pow(k) will simplify further.
    */
   def pow(line: Line, exponent: Double): Option[Real] =
-    line match {
-      case Line1(a, x, 0) =>
+    (line, exponent) match {
+      case (Line1(a, x, 0), _) =>
         Some(x.pow(exponent) * Math.pow(a, exponent))
+      case (_, 2.0) =>
+        multiply(line, line)
+      case (_, -2.0) =>
+        multiply(line, line).map { x =>
+          x.pow(-1)
+        }
       case _ => None
     }
 
@@ -72,11 +97,15 @@ private object LineOps {
         .groupBy(_.abs)
         .map { case (a, xs) => (a, xs.size) }
 
-    val (k, cnt) = coefficientFreqs.maxBy(_._2)
-    if (cnt > coefficientFreqs.getOrElse(1.0, 0))
-      (Line(line / k), k)
-    else
+    if (coefficientFreqs.isEmpty)
       (line, 1.0)
+    else {
+      val (k, cnt) = coefficientFreqs.maxBy(_._2)
+      if (cnt > coefficientFreqs.getOrElse(1.0, 0))
+        (Line(line / k), k)
+      else
+        (line, 1.0)
+    }
   }
 
   def merge(left: Map[Real, Double],
@@ -102,72 +131,6 @@ private object LineOps {
           acc + (k -> newV)
     }
   }
-
-  //(ax + b)(cy + d)
-  private def foil(a: Double,
-                   x: Real,
-                   b: Double,
-                   c: Double,
-                   y: Real,
-                   d: Double): Option[Real] = {
-    val oldOps = countOps(a, b) + countOps(c, d) + 1
-    val newOps = countOps(a, b, c, d, x == y)
-    if (newOps < oldOps) {
-      Some(
-        (x * y) * (a * c) + //F
-          x * (a * d) + //O
-          y * (b * c) + //I
-          (b * d)) //L
-    } else //too many terms
-      None
-  }
-
-  private def countOps(a: Double, b: Double): Int = {
-    val aOps = if (a == 1.0) 0 else 1
-    val bOps = if (b == 0.0) 0 else 1
-    aOps + bOps
-  }
-
-  private def countOps(a: Double,
-                       b: Double,
-                       c: Double,
-                       d: Double,
-                       xEqualsY: Boolean): Int = {
-    val ac = (a * c) match {
-      case 0.0 => 0
-      case 1.0 => 2
-      case _   => 3
-    }
-    val ad = (a * c) match {
-      case 0.0 => 0
-      case 1.0 => 1
-      case _   => 2
-    }
-    val bc = (b * c) match {
-      case 0.0 => 0
-      case 1.0 => 1
-      case _   => 2
-    }
-    val adbc = ((a * d) + (b * c)) match {
-      case 0.0 => 0
-      case 1.0 => 1
-      case _   => 2
-    }
-    val bd = (b * d) match {
-      case 0.0 => 0
-      case _   => 1
-    }
-    if (xEqualsY)
-      ac + adbc + bd - 1
-    else
-      ac + ad + bc + bd - 1
-  }
-
-  val zero = Line(Map.empty, 0.0)
-  //we use sum here to trigger its simplification rules
-  /*private*/
-  def scale(line: Line, v: Double): Real =
-    sum(Line(line.ax.map { case (x, a) => (x, a * v) }, line.b * v), zero)
 
   object Line1 {
     def unapply(line: Line): Option[(Double, Real, Double)] = {

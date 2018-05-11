@@ -23,38 +23,6 @@ private object RealOps {
       }
     optimized.getOrElse(Unary(original, op))
   }
-  /*
-  def multiply(left: Real, right: Real): Real =
-    (left, right) match {
-      case (_, Constant(0.0))         => Real.zero
-      case (Constant(0.0), _)         => Real.zero
-      case (_, Constant(1.0))         => left
-      case (Constant(1.0), _)         => right
-      case (Constant(x), Constant(y)) => Constant(x * y)
-      case (Constant(x), nc: Real)    => LineOps.scale(Line(nc), x)
-      case (nc: Real, Constant(x))    => LineOps.scale(Line(nc), x)
-      case (l1: Line, l2: Line) =>
-        LineOps.multiply(l1, l2).getOrElse {
-          LogLineOps.multiply(LogLine(l1), LogLine(l2))
-        }
-      case (nc1: Real, nc2: Real) =>
-        LogLineOps.multiply(LogLine(nc1), LogLine(nc2))
-    }
-   */
-  /*
-  def multiply(left: Real, right: Real): Real = {
-    val optimized =
-      (left, right) match {
-        case (l1: Line, l2: Line) => LineOps.multiply(l1, l2)
-        case (Constant(_), _)     => LineOps.multiply(Line(left), Line(right))
-        case (_, Constant(_))     => LineOps.multiply(Line(left), Line(right))
-        case _                    => None
-      }
-    optimized.getOrElse {
-      LogLineOps.multiply(LogLine(left), LogLine(right))
-    }
-  }
-   */
 
   def multiply(left: Real, right: Real): Real = {
     val optimized =
@@ -71,9 +39,9 @@ private object RealOps {
   def pow(original: Real, exponent: Double): Real = {
     val optimized =
       (original, exponent) match {
-        case (Constant(v), _) => Some(Real(Math.pow(v, exponent)))
         case (_, 0.0)         => Some(Real.one)
         case (_, 1.0)         => Some(original)
+        case (Constant(v), _) => Some(Real(Math.pow(v, exponent)))
         case (l: Line, _)     => LineOps.pow(l, exponent)
         case _                => None
       }
@@ -81,6 +49,13 @@ private object RealOps {
       LogLineOps.pow(LogLine(original), exponent)
     }
   }
+
+  def _if(test: Real, whenNonZero: Real, whenZero: Real): Real =
+    test match {
+      case Constant(0.0) => whenZero
+      case Constant(v)   => whenNonZero
+      case nc: Real      => new If(nc, whenNonZero, whenZero)
+    }
 
   def isPositive(real: Real): Real =
     If(real, nonZeroIsPositive(real), Real.zero)
@@ -105,5 +80,16 @@ private object RealOps {
       }
 
     loop(real, Set.empty)
+  }
+
+  /*
+  Constant is just a special case of Line where ax is empty.
+   */
+  private object Constant {
+    def unapply(real: Real): Option[Double] = real match {
+      case l: Line if l.ax.isEmpty =>
+        Some(l.b)
+      case _ => None
+    }
   }
 }

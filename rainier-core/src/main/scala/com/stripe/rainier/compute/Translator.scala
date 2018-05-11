@@ -9,7 +9,6 @@ private class Translator {
 
   def toIR(r: Real): IR = r match {
     case v: Variable         => v.param
-    case Constant(value)     => Const(value)
     case Unary(original, op) => unaryIR(toIR(original), op)
     case i: If               => ifIR(toIR(i.whenNonZero), toIR(i.whenZero), toIR(i.test))
     case l: Line             => lineIR(l)
@@ -79,31 +78,35 @@ private class Translator {
     val negTerms =
       ax.filter(_._2 < 0.0).map { case (x, a) => x -> a.abs }.toList
 
-    val allPosTerms =
-      if (b == ring.zero)
-        posTerms
-      else
-        (Constant(b), 1.0) :: posTerms
-
     val (ir, sign) =
-      (allPosTerms.isEmpty, negTerms.isEmpty) match {
+      (posTerms.isEmpty, negTerms.isEmpty) match {
         case (true, true)  => (Const(0.0), 1.0)
         case (true, false) => (combineTerms(negTerms, ring), -1.0)
-        case (false, true) => (combineTerms(allPosTerms, ring), 1.0)
+        case (false, true) => (combineTerms(posTerms, ring), 1.0)
         case (false, false) =>
-          val posSum = combineTerms(allPosTerms, ring)
+          val posSum = combineTerms(posTerms, ring)
           val negSum = combineTerms(negTerms, ring)
           (binaryIR(posSum, negSum, ring.minus), 1.0)
       }
 
-    (factor * sign) match {
-      case 1.0 => ir
+    val bf = Const(b * factor) //TODO should be in ring
+    (sign * factor) match {
+      case 1.0 if b == ring.zero =>
+        ir
+      case 1.0 =>
+        binaryIR(bf, ir, ring.plus)
       case -1.0 =>
-        binaryIR(Const(ring.zero), ir, ring.minus)
-      case 2.0 =>
+        binaryIR(bf, ir, ring.minus)
+      case 2.0 if b == ring.zero =>
         binaryIR(ir, ref(ir), ring.plus)
+      case 2.0 =>
+        val x = binaryIR(ir, ref(ir), ring.plus)
+        binaryIR(bf, x, ring.plus)
+      case -2.0 =>
+        val x = binaryIR(ir, ref(ir), ring.plus)
+        binaryIR(bf, x, ring.minus)
       case k =>
-        binaryIR(ir, Const(k), ring.times)
+        binaryIR(bf, binaryIR(Const(k), ir, ring.times), ring.plus)
     }
   }
 

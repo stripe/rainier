@@ -10,13 +10,12 @@ class RealTest extends FunSuite {
       val result = fn(x)
       val c = Compiler.default.compile(List(x), result)
       List(1.0, 0.0, -1.0, 2.0, -2.0, 0.5, -0.5).foreach { n =>
-        val constant = fn(Constant(n))
-        assert(constant.isInstanceOf[Constant], s"[n=$n]")
+        val constant = fn(Real(n))
+        val constEval = new Evaluator(Map.empty)
+        val constValue = constEval.toDouble(constant)
         val eval = new Evaluator(Map(x -> n))
         val withVar = eval.toDouble(result)
-        assertWithinEpsilon(constant.asInstanceOf[Constant].value,
-                            withVar,
-                            s"[n=$n]")
+        assertWithinEpsilon(constValue, withVar, s"[n=$n]")
         val compiled = c(Array(n))
         assertWithinEpsilon(withVar, compiled, s"[ir, n=$n]")
       }
