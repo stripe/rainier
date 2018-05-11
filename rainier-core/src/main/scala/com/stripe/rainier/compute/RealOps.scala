@@ -4,6 +4,9 @@ import com.stripe.rainier.ir._
 
 private object RealOps {
 
+  def add(left: Real, right: Real): Real =
+    LineOps.sum(Line(left), Line(right))
+
   def unary(original: Real, op: UnaryOp): Real = {
     val optimized =
       (op, original) match {
@@ -20,18 +23,8 @@ private object RealOps {
       }
     optimized.getOrElse(Unary(original, op))
   }
+
   /*
-  def add(left: Real, right: Real): Real =
-    (left, right) match {
-      case (_, Constant(0.0))         => left
-      case (Constant(0.0), _)         => right
-      case (Constant(x), Constant(y)) => Constant(x + y)
-      case (Constant(x), nc: Real)    => LineOps.translate(Line(nc), x)
-      case (nc: Real, Constant(x))    => LineOps.translate(Line(nc), x)
-      case (nc1: Real, nc2: Real) =>
-        LineOps.sum(Line(nc1), Line(nc2))
-    }
-   */
   def multiply(left: Real, right: Real): Real =
     (left, right) match {
       case (_, Constant(0.0))         => Real.zero
@@ -48,10 +41,8 @@ private object RealOps {
       case (nc1: Real, nc2: Real) =>
         LogLineOps.multiply(LogLine(nc1), LogLine(nc2))
     }
+   */
 
-  def add(left: Real, right: Real): Real =
-    LineOps.sum(Line(left), Line(right))
-  /*
   def multiply(left: Real, right: Real): Real = {
     val optimized =
       (left, right) match {
@@ -63,7 +54,7 @@ private object RealOps {
       LogLineOps.multiply(LogLine(left), LogLine(right))
     }
   }
-   */
+
   def pow(original: Real, exponent: Double): Real = {
     val optimized =
       (original, exponent) match {

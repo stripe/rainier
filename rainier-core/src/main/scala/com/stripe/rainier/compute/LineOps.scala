@@ -10,15 +10,6 @@ private object LineOps {
     }
   }
 
-  val zero = Line(Map.empty, 0.0)
-
-  //we use sum here to trigger its simplification rules
-  def scale(line: Line, v: Double): Real =
-    sum(Line(line.ax.map { case (x, a) => (x, a * v) }, line.b * v), zero)
-
-  def translate(line: Line, v: Double): Line =
-    Line(line.ax, line.b + v)
-
   /*
   Return Some(real) if an optimization is possible here,
   otherwise None will fall back to the default multiplication behavior.
@@ -29,6 +20,8 @@ private object LineOps {
    */
   def multiply(left: Line, right: Line): Option[Real] =
     (left, right) match {
+      case (Constant(b), _) => Some(scale(right, b))
+      case (_, Constant(b)) => Some(scale(left, b))
       case (Line1(a, x, b), Line1(c, y, d)) =>
         foil(a, x, b, c, y, d)
       case _ => None
@@ -126,6 +119,11 @@ private object LineOps {
     } else //too many terms
       None
   }
+
+  val zero = Line(Map.empty, 0.0)
+  //we use sum here to trigger its simplification rules
+  private def scale(line: Line, v: Double): Real =
+    sum(Line(line.ax.map { case (x, a) => (x, a * v) }, line.b * v), zero)
 
   object Line1 {
     def unapply(line: Line): Option[(Double, Real, Double)] = {
