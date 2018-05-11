@@ -23,7 +23,6 @@ private object RealOps {
       }
     optimized.getOrElse(Unary(original, op))
   }
-
   /*
   def multiply(left: Real, right: Real): Real =
     (left, right) match {
@@ -41,6 +40,20 @@ private object RealOps {
       case (nc1: Real, nc2: Real) =>
         LogLineOps.multiply(LogLine(nc1), LogLine(nc2))
     }
+   */
+  /*
+  def multiply(left: Real, right: Real): Real = {
+    val optimized =
+      (left, right) match {
+        case (l1: Line, l2: Line) => LineOps.multiply(l1, l2)
+        case (Constant(_), _)     => LineOps.multiply(Line(left), Line(right))
+        case (_, Constant(_))     => LineOps.multiply(Line(left), Line(right))
+        case _                    => None
+      }
+    optimized.getOrElse {
+      LogLineOps.multiply(LogLine(left), LogLine(right))
+    }
+  }
    */
 
   def multiply(left: Real, right: Real): Real = {

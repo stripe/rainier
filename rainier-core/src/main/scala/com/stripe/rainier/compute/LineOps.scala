@@ -103,14 +103,16 @@ private object LineOps {
     }
   }
 
+  //(ax + b)(cy + d)
   private def foil(a: Double,
                    x: Real,
                    b: Double,
                    c: Double,
                    y: Real,
                    d: Double): Option[Real] = {
-    //(ax + b)(cy + d)
-    if (x == y || b == 0.0 || d == 0.0) {
+    val oldOps = countOps(a, b) + countOps(c, d) + 1
+    val newOps = countOps(a, b, c, d, x == y)
+    if (newOps < oldOps) {
       Some(
         (x * y) * (a * c) + //F
           x * (a * d) + //O
@@ -120,9 +122,51 @@ private object LineOps {
       None
   }
 
+  private def countOps(a: Double, b: Double): Int = {
+    val aOps = if (a == 1.0) 0 else 1
+    val bOps = if (b == 0.0) 0 else 1
+    aOps + bOps
+  }
+
+  private def countOps(a: Double,
+                       b: Double,
+                       c: Double,
+                       d: Double,
+                       xEqualsY: Boolean): Int = {
+    val ac = (a * c) match {
+      case 0.0 => 0
+      case 1.0 => 2
+      case _   => 3
+    }
+    val ad = (a * c) match {
+      case 0.0 => 0
+      case 1.0 => 1
+      case _   => 2
+    }
+    val bc = (b * c) match {
+      case 0.0 => 0
+      case 1.0 => 1
+      case _   => 2
+    }
+    val adbc = ((a * d) + (b * c)) match {
+      case 0.0 => 0
+      case 1.0 => 1
+      case _   => 2
+    }
+    val bd = (b * d) match {
+      case 0.0 => 0
+      case _   => 1
+    }
+    if (xEqualsY)
+      ac + adbc + bd - 1
+    else
+      ac + ad + bc + bd - 1
+  }
+
   val zero = Line(Map.empty, 0.0)
   //we use sum here to trigger its simplification rules
-  private def scale(line: Line, v: Double): Real =
+  /*private*/
+  def scale(line: Line, v: Double): Real =
     sum(Line(line.ax.map { case (x, a) => (x, a * v) }, line.b * v), zero)
 
   object Line1 {
