@@ -21,7 +21,8 @@ object Compiler {
   var default: Compiler = asm.IRCompiler
 }
 
-case class InstrumentingCompiler(orig: Compiler, printEvery: Int) extends Compiler {
+case class InstrumentingCompiler(orig: Compiler, printEvery: Int)
+    extends Compiler {
   var count = 0L
   var nanos = 0L
   def compile(inputs: Seq[Variable],
