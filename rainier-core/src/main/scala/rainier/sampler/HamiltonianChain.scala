@@ -11,15 +11,15 @@ private case class HamiltonianChain(
   // Take a single leapfrog step without re-initializing momenta
   // for use in tuning the step size
   def stepOnce(stepSize: Double): HamiltonianChain = {
-    val newParams = integrator.step(hParams, stepSize)
+    val newParams = integrator.step(hParams.stepSize(stepSize))
     copy(hParams = newParams)
   }
 
   def nextHMC(stepSize: Double, nSteps: Int): HamiltonianChain = {
-    val initialParams = hParams.nextIteration
+    val initialParams = hParams.nextIteration(stepSize)
     val finalParams = (1 to nSteps)
       .foldLeft(initialParams) {
-        case (params, _) => integrator.step(params, stepSize)
+        case (params, _) => integrator.step(params)
       }
     val logAcceptanceProb = initialParams.logAcceptanceProb(finalParams)
     val (newParams, newAccepted) = {
@@ -45,9 +45,7 @@ private object HamiltonianChain {
 
   def apply(variables: Seq[Variable], density: Real)(
       implicit rng: RNG): HamiltonianChain = {
-    val negativeDensity = density * -1
-    val cf = Compiler.default.compileGradient(variables, negativeDensity)
-    val integrator = LeapFrogIntegrator(variables.size, cf)
+    val integrator = LeapFrogIntegrator(variables, density)
     val hParams = integrator.initialize
     HamiltonianChain(true, 1.0, hParams, integrator)
   }
