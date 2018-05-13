@@ -50,3 +50,45 @@ private object HamiltonianChain {
     HamiltonianChain(true, 1.0, hParams, integrator)
   }
 }
+
+class HParams(
+    qs: Array[Double],
+    ps: Array[Double],
+    gradPotential: Array[Double],
+    potential: Double,
+    stepSize: Double
+) {
+
+  /**
+    * This is the dot product (ps^T ps).
+    * The fancier variations of HMC involve changing this kinetic term
+    * to either take the dot product with respect to a non-identity matrix (ps^T M ps)
+    * (a non-standard Euclidean metric) or a matrix that depends on the qs
+    * (ps^T M(qs) ps) (a Riemannian metric)
+    */
+  private val kinetic = ps.map { p =>
+    p * p
+  }.sum / 2
+
+  val hamiltonian = kinetic + potential
+
+  def logAcceptanceProb(nextParams: HParams): Double = {
+    val deltaH = nextParams.hamiltonian - this.hamiltonian
+    if (deltaH.isNaN) { Math.log(0.0) } else { (-deltaH).min(0.0) }
+  }
+
+  def nextIteration(newStepSize: Double)(implicit rng: RNG): HParams = {
+    val newPs = qs.map { _ =>
+      rng.standardNormal
+    }
+    new HParams(qs, newPs, gradPotential, potential, newStepSize)
+  }
+
+  def stepSize(newStepSize: Double): HParams =
+    new HParams(qs, ps, gradPotential, potential, newStepSize)
+
+  def variables = qs
+
+  def toArray: Array[Double] =
+    stepSize +: potential +: (qs ++ ps ++ gradPotential)
+}
