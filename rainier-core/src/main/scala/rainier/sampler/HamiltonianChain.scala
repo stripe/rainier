@@ -16,8 +16,7 @@ private case class HamiltonianChain(
   }
 
   def nextHMC(stepSize: Double, nSteps: Int): HamiltonianChain = {
-    val initialParams =
-      HParams(hParams.qs, hParams.gradPotential, hParams.potential)
+    val initialParams = hParams.nextIteration
     val finalParams = (1 to nSteps)
       .foldLeft(initialParams) {
         case (params, _) => integrator.step(params, stepSize)
@@ -36,20 +35,10 @@ private case class HamiltonianChain(
     )
   }
 
-  def nextNUTS(stepSize: Double, maxDepth: Int): HamiltonianChain = {
-    val initialParams =
-      HParams(hParams.qs, hParams.gradPotential, hParams.potential)
-    val newParams =
-      NUTSStep(initialParams, stepSize, integrator, maxDepth).run
-    val newAccepted = (hParams.qs != newParams.qs)
-    copy(
-      hParams = newParams,
-      accepted = newAccepted
-    )
-  }
-
   def logAcceptanceProb(nextChain: HamiltonianChain): Double =
     this.hParams.logAcceptanceProb(nextChain.hParams)
+
+  def variables = hParams.variables
 }
 
 private object HamiltonianChain {
@@ -58,60 +47,8 @@ private object HamiltonianChain {
       implicit rng: RNG): HamiltonianChain = {
     val negativeDensity = density * -1
     val cf = Compiler.default.compileGradient(variables, negativeDensity)
-    val hParams = initialize(variables.size, cf)
     val integrator = LeapFrogIntegrator(variables.size, cf)
+    val hParams = integrator.initialize
     HamiltonianChain(true, 1.0, hParams, integrator)
-  }
-
-  def initialize(nVars: Int, cf: Array[Double] => (Double, Array[Double]))(
-      implicit rng: RNG): HParams = {
-    val qs = 1
-      .to(nVars)
-      .map { v =>
-        rng.standardNormal
-      }
-      .toArray
-
-    val (potential, gradPotential) = cf(qs)
-
-    HParams(qs, gradPotential, potential)
-  }
-}
-
-private case class HParams(
-    qs: Array[Double],
-    ps: Array[Double],
-    gradPotential: Array[Double],
-    potential: Double
-) {
-
-  /**
-    * This is the dot product (ps^T ps).
-    * The fancier variations of HMC involve changing this kinetic term
-    * to either take the dot product with respect to a non-identity matrix (ps^T M ps)
-    * (a non-standard Euclidean metric) or a matrix that depends on the qs
-    * (ps^T M(qs) ps) (a Riemannian metric)
-    */
-  private val kinetic = ps.map { p =>
-    p * p
-  }.sum / 2
-
-  val hamiltonian = kinetic + potential
-
-  def logAcceptanceProb(nextParams: HParams): Double = {
-    val deltaH = nextParams.hamiltonian - this.hamiltonian
-    if (deltaH.isNaN) { Math.log(0.0) } else { (-deltaH).min(0.0) }
-  }
-}
-
-private object HParams {
-
-  def apply(qs: Array[Double], gradPotential: Array[Double], potential: Double)(
-      implicit rng: RNG): HParams = {
-    val ps = qs.map { _ =>
-      rng.standardNormal
-    }
-
-    HParams(qs, ps, gradPotential, potential)
   }
 }
