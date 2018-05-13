@@ -2,16 +2,54 @@ package rainier.sampler
 
 import rainier.compute._
 
+private trait HamiltonianIntegrator {
+  def step(hParams: HParams, stepSize: Double): HParams
+}
+
+class HParams(
+    qs: Array[Double],
+    ps: Array[Double],
+    gradPotential: Array[Double],
+    potential: Double
+) {
+
+  /**
+    * This is the dot product (ps^T ps).
+    * The fancier variations of HMC involve changing this kinetic term
+    * to either take the dot product with respect to a non-identity matrix (ps^T M ps)
+    * (a non-standard Euclidean metric) or a matrix that depends on the qs
+    * (ps^T M(qs) ps) (a Riemannian metric)
+    */
+  private val kinetic = ps.map { p =>
+    p * p
+  }.sum / 2
+
+  val hamiltonian = kinetic + potential
+
+  def logAcceptanceProb(nextParams: HParams): Double = {
+    val deltaH = nextParams.hamiltonian - this.hamiltonian
+    if (deltaH.isNaN) { Math.log(0.0) } else { (-deltaH).min(0.0) }
+  }
+
+  def nextIteration(implicit rng: RNG): HParams = {
+    val newPs = qs.map { _ =>
+      rng.standardNormal
+    }
+    new HParams(qs, newPs, gradPotential, potential)
+  }
+
+  def variables = qs
+
+  def toArray: Array[Double] =
+    potential +: (qs ++ ps ++ gradPotential)
+}
+
 /**
   * The Hamiltonian update algorithm is called leapfrog:
   * we make a half-step to update the ps,
   * a full step to update the qs with the half-updated ps,
   * then another half step to update the ps using the new qs.
   */
-private trait HamiltonianIntegrator {
-  def step(hParams: HParams, stepSize: Double): HParams
-}
-
 private case class LeapFrogIntegrator(
     nVars: Int,
     cf: Array[Double] => (Double, Array[Double]))
@@ -88,15 +126,26 @@ private case class LeapFrogIntegrator(
   }
 
   def step(hParams: HParams, stepSize: Double): HParams = {
-    val inputArray =
-      stepSize +: hParams.potential +: (hParams.qs ++ hParams.ps ++ hParams.gradPotential)
+    val inputArray = stepSize +: hParams.toArray
     val (_, newPotential, newQs, newPs, newGrad) = componentsArray(
       leapFrogCF(inputArray))
-    hParams.copy(
-      potential = newPotential,
-      qs = newQs,
-      ps = newPs,
-      gradPotential = newGrad
-    )
+    new HParams(newQs, newPs, newGrad, newPotential)
+  }
+
+  def initialize(implicit rng: RNG): HParams = {
+    val qs = 1
+      .to(nVars)
+      .map { v =>
+        rng.standardNormal
+      }
+      .toArray
+
+    val ps = qs.map { _ =>
+      rng.standardNormal
+    }
+
+    val (potential, gradPotential) = cf(qs)
+
+    new HParams(qs, ps, gradPotential, potential)
   }
 }
