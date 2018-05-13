@@ -60,10 +60,11 @@ private object DualAvg {
       shrinkageTarget = Math.log(10 * stepSize)
     )
 
-  def findStepSize(chain: HamiltonianChain,
-                   delta: Double,
-                   lambda: Double,
-                   iterations: Int): (HamiltonianChain, Double) = {
+  def findStepSize(
+      chain: HamiltonianChain,
+      delta: Double,
+      lambda: Double,
+      iterations: Int)(implicit rng: RNG): (HamiltonianChain, Double) = {
     val stepSize0 = findReasonableStepSize(chain)
     val dualAvg = DualAvg(delta, lambda, stepSize0)
     def go(chain: HamiltonianChain,

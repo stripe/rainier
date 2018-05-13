@@ -15,7 +15,7 @@ case class HMC(nSteps: Int, initialStepSize: Double = 1.0) extends Sampler {
 
   private def toStream(density: Real,
                        chain: HamiltonianChain,
-                       stepSize: Double): Stream[Sample] =
+                       stepSize: Double)(implicit rng: RNG): Stream[Sample] =
     Sample(chain.accepted, chain.variables) #:: toStream(
       density,
       chain.nextHMC(stepSize, nSteps),
