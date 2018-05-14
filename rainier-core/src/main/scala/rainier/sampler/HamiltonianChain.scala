@@ -4,22 +4,20 @@ import rainier.compute._
 
 private case class HamiltonianChain(accepted: Boolean,
                                     acceptanceProb: Double,
-                                    hParams: HParams) {
+                                    hParams: HParams,
+                                    lf: LeapFrog) {
 
   // Take a single leapfrog step without re-initializing momenta
   // for use in tuning the step size
   def stepOnce(stepSize: Double): HamiltonianChain = {
-    val newParams = hParams.stepSize(stepSize).step
+    val newParams = lf.steps(1, hParams.stepSize(stepSize))
     copy(hParams = newParams)
   }
 
   def nextHMC(stepSize: Double, nSteps: Int)(
       implicit rng: RNG): HamiltonianChain = {
     val initialParams = hParams.nextIteration(stepSize)
-    val finalParams = (1 to nSteps)
-      .foldLeft(initialParams) {
-        case (params, _) => params.step
-      }
+    val finalParams = lf.steps(nSteps, initialParams)
     val logAcceptanceProb = initialParams.logAcceptanceProb(finalParams)
     val (newParams, newAccepted) = {
       if (Math.log(rng.standardUniform) < logAcceptanceProb)
@@ -41,23 +39,24 @@ private case class HamiltonianChain(accepted: Boolean,
 }
 
 private object HamiltonianChain {
-
   def apply(variables: Seq[Variable], density: Real)(
       implicit rng: RNG): HamiltonianChain = {
-    val hParams = HParams.initialize(variables.toList, density)
-    HamiltonianChain(true, 1.0, hParams)
+    val lf = LeapFrog(variables.toList, density)
+    val hParams = lf.initialize
+    HamiltonianChain(true, 1.0, hParams, lf)
   }
 }
 
 /*
 array(0..(n-1)) == ps
 array(n..(n*2-1)) == qs
-array(n*2..(n*3-1)) == gradPotential
-array(n*3) == potential
-array(n*3+1) == stepSize
+array(n*2) == potential
+array(n*2+1) == stepSize
  */
-class HParams(array: Array[Double], lf: Array[Double] => Array[Double]) {
-  val n = (array.size - 2) / 3
+case class HParams(array: Array[Double]) {
+  val n = (array.size - 2) / 2
+  def potentialIndex = n * 2
+  def stepSizeIndex = potentialIndex + 1
 
   /**
     * This is the dot product (ps^T ps).
@@ -77,7 +76,7 @@ class HParams(array: Array[Double], lf: Array[Double] => Array[Double]) {
     k / 2.0
   }
 
-  private def potential = array(n * 3)
+  private def potential = array(potentialIndex)
 
   def logAcceptanceProb(nextParams: HParams): Double = {
     val deltaH = nextParams.kinetic + nextParams.potential - kinetic - potential
@@ -91,14 +90,14 @@ class HParams(array: Array[Double], lf: Array[Double] => Array[Double]) {
       newArray(i) = rng.standardNormal
       i += 1
     }
-    newArray(n * 3 + 1) = newStepSize
-    new HParams(newArray, lf)
+    newArray(stepSizeIndex) = newStepSize
+    HParams(newArray)
   }
 
   def stepSize(newStepSize: Double): HParams = {
     val newArray = array.clone
-    newArray(n * 3 + 1) = newStepSize
-    new HParams(newArray, lf)
+    newArray(stepSizeIndex) = newStepSize
+    HParams(newArray)
   }
 
   def variables: Array[Double] = {
@@ -110,58 +109,79 @@ class HParams(array: Array[Double], lf: Array[Double] => Array[Double]) {
     }
     newArray
   }
-
-  def step: HParams =
-    new HParams(lf(array), lf)
 }
 
-object HParams {
-  def initialize(qs: List[Variable], density: Real)(
-      implicit rng: RNG): HParams = {
-    val array = new Array[Double](qs.size * 3 + 2)
-    var i = qs.size
-    val j = qs.size * 2
+private class LeapFrog(
+    nVars: Int,
+    initialHalfThenFullStep: Array[Double] => Array[Double],
+    twoFullSteps: Array[Double] => Array[Double],
+    finalHalfStep: Array[Double] => Array[Double]
+) {
+  def steps(n: Int, input: HParams): HParams = {
+    var result = initialHalfThenFullStep(input.array)
+    var i = 1
+    while (i < n) {
+      result = twoFullSteps(result)
+      i += 1
+    }
+    HParams(finalHalfStep(result))
+  }
+
+  //we want the invariant that an HParams always has the potential which
+  //matches the qs. That means when we initialize a new one
+  //we need to compute the potential. We can do that (slightly wastefully)
+  //by using initialHalfThenFullStep with a stepSize of 0.0
+  def initialize(implicit rng: RNG): HParams = {
+    val array = new Array[Double](nVars * 2 + 2)
+    var i = nVars
+    val j = nVars * 2
     while (i < j) {
       array(i) = rng.standardNormal
       i += 1
     }
-
-    val lf = compileLeapFrog(qs, density)
-    new HParams(lf(array), lf)
+    HParams(initialHalfThenFullStep(array)).nextIteration(0.0)
   }
+}
 
-  private def compileLeapFrog(qs: List[Variable],
-                              density: Real): Array[Double] => Array[Double] = {
+private object LeapFrog {
+  def apply(qs: List[Variable], density: Real): LeapFrog = {
     val ps = qs.map { _ =>
-      new Variable
-    }
-    val grad = qs.map { _ =>
       new Variable
     }
     val potential = new Variable
     val stepSize = new Variable
-    val inputs: List[Variable] = (ps ++ qs ++ grad) :+ potential :+ stepSize
-
-    val newPs =
-      ps.zip(grad).map { case (p, g) => p - (stepSize / 2) * g }
-
-    val newQs =
-      qs.zip(newPs).map { case (q, p) => q + (stepSize * p) }
-
-    val halfStepThenFullStepOutputs: List[Real] =
-      (newPs ++ newQs ++ grad) :+ potential :+ stepSize
+    val inputs: List[Variable] = (ps ++ qs) :+ potential :+ stepSize
 
     val newPotential = density * -1
-    val newGrad = newPotential.gradient
+    val grad = newPotential.gradient
 
-    val newNewPs =
-      ps.zip(newGrad).map { case (p, g) => p - (stepSize / 2) * g }
+    val halfPs =
+      ps.zip(newPotential.gradient).map {
+        case (p, g) => p - (stepSize / 2) * g
+      }
+    val halfPsNewQs =
+      qs.zip(halfPs).map { case (q, p) => q + (stepSize * p) }
 
-    val newGradThenHalfStepOutputs: List[Real] =
-      (newNewPs ++ qs ++ newGrad) :+ newPotential :+ stepSize
+    val initialHalfThenFullStep =
+      (halfPs ++ halfPsNewQs) :+ newPotential :+ stepSize
 
-    val cf1 = Compiler.default.compile(inputs, halfStepThenFullStepOutputs)
-    val cf2 = Compiler.default.compile(inputs, newGradThenHalfStepOutputs)
-    cf1.andThen(cf2)
+    val fullPs =
+      ps.zip(grad).map { case (p, g) => p - stepSize * g }
+
+    val fullPsNewQs =
+      qs.zip(fullPs).map { case (q, p) => q + (stepSize * p) }
+
+    val twoFullSteps =
+      (fullPs ++ fullPsNewQs) :+ newPotential :+ stepSize
+
+    val finalHalfStep =
+      (halfPs ++ qs) :+ newPotential :+ stepSize
+
+    new LeapFrog(
+      qs.size,
+      Compiler.default.compile(inputs, initialHalfThenFullStep),
+      Compiler.default.compile(inputs, twoFullSteps),
+      Compiler.default.compile(inputs, finalHalfStep)
+    )
   }
 }

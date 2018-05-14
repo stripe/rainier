@@ -63,10 +63,10 @@ private object DualAvg {
   def findStepSize(
       chain: HamiltonianChain,
       delta: Double,
-      lambda: Double,
+      nSteps: Int,
       iterations: Int)(implicit rng: RNG): (HamiltonianChain, Double) = {
     val stepSize0 = findReasonableStepSize(chain)
-    val dualAvg = DualAvg(delta, lambda, stepSize0)
+    val dualAvg = DualAvg(delta, nSteps * stepSize0, stepSize0)
     def go(chain: HamiltonianChain,
            dualAvg: DualAvg,
            remaining: Int): (HamiltonianChain, DualAvg) = {

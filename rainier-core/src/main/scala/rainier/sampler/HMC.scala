@@ -2,13 +2,13 @@ package rainier.sampler
 
 import rainier.compute._
 
-case class HMC(nSteps: Int, initialStepSize: Double = 1.0) extends Sampler {
+case class HMC(nSteps: Int) extends Sampler {
   def sample(density: Real, warmupIterations: Int)(
       implicit rng: RNG): Stream[Sample] = {
     val (tunedChain, tunedStepSize) =
       DualAvg.findStepSize(HamiltonianChain(density.variables, density),
                            0.65,
-                           nSteps * initialStepSize,
+                           nSteps,
                            warmupIterations)
     toStream(density, tunedChain, tunedStepSize)
   }
