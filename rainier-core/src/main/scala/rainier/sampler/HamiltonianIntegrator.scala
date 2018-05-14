@@ -2,21 +2,22 @@ package rainier.sampler
 
 import rainier.compute._
 
+private trait HamiltonianIntegrator {
+  def step(hParams: HParams): HParams
+}
+
 /**
   * The Hamiltonian update algorithm is called leapfrog:
   * we make a half-step to update the ps,
   * a full step to update the qs with the half-updated ps,
   * then another half step to update the ps using the new qs.
   */
-private trait HamiltonianIntegrator {
-  def step(hParams: HParams, stepSize: Double): HParams
-}
-
-private case class LeapFrogIntegrator(
-    nVars: Int,
-    cf: Array[Double] => (Double, Array[Double]))
+private case class LeapFrogIntegrator(variables: Seq[Variable], density: Real)
     extends HamiltonianIntegrator {
 
+  val negativeDensity = density * -1
+  val cf = Compiler.default.compileGradient(variables, negativeDensity)
+  val nVars = variables.size
   val stepSize = new Variable
   val potential = new Variable
   val qs = (1 to nVars).map { _ =>
@@ -87,16 +88,27 @@ private case class LeapFrogIntegrator(
     cf2(stepSize +: potential +: (newQs ++ halfNewPs ++ grad))
   }
 
-  def step(hParams: HParams, stepSize: Double): HParams = {
-    val inputArray =
-      stepSize +: hParams.potential +: (hParams.qs ++ hParams.ps ++ hParams.gradPotential)
-    val (_, newPotential, newQs, newPs, newGrad) = componentsArray(
+  def step(hParams: HParams): HParams = {
+    val inputArray = hParams.toArray
+    val (stepSize, newPotential, newQs, newPs, newGrad) = componentsArray(
       leapFrogCF(inputArray))
-    hParams.copy(
-      potential = newPotential,
-      qs = newQs,
-      ps = newPs,
-      gradPotential = newGrad
-    )
+    new HParams(newQs, newPs, newGrad, newPotential, stepSize)
+  }
+
+  def initialize(implicit rng: RNG): HParams = {
+    val qs = 1
+      .to(nVars)
+      .map { v =>
+        rng.standardNormal
+      }
+      .toArray
+
+    val ps = qs.map { _ =>
+      0.0
+    }
+
+    val (potential, gradPotential) = cf(qs)
+
+    new HParams(qs, ps, gradPotential, potential, 0.0)
   }
 }

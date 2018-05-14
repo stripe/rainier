@@ -11,16 +11,15 @@ private case class HamiltonianChain(
   // Take a single leapfrog step without re-initializing momenta
   // for use in tuning the step size
   def stepOnce(stepSize: Double): HamiltonianChain = {
-    val newParams = integrator.step(hParams, stepSize)
+    val newParams = integrator.step(hParams.stepSize(stepSize))
     copy(hParams = newParams)
   }
 
   def nextHMC(stepSize: Double, nSteps: Int): HamiltonianChain = {
-    val initialParams =
-      HParams(hParams.qs, hParams.gradPotential, hParams.potential)
+    val initialParams = hParams.nextIteration(stepSize)
     val finalParams = (1 to nSteps)
       .foldLeft(initialParams) {
-        case (params, _) => integrator.step(params, stepSize)
+        case (params, _) => integrator.step(params)
       }
     val logAcceptanceProb = initialParams.logAcceptanceProb(finalParams)
     val (newParams, newAccepted) = {
@@ -36,53 +35,28 @@ private case class HamiltonianChain(
     )
   }
 
-  def nextNUTS(stepSize: Double, maxDepth: Int): HamiltonianChain = {
-    val initialParams =
-      HParams(hParams.qs, hParams.gradPotential, hParams.potential)
-    val newParams =
-      NUTSStep(initialParams, stepSize, integrator, maxDepth).run
-    val newAccepted = (hParams.qs != newParams.qs)
-    copy(
-      hParams = newParams,
-      accepted = newAccepted
-    )
-  }
-
   def logAcceptanceProb(nextChain: HamiltonianChain): Double =
     this.hParams.logAcceptanceProb(nextChain.hParams)
+
+  def variables = hParams.variables
 }
 
 private object HamiltonianChain {
 
   def apply(variables: Seq[Variable], density: Real)(
       implicit rng: RNG): HamiltonianChain = {
-    val negativeDensity = density * -1
-    val cf = Compiler.default.compileGradient(variables, negativeDensity)
-    val hParams = initialize(variables.size, cf)
-    val integrator = LeapFrogIntegrator(variables.size, cf)
+    val integrator = LeapFrogIntegrator(variables, density)
+    val hParams = integrator.initialize
     HamiltonianChain(true, 1.0, hParams, integrator)
-  }
-
-  def initialize(nVars: Int, cf: Array[Double] => (Double, Array[Double]))(
-      implicit rng: RNG): HParams = {
-    val qs = 1
-      .to(nVars)
-      .map { v =>
-        rng.standardNormal
-      }
-      .toArray
-
-    val (potential, gradPotential) = cf(qs)
-
-    HParams(qs, gradPotential, potential)
   }
 }
 
-private case class HParams(
+class HParams(
     qs: Array[Double],
     ps: Array[Double],
     gradPotential: Array[Double],
-    potential: Double
+    potential: Double,
+    stepSize: Double
 ) {
 
   /**
@@ -102,16 +76,19 @@ private case class HParams(
     val deltaH = nextParams.hamiltonian - this.hamiltonian
     if (deltaH.isNaN) { Math.log(0.0) } else { (-deltaH).min(0.0) }
   }
-}
 
-private object HParams {
-
-  def apply(qs: Array[Double], gradPotential: Array[Double], potential: Double)(
-      implicit rng: RNG): HParams = {
-    val ps = qs.map { _ =>
+  def nextIteration(newStepSize: Double)(implicit rng: RNG): HParams = {
+    val newPs = qs.map { _ =>
       rng.standardNormal
     }
-
-    HParams(qs, ps, gradPotential, potential)
+    new HParams(qs, newPs, gradPotential, potential, newStepSize)
   }
+
+  def stepSize(newStepSize: Double): HParams =
+    new HParams(qs, ps, gradPotential, potential, newStepSize)
+
+  def variables = qs
+
+  def toArray: Array[Double] =
+    stepSize +: potential +: (qs ++ ps ++ gradPotential)
 }
