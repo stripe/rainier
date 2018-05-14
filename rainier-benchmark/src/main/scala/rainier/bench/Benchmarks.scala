@@ -74,6 +74,20 @@ object Benchmarks {
       model.density
     }
   }
+  @State(Scope.Benchmark)
+  class BernoulliBenchmark extends BenchmarkState {
+    def expression = {
+      val data =
+        List(false, true, false, false, false, false, false, false, false, true)
+
+      val model = for {
+        theta <- Uniform.standard.param
+        _ <- Categorical.boolean(theta).fit(data)
+      } yield theta
+
+      model.density
+    }
+  }
 }
 
 @Warmup(iterations = 3)
@@ -134,6 +148,16 @@ class Benchmarks {
 
   @Benchmark
   def endToEndNormalHMC(state: NormalBenchmark): Unit = {
+    state.endToEndHMC(5)
+  }
+
+  @Benchmark
+  def runBernoulliGradient(state: BernoulliBenchmark): Unit = {
+    state.runGradient
+  }
+
+  @Benchmark
+  def endToEndBernoulli(state: BernoulliBenchmark): Unit = {
     state.endToEndHMC(5)
   }
 }
