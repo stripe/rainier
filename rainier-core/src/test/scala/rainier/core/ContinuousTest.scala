@@ -9,13 +9,15 @@ class ContinuousTest extends FunSuite {
 
   def check(description: String)(fn: Real => Continuous) = {
     println(description)
-    List((Walkers(100), 10000), (HMC(10), 1000)).foreach {
+    List( /*(Walkers(100), 10000),*/ (HMC(10), 1000)).foreach {
       case (sampler, iterations) =>
         println((sampler, iterations))
         List(0.1, 1.0, 2.0).foreach { trueValue =>
+          println(trueValue)
           val trueDist = fn(Real(trueValue))
           val syntheticData =
             RandomVariable(trueDist.generator).sample().take(1000)
+          println("sampled data")
           val sampledData =
             trueDist.param.sample(sampler, iterations, iterations)
           val model =
@@ -23,8 +25,9 @@ class ContinuousTest extends FunSuite {
               x <- LogNormal(0, 1).param
               _ <- fn(x).fit(syntheticData)
             } yield x
+          println("fit data")
           val fitValues = model.sample(sampler, iterations, iterations)
-
+          println("done")
           val syntheticMean = syntheticData.sum / syntheticData.size
           val syntheticStdDev = Math.sqrt(syntheticData.map { n =>
             Math.pow(n - syntheticMean, 2)
@@ -47,7 +50,7 @@ class ContinuousTest extends FunSuite {
         }
     }
   }
-
+  /*
   check("Normal(x,x)") { x =>
     Normal(x, x)
   }
@@ -59,12 +62,21 @@ class ContinuousTest extends FunSuite {
   check("Exponential(x)") { x =>
     Exponential(x)
   }
+   */
   /*
   check("Uniform(x,x*2)") { x =>
     Uniform(x, x * 2)
   }
    */
+  /*
   check("Laplace(x,x)") { x =>
     Laplace(x, x)
+  }
+   */
+  check("Beta(1,x)") { x =>
+    Beta(1, x)
+  }
+  check("Beta(x,x)") { x =>
+    Beta(x, x)
   }
 }

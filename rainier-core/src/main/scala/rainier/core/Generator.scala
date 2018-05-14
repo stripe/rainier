@@ -24,6 +24,12 @@ trait Generator[T] { self =>
       self.get
     }
   }
+
+  def zip[U](other: Generator[U]): Generator[(T, U)] = new Generator[(T, U)] {
+    val requirements = self.requirements ++ other.requirements
+    def get(implicit r: RNG, n: Numeric[Real]) =
+      (self.get, other.get)
+  }
 }
 
 object Generator {

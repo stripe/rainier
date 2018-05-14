@@ -17,7 +17,7 @@ private case class DualAvg(
 ) {
   val stepSize = Math.exp(logStepSize)
   val finalStepSize = Math.exp(logStepSizeBar)
-  val nSteps = (lambda / Math.exp(logStepSize)).toInt.max(1)
+  val nSteps = 10 //(lambda / Math.exp(logStepSize)).toInt.max(1)
 
   def update(newAcceptanceProb: Double): DualAvg = {
     val newIteration = iteration + 1
@@ -89,7 +89,8 @@ private object DualAvg {
 
   private def continueTuningStepSize(logAcceptanceProb: Double,
                                      exponent: Double): Boolean =
-    exponent * logAcceptanceProb > -exponent * Math.log(2)
+    !logAcceptanceProb.isNegInfinity &&
+      (exponent * logAcceptanceProb > -exponent * Math.log(2))
 
   @tailrec
   private def tuneStepSize(

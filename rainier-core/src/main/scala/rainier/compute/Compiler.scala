@@ -35,7 +35,9 @@ case class InstrumentingCompiler(orig: Compiler, printEvery: Int)
       val t2 = System.nanoTime
       nanos += (t2 - t1)
       if (count % printEvery == 0) {
-        println(s"[InstrumentingCompiler] $count runs, ${nanos / count} ns/run")
+        println(
+          s"[InstrumentingCompiler] $count runs, ${nanos / printEvery} ns/run")
+        nanos = 0L
       }
       result
     }

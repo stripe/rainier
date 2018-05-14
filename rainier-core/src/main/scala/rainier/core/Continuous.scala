@@ -136,3 +136,29 @@ object Uniform {
   def apply(from: Real, to: Real): Continuous =
     standard.scale(to - from).translate(from)
 }
+
+object Beta {
+  def apply(a: Real, b: Real) = new Continuous {
+    def realLogDensity(real: Real) = {
+      val density =
+        (a - 1) * real.log +
+          (b - 1) * (1 - real).log +
+          Combinatrics.gamma(a + b) -
+          Combinatrics.gamma(a) -
+          Combinatrics.gamma(b)
+
+      If(real >= 0, If(real <= 1, density, Real.zero.log), Real.zero.log)
+    }
+
+    val generator =
+      Gamma
+        .standard(a)
+        .generator
+        .zip(Gamma.standard(b).generator)
+        .map { case (x, y) => x / (x + y) }
+
+    def param = Uniform.standard.param.flatMap { x =>
+      RandomVariable(x, realLogDensity(x))
+    }
+  }
+}

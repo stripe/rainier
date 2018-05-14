@@ -15,6 +15,7 @@ private case class HamiltonianChain(accepted: Boolean,
 
   def nextHMC(stepSize: Double, nSteps: Int)(
       implicit rng: RNG): HamiltonianChain = {
+//    println("STEPS " + nSteps)
     val initialParams = hParams.nextIteration(stepSize)
     val finalParams = (1 to nSteps)
       .foldLeft(initialParams) {
