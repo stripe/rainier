@@ -4,6 +4,7 @@ import org.openjdk.jmh.annotations._
 
 import rainier.compute._
 import rainier.core._
+import rainier.sampler._
 
 object Benchmarks {
   trait BenchmarkState {
@@ -12,13 +13,30 @@ object Benchmarks {
     val vars = expr.variables
 
     val a = compileAsm
+    val g = asm.IRCompiler.compileGradient(vars, expr)
 
-    val rand = new scala.util.Random
+    implicit val rng = RNG.default
     def runAsm =
       a(vars.map { _ =>
-        rand.nextDouble
+        rng.standardUniform
+      }.toArray)
+    def runGradient =
+      a(vars.map { _ =>
+        rng.standardUniform
       }.toArray)
     def compileAsm = asm.IRCompiler.compile(vars, expr)
+    def sampleHMC(steps: Int) =
+      HMC(steps).sample(expr, 1000).take(10000).toList
+    def sampleWalkers(walkers: Int) =
+      Walkers(walkers).sample(expr, 1000).take(10000).toList
+    def endToEndHMC(steps: Int) = {
+      val d = expression
+      RandomVariable(d, d).sample(HMC(steps), 1000, 10000)
+    }
+    def endToEndWalkers(walkers: Int) = {
+      val d = expression
+      RandomVariable(d, d).sample(Walkers(walkers), 1000, 10000)
+    }
   }
 
   @State(Scope.Benchmark)
@@ -80,6 +98,11 @@ class Benchmarks {
   }
 
   @Benchmark
+  def runNormalGradient(state: NormalBenchmark): Unit = {
+    state.runGradient
+  }
+
+  @Benchmark
   def compileNormalAsm(state: NormalBenchmark): Unit = {
     state.compileAsm
   }
@@ -92,5 +115,25 @@ class Benchmarks {
   @Benchmark
   def compilePoissonAsm(state: PoissonBenchmark): Unit = {
     state.compileAsm
+  }
+
+  @Benchmark
+  def sampleNormalWalkers(state: NormalBenchmark): Unit = {
+    state.sampleWalkers(100)
+  }
+
+  @Benchmark
+  def sampleNormalHMC(state: NormalBenchmark): Unit = {
+    state.sampleHMC(5)
+  }
+
+  @Benchmark
+  def endToEndNormalWalkers(state: NormalBenchmark): Unit = {
+    state.endToEndWalkers(100)
+  }
+
+  @Benchmark
+  def endToEndNormalHMC(state: NormalBenchmark): Unit = {
+    state.endToEndHMC(5)
   }
 }
