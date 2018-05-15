@@ -1,5 +1,7 @@
 package rainier.compute
 
+import rainier.ir._
+
 private object RealOps {
 
   def unary(original: Real, op: UnaryOp): Real =

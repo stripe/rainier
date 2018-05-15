@@ -1,5 +1,7 @@
 package rainier.compute
 
+import rainier.ir
+
 /*
 A Real is a DAG which represents a mathematical function
 from 0 or more real-valued input parameters to a single real-valued output.
@@ -23,11 +25,11 @@ sealed trait Real {
   def pow[N](exponent: N)(implicit num: Numeric[N]): Real =
     RealOps.pow(this, num.toDouble(exponent))
 
-  def exp: Real = RealOps.unary(this, ExpOp)
-  def log: Real = RealOps.unary(this, LogOp)
+  def exp: Real = RealOps.unary(this, ir.ExpOp)
+  def log: Real = RealOps.unary(this, ir.LogOp)
 
   //because abs does not have a smooth derivative, try to avoid using it
-  def abs: Real = RealOps.unary(this, AbsOp)
+  def abs: Real = RealOps.unary(this, ir.AbsOp)
 
   def >(other: Real): Real = RealOps.isPositive(this - other)
   def <(other: Real): Real = RealOps.isNegative(this - other)
@@ -49,20 +51,31 @@ object Real {
 
   val zero: Real = Real(0.0)
   val one: Real = Real(1.0)
+
+  //print out Scala code that is equivalent to what the Compiler
+  //would produce as JVM bytecode
+  def trace(reals: Seq[Real]): Unit = {
+    val translator = new Translator
+    val irs = reals.map { r =>
+      translator.toIR(r)
+    }
+    val params = reals.flatMap(_.variables.toSet).toList.map(_.param)
+    ir.Tracer.trace(params, irs)
+  }
+
+  def trace(real: Real): Unit = trace(List(real))
 }
 
 private case class Constant(value: Double) extends Real
 
 sealed trait NonConstant extends Real
 
-class Variable extends NonConstant
+class Variable extends NonConstant {
+  private[compute] val param = new ir.Parameter
+}
 
-private case class Unary(original: NonConstant, op: UnaryOp) extends NonConstant
-
-private sealed trait UnaryOp
-private case object ExpOp extends UnaryOp
-private case object LogOp extends UnaryOp
-private case object AbsOp extends UnaryOp
+private case class Unary(original: NonConstant, op: ir.UnaryOp)
+    extends NonConstant
 
 /*
 This node type represents any linear transformation from an input vector to an output

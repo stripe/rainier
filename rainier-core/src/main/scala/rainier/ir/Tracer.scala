@@ -1,15 +1,7 @@
-package rainier.compute.asm
+package rainier.ir
 
-import rainier.compute._
-
-object IRTracer {
-  def trace(output: Real): Unit = trace(output.variables, List(output))
-
-  def trace(inputs: Seq[Variable], outputs: Seq[Real]): Unit = {
-    val translator = new Translator
-    val irs = outputs.map { real =>
-      translator.toIR(real)
-    }
+object Tracer {
+  def trace(inputs: Seq[Parameter], irs: Seq[IR]): Unit = {
     val packer = new Packer(200)
     val outputMeths = irs.map { ir =>
       packer.pack(ir)
@@ -35,7 +27,7 @@ object IRTracer {
   }
 
   private def trace(method: MethodDef,
-                    inputs: Seq[Variable],
+                    inputs: Seq[Parameter],
                     varTypes: VarTypes): Unit = {
     val varIndices = inputs.zipWithIndex.toMap
 
@@ -47,8 +39,8 @@ object IRTracer {
     def traverse(ir: IR, needsParens: Boolean = false): String = {
       ir match {
         case Const(value) => value.toString
-        case Parameter(variable) =>
-          val i = varIndices(variable)
+        case p: Parameter =>
+          val i = varIndices(p)
           s"params($i)"
         case b: BinaryIR =>
           b.op match {

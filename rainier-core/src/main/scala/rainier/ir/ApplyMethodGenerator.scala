@@ -1,6 +1,4 @@
-package rainier.compute.asm
-
-import rainier.compute._
+package rainier.ir
 
 private case class ApplyMethodGenerator(className: String,
                                         outputMethods: Seq[Int],

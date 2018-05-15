@@ -1,16 +1,12 @@
-package rainier.compute.asm
+package rainier.ir
 
-import rainier.compute._
-
-object IRCompiler extends Compiler {
-  def compile(inputs: Seq[Variable],
-              outputs: Seq[Real]): Array[Double] => Array[Double] = {
+object ClassGenerator {
+  def generate(inputs: Seq[Parameter],
+               irs: Seq[IR],
+               methodSizeLimit: Int,
+               writeToTmpFile: Boolean): Array[Double] => Array[Double] = {
     val className = CompiledClass.freshName
-    val translator = new Translator
-    val irs = outputs.map { real =>
-      translator.toIR(real)
-    }
-    val packer = new Packer(200)
+    val packer = new Packer(methodSizeLimit)
     val outputMeths = irs.map { ir =>
       packer.pack(ir)
     }
@@ -25,7 +21,8 @@ object IRCompiler extends Compiler {
                                        outputMeths.map(_.sym.id),
                                        varTypes.globals.size)
     val cc = new CompiledClass(className, amg.methodNode :: methodNodes.toList)
-    //cc.writeToTmpFile
+    if (writeToTmpFile)
+      cc.writeToTmpFile
     cc.instance.apply(_)
   }
 }

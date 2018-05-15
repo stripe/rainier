@@ -1,6 +1,6 @@
-package rainier.compute.asm
+package rainier.compute
 
-import rainier.compute._
+import rainier.ir._
 
 private class Translator {
   private val binary = new SymCache[BinaryOp]
@@ -8,7 +8,7 @@ private class Translator {
   private val ifs = new SymCache[Unit]
 
   def toIR(r: Real): IR = r match {
-    case v: Variable         => Parameter(v)
+    case v: Variable         => v.param
     case Constant(value)     => Const(value)
     case Unary(original, op) => unaryIR(toIR(original), op)
     case i: If               => ifIR(toIR(i.whenNonZero), toIR(i.whenZero), toIR(i.test))
