@@ -88,6 +88,21 @@ object Benchmarks {
       model.density
     }
   }
+
+  @State(Scope.Benchmark)
+  class FunnelBenchmark extends BenchmarkState {
+    def expression = {
+      val model =
+        for {
+          y <- Normal(0, 3).param
+          x <- RandomVariable.traverse(1.to(9).map { _ =>
+            Normal(0, (y / 2).exp).param
+          })
+        } yield (x(0), y)
+
+      model.density
+    }
+  }
 }
 
 @Warmup(iterations = 3)
@@ -160,4 +175,15 @@ class Benchmarks {
   def endToEndBernoulli(state: BernoulliBenchmark): Unit = {
     state.endToEndHMC(5)
   }
+
+  @Benchmark
+  def runFunnelGradient(state: FunnelBenchmark): Unit = {
+    state.runGradient
+  }
+
+  @Benchmark
+  def endToEndFunnel(state: FunnelBenchmark): Unit = {
+    state.endToEndHMC(5)
+  }
+
 }
