@@ -2,31 +2,35 @@
 
 ## rainier.compute
 
-The core of any rainier model is the joint density function, `P(Θ|x,y)`. This function (and any other real-valued functions of the parameters `Θ`) is expressed in rainier as a `rainier.compute.Real` object. `Real` is similar to TensorFlow's static compute graph: it's a DAG whose root node represents the output of the function and whose leaf nodes are either `Variable` (one for each parameter) or `Constant`. The other nodes are either `BinaryReal` (eg `real1 + real2` will construct a `BinaryReal` referencing both of them and the `+` operator), or `UnaryReal` (eg `real1.log` will construct a `UnaryReal` referencing `real1` and the `log` operation). The number of operations supported is deliberately minimal: the 4 arithmetic operators, along with `log`, `exp`, and `abs`.
+The core of any Rainier model is the joint density function, `P(Θ|x,y)`. This function (and any other real-valued functions of the parameters `Θ`) is expressed in Rainier as a `rainier.compute.Real` object. `Real` is similar to TensorFlow's static compute graph: it's a DAG whose root node represents the output of the function and whose leaf nodes are either `Variable` (one for each parameter) or constant `Double`s, and whose internal nodes represent mathematical operations on these. The number of operations supported is deliberately minimal: the 4 arithmetic operators, along with `log`, `exp`, and `abs`. `Real` also includes the standard comparison operators and a simple `If` expression, though since these introduces discontinuities their use should be limited.
 
-As the `Real` graph is being constructed, the `Pruner` helper object will do some amount of partial evaluation, eg pre-computing operations on constants, or removing multiplications by 1 or subtractions of 0. 
+Unlike TensorFlow, all operations are scalar. Although your models might well involve vectors or other collections of parameters and observations, the underlying compute graph will be expressed purely in terms of scalar values and operations. This choice simplifies the API and the DAG implementation, and is well-suited to targeting CPU-based execution, especially on the JVM where there isn't reliable access to SIMD. In the future, if we want to support execution on GPUs, adding at least some limited vectorization to the API will be valuable.
 
-The `Gradient` helper object uses reverse-mode autodifferentiation to construct the gradient for the `Variable` leaves with respect to the output node (in the form of a new, transformed `Real` for each variable).
+Also unlike TensorFlow, there is no concept of a "placeholder" for observations, or other support for mini-batch execution. Instead, the assumption is that all of your data will fit in memory, and data points are treated just like any other constants in your model. This choice is informed by the typical use of full-batch iterations in MCMC algorithms, as well as the generally smaller data sizes for Bayesian inference compared to Deep Learning applications.
 
-The `Evaluator` will evaluate the value of any `Real`, given a `Map[Variable,Double]` for any referenced variables. It memoizes results, but is not otherwise especially efficient. If (as for the joint density function) you need to evaluate the same `Real` many times, you are better to use the `Compiler` to generate optimized JVM bytecode for a custom `Array[Double] => Array[Double]` function.
+One huge benefit that Rainier gets from this last choice is the ability to partially evaluate the model based on the known observations even when the parameters are still unknown. As the `Real` DAG is being constructed, it will take every opportunity to aggressively pre-compute operations on constants, expand or simplify expressions, and combine common terms, with the goal of minimizing the number of operations that will be needed for each evaluation later on. (For more info on the representation we use to achieve this, see the comments in [rainier-core/src/main/scala/compute/Real.scala](Real.scala)).
 
-It's worth noting that unlike TensorFlow, all operations are scalar. The rationale for this includes: Scala doesn't have reliable access to SIMD; we're deploying within Hadoop tasks which are inherently single threaded and don't have GPUs; and the `Compiler` makes things quite efficient for even large numbers of scalar operations. We've experimented with vectorization in that context but were not able to see performance gains from it. However, it's likely that in the future, we'll want to support GPUs and/or multithreaded CPU, for which adding at least some limited vectorization to the API will be valuable.
+In the extreme, this can reduce what would normally be `O(n)` of work on each iteration into `O(n)` work once, during the partial evaluation, followed by `O(1)` work on each iteration. As a simple example, if you consider computing the L2 loss of a series of known data points vs an unknown estimate `y`, `data.map{x => Math.pow(x - y,2)}.sum`, this can be reduced to an expression of the form `y*a + y*y*b + c`, with known `a`, `b`, `c`, no matter how big `data` is.
 
-Another difference from TF is that there is no concept of a "placeholder" node, because MCMC is generally implemented as full-batch rather than online or mini-batch, and so the data can be treated as `Constant`.
+Since Rainier supports gradient-based sampling and optimization methods, `Real` provides `gradient`, which uses reverse-mode autodifferentiation to construct the gradient for each `Variable` leaf in the DAG with respect to the output node (in the form of a new, transformed `Real` for each variable).
+
+To evaluate a `Real` given parameters `Θ`, you can construct an `Evaluator` containing a `Map[Variable,Double]` with concrete values for each `Variable` leaf. You can reuse this same `Evaluator` to evaluate multiple `Real`s in sequence (for example, a joint density and also the various components of its gradient), and it will memoize and reuse any shared intermediate results. However, if you know you need to evaluate the same set of `Real`s many times, you are much better to use `Compiler`, which will produce an extremely efficient `Array[Double] => Array[Double]` for computing the values of multiple `Real`s given values for the union of their input `Variable`s. This makes use of the `rainier.compute.asm` package to dynamically generate and load a custom `.class` with optimized JVM bytecode for running the computation.
+
+## rainier.compute.asm
+
+
 
 ## rainier.sampler
 
 The `sampler` package depends only on the `compute` representation of a model: a `Sampler` will take a `Real` for the joint density and produce, effectively, a stream of `Evaluator`s that can be used to sample from other functions of the same parameters.
 
-Rainier currently provides the `Emcee` affine-invariant sampler, a `HMC` Hamiltonian sampler, and an experimental and incomplete `NUTS` sampler. It also provides a vanilla gradient descent `MAP` optimizer.
+Rainier currently provides the `Walkers` affine-invariant sampler and the `HMC` Hamiltonian sampler. It also provides a vanilla gradient descent `MAP` optimizer.
 
-`Emcee` is an ensemble-based method that requires no tuning and is suitable for small numbers of parameters (< 10). It is currently the default. The best reference for it is [Foreman-Mackey, Hogg, Lang & Goodman (2012)](https://arxiv.org/abs/1202.3665).
+`Walkers` is an ensemble-based method that is fast and robust for small numbers of parameters (< 10). It is currently the default. The best reference for it is [Foreman-Mackey, Hogg, Lang & Goodman (2012)](https://arxiv.org/abs/1202.3665).
 
-`HMC` is a gradient-based method which requires considerable tuning, but is quite efficient once tuned even for large numbers of parameters. The best reference is [Betancourt (2017)](https://arxiv.org/abs/1701.02434). Our implementation includes the dual-averaging tuning from the NUTS paper, but requires you to manually specify a number of leap-frog steps.
+`HMC` is a gradient-based method which requires some tuning, but is quite efficient once tuned even for large numbers of parameters. The best reference is [Betancourt (2017)](https://arxiv.org/abs/1701.02434). Our implementation includes the dual-averaging automatic tuning of step-size from the [NUTS paper], but requires you to manually specify a number of leap-frog steps. In the future, we plan to implement the full NUTS algorithm to also dynamically select the number of steps.
 
-`NUTS` is a self-tuning variant of Hamiltonian MC ([Hoffman & Gelman (2011)](https://arxiv.org/abs/1111.4246)). Our implementation is currently only the naive, less space-efficient version described in the paper.
-
-The `MAP` gradient descent optimizer is likely more of a demonstration than of practical use.
+The `MAP` gradient descent optimizer is likely more of a demonstration than of practical use, but it does have the virtue of simplicity.
 
 ## rainier.core
 
