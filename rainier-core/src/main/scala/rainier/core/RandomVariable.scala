@@ -54,13 +54,38 @@ class RandomVariable[+T](private val value: T,
       .map(_.head.apply())
       .toList
 
+  def checkConvergence[V](sampler: Sampler,
+                          warmupIterations: Int,
+                          iterations: Int,
+                          chains: Int)(
+      implicit rng: RNG,
+      sampleable: Sampleable[T, V]): (List[V], List[Double]) = {
+    val fn = sampleable.prepare(value, density.variables)
+    val samples = 1.to(chains).par.map { _ =>
+      sampler
+        .sample(density, warmupIterations)
+        .take(iterations)
+        .map { s =>
+          fn(s.parameters)
+        }
+        .toList
+    }
+    val allSamples = samples.toList.flatMap { chain =>
+      chain.map(_._2)
+    }
+    val rHats = Sampler.gelmanRubin(samples.toList.map { chain =>
+      chain.map(_._1)
+    })
+    (allSamples, rHats)
+  }
+
   def toStream[V](sampler: Sampler, warmupIterations: Int)(
       implicit rng: RNG,
       sampleable: Sampleable[T, V]): Stream[() => V] = {
     val fn = sampleable.prepare(value, density.variables)
     sampler.sample(density, warmupIterations).map { s =>
       { () =>
-        fn(s.parameters)
+        fn(s.parameters)._2
       }
     }
   }
