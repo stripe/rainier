@@ -26,15 +26,13 @@ val model = for {
 The starting point for almost any work in Rainier will be some object that implements
 `rainier.core.Distribution[T]`.
 
-These objects represent the various familiar families of probability distributions like the [Normal](https://en.wikipedia.org/wiki/Normal_distribution) distribution,
-the [Uniform](https://en.wikipedia.org/wiki/Uniform_distribution_(continuous)) distribution, and the [Poisson](https://en.wikipedia.org/wiki/Poisson_distribution) distribution. You will find these three in [src/core/Distribution.scala](/src/core/Distribution.scala) and [src/core/Continuous.scala](/src/core/Continuous.scala)- along with a few more, and we'll keep adding them as the need arises.
+Rainier implements various familiar families of probability distributions like the [Normal](https://en.wikipedia.org/wiki/Normal_distribution) distribution,
+the [Uniform](https://en.wikipedia.org/wiki/Uniform_distribution_(continuous)) distribution, and the [Poisson](https://en.wikipedia.org/wiki/Poisson_distribution) distribution. You will find these three in [src/core/Continuous.scala](/src/core/Continuous.scala) and [src/core/Discrete.scala](/src/core/Discrete.scala)- along with a few more, and we'll keep adding them as the need arises.
 
-Distributions are represented as case classes, constructed with the distribution's parameters. So for example, this is a normal distribution with a mean of 0 and a standard deviation of 1:
+You construct a distributions from its parameters, usually with the `apply` method on the object representing its family. So for example, this is a normal distribution with a mean of 0 and a standard deviation of 1:
 
 ```tut
-val normal = Normal(0,1)
-normal.mean
-normal.stddev
+val normal: Distribution[Double] = Normal(0,1)
 ```
 
 In Rainier, `Distribution` objects play three different roles. Most distributions (those that are continuous, like `Normal`), implement `param`, and all distributions implement `fit` and `generator`. Each of these methods is central to one of the three stages of building a model in Rainier: defining your parameters and their priors; fitting the parameters to some observed data; and using the fit parameters to generate samples of some posterior distribution of interest. We'll start by exploring each of these in turn.

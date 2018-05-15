@@ -5,7 +5,6 @@ scalacOptions ++= Seq(
   "-deprecation",
   "-feature",
   "-unchecked",
-  "-optimize"
 )
 
 val unpublished = Seq(publish := (), publishLocal := (), publishArtifact := false)
