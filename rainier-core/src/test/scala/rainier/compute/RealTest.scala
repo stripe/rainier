@@ -9,7 +9,7 @@ class RealTest extends FunSuite {
     test(description) {
       val x = new Variable
       val result = fn(x)
-      val c = asm.IRCompiler.compile(List(x), result)
+      val c = Compiler.default.compile(List(x), result)
       List(1.0, 0.0, -1.0, 2.0, -2.0, 0.5, -0.5).foreach { n =>
         val constant = fn(Constant(n))
         assert(constant.isInstanceOf[Constant], s"[n=$n]")

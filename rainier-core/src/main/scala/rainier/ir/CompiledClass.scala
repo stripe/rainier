@@ -26,7 +26,7 @@ private class CompiledClass(name: String, methods: Seq[MethodNode]) {
               name,
               null,
               "java/lang/Object",
-              Array("rainier/compute/asm/CompiledFunction"))
+              Array("rainier/ir/CompiledFunction"))
     cls.methods.add(createInit)
     methods.foreach { m =>
       cls.methods.add(m)

@@ -13,7 +13,7 @@ object Benchmarks {
     val vars = expr.variables
 
     val a = compileAsm
-    val g = asm.IRCompiler.compileGradient(vars, expr)
+    val g = Compiler.default.compileGradient(vars, expr)
 
     implicit val rng = RNG.default
     def runAsm =
@@ -24,7 +24,7 @@ object Benchmarks {
       a(vars.map { _ =>
         rng.standardUniform
       }.toArray)
-    def compileAsm = asm.IRCompiler.compile(vars, expr)
+    def compileAsm = Compiler.default.compile(vars, expr)
     def sampleHMC(steps: Int) =
       HMC(steps).sample(expr, 1000).take(10000).toList
     def sampleWalkers(walkers: Int) =
