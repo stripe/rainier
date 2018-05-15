@@ -1,12 +1,24 @@
 # rainier
 
-Rainier provides an idiomatic functional Scala API for bayesian inference via Markov Chain Monte Carlo.
+Rainier provides an idiomatic, high-performance functional Scala API for bayesian inference via Markov Chain Monte Carlo.
 
 Rainier allows you to describe a complex prior distribution by composing primitive distributions using familiar combinators like `map`, `flatMap`, and `zip`; condition that prior on your observed data; and, after an inference step, sample from the resulting posterior distribution.
 
-It is implemented in pure Scala, with minimal external dependencies, and no JNI libs or reliance on GPUs, and as such is convenient to deploy to Spark or Hadoop clusters.
+Underlying this is a static scalar compute graph with auto-differentiation and very fast CPU-based execution.
 
-Rainier currently provides two samplers: `affine-invariant MCMC`, an ensemble method popularized by the [Emcee](https://github.com/dfm/emcee) package in Python, and `Hamiltonian Monte Carlo` (along with its `NUTS` variant), a gradient-based method used in [Stan](http://mc-stan.org/) and [PyMC3](https://github.com/pymc-devs/pymc3).
+It is implemented in pure Scala, with minimal external dependencies and no JNI libs, and as such is convenient to deploy, including to Spark or Hadoop clusters.
+
+Rainier currently provides two samplers: `affine-invariant MCMC`, an ensemble method popularized by the [Emcee](https://github.com/dfm/emcee) package in Python, and `Hamiltonian Monte Carlo`, a gradient-based method used in [Stan](http://mc-stan.org/) and [PyMC3](https://github.com/pymc-devs/pymc3).
+
+Depending on your background, you might think of Rainier as aspiring to be either "Stan, but on the JVM", or "TensorFlow, but for small data".
+
+## Performance and Scale
+
+Rainier requires that all of the observations or training data for a given model fit comfortably into RAM on a single machine. It does not make use of GPUs or of SIMD instructions.
+
+Within those constraints, however, it is extremely fast. Rainier takes advantage of knowing all of your data ahead of time by aggressively precomputing as much as it can, which is a significant practical benefit relative to systems like Stan that compile a data-agnostic model. It produces optimized, unboxed, JIT-friendly JVM bytecode for all numerical calculations. This compilation happens in-process and is fast enough for interactive use at a REPL.
+
+Benchmarking is hard, and we wouldn't claim to have publishable results here, but as a rule of thumb you should expect a 10x speedup on Rainier relative to the equivalent Stan model.
 
 ## Documentation
 
