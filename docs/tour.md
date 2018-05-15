@@ -33,7 +33,7 @@ You construct a distributions from its parameters, usually with the `apply` meth
 
 ```scala
 scala> val normal: Distribution[Double] = Normal(0,1)
-normal: rainier.core.Distribution[Double] = rainier.core.Injection$$anon$1@17e6ddde
+normal: rainier.core.Distribution[Double] = rainier.core.Injection$$anon$1@4e57f14e
 ```
 
 In Rainier, `Distribution` objects play three different roles. Most distributions (those that are continuous, like `Normal`), implement `param`, and all distributions implement `fit` and `generator`. Each of these methods is central to one of the three stages of building a model in Rainier: defining your parameters and their priors; fitting the parameters to some observed data; and using the fit parameters to generate samples of some posterior distribution of interest. We'll start by exploring each of these in turn.
@@ -48,43 +48,43 @@ Let's use that same `Normal(0,1)` distribution as a prior for a new parameter:
 
 ```scala
 scala> val x = Normal(0,1).param
-x: rainier.core.RandomVariable[rainier.compute.Real] = rainier.core.RandomVariable@3d5d6de1
+x: rainier.core.RandomVariable[rainier.compute.Real] = rainier.core.RandomVariable@522df760
 ```
 
 You can see that `x`s type is `RandomVariable[Real]`. `RandomVariable` pairs a type of value (in this case, a real number) with some knowledge of the relative probability density of different values of that type. We can use this knowledge to produce a sample of these possible values:
 
 ```scala
 scala> x.sample()
-res0: List[Double] = List(-0.9854576712879818, -1.0987929240476104, 1.2367848934068615, 0.1741437543526066, -0.147822680140413, 0.25041186311443187, 0.6854906516335244, 0.5526014396630073, -0.37935136456766727, 1.0450475634634535, -0.46989956466505167, 0.2645555737346893, 0.3149728138913791, 0.4560375613613677, 1.0646829609374024, -0.20484301527906257, -0.42109684702184313, 0.085791745502656, -0.17208687544482115, 0.7660251230224684, 0.7828776895314813, 0.19836122721832838, 1.6122055826574497, -0.23848008497909046, 0.31381508150995785, 1.5653796975167336, 0.3274973873382516, 0.07895782986167266, 0.6508216711516128, -0.05470341975161774, 2.2875363495155927, 0.7849500841053795, -0.8543996891885697, 1.7666532982915908, -0.867472712558373, 0.22451093823643176, 0.09...
+res0: List[Double] = List(0.7012900146856109, 1.15431492130054, -3.2944920665513995, 1.1519611523572482, 0.9132441731586582, -0.21104836215273592, 0.2508144325015061, 2.038815223875448, -1.3728749965197138, 0.5987940114221006, -0.41110329257408623, 0.36817713723626966, -1.5264070314329978, -0.3509941598030071, -0.3264665476907739, 0.05145593856869035, 1.2921212725271898, -1.5624612341376094, 0.6123455662583157, 2.793872660316455, 0.28538947578480034, 0.022735237380482554, 0.7177755447016608, -0.19374205578074927, 0.1312809562907351, 0.14768093020417983, -1.1430506543169785, 0.4478740900528623, -0.6035813301053545, 0.21117459548535766, 0.5244084048293776, 0.2525822622095593, 0.4064304841489671, -1.0247659010250305, -1.8474644818902641, -1.4790008672139634, 0.667...
 ```
 
 Each element of the list above represents a single sample from the distribution over `x`. It's easier to understand these if we plot them as a histogram:
 
 ```scala
 scala> plot1D(x.sample())
-     198 |                                                                                
-         |                                      ·   ∘  ○                                  
-         |                               ·      ○  ·○  ○ ∘○ ○                             
-         |                          ·    ○    ○ ○·∘○○∘∘○·○○ ○∘  ·                         
-         |                          ○  ○ ○○∘○○○∘○○○○○○○○○○○ ○○∘○○                         
-     148 |                        · ○∘∘○·○○○○○○○○○○○○○○○○○○∘○○○○○∘    ∘                   
-         |                     ·· ○·○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○    ○                   
-         |                     ○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○ · ○○                  
-         |                   · ○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○∘○∘○○  ·               
-         |               ○  ·○ ○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○  ○               
-      99 |              ·○  ○○ ○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○∘∘○  ·            
-         |              ○○∘∘○○·○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○ ∘○ ∘          
-         |        ∘     ○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○ ○ ∘        
-         |        ○   ∘○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○∘○○○○       
-         |    ∘   ○○··○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○       
-      49 |    ○○○ ○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○·     
-         |  ·∘○○○·○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○∘○   
-         |  ○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○∘∘ 
-         |·○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○∘
+     230 |                                                                                
+         |                                     ·                                          
+         |                                     ○                                          
+         |                                     ○                                          
+         |                             ○    ·  ○   ○     ·                                
+     170 |                            ∘○·  ∘○· ○  ·○∘  ○ ○  ∘                             
+         |                       ∘  ○○○○○∘○○○○ ○ ·○○○∘ ○ ○  ○ ○                           
+         |                    ·∘ ○  ○○○○○○○○○○·○∘○○○○○∘○○○ ∘○·○                           
+         |                 · ∘○○ ○ ∘○○○○○○○○○○○○○○○○○○○○○○○○○○○∘∘ ·                       
+         |                 ○∘○○○ ○∘○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○∘○·                      
+     110 |                 ○○○○○·○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○∘·                    
+         |               ··○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○                    
+         |              ·○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○                   
+         |          ··  ○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○· ∘ ○              
+         |        ○·○○·○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○·○·○∘ ○·          
+      50 |   ·  ··○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○∘○○          
+         |  ∘○  ○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○  ∘       
+         |· ○○∘·○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○ ○○○ ○∘   
+         |○·○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○∘○○○∘○○∘ ·
          |○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○
        0 |○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○
          |--------|--------|--------|--------|--------|--------|--------|--------|--------
-       -2.00    -1.56    -1.12    -0.69    -0.25     0.19     0.62     1.06     1.50  
+       -1.93    -1.49    -1.05    -0.61    -0.17     0.27     0.71     1.16     1.60  
 ```
 
 Since the only information we have about `x` so far is its `Normal` prior, this distribution unsurprisingly looks  normal. Later we'll see how to update our beliefs about `x` based on observational data.
@@ -93,102 +93,102 @@ For now, though, let's explore what we can do just with priors. `RandomVariable`
 
 ```scala
 scala> val ex = x.map(_.exp)
-ex: rainier.core.RandomVariable[rainier.compute.Real] = rainier.core.RandomVariable@44705ecc
+ex: rainier.core.RandomVariable[rainier.compute.Real] = rainier.core.RandomVariable@7bad0249
 
 scala> plot1D(ex.sample())
-     570 |                                                                                
-         |   ∘                                                                            
-         |   ○                                                                            
-         |   ○○                                                                           
-         |  ○○○∘                                                                          
-     420 | ∘○○○○·                                                                         
-         |·○○○○○○ ·                                                                       
-         |○○○○○○○∘○                                                                       
-         |○○○○○○○○○ ∘                                                                     
-         |○○○○○○○○○∘○                                                                     
-     280 |○○○○○○○○○○○∘∘                                                                   
-         |○○○○○○○○○○○○○                                                                   
-         |○○○○○○○○○○○○○○∘··                                                               
-         |○○○○○○○○○○○○○○○○○                                                               
-         |○○○○○○○○○○○○○○○○○○·                                                             
-     140 |○○○○○○○○○○○○○○○○○○○∘∘·     ·                                                    
-         |○○○○○○○○○○○○○○○○○○○○○○··○··○                                                    
-         |○○○○○○○○○○○○○○○○○○○○○○○○○○○○·· ∘                                                
-         |○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○· ·                                           
-         |○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○∘○∘∘∘∘∘ ·∘  ·                              
-       0 |○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○∘○○∘∘∘∘∘·∘∘······∘·∘∘∘∘··
+     600 |                                                                                
+         |  ∘·                                                                            
+         |  ○○                                                                            
+         | ∘○○                                                                            
+         | ○○○                                                                            
+     450 | ○○○·                                                                           
+         | ○○○○∘○                                                                         
+         | ○○○○○○·                                                                        
+         |○○○○○○○○∘·                                                                      
+         |○○○○○○○○○○                                                                      
+     300 |○○○○○○○○○○·∘                                                                    
+         |○○○○○○○○○○○○ ·                                                                  
+         |○○○○○○○○○○○○·○                                                                  
+         |○○○○○○○○○○○○○○·                                                                 
+         |○○○○○○○○○○○○○○○∘∘∘·                                                             
+     150 |○○○○○○○○○○○○○○○○○○○                                                             
+         |○○○○○○○○○○○○○○○○○○○∘○····                                                       
+         |○○○○○○○○○○○○○○○○○○○○○○○○○∘ ∘  ··                                                
+         |○○○○○○○○○○○○○○○○○○○○○○○○○○○○○∘○○∘·∘    ·   ·                                    
+         |○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○∘○·∘○∘∘∘○··· ·     ·                         
+       0 |○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○∘○∘∘∘·∘○∘∘·∘···∘∘∘·∘······∘···· ·
          |--------|--------|--------|--------|--------|--------|--------|--------|--------
-        0.13     0.85     1.56     2.28     2.99     3.71     4.42     5.13     5.85  
+        0.16     0.90     1.65     2.39     3.13     3.88     4.62     5.36     6.11  
 ```
 
 Or we can create another `Normal` parameter and zip the two together to produce a 2D gaussian. Since there's nothing relating these two parameters to each other, you can see in the plot that they're completely independent.
 
 ```scala
 scala> val y = Normal(0,1).param
-y: rainier.core.RandomVariable[rainier.compute.Real] = rainier.core.RandomVariable@1c297a72
+y: rainier.core.RandomVariable[rainier.compute.Real] = rainier.core.RandomVariable@505f494d
 
 scala> val xy = x.zip(y)
-xy: rainier.core.RandomVariable[(rainier.compute.Real, rainier.compute.Real)] = rainier.core.RandomVariable@10ef3bf8
+xy: rainier.core.RandomVariable[(rainier.compute.Real, rainier.compute.Real)] = rainier.core.RandomVariable@301c8f09
 
 scala> plot2D(xy.sample())
-     1.9 |          ·· ·  ·   ·  ·· · · ····  ··· ·· ·· ·  ····· ·· ···  ·  ·  ·          
-         |··      ·     ·  ····  ········· ······ ····· ········ ····· ·· ···    ·      · 
-         | ∘ ··  ·   · ···  ···  ··∘·∘∘·· ·····   ·······∘················  ·        ··· ·
-         |····· ······· ············· ∘····∘···∘·····∘··∘········· ·∘····· ·····∘·· ··    
-         | · · ·· ·  ····· ··∘··········∘····∘··∘·····∘··∘···················· ····· ·  ··
-     1.0 |······ ·············∘·······∘··∘∘···∘··∘··∘∘∘∘·∘∘·∘······∘··············  · · ··
-         |·· ···················∘·∘·∘∘∘··∘·∘·○○∘∘∘∘··∘··∘···∘·∘··∘·∘∘······∘············  
-         |······· · ·· ·············∘∘∘∘··∘··∘·∘·○·∘·∘··∘···∘∘∘·∘·····∘··∘···∘········ ·· 
-         |· ···∘········∘∘········∘∘∘∘∘·∘∘∘∘·∘∘∘∘∘∘··○∘·∘∘∘··∘∘·∘∘∘∘○····∘··············· 
-         |  · ············∘····∘·∘···∘∘∘∘····∘∘∘·∘∘·∘·○∘∘···∘∘∘·∘∘∘·∘·∘····∘······· ······
-     0.0 | ···· ····∘··∘∘·∘····∘∘∘∘·∘○∘○·∘∘∘∘·∘∘∘∘·∘∘∘○∘∘○∘∘○∘··∘··∘∘∘○··∘··········∘···· 
-         |··············∘∘∘∘∘∘····∘∘·○∘∘∘∘∘∘∘∘·∘∘·∘∘○∘○∘∘··○○∘∘∘∘∘∘∘∘··∘∘∘∘···········  ·∘
-         |· · ·············∘∘········∘○∘∘∘∘∘∘·∘∘∘∘∘∘∘∘∘∘∘·○∘∘·∘∘∘∘∘∘∘∘∘··∘··∘∘··∘∘∘····· ·
-         |·  ·· ····· ·······∘····∘∘·∘∘·∘····∘·∘∘∘○∘·○∘·∘○∘∘∘···∘∘∘∘··∘····∘∘··∘∘ ·· ·····
-         |  ···· ··· ····∘···∘···∘∘··∘∘∘·∘∘∘∘∘···∘··∘∘○∘∘○∘∘∘·∘∘·∘···∘··∘··∘∘········· ·  
-    -0.9 |··∘··∘············· ·········∘··∘··∘∘∘···∘∘∘∘·∘∘∘·∘∘···∘·∘·∘······ ····· ·  ····
-         |····· · · ·····  ∘·····∘·······∘··∘··∘·∘○∘∘·∘∘·∘··∘············· ········· ··· ·
-         |   ·  ∘    ···  ·············∘··∘·······∘······∘················ ··········· ···
-         |     ·· · ··  · ·· ·········· ··∘·∘····∘··∘···· ·············· ·········∘    · ·
-         |     ·   ·  · · ··  ··· ··· ·········· ∘······ ∘········· ····· ···  ·· · ··    
-    -1.9 |  ··  ·      ··· ········ · ·····  ·········· ··· ··········· ·   ···   ·   ·   
+     2.3 |  ·       ·      ···· ·· · · · ·    ····· ·  ··  · ·· · ···    ·    ·  ·        
+         |    · ·   ·     · · · · ······ · · ·······  ············                    ·   
+         |    ··· · · ······  · ··········· ·  ····· ····· ·············    ···  · · ·    
+         |   ····· · · ··· ····· ··························  ········ · ··· · ··  ·  ·  · 
+         | ·    ··· ·····  ······················· ····················· ··· · · ·  ··    
+     1.2 |·· ·· ··········  ······························· ···················  ······ ··
+         |  ·  ···  ····· ········∘····················∘·∘····················· ··········
+         |  ·· ···· ·················∘··∘∘·∘·∘·∘·····○·················∘·········· ··   ··
+         | ························∘··∘··∘···········∘∘····∘·····∘·∘·················   ··
+         |··· ···············∘···········∘··∘∘∘···∘····∘··∘··∘∘···∘···∘···················
+     0.2 |··· · ····· ···················∘∘·····∘∘∘∘∘∘∘∘···∘·····∘············· ······ · ·
+         |·······················∘···∘···∘····∘∘···∘······∘∘··∘∘················∘·········
+         | ······· · ········∘···∘···∘·∘··∘∘·····∘·∘···∘∘··∘·∘∘··········∘················
+         |····················∘·∘············∘∘···∘····∘················∘········∘····  ··
+         |· ················∘······∘∘·······∘··∘·∘·····∘·∘·∘·······∘···∘··∘···············
+    -0.9 |······························∘···∘··∘······∘·∘·········∘················ ······
+         |··  ········ ···············∘·∘·····∘∘····∘························∘ ······ ·· ·
+         |· ····  ·· ··········∘··············∘····················∘············  ······· 
+         |· · ····· ···················∘··························· ········ ····· ·····  
+         |  ··· · ··   ·  ··· ·· ················ ········· ·····   ····· ····· ·   ··  ··
+    -1.9 |·       ·    ··   ··· · ·········· ·· ······ ··· ·· ····   ·· ·  ····     ·  ···
          |--------|--------|--------|--------|--------|--------|--------|--------|--------
-       -1.99    -1.53    -1.08    -0.62    -0.17     0.29     0.74     1.20     1.65  
+       -2.04    -1.60    -1.16    -0.72    -0.28     0.17     0.61     1.05     1.49  
 ```
 
 Finally, we can use `flatMap` to create two parameters that *are* related to each other. In particular, we'll create a new parameter `z` that we believe to be very close to `x`: its prior is a `Normal` centered on `x` with a very small standard deviation. We'll then make a 2D plot of `(x,z)` to see the relationship.
 
 ```scala
 scala> val z = x.flatMap{a => Normal(a, 0.1).param}
-z: rainier.core.RandomVariable[rainier.compute.Real] = rainier.core.RandomVariable@391cd974
+z: rainier.core.RandomVariable[rainier.compute.Real] = rainier.core.RandomVariable@16a1636a
 
 scala> val xz = x.zip(z)
-xz: rainier.core.RandomVariable[(rainier.compute.Real, rainier.compute.Real)] = rainier.core.RandomVariable@6af513e5
+xz: rainier.core.RandomVariable[(rainier.compute.Real, rainier.compute.Real)] = rainier.core.RandomVariable@58451dc4
 
 scala> plot2D(xz.sample())
-     1.9 |                                                                             ···
-         |                                                                          ······
-         |                                                                     ···········
-         |                                                                · ·····∘·····   
-         |                                                             ····∘∘∘∘····       
-     0.9 |                                                      ·· ····∘∘∘∘∘·····         
-         |                                                   ·····∘∘∘∘∘∘·····             
-         |                                                ····∘∘○○∘∘····                  
-         |                                             ···∘∘○○∘∘····                      
-         |                                        ···∘∘○○∘∘∘····                          
-    -0.1 |                                   ·····∘○○○○∘····                              
-         |                               ·····∘○○○○∘···                                   
-         |                          ·· ···∘∘○○∘∘····                                      
-         |                       ····∘∘∘∘○∘∘··                                            
-         |                   ·····∘∘○∘∘·····                                              
-    -1.0 |             ·······∘∘∘○∘····                                                   
-         |          · ·····∘∘∘∘·····                                                      
-         |       ······∘∘·∘···                                                            
-         | ·   ······∘····                                                                
-         |·········· ·                                                                    
+     1.8 |                                                                               ·
+         |                                                                        ········
+         |                                                                  ··   ·········
+         |                                                                ··············  
+         |                                                            · ···∘·∘∘·····      
+     0.8 |                                                       ·····∘∘∘∘∘∘····          
+         |                                                   ······∘∘∘∘∘··· ·             
+         |                                               ····∘∘○○○∘∘·····                 
+         |                                            ····○○○○∘∘···                       
+         |                                     ·····∘·∘○○○○∘···                           
+    -0.1 |                                    ···∘∘○○○∘∘∘···                              
+         |                               ····∘∘○○○∘∘∘····                                 
+         |                            ····∘○○○∘∘···                                       
+         |                       ·····∘∘○∘∘∘··· ·                                         
+         |                 ·  ····∘∘∘∘∘······                                             
+    -1.1 |                ····∘∘∘∘······                                                  
+         |            ·····∘∘∘·····                                                       
+         |        ······∘·····                                                            
+         |  ·  ···········                                                                
+         |·············                                                                   
     -2.0 |········                                                                        
          |--------|--------|--------|--------|--------|--------|--------|--------|--------
-       -1.94    -1.52    -1.10    -0.68    -0.27     0.15     0.57     0.99     1.41  
+       -2.02    -1.60    -1.18    -0.75    -0.33     0.09     0.51     0.93     1.35  
 ```
 
 You can see that although we still sample from the full range of `x` values, for any given sample, `x` and `z` are quite close to each other.
@@ -210,10 +210,10 @@ We can model the number of sales we get on each day as a poisson distribution pa
 
 ```scala
 scala> val poisson9: RandomVariable[_] = Poisson(9).fit(sales)
-poisson9: rainier.core.RandomVariable[_] = rainier.core.RandomVariable@601eafae
+poisson9: rainier.core.RandomVariable[_] = rainier.core.RandomVariable@6e354eda
 
 scala> val poisson10: RandomVariable[_] = Poisson(10).fit(sales)
-poisson10: rainier.core.RandomVariable[_] = rainier.core.RandomVariable@5abf758
+poisson10: rainier.core.RandomVariable[_] = rainier.core.RandomVariable@1c8bd31
 ```
 
 Although it's almost never necessary, we can reach into any `RandomVariable` and get its current probability `density`:
@@ -234,14 +234,14 @@ We can see here that our data is about 3x as likely to have come from a `Poisson
 
 ```scala
 scala> val poisson: RandomVariable[_] = ex.flatMap{r => Poisson(r).fit(sales)}
-poisson: rainier.core.RandomVariable[_] = rainier.core.RandomVariable@649e898
+poisson: rainier.core.RandomVariable[_] = rainier.core.RandomVariable@521c113e
 ```
 
 By the way: before, when we looked at `poisson9.density`, the model had no parameters and so we got a constant value back. Now, since the model's density is a function of the parameter value, we get something more opaque back. This is why inspecting `density` is not normally useful.
 
 ```scala
 scala> poisson.density
-res6: rainier.compute.Real = rainier.compute.Line@348ec145
+res6: rainier.compute.Real = rainier.compute.Line@627fe71c
 ```
 
 Instead, we can sample the quantity we're actually interested in. Let's recreate this model from the start, with the slightly friendlier `for` syntax:
@@ -252,7 +252,7 @@ scala> val rate = for {
      |     ex = x.exp
      |     _ <- Poisson(ex).fit(sales)
      | } yield ex
-rate: rainier.core.RandomVariable[rainier.compute.Real] = rainier.core.RandomVariable@2b79ad17
+rate: rainier.core.RandomVariable[rainier.compute.Real] = rainier.core.RandomVariable@648f5a18
 ```
 
 Here we're creating our log-normal prior, using it as the rate on a Poisson distribution, fitting that distribution to the data, and then outputting the rate. Let's plot it!
@@ -260,28 +260,28 @@ Here we're creating our log-normal prior, using it as the rate on a Poisson dist
 ```scala
 scala> plot1D(rate.sample())
      220 |                                                                                
-         |                                       ·                                        
-         |                                      ·○ ○                                      
-         |                            ·   ○· ∘  ○○ ○  ∘                                   
-         |                            ○   ○○○○ ∘○○∘○·○○∘                                  
-     170 |                       ∘  ○·○○  ○○○○○○○○○○○○○○·                                 
-         |                       ○ ·○○○○ ·○○○○○○○○○○○○○○○○·○                              
-         |                   ∘ ○∘○·○○○○○ ○○○○○○○○○○○○○○○○○○○∘                             
-         |                  ·○∘○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○· ∘                          
-         |                ∘ ○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○∘○ ○                        
-     110 |              ∘ ○ ○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○·○  ○  ·                  
-         |              ○ ○∘○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○ ·○ ∘○                  
-         |          ·  ·○ ○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○·○○○○○· ··              
-         |      ·  ∘○ ○○○∘○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○ ○○·             
-         |      ○ ·○○·○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○ ○○○ ·∘          
-      50 |   ·○ ○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○∘○○          
-         |·  ○○∘○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○  ·      
-         |○·○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○··○··    
-         |○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○ ∘· 
-         |○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○∘○○∘
+         |                        ·                                                       
+         |                        ○         · ○·                                          
+         |                        ○    ○    ○·○○  ·                                       
+         |                        ○  ∘∘○ ○  ○○○○  ○  ∘·                                   
+     160 |                   ○    ○  ○○○ ○ ∘○○○○ ○○○∘○○   ∘○                              
+         |                   ○   ∘○··○○○ ○ ○○○○○∘○○○○○○ · ○○○                             
+         |                   ○○∘ ○○○○○○○○○·○○○○○○○○○○○○·○ ○○○                             
+         |             ·     ○○○·○○○○○○○○○○○○○○○○○○○○○○○○ ○○○·∘ ○                         
+         |             ○   ··○○○○○○○○○○○○○○○○○○○○○○○○○○○○∘○○○○○∘○·                        
+     110 |            ·○·∘∘○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○                      
+         |            ○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○  ·                   
+         |           ∘○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○·∘○                   
+         |    · ○·· ∘○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○∘    ·             
+         |    ○ ○○○·○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○∘ ·∘○   ·         
+      50 |    ○ ○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○ ○○○  ∘○         
+         | · ·○∘○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○∘○○○○○○○         
+         | ○ ○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○∘○∘· ∘  
+         |○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○∘○·∘
+         |○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○
        0 |○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○○
          |--------|--------|--------|--------|--------|--------|--------|--------|--------
-        5.76     6.23     6.69     7.15     7.61     8.08     8.54     9.00     9.46  
+        5.74     6.21     6.68     7.15     7.62     8.09     8.56     9.03     9.50  
 ```
 
 ## `generator` and `Generator`
@@ -309,14 +309,14 @@ scala> val prediction = for {
      |     ex = x.exp
      |     _ <- Poisson(ex).fit(sales)    
      | } yield Poisson(ex).generator
-prediction: rainier.core.RandomVariable[rainier.core.Generator[Int]{val requirements: Set[rainier.compute.Real]}] = rainier.core.RandomVariable@9803845
+prediction: rainier.core.RandomVariable[rainier.core.Generator[Int]{val requirements: Set[rainier.compute.Real]}] = rainier.core.RandomVariable@2d9b3e03
 ```
 
 This is almost the same model as `rate` above, but instead of taking the real-valued `ex` rate parameter as the output, we're producing poisson-distributed integers. The samples look like this:
 
 ```scala
 scala> prediction.sample()
-res8: List[Int] = List(8, 5, 6, 7, 15, 6, 6, 5, 5, 10, 3, 8, 8, 8, 6, 6, 9, 9, 7, 9, 4, 3, 11, 7, 7, 4, 4, 11, 5, 8, 9, 10, 10, 5, 5, 7, 12, 6, 6, 8, 9, 5, 2, 4, 10, 11, 1, 6, 10, 13, 13, 2, 7, 4, 11, 8, 11, 16, 9, 7, 10, 4, 7, 12, 10, 8, 8, 6, 9, 10, 7, 9, 11, 8, 6, 13, 9, 13, 10, 8, 7, 13, 7, 5, 4, 9, 5, 8, 7, 4, 6, 8, 4, 8, 7, 11, 8, 9, 5, 5, 12, 15, 8, 9, 5, 9, 8, 11, 4, 5, 9, 5, 6, 6, 5, 3, 6, 5, 8, 8, 1, 10, 15, 7, 7, 8, 7, 3, 9, 11, 7, 10, 8, 11, 9, 4, 11, 10, 2, 14, 5, 7, 8, 13, 7, 9, 8, 9, 4, 5, 10, 9, 3, 4, 7, 10, 10, 10, 11, 7, 6, 6, 10, 7, 5, 5, 7, 7, 8, 9, 1, 10, 7, 10, 8, 5, 6, 7, 10, 8, 9, 5, 7, 6, 9, 12, 10, 10, 5, 10, 5, 6, 6, 8, 9, 7, 5, 9, 7, 8, 10, 7, 8, 5, 8, 12, 5, 11, 6, 11, 8, 6, 9, 7, 4, 8, 14, 6, 7, 8, 3, 4, 7, 2, 8, 9, 8, 7, 5, 11, 8,...
+res8: List[Int] = List(11, 7, 6, 4, 4, 9, 7, 5, 6, 8, 13, 4, 10, 7, 10, 5, 9, 8, 13, 7, 8, 7, 10, 5, 5, 10, 10, 7, 4, 4, 2, 6, 9, 12, 7, 5, 3, 5, 4, 6, 7, 4, 5, 5, 6, 6, 7, 7, 7, 8, 5, 5, 4, 7, 8, 11, 8, 16, 7, 7, 7, 1, 8, 11, 6, 5, 7, 4, 5, 11, 4, 4, 7, 9, 8, 7, 6, 9, 9, 15, 9, 5, 9, 14, 3, 5, 6, 8, 8, 8, 12, 11, 4, 8, 3, 6, 11, 16, 12, 13, 12, 6, 8, 13, 8, 6, 12, 8, 13, 3, 6, 5, 7, 15, 12, 12, 10, 11, 5, 6, 4, 5, 10, 7, 12, 13, 9, 9, 9, 5, 8, 6, 10, 8, 8, 4, 4, 12, 13, 8, 6, 3, 5, 15, 13, 3, 12, 1, 4, 9, 9, 13, 4, 5, 13, 8, 8, 12, 5, 5, 11, 2, 11, 9, 2, 11, 7, 9, 6, 10, 7, 5, 4, 10, 4, 5, 11, 13, 10, 9, 3, 7, 11, 8, 4, 5, 8, 6, 9, 4, 7, 6, 4, 7, 5, 2, 11, 5, 5, 11, 9, 9, 10, 13, 9, 3, 7, 5, 10, 12, 12, 3, 7, 6, 8, 10, 11, 7, 8, 5, 7, 11, 3, 12, 8, 9, 8, 11, 9...
 ```
 
 It's very common to want to generate new data that mimics the data you fit against. We've been carefully ignoring the the type of `RandomVariable` that `fit` returns, but in fact, it contains a `Generator` to do just that. That gives us another way to implement the same thing. (While we're at it, let's make use of the `LogNormal` distribution instead of rolling our own.)
@@ -326,7 +326,7 @@ scala> val prediction2 = for {
      |     ex <- LogNormal(0,1).param
      |     poisson <- Poisson(ex).fit(sales)    
      | } yield poisson.map(_.head)
-prediction2: rainier.core.RandomVariable[rainier.core.Generator[Int]] = rainier.core.RandomVariable@2615f730
+prediction2: rainier.core.RandomVariable[rainier.core.Generator[Int]] = rainier.core.RandomVariable@4e0b73a7
 ```  
 
 There's a bit of a twist here: because we `fit` against a list of 7 data points, the generator returned from there will try to produce output of the same shape, with each sample having a sequence of 7 ints. Luckily, `Generator` has the usual `map` and `flatMap` methods, so we can fix that by grabbing just the first value with `head`.
@@ -335,21 +335,21 @@ Let's plot it this time:
 
 ```scala
 scala> plot1D(prediction2.sample())
-    1340 |                                                                                
-         |                            ○                                                   
-         |                     ∘      ○       ∘                                           
+    1350 |                                                                                
+         |                            ○       ∘                                           
+         |                     ∘      ○       ○                                           
          |                     ○      ○       ○                                           
-         |                     ○      ○       ○      ·                                    
-    1000 |              ∘      ○      ○       ○      ○                                    
+         |                     ○      ○       ○      ∘                                    
+    1010 |              ∘      ○      ○       ○      ○                                    
+         |              ○      ○      ○       ○      ○                                    
          |              ○      ○      ○       ○      ○                                    
          |              ○      ○      ○       ○      ○      ∘                             
          |              ○      ○      ○       ○      ○      ○                             
-         |       ∘      ○      ○      ○       ○      ○      ○                             
-     670 |       ○      ○      ○      ○       ○      ○      ○                             
+     670 |       ·      ○      ○      ○       ○      ○      ○      ·                      
          |       ○      ○      ○      ○       ○      ○      ○      ○                      
          |       ○      ○      ○      ○       ○      ○      ○      ○                      
          |       ○      ○      ○      ○       ○      ○      ○      ○                      
-         |       ○      ○      ○      ○       ○      ○      ○      ○      ∘               
+         |       ○      ○      ○      ○       ○      ○      ○      ○      ·               
      330 |∘      ○      ○      ○      ○       ○      ○      ○      ○      ○               
          |○      ○      ○      ○      ○       ○      ○      ○      ○      ○       ·       
          |○      ○      ○      ○      ○       ○      ○      ○      ○      ○       ○       
@@ -405,7 +405,7 @@ scala> val prior = for {
      |     slope <- LogNormal(0,1).param
      |     intercept <- LogNormal(0,1).param
      |     } yield (slope, intercept)
-prior: rainier.core.RandomVariable[(rainier.compute.Real, rainier.compute.Real)] = rainier.core.RandomVariable@283e4f8
+prior: rainier.core.RandomVariable[(rainier.compute.Real, rainier.compute.Real)] = rainier.core.RandomVariable@52b2dd26
 ```
 
 Now, for any given day `i`, we want to check the number of sales against `Poisson(intercept + slope*i)`. We could write some kind of recursive flatMap to build and fit each of these different distribution objects in turn, but this is a common enough pattern that Rainier already has something built in for it: `Predictor`. `Predictor` is not a `Distribution`, but instead wraps a function from `X => Distribution[Y]` for some `(X,Y)`; you can use this any time you have a dependent variable of type `Y` that you're modeling with some independent variables jointly represented as `X`. 
@@ -416,34 +416,34 @@ Like `Distribution`, `Predictor` implements `fit` (in fact, they both extend the
 scala> val regr = prior.flatMap {case (slope, intercept) =>
      |   Predictor.from{i: Int => Poisson(intercept + slope*i)}.fit(data) 
      | }
-regr: rainier.core.RandomVariable[rainier.core.Generator[Seq[(Int, Int)]]] = rainier.core.RandomVariable@5a3764d9
+regr: rainier.core.RandomVariable[rainier.core.Generator[Seq[(Int, Int)]]] = rainier.core.RandomVariable@43593582
 ```
 
 As before, the return value from `fit` will be a `Generator` that tries to recreate the input data. In this case, it will keep the `X` the same but generate a new `Y` for each data point. If we flatten all of the samples out, we can plot them and compare to the observed data to get a sense of whether our model is any good.
 
 ```scala
 scala> plot2D(regr.sample().flatten)
-      78 |                                                       ·   ·   ·   ·   ·   ·   ·
-         |                                           ·       ·   ·   ·   ·   ·   ·   ·   ·
-         |                                           ·   ·   ·   ·   ·   ·   ·   ·   ·   ·
-         |                                           ·   ·   ·   ·   ·   ·   ·   ·   ·   ·
-         |                               ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ∘   ·   ·
-      60 |   ·       ·   ·               ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·
-         |·  ·   ·   ·       ·           ·   ·   ·   ·   ·   ·   ·   ∘   ∘   ·   ·   ·   ·
-         |·  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·
+      78 |                                                   ·   ·   ·   ·   ·   ·   ·   ·
+         |                                               ·   ·   ·   ·   ·   ·   ·   ·   ·
+         |                           ·                   ·   ·   ·   ·   ·   ·   ·   ·   ·
+         |                                       ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·
+         |                                           ·   ·   ·   ·   ·   ·   ·   ∘   ·   ·
+      60 |                                   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·
+         |                   ·       ·   ·   ·   ·   ·   ·   ·   ·   ∘   ∘   ∘   ·   ·   ·
+         |       ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·
          |·  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ∘   ∘   ∘   ·   ·   ·   ·   ·
          |·  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·
       42 |·  ·   ·   ·   ·   ·   ·   ·   ·   ·   ∘   ∘   ∘   ∘   ·   ·   ·   ·   ·   ·   ·
-         |·  ·   ·   ·   ·   ·   ·   ·   ·   ∘   ∘   ∘   ∘   ·   ·   ·   ·   ·   ·   ·   ·
-         |·  ·   ·   ·   ·   ·   ·   ·   ·   ∘   ∘   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·
+         |·  ·   ·   ·   ·   ·   ·   ·   ·   ∘   ∘   ∘   ·   ·   ·   ·   ·   ·   ·   ·   ·
+         |·  ·   ·   ·   ·   ·   ·   ·   ·   ∘   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·
          |·  ·   ·   ·   ·   ·   ·   ∘   ∘   ∘   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·
-         |·  ·   ·   ·   ·   ·   ∘   ∘   ∘   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·
+         |·  ·   ·   ·   ·   ·   ∘   ∘   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·
       24 |·  ·   ·   ·   ·   ∘   ∘   ∘   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·
-         |·  ·   ·   ·   ∘   ∘   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·
-         |·  ·   ·   ∘   ∘   ∘   ·   ·   ·   ·   ·   ·   ·   ·               ·   ·   ·   ·
+         |·  ·   ·   ·   ∘   ∘   ∘   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·
+         |·  ·   ·   ∘   ∘   ∘   ·   ·   ·   ·   ·   ·   ·           ·                    
          |·  ·   ∘   ∘   ·   ·   ·   ·   ·   ·                                            
          |∘  ○   ∘   ∘   ·   ·   ·   ·   ·                                                
-       7 |○  ∘   ·   ·   ·   ·   ·                                                        
+       7 |○  ∘   ·   ·   ·   ·                                                            
          |--------|--------|--------|--------|--------|--------|--------|--------|--------
         0.0      2.3      4.5      6.8      9.0      11.3     13.6     15.8     18.1  
 ```
@@ -452,32 +452,32 @@ Although there's a lot of uncertainty, you can see the dense line down the middl
 
 ```scala
 scala> val regr2 = regr.zip(prior).map(_._2)
-regr2: rainier.core.RandomVariable[(rainier.compute.Real, rainier.compute.Real)] = rainier.core.RandomVariable@5e01c7e5
+regr2: rainier.core.RandomVariable[(rainier.compute.Real, rainier.compute.Real)] = rainier.core.RandomVariable@65209b43
 
 scala> plot2D(regr2.sample())
-      36 |··                                                                              
-         |·                                                                               
-         |·  ·                                                                            
-         | ···                                                                            
-         |    ·     ·                                                                     
-      28 |                                                                                
+      36 |· ·                                                                             
+         |·· ··    ·                                                                      
+         |· ····      ·                                                                   
+         |                        ·                                                       
+         |    ·                                                                           
+      29 |      ·                                                                         
+         |                  ··                                                            
+         |          ·   ·                                                                 
+         |                     ·                                                          
          |                                                                                
-         |                  ·                                                             
-         |                   ·                                                            
-         |                                                                                
-      20 |                       ·                                                        
-         |                                                                                
-         |                                                                                
-         |                              ·                                                 
-         |                                    ·                                           
-      12 |                                                      ············              
-         |                                                ···     ············ ··  ·  ·   
-         |                                                      · ·········∘∘∘········    
-         |                                                          ·······∘∘∘○○○∘∘·······
-         |                                                          · ········∘∘○○○○∘∘∘···
-       4 |                                                               ·········∘∘∘∘····
+      21 |                                                                                
+         |                    ·               ·                                           
+         |                      ·                                                         
+         |                               ·                                                
+         |                               ·                     ·           ·              
+      13 |                                         ·     ·       ··  ·······              
+         |                                      ·         ··  ·    ··············         
+         |                                              ·      ·  ··················· ·   
+         |                                                         ·········∘∘∘○∘∘∘····· ·
+         |                                                               ······∘○○○○∘∘∘···
+       5 |                                                                 ·········∘∘····
          |--------|--------|--------|--------|--------|--------|--------|--------|--------
-        0.15     0.54     0.92     1.31     1.69     2.08     2.47     2.85     3.24  
+        0.06     0.46     0.85     1.24     1.64     2.03     2.43     2.82     3.21  
 ```
 
 There are two things to see here. First, the tails are very wide: although there's the greatest density with a small slope and intercept, the model can't rule out that one of them is quite large. Second, as you'd hope, the two parameters are anti-correlated: a large slope necessarily implies a small intercept, and vice-versa.
@@ -491,7 +491,7 @@ scala> val regr3 = for {
      |     predictor = Predictor.from{i: Int => Poisson(intercept + slope*i)}
      |     _ <- predictor.fit(data)
      | } yield predictor.predict(21)
-regr3: rainier.core.RandomVariable[rainier.core.Generator[Int]] = rainier.core.RandomVariable@141ccfa8
+regr3: rainier.core.RandomVariable[rainier.core.Generator[Int]] = rainier.core.RandomVariable@5feda26b
 ```
 
 Plotting this is a bit ugly because of binning artifacts, but it's interesting to see the secondary mode down around 38, which represents the small chance that there was a very high intercept but basically no slope, and all the variation in the original data was just noise.
@@ -513,34 +513,34 @@ scala> val regr4 = for {
      |     _ <- Predictor.from{i: Int => Poisson(intercept + slope1*i)}.fit(data)
      |     _ <- Predictor.from{i: Int => Poisson(intercept + slope2*i)}.fit(data2)
      | } yield (slope1, intercept)
-regr4: rainier.core.RandomVariable[(rainier.compute.Real, rainier.compute.Real)] = rainier.core.RandomVariable@67c88d45
+regr4: rainier.core.RandomVariable[(rainier.compute.Real, rainier.compute.Real)] = rainier.core.RandomVariable@67802beb
 ```
 
-Plotting slope vs intercept now, we can see that, even though these are two separate regressions, we get much tighter bounds than before by letting the new data influence the shared parameter:
+Plotting slope vs intercept now, we can see that, even though these are two separate regressions, we get tighter bounds than before by letting the new data influence the shared parameter:
 
 ```scala
 scala> plot2D(regr4.sample())
-      25 |                                                                                
+      30 |                                                                                
          |·                                                                               
-         |·        ·         ·                                                            
-         | ·                  ··     ·       ·  ·            ·                            
-         |                                  ····              ·                           
-      20 |                                  · ····            ··     · ·                  
-         |                                      ··             ·       ·                  
-         |                                       ·     ·        ·     ·                   
+         |·                                                                               
          |                                                                                
          |                                                                                
-      15 |                                                ·                               
+      24 |                                                                                
+         |                                     ·                                          
+         |                                      ·      ·                                  
+         |                                             ··                                 
+         |                                        ·      ··                               
+      17 |                                                                                
+         |                                                                                
+         |                                                                                
          |                                                 ·                              
          |                                                                                
-         |                                                     ·                          
-         |                                                       ·   ·  ·                 
-       9 |                                                      ·  ····· ·   ·            
-         |                                                       ·············· ··        
-         |                                                     ·   ····················· ·
-         |                                                       ··········∘∘∘∘∘∘∘∘·······
-         |                                                           · ·····∘∘∘○○∘○∘∘∘····
-       4 |                                                              ·········∘·∘∘·····
+      11 |                                                                                
+         |                                                          · ·   · · ·           
+         |                                                          ··················    
+         |                                                             ········∘∘∘∘·······
+         |                                                               ·····∘∘∘∘○○∘∘∘···
+       4 |                                                                ·······∘∘∘∘∘∘···
          |--------|--------|--------|--------|--------|--------|--------|--------|--------
-        0.84     1.15     1.47     1.78     2.10     2.41     2.73     3.04     3.36  
+        0.02     0.43     0.84     1.25     1.66     2.07     2.48     2.89     3.30  
 ```
