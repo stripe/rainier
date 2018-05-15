@@ -276,7 +276,7 @@ val regr4 = for {
 } yield (slope1, intercept)
 ```
 
-Plotting slope vs intercept now, we can see that, even though these are two separate regressions, we get much tighter bounds than before by letting the new data influence the shared parameter:
+Plotting slope vs intercept now, we can see that, even though these are two separate regressions, we get tighter bounds than before by letting the new data influence the shared parameter:
 
 ```tut
 plot2D(regr4.sample())

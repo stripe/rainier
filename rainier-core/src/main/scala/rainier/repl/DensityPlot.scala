@@ -8,12 +8,22 @@ case class DensityPlot(nRows: Int = 20,
                        logX: Boolean = false,
                        logY: Boolean = false,
                        logMarkers: Boolean = false,
+                       clip: Double = 0.025,
                        markers: String = "·∘○") {
 
   def plot2D(points: Seq[(Double, Double)]): Seq[String] = {
-    val (xs, ys) = points.unzip
-    val (xBucketFn, xLabelFn) = mapping(xs.max, xs.min, nColumns, logX)
-    val (yBucketFn, yLabelFn) = mapping(ys.max, ys.min, nRows, logY)
+    val (fullXs, fullYs) = points.unzip
+    val (xMin, xMax) = findExtremes(fullXs)
+    val (yMin, yMax) = findExtremes(fullYs)
+    val clippedPoints = points.filter {
+      case (x, y) =>
+        x <= xMax && x >= xMin &&
+          y <= yMax && y >= yMin
+    }
+    val (xs, ys) = clippedPoints.unzip
+
+    val (xBucketFn, xLabelFn) = mapping(xMax, xMin, nColumns, logX)
+    val (yBucketFn, yLabelFn) = mapping(yMax, yMin, nRows, logY)
 
     val cellCounts =
       points
@@ -35,8 +45,12 @@ case class DensityPlot(nRows: Int = 20,
     plotCells(cells, xLabelFn, yLabelFn)
   }
 
-  def plot1D(points: Seq[Double]): Seq[String] = {
-    val (xBucketFn, xLabelFn) = mapping(points.max, points.min, nColumns, logX)
+  def plot1D(fullPoints: Seq[Double]): Seq[String] = {
+    val (min, max) = findExtremes(fullPoints)
+    val points = fullPoints.filter { x =>
+      x <= max && x >= min
+    }
+    val (xBucketFn, xLabelFn) = mapping(max, min, nColumns, logX)
     val xCounts =
       points.groupBy(xBucketFn).map { case (k, v) => k -> v.size.toDouble }
     val (yBucketFn, yLabelFn) = mapping(xCounts.values.max, 0.0, nRows, logY)
@@ -56,6 +70,16 @@ case class DensityPlot(nRows: Int = 20,
 
     plotCells(cells, xLabelFn, yLabelFn)
   }
+
+  private def findExtremes(values: Seq[Double]): (Double, Double) =
+    if (clip == 0.0)
+      (values.min, values.max)
+    else {
+      val sorted = values.toVector.sorted
+      val minIndex = Math.round(clip * values.size).toInt
+      val maxIndex = Math.round((1.0 - clip) * values.size).toInt - 1
+      (sorted(minIndex), sorted(maxIndex))
+    }
 
   private def plotCells(cells: Map[(Int, Int), String],
                         xLabelFn: Int => Double,
