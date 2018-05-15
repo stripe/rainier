@@ -74,6 +74,7 @@ object Benchmarks {
       model.density
     }
   }
+
   @State(Scope.Benchmark)
   class BernoulliBenchmark extends BenchmarkState {
     def expression = {
@@ -166,21 +167,30 @@ class Benchmarks {
     state.endToEndHMC(5)
   }
 
+
+  //Stan runs this at about 60,000 ops/sec
+  //vs our 5,000,000 ops/sec 
   @Benchmark
   def runBernoulliGradient(state: BernoulliBenchmark): Unit = {
     state.runGradient
   }
 
+  //Stan runs this at about 4 ops/sec
+  //vs our 35 ops/sec
   @Benchmark
   def endToEndBernoulli(state: BernoulliBenchmark): Unit = {
     state.endToEndHMC(5)
   }
 
+  //Stan runs this at about 50,000 ops/sec
+  //vs our 1,600,000 ops/sec
   @Benchmark
   def runFunnelGradient(state: FunnelBenchmark): Unit = {
     state.runGradient
   }
 
+  //Stan runs this at about 2 ops/sec
+  //vs our 20 ops/sec
   @Benchmark
   def endToEndFunnel(state: FunnelBenchmark): Unit = {
     state.endToEndHMC(5)
