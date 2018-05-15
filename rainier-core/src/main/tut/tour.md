@@ -27,7 +27,7 @@ The starting point for almost any work in Rainier will be some object that imple
 `rainier.core.Distribution[T]`.
 
 Rainier implements various familiar families of probability distributions like the [Normal](https://en.wikipedia.org/wiki/Normal_distribution) distribution,
-the [Uniform](https://en.wikipedia.org/wiki/Uniform_distribution_(continuous)) distribution, and the [Poisson](https://en.wikipedia.org/wiki/Poisson_distribution) distribution. You will find these three in [rainier-core/src/main/scala/core/Continuous.scala](Continuous.scala) and [rainier-core/src/main/scala/core/Discrete.scala](Discrete.scala)- along with a few more, and we'll keep adding them as the need arises.
+the [Uniform](https://en.wikipedia.org/wiki/Uniform_distribution_(continuous)) distribution, and the [Poisson](https://en.wikipedia.org/wiki/Poisson_distribution) distribution. You will find these three in [Continuous.scala](rainier-core/src/main/scala/core/Continuous.scala) and [Discrete.scala](rainier-core/src/main/scala/core/Discrete.scala) - along with a few more, and we'll keep adding them as the need arises.
 
 You construct a distributions from its parameters, usually with the `apply` method on the object representing its family. So for example, this is a normal distribution with a mean of 0 and a standard deviation of 1:
 
