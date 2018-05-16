@@ -36,7 +36,7 @@ Rainier currently provides the `Walkers` affine-invariant sampler and the `HMC` 
 
 The `MAP` gradient descent optimizer is likely more of a demonstration than of practical use, but it does have the virtue of simplicity. In the future, we will hopefully add more sophisticated optimizers such as `L-BFGS'.
 
-## rainier.core
+## rainier.core.RandomVariable
 
 The `core` package contains the primary API actually used by end-users who want to do Bayesian inference. The [tour](tour.md) provides an overview of how this API is used which will be extremely helpful context for understanding what follows.
 
@@ -46,14 +46,23 @@ The representation of the `density` function is a `Real` (or, in fact, several `
 
 The representation of the `value` function for `RandomVariable[T]` is an object of some type `T`. To be able to `sample` from that `RandomVariable`, there must be a typeclass `Sampleable[T,V]` for some `V`; the combination of `value` and its `Sampleable` instance forms the required function from `Θ` to `V`. (It's a bit unintuitive that in `RandomVariable[T]`, the `T` refers to the type of the function object, rather than the type produced by the function, which is implicit.)
 
-In practice, there are two classes of `T`: deterministic functions without outputs in R^N, and everything else. The former cases are captured by typeclasses such as `Sampleable[Real,Double]` or `Sampleable[Map[String,Real],Map[String,Double]]`. These are statically analyzable, always produce the same value for the same parameters, and can be efficiently evaluated using the `Compiler` just like the `density` is. (This is true even if there's some structure, like in the `Map` case, wrapped around the `Real` objects.)
+In practice, there are two classes of `T`: deterministic functions with outputs in R^N, and everything else. The former cases are captured by typeclasses such as `Sampleable[Real,Double]` or `Sampleable[Map[String,Real],Map[String,Double]]`. These are statically analyzable, always produce the same value for the same parameters, and can be efficiently evaluated using the `Compiler` just like the `density` is. (This is true even if there's some structure, like in the `Map` case, wrapped around the `Real` objects.)
 
-All remaining cases are captured by `Sampleable[Generator[V],V]`. A `Generator` can be any function, including a non-deterministic function, from `Θ => V`. It will not, however, directly interact with `Θ`; instead, it will hold onto references to one or more `Real` objects. `Generator` is evaluated with the `get` method which takes, as one of its arguments, a `Numeric[Real]` - in practice, an `Evaluator` - which allows it to evaluate any referenced `Real`s via `toDouble`, albeit (in the general case) more slowly than with `Compiler`. Thus, a `Generator[V]` is, conceptually, a composition of one or more functions from `Θ => Double`, represented as `Real`, with some further function from `Double* => V`.
+All remaining cases are captured by `Sampleable[Generator[V],V]`. A `Generator` object can represent any function, including a non-deterministic function, from `Θ => V`. It will not, however, directly interact with `Θ`; instead, it will hold onto references to one or more `Real` objects. `Generator` is evaluated with the `get` method which takes, as one of its arguments, a `Numeric[Real]` - in practice, an `Evaluator` - which allows it to evaluate any referenced `Real`s via `toDouble`, albeit (in the general case) more slowly than with `Compiler`. Thus, a `Generator[V]` is, conceptually, a composition of one or more functions from `Θ => Double`, represented as `Real`, with some further function from `(Double,...) => V`.
 
 The other argument to `Generator.get` is a `RNG` object, and many `Generator` objects represent sampling functions for various distribution families, parameterized by `Real`. `Generator` implements `map`, `zip`, and `flatMap` in the standard way for a probability monad (similarly to, eg [https://github.com/jliszka/probability-monad](https://github.com/jliszka/probability-monad)).
 
 `RandomVariable` also provides monadic `map` and `flatMap` methods.  `map(f: T => U)` returns a new `RandomVariable[U]` whose `density` is unchanged but whose `value` function is replaced with some new object which is a transformation via `f` of its old value function. Intuitively, this is a transformation of the output value without affecting the underlying parameter distribution.
 
-To understand `flatMap(f: T => RandomVariable[U])`, consider `val v = t.flatMap(f)`. This uses an intermediate RandomVariable `u = f(t.value)`; the output `v` will have the same `value` as `u`, and its `density` will be the sum of `t.density` and `u.density`. Intuitively, this is both transforming 
+To understand `flatMap(f: T => RandomVariable[U])`, consider `val result: RandomVariable[U] = t.flatMap(f)`, which creates an intermediate `u: RandomVariable[U] = f(t.value)`. Then, `result.value = u.value`, and `result.density = t.density + u.density`. This could be doing any or all of the following:
+* Introducing a new parameter. Unlike in the `map` case, where the unchanged `density` means that the parameter space must be remaining the same, here we could be introducing some new `Variable` as a leaf node of the `u.density` DAG, and so the parameter space of `result` can be of a higher dimension than the parameter space of `t`.
+* Conditioning on observed data. We could be leaving `t.value` unchanged, but using it as an input into some likelihood function that also brings in some observational data, whose result will become `u.density` and so be incorporated via the `flatMap` into our existing priors.
+* Transforming the `value` function. Like a `map`, a `flatMap` can change the `value`; especially common is to, in combination with conditioning on observed data, change from a deterministic `Real` value function to a stochastic `Generator` that acts as a posterior prediction.
 
-[distribution, bounded support & jacobians, noncentered reparameterization, inverse jacobians via injection]
+It's useful to note that shifting the `value` function from something deterministic and `Real`-based to a `Generator` is a one-way ratchet, and that after that shift you're unlikely to get anything valuable out of any further `flatMap` (apart from the special-case of `zip`). That's because a useful `flatMap` is usually using some part of `t.value` as an input into the new `u.density`; once `t.value` is a `Generator`, the `Real` parts of the function are hidden and there's no way to use them to refine the density.
+
+One final subtlety worth mentioning is that `flatMap` does not directly sum `t.density` and `u.density`; instead, the `density` is a `Set` of `Real`s and these sets are unioned during `flatMap`; at the end, during sampling, all of the elements of this set are summed. The goal of this is that multiple references to the same, identical (in the sense of object identity) `RandomVariable` only affect the density once; for example, introducing a new parameter in one `flatMap` and then later referring to that same parameter in another `flatMap` should not add the parameter's prior in to the density a second time.
+
+## rainier.core.Distribution
+
+TODO
