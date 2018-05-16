@@ -2,3 +2,4 @@ bazel-*
 .idea
 project/target
 target/
+.DS_Store
