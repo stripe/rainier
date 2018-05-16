@@ -89,7 +89,7 @@ object Benchmarks {
       model.density
     }
   }
-
+  
   @State(Scope.Benchmark)
   class FunnelBenchmark extends BenchmarkState {
     def expression = {
@@ -167,7 +167,6 @@ class Benchmarks {
     state.endToEndHMC(5)
   }
 
-
   //Stan runs this at about 60,000 ops/sec
   //vs our 5,000,000 ops/sec 
   @Benchmark
@@ -195,5 +194,4 @@ class Benchmarks {
   def endToEndFunnel(state: FunnelBenchmark): Unit = {
     state.endToEndHMC(5)
   }
-
 }
