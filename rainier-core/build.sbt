@@ -1,7 +1,7 @@
 name := "rainier-core"
 
 libraryDependencies ++= Seq(
-  Dependencies.scalaTest,
+  Dependencies.scalaTest % Test,
 )
 
 //Publish.settings
