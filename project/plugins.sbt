@@ -1,3 +1,5 @@
 addSbtPlugin("org.tpolecat" % "tut-plugin" % "0.6.4")
 addSbtPlugin("com.geirsson" % "sbt-scalafmt" % "1.5.0")
+addSbtPlugin("com.github.gseitz" % "sbt-release" % "1.0.8")
+addSbtPlugin("com.jsuereth" % "sbt-pgp" % "1.1.1")
 addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.3.4")
