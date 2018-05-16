@@ -4,7 +4,7 @@ import scala.annotation.tailrec
 
 private case class DualAvg(
     delta: Double,
-    lambda: Double,
+    nSteps: Int,
     logStepSize: Double,
     logStepSizeBar: Double,
     acceptanceProb: Double,
@@ -17,7 +17,6 @@ private case class DualAvg(
 ) {
   val stepSize = Math.exp(logStepSize)
   val finalStepSize = Math.exp(logStepSizeBar)
-  val nSteps = (lambda / Math.exp(logStepSize)).toInt.max(1)
 
   def update(newAcceptanceProb: Double): DualAvg = {
     val newIteration = iteration + 1
@@ -48,10 +47,10 @@ private case class DualAvg(
 }
 
 private object DualAvg {
-  def apply(delta: Double, lambda: Double, stepSize: Double): DualAvg =
+  def apply(delta: Double, nSteps: Int, stepSize: Double): DualAvg =
     DualAvg(
       delta = delta,
-      lambda = lambda,
+      nSteps = nSteps,
       logStepSize = Math.log(stepSize),
       logStepSizeBar = 0.0,
       acceptanceProb = 1.0,
@@ -66,7 +65,7 @@ private object DualAvg {
       nSteps: Int,
       iterations: Int)(implicit rng: RNG): (HamiltonianChain, Double) = {
     val stepSize0 = findReasonableStepSize(chain)
-    val dualAvg = DualAvg(delta, nSteps * stepSize0, stepSize0)
+    val dualAvg = DualAvg(delta, nSteps, stepSize0)
     def go(chain: HamiltonianChain,
            dualAvg: DualAvg,
            remaining: Int): (HamiltonianChain, DualAvg) = {
