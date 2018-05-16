@@ -74,6 +74,7 @@ object Benchmarks {
       model.density
     }
   }
+
   @State(Scope.Benchmark)
   class BernoulliBenchmark extends BenchmarkState {
     def expression = {
@@ -84,6 +85,21 @@ object Benchmarks {
         theta <- Uniform.standard.param
         _ <- Categorical.boolean(theta).fit(data)
       } yield theta
+
+      model.density
+    }
+  }
+  
+  @State(Scope.Benchmark)
+  class FunnelBenchmark extends BenchmarkState {
+    def expression = {
+      val model =
+        for {
+          y <- Normal(0, 3).param
+          x <- RandomVariable.traverse(1.to(9).map { _ =>
+            Normal(0, (y / 2).exp).param
+          })
+        } yield (x(0), y)
 
       model.density
     }
@@ -151,13 +167,31 @@ class Benchmarks {
     state.endToEndHMC(5)
   }
 
+  //Stan runs this at about 60,000 ops/sec
+  //vs our 5,000,000 ops/sec 
   @Benchmark
   def runBernoulliGradient(state: BernoulliBenchmark): Unit = {
     state.runGradient
   }
 
+  //Stan runs this at about 4 ops/sec
+  //vs our 35 ops/sec
   @Benchmark
   def endToEndBernoulli(state: BernoulliBenchmark): Unit = {
+    state.endToEndHMC(5)
+  }
+
+  //Stan runs this at about 50,000 ops/sec
+  //vs our 1,600,000 ops/sec
+  @Benchmark
+  def runFunnelGradient(state: FunnelBenchmark): Unit = {
+    state.runGradient
+  }
+
+  //Stan runs this at about 2 ops/sec
+  //vs our 20 ops/sec
+  @Benchmark
+  def endToEndFunnel(state: FunnelBenchmark): Unit = {
     state.endToEndHMC(5)
   }
 }
