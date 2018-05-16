@@ -1,5 +1,5 @@
 organization in ThisBuild := "com.stripe"
-scalaVersion in ThisBuild := "2.12.3"
+scalaVersion in ThisBuild := "2.12.6"
 
 scalacOptions ++= Seq(
   "-deprecation",
