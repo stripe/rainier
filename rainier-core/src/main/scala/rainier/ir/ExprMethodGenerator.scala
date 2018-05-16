@@ -1,9 +1,7 @@
-package rainier.compute.asm
-
-import rainier.compute._
+package rainier.ir
 
 private case class ExprMethodGenerator(method: MethodDef,
-                                       inputs: Seq[Variable],
+                                       inputs: Seq[Parameter],
                                        varTypes: VarTypes,
                                        className: String)
     extends MethodGenerator {
@@ -20,8 +18,8 @@ private case class ExprMethodGenerator(method: MethodDef,
     ir match {
       case Const(value) =>
         constant(value)
-      case Parameter(variable) =>
-        loadParameter(varIndices(variable))
+      case p: Parameter =>
+        loadParameter(varIndices(p))
       case b: BinaryIR =>
         traverse(b.left)
         traverse(b.right)

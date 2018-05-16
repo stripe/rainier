@@ -1,9 +1,8 @@
 package rainier.compute
 
-trait Compiler {
-  def compile(inputs: Seq[Variable],
-              outputs: Seq[Real]): Array[Double] => Array[Double]
+import rainier.ir
 
+trait Compiler {
   def compile(inputs: Seq[Variable], output: Real): Array[Double] => Double =
     compile(inputs, List(output)).andThen { array =>
       array(0)
@@ -15,10 +14,14 @@ trait Compiler {
       array =>
         (array.head, array.tail)
     }
+
+  def compile(inputs: Seq[Variable],
+              outputs: Seq[Real]): Array[Double] => Array[Double]
+
 }
 
 object Compiler {
-  var default: Compiler = asm.IRCompiler
+  var default: Compiler = IRCompiler(200, false)
 }
 
 case class InstrumentingCompiler(orig: Compiler, printEvery: Int)
@@ -40,5 +43,20 @@ case class InstrumentingCompiler(orig: Compiler, printEvery: Int)
       result
     }
     fn
+  }
+}
+
+case class IRCompiler(methodSizeLimit: Int, writeToTmpFile: Boolean)
+    extends Compiler {
+  def compile(inputs: Seq[Variable],
+              outputs: Seq[Real]): Array[Double] => Array[Double] = {
+    val translator = new Translator
+    val params = inputs.map { v =>
+      v.param
+    }
+    val irs = outputs.map { r =>
+      translator.toIR(r)
+    }
+    ir.ClassGenerator.generate(params, irs, methodSizeLimit, writeToTmpFile)
   }
 }

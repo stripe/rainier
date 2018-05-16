@@ -1,5 +1,6 @@
 package rainier.compute
 
+import rainier.ir._
 import scala.collection.mutable.HashMap
 
 private object Gradient {
