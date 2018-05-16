@@ -16,17 +16,17 @@ Depending on your background, you might think of Rainier as aspiring to be eithe
 
 Rainier requires that all of the observations or training data for a given model fit comfortably into RAM on a single machine. It does not make use of GPUs or of SIMD instructions.
 
-Within those constraints, however, it is extremely fast. Rainier takes advantage of knowing all of your data ahead of time by aggressively precomputing as much as it can, which is a significant practical benefit relative to systems like Stan that compile a data-agnostic model. It produces optimized, unboxed, JIT-friendly JVM bytecode for all numerical calculations. This compilation happens in-process and is fast enough for interactive use at a REPL.
+Within those constraints, however, it is extremely fast. Rainier takes advantage of knowing all of your data ahead of time by aggressively precomputing as much as it can, which is a significant practical benefit relative to systems that compile a data-agnostic model. It produces optimized, unboxed, JIT-friendly JVM bytecode for all numerical calculations. This compilation happens in-process and is fast enough for interactive use at a REPL.
 
-Benchmarking is hard, and we wouldn't claim to have publishable results here, but as a rule of thumb you should expect a 10x speedup on Rainier relative to the equivalent Stan model.
+As a result, in early benchmarks, we're seeing a 10x or more speedup on Rainier relative to the equivalent Stan model. This is promising, though please keep in mind that benchmarking is hard,  micro-benchmarks are often meaningless, and Stan's sampler implementation is much more sophisticated and much, much, much better tested than Rainier's!
 
 ## Documentation
 
 A good starting point is the [Tour of Rainier's Core](docs/tour.md).
 
-If you want to dig deeper, there are some [implementation notes](docs/impl.md).
+If you want to dig deeper, there are some detailed [implementation notes](docs/impl.md).
 
-If you're more familiar with deep learning systems like TensorFlow or PyTorch, you might also be interested in [this summary of some of the similarities and differences](docs/dl.md) between DL and MCMC.
+If you're more familiar with deep learning systems like TensorFlow or PyTorch, you might also be interested in [this brief summary of some of the similarities and differences](docs/dl.md) between DL and MCMC.
 
 ## Building
 
