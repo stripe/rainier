@@ -88,7 +88,8 @@ private object DualAvg {
 
   private def continueTuningStepSize(logAcceptanceProb: Double,
                                      exponent: Double): Boolean =
-    exponent * logAcceptanceProb > -exponent * Math.log(2)
+    !logAcceptanceProb.isNegInfinity &&
+      (exponent * logAcceptanceProb > -exponent * Math.log(2))
 
   @tailrec
   private def tuneStepSize(
