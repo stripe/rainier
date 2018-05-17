@@ -18,10 +18,10 @@ case class MethodRef(sym: Sym) extends IR
 
 case class Sym private (id: Int)
 object Sym {
-  private var curIdx = 0
-  def freshSym(): Sym = {
-    val r = Sym(curIdx)
-    curIdx += 1
-    r
+  @volatile private var id: Int = 0
+  def freshSym(): Sym = this.synchronized {
+    val sym = Sym(id)
+    id += 1
+    sym
   }
 }
