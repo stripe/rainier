@@ -63,10 +63,11 @@ private class CompiledClass(name: String, methods: Seq[MethodNode]) {
 }
 
 private object CompiledClass {
-  private var id = 0
-  def freshName: String = {
+  @volatile private var id: Int = 0
+  def freshName: String = this.synchronized {
+    val name = "CompiledFunction$" + id
     id += 1
-    "CompiledFunction$" + id
+    name
   }
 
   def methods(seq: Seq[MethodNode]): CompiledClass =
