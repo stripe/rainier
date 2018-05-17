@@ -107,8 +107,8 @@ object Benchmarks {
   }
 }
 
-@Warmup(iterations = 3)
-@Measurement(iterations = 10)
+@Warmup(iterations = 3, time = 1)
+@Measurement(iterations = 10, time = 1)
 @Fork(3)
 class Benchmarks {
   import Benchmarks._

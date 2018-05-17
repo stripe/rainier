@@ -8,7 +8,10 @@ object Tracer {
     }
     val allMeths = packer.methods
     val varTypes = VarTypes.methods(allMeths.toList)
-    (varTypes, outputMeths, allMeths)
+    traceApply(outputMeths.map(_.sym.id), varTypes.globals.size)
+    allMeths.foreach { meth =>
+      trace(meth, inputs, varTypes)
+    }
   }
 
   private def traceApply(outputs: Seq[Int], globalSize: Int) = {

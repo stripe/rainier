@@ -44,7 +44,8 @@ private object LogLineOps {
       else
         1
 
-    (pow(line, 1.0 / k), k.toDouble)
+    //(pow(line, 1.0 / k), k.toDouble)
+    (line, 1.0)
   }
 
   @tailrec

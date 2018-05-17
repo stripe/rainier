@@ -46,6 +46,10 @@ class RealTest extends FunSuite {
     Normal(x, 1).logDensities(0d.to(2d).by(1).toList)
   }
 
+  run("reciprocal") { x =>
+    Real.one / x
+  }
+
   run("logistic") { x =>
     val logistic = Real.one / (Real.one + (x * -1).exp)
     (logistic * (Real.one - logistic)).log
