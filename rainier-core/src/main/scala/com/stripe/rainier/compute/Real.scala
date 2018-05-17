@@ -69,10 +69,7 @@ object Real {
 class Variable extends Real {
   private[compute] val param = new ir.Parameter
 }
-private case class Unary(original: Real, op: UnaryOp) extends Real
-
-private case class Unary(original: NonConstant, op: ir.UnaryOp)
-    extends NonConstant
+private case class Unary(original: Real, op: ir.UnaryOp) extends Real
 
 /*
 This node type represents any linear transformation from an input vector to an output
