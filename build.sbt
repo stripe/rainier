@@ -7,7 +7,7 @@ scalacOptions ++= Seq(
   "-unchecked",
 )
 
-val unpublished = Seq(publish := (), publishLocal := (), publishArtifact := false)
+val unpublished = Seq(publish := {}, publishLocal := {}, publishArtifact := false)
 
 val publishSettings = Seq(
   releaseCrossBuild := true,
@@ -41,20 +41,43 @@ scalafmtOnCompile in ThisBuild := true
 
 lazy val root = project.
   in(file(".")).
-  dependsOn(rainierCore).
   aggregate(rainierCore, rainierExample, rainierBenchmark).
+  aggregate(shadedAsm).
   settings(unpublished: _*)
 
 lazy val rainierCore = project.
   in(file("rainier-core")).
+  settings(name := "rainier-core").
   enablePlugins(TutPlugin).
-  settings(publishSettings).
-  settings(
-    // https://mvnrepository.com/artifact/commons-io/commons-io
-    libraryDependencies += "commons-io" % "commons-io" % "2.6"
-  ).
-  dependsOn(shadedAsm)
+  settings(libraryDependencies ++= Seq(
+    "commons-io" % "commons-io" % "2.6",
+    "org.scalatest" %% "scalatest" % "3.0.5" % Test)).
+  dependsOn(shadedAsm).
+  settings(publishSettings)
 
+lazy val rainierExample = project.
+  in(file("rainier-example")).
+  settings(name := "rainier-example").
+  dependsOn(rainierCore).
+  settings(unpublished: _*)
+
+lazy val rainierBenchmark = project.
+  in(file("rainier-benchmark")).
+  settings(name := "rainier-benchmark").
+  enablePlugins(JmhPlugin).
+  dependsOn(rainierCore).
+  settings(unpublished: _*)
+
+// publishable project with the shaded deps
+lazy val shadedAsm = project.
+  in(file(".rainier-shaded-asm")).
+  settings(name := "rainier-shaded-asm").
+  settings(
+    exportJars := true,
+    packageBin in Compile := (assembly in asmDeps).value).
+  settings(publishSettings)
+
+// phantom project to bundle deps for shading
 lazy val asmDeps = project.
   in(file(".asm-deps")).
   settings(
@@ -78,20 +101,3 @@ lazy val asmDeps = project.
         oldStrategy(other)
     },
   )
-
-lazy val shadedAsm = project.
-  in(file(".shaded-asm")).
-  settings(
-    name := "rainier-shaded-asm",
-    exportJars := true,
-    packageBin in Compile := (assembly in asmDeps).value)
-
-lazy val rainierExample = project.
-  in(file("rainier-example")).
-  dependsOn(rainierCore).
-  settings(unpublished: _*)
-
-lazy val rainierBenchmark = project.
-  in(file("rainier-benchmark")).
-  dependsOn(rainierCore).
-  settings(unpublished: _*)
