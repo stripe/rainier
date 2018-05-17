@@ -50,12 +50,41 @@ lazy val rainierCore = project.
   enablePlugins(TutPlugin).
   settings(publishSettings).
   settings(
-    libraryDependencies += "org.ow2.asm" % "asm" % "6.0",
-    // https://mvnrepository.com/artifact/org.ow2.asm/asm-tree
-    libraryDependencies += "org.ow2.asm" % "asm-tree" % "6.0",
     // https://mvnrepository.com/artifact/commons-io/commons-io
     libraryDependencies += "commons-io" % "commons-io" % "2.6"
+  ).
+  dependsOn(shadedAsm)
+
+lazy val asmDeps = project.
+  in(file(".asm-deps")).
+  settings(
+    libraryDependencies += "org.ow2.asm" % "asm" % "6.0",
+    libraryDependencies += "org.ow2.asm" % "asm-tree" % "6.0",
+  ).
+  settings(
+    skip in publish := true,
+    assemblyOption in assembly := (assemblyOption in assembly).value.copy(
+      includeBin = false,
+      includeDependency = true,
+      includeScala = false,
+    ),
+    assemblyShadeRules in assembly := Seq(
+      ShadeRule.rename("org.objectweb.asm.**" -> "rainier.internal.asm.@1").inAll,
+    ),
+    assemblyMergeStrategy in assembly := {
+      case "module-info.class" => MergeStrategy.discard
+      case other =>
+        val oldStrategy = (assemblyMergeStrategy in assembly).value
+        oldStrategy(other)
+    },
   )
+
+lazy val shadedAsm = project.
+  in(file(".shaded-asm")).
+  settings(
+    name := "rainier-shaded-asm",
+    exportJars := true,
+    packageBin in Compile := (assembly in asmDeps).value)
 
 lazy val rainierExample = project.
   in(file("rainier-example")).

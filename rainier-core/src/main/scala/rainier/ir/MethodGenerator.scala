@@ -1,8 +1,8 @@
 package rainier.ir
 
-import org.objectweb.asm.Opcodes._
-import org.objectweb.asm.tree.MethodNode
-import org.objectweb.asm.Label
+import rainier.internal.asm.Opcodes._
+import rainier.internal.asm.tree.MethodNode
+import rainier.internal.asm.Label
 
 private trait MethodGenerator {
   lazy val methodNode: MethodNode =

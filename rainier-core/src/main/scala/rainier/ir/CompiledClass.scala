@@ -1,10 +1,11 @@
 package rainier.ir
 
-import org.objectweb.asm.Opcodes._
 import java.io.File
 import org.apache.commons.io.FileUtils
-import org.objectweb.asm.tree.{ClassNode, MethodNode}
-import org.objectweb.asm.ClassWriter
+
+import rainier.internal.asm.Opcodes._
+import rainier.internal.asm.tree.{ClassNode, MethodNode}
+import rainier.internal.asm.ClassWriter
 
 private trait CompiledFunction {
   def apply(inputs: Array[Double]): Array[Double]
