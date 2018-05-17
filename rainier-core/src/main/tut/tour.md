@@ -5,8 +5,8 @@ Hello! This document will provide a quick tour through the most important parts 
 The `rainier.core` package defines some key traits like `Distribution`, `RandomVariable`, `Likelihood`, and `Predictor`. Let's import it, along with a `repl` package that gives us some useful utilities.
 
 ```tut:silent
-import rainier.core._
-import rainier.repl._
+import com.stripe.rainier.core._
+import com.stripe.rainier.repl._
 ```
 
 Together, those traits let you define bayesian models in Rainier. To throw you a little bit into the deep end, here's a simple linear regression that we'll return to later. This probably won't entirely make sense yet. That's ok. Hopefully it will serve as a bit of a roadmap that put the rest of the tour in context as we build up to it. 
@@ -27,7 +27,7 @@ The starting point for almost any work in Rainier will be some object that imple
 `rainier.core.Distribution[T]`.
 
 Rainier implements various familiar families of probability distributions like the [Normal](https://en.wikipedia.org/wiki/Normal_distribution) distribution,
-the [Uniform](https://en.wikipedia.org/wiki/Uniform_distribution_(continuous)) distribution, and the [Poisson](https://en.wikipedia.org/wiki/Poisson_distribution) distribution. You will find these three in [Continuous.scala](rainier-core/src/main/scala/core/Continuous.scala) and [Discrete.scala](rainier-core/src/main/scala/core/Discrete.scala) - along with a few more, and we'll keep adding them as the need arises.
+the [Uniform](https://en.wikipedia.org/wiki/Uniform_distribution_(continuous)) distribution, and the [Poisson](https://en.wikipedia.org/wiki/Poisson_distribution) distribution. You will find these three in [Continuous.scala](/rainier-core/src/main/scala/com/stripe/rainier/core/Continuous.scala) and [Discrete.scala](/rainier-core/src/main/scala/com/stripe/rainier/core/Discrete.scala) - along with a few more, and we'll keep adding them as the need arises.
 
 You construct a distributions from its parameters, usually with the `apply` method on the object representing its family. So for example, this is a normal distribution with a mean of 0 and a standard deviation of 1:
 
