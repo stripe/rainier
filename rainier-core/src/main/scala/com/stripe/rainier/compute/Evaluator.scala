@@ -34,5 +34,5 @@ class Evaluator(var cache: Map[Real, Double]) extends Numeric[Real] {
   def times(x: Real, y: Real) = x * y
   def toFloat(x: Real) = toDouble(x).toFloat
   def toInt(x: Real) = toDouble(x).toInt
-  def toLong(x: Real) = toLong(x).toInt
+  def toLong(x: Real) = toDouble(x).toInt
 }
