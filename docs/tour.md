@@ -29,14 +29,14 @@ The starting point for almost any work in Rainier will be some object that imple
 Rainier implements various familiar families of probability distributions like the [Normal](https://en.wikipedia.org/wiki/Normal_distribution) distribution,
 the [Uniform](https://en.wikipedia.org/wiki/Uniform_distribution_(continuous)) distribution, and the [Poisson](https://en.wikipedia.org/wiki/Poisson_distribution) distribution. You will find these three in [Continuous.scala](/rainier-core/src/main/scala/rainier/core/Continuous.scala) and [Discrete.scala](/rainier-core/src/main/scala/rainier/core/Discrete.scala) - along with a few more, and we'll keep adding them as the need arises.
 
-You construct a distributions from its parameters, usually with the `apply` method on the object representing its family. So for example, this is a normal distribution with a mean of 0 and a standard deviation of 1:
+You construct a distribution from its parameters, usually with the `apply` method on the object representing its family. So for example, this is a normal distribution with a mean of 0 and a standard deviation of 1:
 
 ```scala
 scala> val normal: Distribution[Double] = Normal(0,1)
 normal: rainier.core.Distribution[Double] = rainier.core.Injection$$anon$1@4e57f14e
 ```
 
-In Rainier, `Distribution` objects play three different roles. Most distributions (those that are continuous, like `Normal`), implement `param`, and all distributions implement `fit` and `generator`. Each of these methods is central to one of the three stages of building a model in Rainier: defining your parameters and their priors; fitting the parameters to some observed data; and using the fit parameters to generate samples of some posterior distribution of interest. We'll start by exploring each of these in turn.
+In Rainier, `Distribution` objects play three different roles. Continuous distributions (like `Normal`) implement `param`, and all distributions implement `fit` and `generator`. Each of these methods is central to one of the three stages of building a model in Rainier: defining your parameters and their priors; fitting the parameters to some observed data; and using the fit parameters to generate samples of some posterior distribution of interest. We'll start by exploring each of these in turn.
 
 ## `param` and `RandomVariable`
 
@@ -51,7 +51,7 @@ scala> val x = Normal(0,1).param
 x: rainier.core.RandomVariable[rainier.compute.Real] = rainier.core.RandomVariable@522df760
 ```
 
-You can see that `x`s type is `RandomVariable[Real]`. `RandomVariable` pairs a type of value (in this case, a real number) with some knowledge of the relative probability density of different values of that type. We can use this knowledge to produce a sample of these possible values:
+You can see that they type of`x` is `RandomVariable[Real]`. `RandomVariable` pairs a type of value (in this case, a real number) with some knowledge of the relative probability density of different values of that type. We can use this knowledge to produce a sample of these possible values:
 
 ```scala
 scala> x.sample()
@@ -319,7 +319,7 @@ scala> prediction.sample()
 res8: List[Int] = List(11, 7, 6, 4, 4, 9, 7, 5, 6, 8, 13, 4, 10, 7, 10, 5, 9, 8, 13, 7, 8, 7, 10, 5, 5, 10, 10, 7, 4, 4, 2, 6, 9, 12, 7, 5, 3, 5, 4, 6, 7, 4, 5, 5, 6, 6, 7, 7, 7, 8, 5, 5, 4, 7, 8, 11, 8, 16, 7, 7, 7, 1, 8, 11, 6, 5, 7, 4, 5, 11, 4, 4, 7, 9, 8, 7, 6, 9, 9, 15, 9, 5, 9, 14, 3, 5, 6, 8, 8, 8, 12, 11, 4, 8, 3, 6, 11, 16, 12, 13, 12, 6, 8, 13, 8, 6, 12, 8, 13, 3, 6, 5, 7, 15, 12, 12, 10, 11, 5, 6, 4, 5, 10, 7, 12, 13, 9, 9, 9, 5, 8, 6, 10, 8, 8, 4, 4, 12, 13, 8, 6, 3, 5, 15, 13, 3, 12, 1, 4, 9, 9, 13, 4, 5, 13, 8, 8, 12, 5, 5, 11, 2, 11, 9, 2, 11, 7, 9, 6, 10, 7, 5, 4, 10, 4, 5, 11, 13, 10, 9, 3, 7, 11, 8, 4, 5, 8, 6, 9, 4, 7, 6, 4, 7, 5, 2, 11, 5, 5, 11, 9, 9, 10, 13, 9, 3, 7, 5, 10, 12, 12, 3, 7, 6, 8, 10, 11, 7, 8, 5, 7, 11, 3, 12, 8, 9, 8, 11, 9...
 ```
 
-It's very common to want to generate new data that mimics the data you fit against. We've been carefully ignoring the the type of `RandomVariable` that `fit` returns, but in fact, it contains a `Generator` to do just that. That gives us another way to implement the same thing. (While we're at it, let's make use of the `LogNormal` distribution instead of rolling our own.)
+It's very common to want to generate new data that mimics the data you fit against. We've been carefully ignoring the type of `RandomVariable` that `fit` returns, but in fact, it contains a `Generator` to do just that. That gives us another way to implement the same thing. (While we're at it, let's make use of the `LogNormal` distribution instead of rolling our own.)
 
 ```scala
 scala> val prediction2 = for {
@@ -404,7 +404,7 @@ How should we model this? We'll need to know what the rate was on day 0 (the int
 scala> val prior = for {
      |     slope <- LogNormal(0,1).param
      |     intercept <- LogNormal(0,1).param
-     |     } yield (slope, intercept)
+     | } yield (slope, intercept)
 prior: rainier.core.RandomVariable[(rainier.compute.Real, rainier.compute.Real)] = rainier.core.RandomVariable@52b2dd26
 ```
 
