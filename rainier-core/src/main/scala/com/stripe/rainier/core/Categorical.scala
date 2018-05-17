@@ -1,7 +1,6 @@
 package com.stripe.rainier.core
 
 import com.stripe.rainier.compute.Real
-import com.stripe.rainier.sampler.RNG
 
 case class Categorical[T](pmf: Map[T, Real]) extends Distribution[T] {
   def map[U](fn: T => U): Categorical[U] =
@@ -32,7 +31,7 @@ case class Categorical[T](pmf: Map[T, Real]) extends Distribution[T] {
 
     Generator.require(cdf.map(_._2).toSet) { (r, n) =>
       val v = r.standardUniform
-      cdf.find { case (t, p) => n.toDouble(p) >= v }.getOrElse(cdf.last)._1
+      cdf.find { case (_, p) => n.toDouble(p) >= v }.getOrElse(cdf.last)._1
     }
   }
 

@@ -142,7 +142,7 @@ object If {
   def apply(test: Real, whenNonZero: Real, whenZero: Real): Real =
     test match {
       case Constant(0.0)   => whenZero
-      case Constant(v)     => whenNonZero
+      case Constant(_)     => whenNonZero
       case nc: NonConstant => new If(nc, whenNonZero, whenZero)
     }
 }

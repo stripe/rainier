@@ -1,7 +1,6 @@
 package com.stripe.rainier.core
 
 import com.stripe.rainier.compute.Real
-import com.stripe.rainier.sampler.RNG
 
 case class Poisson(lambda: Real) extends Distribution[Int] {
   def logDensity(t: Int): Real = {

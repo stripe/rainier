@@ -75,7 +75,7 @@ private object VarTypes {
     val map = mutable.Map.empty[Sym, Int].withDefaultValue(0)
     def traverse(ir: IR): Unit =
       ir match {
-        case m: MethodDef => sys.error("Should not have nested defs")
+        case _: MethodDef => sys.error("Should not have nested defs")
         case v: VarDef =>
           map(v.sym) += 1
           traverse(v.rhs)

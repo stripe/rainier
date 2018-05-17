@@ -1,7 +1,5 @@
 package com.stripe.rainier.core
 
-import com.stripe.rainier.compute.Real
-
 trait Likelihood[T] {
   def fit(t: T): RandomVariable[Generator[T]]
   def fit(seq: Seq[T]): RandomVariable[Generator[Seq[T]]] = {

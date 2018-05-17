@@ -96,7 +96,7 @@ object Tracer {
         case MethodRef(sym) =>
           val i = sym.id
           s"f$i(params, globals)"
-        case m: MethodDef =>
+        case _: MethodDef =>
           sys.error("Should not have nested method defs")
       }
     }

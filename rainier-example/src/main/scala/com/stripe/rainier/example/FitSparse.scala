@@ -1,12 +1,10 @@
 package com.stripe.rainier.example
 
-import com.stripe.rainier.compute._
 import com.stripe.rainier.core._
-import com.stripe.rainier.sampler._
 import com.stripe.rainier.repl._
 
 object FitSparse {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val r = new scala.util.Random
     val noiseStddev = 1.0
     val data = 1.to(100).map { i =>

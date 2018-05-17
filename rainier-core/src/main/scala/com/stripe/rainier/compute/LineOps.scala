@@ -1,6 +1,6 @@
 package com.stripe.rainier.compute
 
-private object LineOps {
+private[compute] object LineOps {
 
   def sum(left: Line, right: Line): Real = {
     val merged = merge(left.ax, right.ax)

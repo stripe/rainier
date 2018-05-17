@@ -15,13 +15,6 @@ case class DensityPlot(nRows: Int = 20,
     val (fullXs, fullYs) = points.unzip
     val (xMin, xMax) = findExtremes(fullXs)
     val (yMin, yMax) = findExtremes(fullYs)
-    val clippedPoints = points.filter {
-      case (x, y) =>
-        x <= xMax && x >= xMin &&
-          y <= yMax && y >= yMin
-    }
-    val (xs, ys) = clippedPoints.unzip
-
     val (xBucketFn, xLabelFn) = mapping(xMax, xMin, nColumns, logX)
     val (yBucketFn, yLabelFn) = mapping(yMax, yMin, nRows, logY)
 
@@ -163,7 +156,7 @@ case class DensityPlot(nRows: Int = 20,
     if (magnitude < 0) {
       ("%." + -magnitude + "f").format(v)
     } else if (magnitude < 3) {
-      val d = math.pow(10, magnitude)
+      val d = math.pow(10, magnitude.toDouble)
       (math.floor(v / d) * d).toInt.toString
     } else if (magnitude < 6) {
       format(v / 1e3, magnitude - 3) + "k"

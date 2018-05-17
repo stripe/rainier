@@ -1,8 +1,5 @@
 package com.stripe.rainier.core
 
-import com.stripe.rainier.sampler.RNG
-import com.stripe.rainier.compute.Real
-
 abstract class Predictor[X, Y, Z](implicit ev: Z <:< Distribution[Y])
     extends Likelihood[(X, Y)] {
   def apply(x: X): Z

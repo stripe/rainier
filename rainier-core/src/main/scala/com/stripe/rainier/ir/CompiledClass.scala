@@ -7,17 +7,17 @@ import com.stripe.rainier.internal.asm.Opcodes._
 import com.stripe.rainier.internal.asm.tree.{ClassNode, MethodNode}
 import com.stripe.rainier.internal.asm.ClassWriter
 
-private trait CompiledFunction {
+private[ir] trait CompiledFunction {
   def apply(inputs: Array[Double]): Array[Double]
 }
 
-private class CompiledClass(name: String, methods: Seq[MethodNode]) {
+private[ir] class CompiledClass(name: String, methods: Seq[MethodNode]) {
 
   val classNode = createClass
   val bytes = writeBytecode
   lazy val instance = createInstance
 
-  def writeToTmpFile: Unit =
+  def writeToTmpFile(): Unit =
     FileUtils.writeByteArrayToFile(new File("/tmp/" + name + ".class"), bytes)
 
   private def createClass: ClassNode = {
@@ -62,7 +62,7 @@ private class CompiledClass(name: String, methods: Seq[MethodNode]) {
   }
 }
 
-private object CompiledClass {
+private[ir] object CompiledClass {
   @volatile private var id: Int = 0
   def freshName: String = this.synchronized {
     val name = "CompiledFunction$" + id

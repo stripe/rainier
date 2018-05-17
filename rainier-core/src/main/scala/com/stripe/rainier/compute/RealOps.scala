@@ -2,7 +2,7 @@ package com.stripe.rainier.compute
 
 import com.stripe.rainier.ir._
 
-private object RealOps {
+private[compute] object RealOps {
 
   def unary(original: Real, op: UnaryOp): Real =
     original match {
@@ -81,8 +81,8 @@ private object RealOps {
         case Constant(_) => acc
         case v: Variable => acc + v
         case u: Unary    => loop(u.original, acc)
-        case l: Line     => l.ax.foldLeft(acc) { case (a, (r, d)) => loop(r, a) }
-        case l: LogLine  => l.ax.foldLeft(acc) { case (a, (r, d)) => loop(r, a) }
+        case l: Line     => l.ax.foldLeft(acc) { case (a, (r, _)) => loop(r, a) }
+        case l: LogLine  => l.ax.foldLeft(acc) { case (a, (r, _)) => loop(r, a) }
         case If(test, nz, z) =>
           val acc2 = loop(test, acc)
           val acc3 = loop(nz, acc2)

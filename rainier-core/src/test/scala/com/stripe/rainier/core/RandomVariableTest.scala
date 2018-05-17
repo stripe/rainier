@@ -7,7 +7,7 @@ import org.scalatest.FunSuite
 class RandomVariableTest extends FunSuite {
 
   def assertEquiv[S, T](x: RandomVariable[S], y: RandomVariable[S])(
-      implicit s: Sampleable[S, T]) {
+      implicit s: Sampleable[S, T]): Unit = {
     List(0.0, 1.0, -1.0).foreach { paramValue =>
       val (xValue, xDensity) = sampleOnce(x, paramValue)
       val (yValue, yDensity) = sampleOnce(y, paramValue)
@@ -42,7 +42,7 @@ class RandomVariableTest extends FunSuite {
       f1: Sampleable[F, F1],
       g1: Sampleable[G, G1],
       h1: Sampleable[H, H1]
-  ) {
+  ): Unit = {
 
     assertEquiv(a.map(f), a.flatMap { x =>
       RandomVariable(f(x))
