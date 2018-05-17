@@ -69,7 +69,7 @@ lazy val asmDeps = project.
       includeScala = false,
     ),
     assemblyShadeRules in assembly := Seq(
-      ShadeRule.rename("org.objectweb.asm.**" -> "rainier.internal.asm.@1").inAll,
+      ShadeRule.rename("org.objectweb.asm.**" -> "com.stripe.rainier.internal.asm.@1").inAll,
     ),
     assemblyMergeStrategy in assembly := {
       case "module-info.class" => MergeStrategy.discard
