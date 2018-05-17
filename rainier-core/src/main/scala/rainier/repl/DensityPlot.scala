@@ -8,7 +8,7 @@ case class DensityPlot(nRows: Int = 20,
                        logX: Boolean = false,
                        logY: Boolean = false,
                        logMarkers: Boolean = false,
-                       clip: Double = 0.025,
+                       clip: Double = 0.0,
                        markers: String = "·∘○") {
 
   def plot2D(points: Seq[(Double, Double)]): Seq[String] = {
