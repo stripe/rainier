@@ -132,7 +132,7 @@ case class If(test: Real, whenNonZero: Real, whenZero: Real) extends Real
 
 object If {
   def apply(test: Real, whenNonZero: Real, whenZero: Real): Real =
-    RealOps._if(test, whenZero, whenNonZero)
+    RealOps._if(test, whenNonZero, whenZero)
 }
 /*
 [0] For example, of the following four ways of computing the same result, only the first two will have the most efficient
