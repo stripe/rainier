@@ -17,8 +17,8 @@ private object Gradient {
       if (!visited.contains(real)) {
         visited += real
         real match {
-          case v: Variable     => ()
-          case Constant(value) => ()
+          case _: Variable => ()
+          case _: Constant => ()
 
           case u: Unary =>
             diff(u.original).register(UnaryDiff(u, diff(u)))
@@ -33,7 +33,7 @@ private object Gradient {
 
           case l: LogLine =>
             l.ax.foreach {
-              case (x, a) =>
+              case (x, _) =>
                 diff(x).register(LogLineDiff(l, diff(l), x))
             }
             l.ax.foreach { case (x, _) => visit(x) }

@@ -1,8 +1,6 @@
 package com.stripe.rainier.example
 
-import com.stripe.rainier.compute._
 import com.stripe.rainier.core._
-import com.stripe.rainier.sampler._
 import com.stripe.rainier.repl._
 
 object FitNormal {
@@ -21,7 +19,7 @@ object FitNormal {
     } yield (mean, stddev)
   }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     plot2D(model(1000).sample())
   }
 }

@@ -1,6 +1,5 @@
 package com.stripe.rainier.example
 
-import com.stripe.rainier.compute._
 import com.stripe.rainier.core._
 import com.stripe.rainier.sampler._
 import com.stripe.rainier.repl._
@@ -14,7 +13,7 @@ object Funnel {
       })
     } yield (x(0), y)
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     plot2D(model.sample(HMC(5), 1000, 10000))
   }
 }

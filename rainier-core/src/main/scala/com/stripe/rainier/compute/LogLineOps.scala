@@ -1,8 +1,9 @@
 package com.stripe.rainier.compute
 
+import com.stripe.rainier.unused
 import scala.annotation.tailrec
 
-private object LogLineOps {
+private[compute] object LogLineOps {
   def multiply(left: LogLine, right: LogLine): Real = {
     val merged = LineOps.merge(left.ax, right.ax)
     if (merged.isEmpty)
@@ -21,7 +22,7 @@ private object LogLineOps {
   Currently this is just a placeholder - there are no optimizations that
   seem definitely worth doing.
    */
-  def log(line: LogLine): Option[Real] = None
+  def log(@unused line: LogLine): Option[Real] = None
 
   /*
   Factor a scalar constant exponent k out of ax and return it along with

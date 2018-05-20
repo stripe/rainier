@@ -25,6 +25,7 @@ class RealTest extends FunSuite {
 
   def assertWithinEpsilon(x: Double, y: Double, clue: String): Unit = {
     assert(x.isNaN && y.isNaN || x == y || (x - y).abs < 0.000000001, clue)
+    ()
   }
 
   run("plus") { x =>
@@ -44,7 +45,8 @@ class RealTest extends FunSuite {
     t + t
   }
   run("normal") { x =>
-    Normal(x, 1).logDensities(0d.to(2d).by(1).toList)
+    Normal(x, 1).logDensities(
+      Range.BigDecimal(0d, 2d, 1d).map(_.toDouble).toList)
   }
 
   run("logistic") { x =>

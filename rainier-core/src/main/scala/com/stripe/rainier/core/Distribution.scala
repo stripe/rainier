@@ -1,7 +1,6 @@
 package com.stripe.rainier.core
 
 import com.stripe.rainier.compute.Real
-import com.stripe.rainier.sampler.RNG
 
 trait Distribution[T] extends Likelihood[T] { self =>
   def logDensity(t: T): Real

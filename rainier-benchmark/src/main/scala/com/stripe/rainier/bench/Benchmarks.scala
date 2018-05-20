@@ -43,7 +43,8 @@ object Benchmarks {
   class NormalBenchmark extends BenchmarkState {
     def expression = {
       val x = new Variable
-      Normal(x, 1).logDensities(0d.to(2d).by(0.001).toList)
+      Normal(x, 1).logDensities(
+        Range.BigDecimal(0d, 2d, 0.001d).map(_.toDouble).toList)
     }
   }
 

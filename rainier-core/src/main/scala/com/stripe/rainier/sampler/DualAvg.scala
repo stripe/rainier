@@ -21,8 +21,8 @@ private case class DualAvg(
   def update(newAcceptanceProb: Double): DualAvg = {
     val newIteration = iteration + 1
     val avgAcceptanceProbMultiplier =
-      1.0 / (newIteration + acceptanceProbUpdateDenom)
-    val stepSizeMultiplier = Math.pow(newIteration, -decayRate)
+      1.0 / (newIteration.toDouble + acceptanceProbUpdateDenom)
+    val stepSizeMultiplier = Math.pow(newIteration.toDouble, -decayRate)
     val newAvgAcceptanceProb = (
       (1.0 - avgAcceptanceProbMultiplier) * avgAcceptanceProb
         + (avgAcceptanceProbMultiplier * (delta - newAcceptanceProb))
@@ -30,7 +30,7 @@ private case class DualAvg(
 
     val newLogStepSize = (
       shrinkageTarget
-        - (newAvgAcceptanceProb * Math.sqrt(newIteration) / stepSizeUpdateDenom)
+        - (newAvgAcceptanceProb * Math.sqrt(newIteration.toDouble) / stepSizeUpdateDenom)
     )
 
     val newLogStepSizeBar = (stepSizeMultiplier * newLogStepSize

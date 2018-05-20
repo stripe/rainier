@@ -1,12 +1,6 @@
 organization in ThisBuild := "com.stripe"
 scalaVersion in ThisBuild := "2.12.6"
 
-scalacOptions ++= Seq(
-  "-deprecation",
-  "-feature",
-  "-unchecked",
-)
-
 val unpublished = Seq(publish := {}, publishLocal := {}, publishArtifact := false)
 
 val publishSettings = Seq(
@@ -65,6 +59,9 @@ lazy val rainierBenchmark = project.
   in(file("rainier-benchmark")).
   settings(name := "rainier-benchmark").
   enablePlugins(JmhPlugin).
+  settings(
+    scalacOptions ~= (_.filterNot(Set(
+      "-Ywarn-value-discard")))).
   dependsOn(rainierCore).
   settings(unpublished: _*)
 

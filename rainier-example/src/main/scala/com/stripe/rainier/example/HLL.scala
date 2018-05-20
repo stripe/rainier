@@ -4,7 +4,7 @@ import scala.util.hashing.MurmurHash3
 import com.stripe.rainier.compute.Real
 
 case class HLL(bits: Int) {
-  val size = Math.pow(2, bits)
+  val size = Math.pow(2.0, bits.toDouble)
 
   //optimizing for clarity not speed
   def apply(hashes: Seq[Int]): Map[Int, Byte] =
@@ -43,7 +43,7 @@ case class HLL(bits: Int) {
       Real(c(maxZeros + 1)) * (Real.one - (lm / pow2(maxZeros + 1)).exp).log
   }
 
-  private def pow2(n: Int) = Real(Math.pow(2, n))
+  private def pow2(n: Int) = Real(Math.pow(2.0, n.toDouble))
 
   private case class MultiplicityVector(hll: Map[Int, Byte]) {
     val cs =
@@ -62,7 +62,7 @@ case class HLL(bits: Int) {
   def cardinality(hll: Map[Int, Byte]): Double = {
     val zeroCnt = size - hll.size
     val z = 1.0 / (zeroCnt + hll.values.map { mj =>
-      math.pow(2.0, -mj)
+      math.pow(2.0, -mj.toDouble)
     }.sum)
     val smallE = 5 * size / 2.0
     val factor = (0.7213 / (1.0 + 1.079 / size)) * size * size

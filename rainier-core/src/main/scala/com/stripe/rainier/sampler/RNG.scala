@@ -6,7 +6,7 @@ trait RNG {
   def standardUniform: Double
   def standardNormal: Double
   def int(until: Int): Int =
-    math.min(math.floor(standardUniform * until), until - 1).toInt
+    math.min((standardUniform * until).toInt, until - 1)
 }
 
 object RNG {

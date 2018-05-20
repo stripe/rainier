@@ -56,7 +56,7 @@ private case class ExprMethodGenerator(method: MethodDef,
         }
       case MethodRef(sym) =>
         callExprMethod(sym.id)
-      case m: MethodDef =>
+      case _: MethodDef =>
         sys.error("Should not have nested method defs")
     }
   }

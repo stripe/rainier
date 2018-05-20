@@ -42,7 +42,8 @@ object FitHLL {
     m
   }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     compare(1000)
+    ()
   }
 }
