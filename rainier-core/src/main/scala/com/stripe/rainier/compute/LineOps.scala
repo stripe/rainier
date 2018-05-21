@@ -20,15 +20,25 @@ private[compute] object LineOps {
   Return Some(real) if an optimization is possible here,
   otherwise None will fall back to the default multiplication behavior.
 
-  If the ax dot-product has only a single term on each side, it's worth trying to expand
-  out the multiplication. Otherwise, the combinatorial explosion means the number of terms
-  becomes too great.
+  If the resulting number of terms is below a set threshold, expand out the multiplication
+  of sums. Although this may result in a larger number of multiplication ops locally,
+  it's also more likely to allow cancellations or simplifications later on, so as a heuristic
+  it's worth doing up to a point.
    */
   def multiply(left: Line, right: Line): Option[Real] =
-    (left, right) match {
-      case (Line1(a, x, b), Line1(c, y, d)) =>
-        foil(a, x, b, c, y, d)
-      case _ => None
+    if (left.ax.size * right.ax.size >= 10)
+      None
+    else {
+      val allLeft = (Real.one, left.b) :: left.ax.toList
+      val allRight = (Real.one, right.b) :: right.ax.toList
+      val terms = allLeft.flatMap {
+        case (x, a) =>
+          allRight.map {
+            case (y, c) =>
+              (x * y) * (a * c)
+          }
+      }
+      Some(Real.sum(terms))
     }
 
   /*
@@ -106,24 +116,7 @@ private[compute] object LineOps {
           acc + (k -> newV)
     }
   }
-
-  private def foil(a: Double,
-                   x: NonConstant,
-                   b: Double,
-                   c: Double,
-                   y: NonConstant,
-                   d: Double): Option[Real] = {
-    //(ax + b)(cy + d)
-    if (x == y || b == 0.0 || d == 0.0) {
-      Some(
-        (x * y) * (a * c) + //F
-          x * (a * d) + //O
-          y * (b * c) + //I
-          (b * d)) //L
-    } else //too many terms
-      None
-  }
-
+ 
   object Line1 {
     def unapply(line: Line): Option[(Double, NonConstant, Double)] = {
       if (line.ax.size == 1)
