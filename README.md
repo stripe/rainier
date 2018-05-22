@@ -1,4 +1,6 @@
-# rainier
+![Mt. Rainier with lenticular clouds (credit: US National Park Service)](rainier.jpg)
+
+# Rainier
 
 Rainier provides an idiomatic, high-performance functional Scala API for bayesian inference via Markov Chain Monte Carlo.
 
