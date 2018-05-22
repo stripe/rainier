@@ -45,10 +45,6 @@ private[compute] object RealOps {
       case (Constant(x), Constant(y))     => Constant(x * y)
       case (Constant(x), nc: NonConstant) => LineOps.scale(Line(nc), x)
       case (nc: NonConstant, Constant(x)) => LineOps.scale(Line(nc), x)
-      case (l1: Line, l2: Line) =>
-        LineOps.multiply(l1, l2).getOrElse {
-          LogLineOps.multiply(LogLine(l1), LogLine(l2))
-        }
       case (nc1: NonConstant, nc2: NonConstant) =>
         LogLineOps.multiply(LogLine(nc1), LogLine(nc2))
     }

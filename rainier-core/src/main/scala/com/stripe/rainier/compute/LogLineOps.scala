@@ -9,7 +9,7 @@ private[compute] object LogLineOps {
     if (merged.isEmpty)
       Real.one
     else
-      LogLine(LineOps.merge(left.ax, right.ax))
+      LogLine(merged)
   }
 
   def pow(line: LogLine, v: Double): LogLine =
@@ -23,6 +23,58 @@ private[compute] object LogLineOps {
   seem definitely worth doing.
    */
   def log(@unused line: LogLine): Option[Real] = None
+
+  /*
+  If possible, return a representation of ax as a list of terms to be summed. Within limits, it's helpful here
+  to distribute the multiplications across any internal sums, because that may well surface some terms
+  that are in common with whatever we're about to sum this with.
+   */
+  val DistributeToMaxTerms = 20
+  def distribute(line: LogLine): Option[Line] = {
+
+    def nTerms(l: Line): Int =
+      if (l.b == 0.0)
+        l.ax.size
+      else
+        l.ax.size + 1
+    def nTerms2(l: Line): Int = {
+      val n = nTerms(l)
+      (n * (n + 1)) / 2
+    }
+
+    val initial = (List.empty[(NonConstant, Double)], Option.empty[Line])
+    val (factors, terms) = line.ax.foldLeft(initial) {
+      case ((f, None), (l: Line, 1.0)) if (nTerms(l) < DistributeToMaxTerms) =>
+        (f, Some(l))
+      case ((f, Some(t)), (l: Line, 1.0))
+          if ((nTerms(t) * nTerms(l)) < DistributeToMaxTerms) =>
+        (f, Some(LineOps.multiply(t, l)))
+      case ((f, None), (l: Line, 2.0)) if (nTerms2(l) < DistributeToMaxTerms) =>
+        (f, Some(LineOps.multiply(l, l)))
+      case ((f, Some(t)), (l: Line, 2.0))
+          if (nTerms(t) * nTerms2(l) < DistributeToMaxTerms) =>
+        (f, Some(LineOps.multiply(t, LineOps.multiply(l, l))))
+      case ((f, opt), xa) =>
+        (xa :: f, opt)
+    }
+
+    terms.map { l =>
+      if (factors.isEmpty)
+        l
+      else {
+        val ll = LogLine(factors.toMap)
+        val (newAx, newB) =
+          l.ax.foldLeft((Map[NonConstant, Double](ll -> l.b), 0.0)) {
+            case ((nAx, nB), (x, a)) =>
+              multiply(ll, LogLine(x)) match {
+                case Constant(v)     => (nAx, nB + v * a)
+                case nc: NonConstant => (nAx + (nc -> a), nB)
+              }
+          }
+        Line(newAx, newB)
+      }
+    }
+  }
 
   /*
   Factor a scalar constant exponent k out of ax and return it along with

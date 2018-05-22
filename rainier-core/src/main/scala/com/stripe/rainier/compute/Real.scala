@@ -100,7 +100,11 @@ private object Line {
   def apply(nc: NonConstant): Line =
     nc match {
       case l: Line => l
-      case _       => Line(Map(nc -> 1.0), 0.0)
+      case l: LogLine =>
+        LogLineOps
+          .distribute(l)
+          .getOrElse(Line(Map(l -> 1.0), 0.0))
+      case _ => Line(Map(nc -> 1.0), 0.0)
     }
 }
 
