@@ -31,7 +31,7 @@ Rainier requires that all of the observations or training data for a given model
 
 Within those constraints, however, it is extremely fast. Rainier takes advantage of knowing all of your data ahead of time by aggressively precomputing as much as it can, which is a significant practical benefit relative to systems that compile a data-agnostic model. It produces optimized, unboxed, JIT-friendly JVM bytecode for all numerical calculations. This compilation happens in-process and is fast enough for interactive use at a REPL.
 
-For example, on a MacBook Pro, gradient evaluation for [Neal's funnel](/rainier-example/src/main/scala/rainier/example/Funnel.scala) takes under a microsecond, and end-to-end compilation and sampling for 10,000 iterations of HMC with 5 leapfrog steps each takes around 50ms.
+For example, on a MacBook Pro, gradient evaluation for [Neal's funnel](/rainier-example/src/main/scala/com/stripe/rainier/example/Funnel.scala) takes under a microsecond, and end-to-end compilation and sampling for 10,000 iterations of HMC with 5 leapfrog steps each takes around 50ms.
 
 As a rough comparison, Rainier seems to yield a 10x or more speedup relative to the equivalent Stan models. This is promising, though please keep in mind that benchmarking is hard,  micro-benchmarks are often meaningless, and Stan's sampler implementation is much more sophisticated and much, much, much better tested than Rainier's!
 
