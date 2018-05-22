@@ -43,9 +43,14 @@ lazy val rainierCore = project.
   in(file("rainier-core")).
   settings(name := "rainier-core").
   enablePlugins(TutPlugin).
-  settings(libraryDependencies ++= Seq(
-    "commons-io" % "commons-io" % "2.6",
-    "org.scalatest" %% "scalatest" % "3.0.5" % Test)).
+  settings(Seq(
+    libraryDependencies ++= Seq(
+      "commons-io" % "commons-io" % "2.6",
+      "org.scalatest" %% "scalatest" % "3.0.5" % Test),
+    scalacOptions in Tut ~= {
+      _.filterNot(Set("-Ywarn-unused-import", "-Yno-predef", "-Ywarn-unused:imports"))
+    }
+  )).
   dependsOn(shadedAsm).
   settings(publishSettings)
 
