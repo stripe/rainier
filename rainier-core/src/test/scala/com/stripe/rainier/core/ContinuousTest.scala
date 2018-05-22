@@ -36,13 +36,13 @@ class ContinuousTest extends FunSuite {
           val xErr = (fitMean - trueValue) / trueValue
 
           test(
-            s"y ~ $description, x = $trueValue, sampler = $sampler, E(y) within 0.15 SD") {
-            assert(yErr.abs < 0.15)
+            s"y ~ $description, x = $trueValue, sampler = $sampler, E(y) within 0.26 SD") {
+            assert(yErr.abs < 0.26)
           }
 
           test(
-            s"y ~ $description, x = $trueValue, sampler = $sampler, E(x) within 5%") {
-            assert(xErr.abs < 0.05)
+            s"y ~ $description, x = $trueValue, sampler = $sampler, E(x) within 6%") {
+            assert(xErr.abs < 0.06)
           }
         }
     }
