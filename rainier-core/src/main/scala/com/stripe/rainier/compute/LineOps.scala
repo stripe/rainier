@@ -17,29 +17,26 @@ private[compute] object LineOps {
     Line(line.ax, line.b + v)
 
   /*
-  Return Some(real) if an optimization is possible here,
-  otherwise None will fall back to the default multiplication behavior.
-
-  If the resulting number of terms is below a set threshold, expand out the multiplication
-  of sums. Although this may result in a larger number of multiplication ops locally,
-  it's also more likely to allow cancellations or simplifications later on, so as a heuristic
-  it's worth doing up to a point.
+  Multiply two lines, using the distribution rule, to produce a new Line.
    */
-  def multiply(left: Line, right: Line): Option[Real] =
-    if (left.ax.size * right.ax.size >= 10)
-      None
-    else {
-      val allLeft = (Real.one, left.b) :: left.ax.toList
-      val allRight = (Real.one, right.b) :: right.ax.toList
-      val terms = allLeft.flatMap {
-        case (x, a) =>
-          allRight.map {
-            case (y, c) =>
-              (x * y) * (a * c)
-          }
-      }
-      Some(Real.sum(terms))
+  def multiply(left: Line, right: Line): Line = {
+    val allLeft = (Real.one, left.b) :: left.ax.toList
+    val allRight = (Real.one, right.b) :: right.ax.toList
+    val terms = allLeft.flatMap {
+      case (x, a) =>
+        allRight.map {
+          case (y, c) =>
+            (x * y, a * c)
+        }
     }
+    val (newAx, newB) = terms.foldLeft((Map.empty[NonConstant, Double], 0.0)) {
+      case ((nAx, nB), (x: NonConstant, a)) =>
+        (merge(nAx, Map(x -> a)), nB)
+      case ((nAx, nB), (Constant(x), a)) =>
+        (nAx, nB + x * a)
+    }
+    Line(newAx, newB)
+  }
 
   /*
   Return Some(real) if an optimization is possible here,
