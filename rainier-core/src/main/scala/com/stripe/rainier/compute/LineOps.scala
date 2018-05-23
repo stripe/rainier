@@ -116,7 +116,7 @@ private[compute] object LineOps {
           acc + (k -> newV)
     }
   }
- 
+
   object Line1 {
     def unapply(line: Line): Option[(Double, NonConstant, Double)] = {
       if (line.ax.size == 1)

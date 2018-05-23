@@ -66,15 +66,15 @@ object Real {
   def trace(real: Real): Unit = trace(List(real))
 }
 
-private case class Constant(value: Double) extends Real
+final private case class Constant(value: Double) extends Real
 
 sealed trait NonConstant extends Real
 
-class Variable extends NonConstant {
+final class Variable extends NonConstant {
   private[compute] val param = new ir.Parameter
 }
 
-private case class Unary(original: NonConstant, op: ir.UnaryOp)
+final private case class Unary(original: NonConstant, op: ir.UnaryOp)
     extends NonConstant
 
 /*
@@ -88,7 +88,8 @@ Because it is common for ax to have a large number of terms, this is deliberatel
 as equality comparisons would be too expensive. The impact of this is subtle, see [0] at the bottom of this file
 for an example.
  */
-private class Line private (val ax: Map[NonConstant, Double], val b: Double)
+private final class Line private (val ax: Map[NonConstant, Double],
+                                  val b: Double)
     extends NonConstant
 
 private object Line {
@@ -113,15 +114,13 @@ Unlike for Line, it is not expected that ax will have a large number of terms, a
 Luckily, this aligns well with the demands of numerical stability: if you have to multiply a lot of numbers
 together, you are better off adding their logs.
  */
-private case class LogLine private (ax: Map[NonConstant, Double])
-    extends NonConstant
+private final case class LogLine(
+    ax: Map[NonConstant, Double]
+) extends NonConstant {
+  require(ax.size > 0)
+}
 
 private object LogLine {
-  def apply(ax: Map[NonConstant, Double]): LogLine = {
-    require(ax.size > 0)
-    new LogLine(ax)
-  }
-
   def apply(nc: NonConstant): LogLine =
     nc match {
       case l: LogLine => l
@@ -135,7 +134,9 @@ test is equal to zero, and `whenNotZero` otherwise. Because this expression
 does not have a smooth derivative, it is not recommended that you use this
 unless absolutely necessary.
  */
-case class If private (test: NonConstant, whenNonZero: Real, whenZero: Real)
+final case class If private (test: NonConstant,
+                             whenNonZero: Real,
+                             whenZero: Real)
     extends NonConstant
 
 object If {

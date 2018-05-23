@@ -73,7 +73,7 @@ private trait MethodGenerator {
                                false)
   }
 
-  def exprMethodName(id: Int) = s"_$id"
+  def exprMethodName(id: Int): String = s"_$id"
   def callExprMethod(id: Int): Unit = {
     loadThis()
     loadParams()

@@ -4,13 +4,13 @@ import scala.collection.mutable
 
 private sealed trait VarType
 private object Inline extends VarType
-private case class Local(id: Int) extends VarType
-private case class Global(id: Int) extends VarType
+final private case class Local(id: Int) extends VarType
+final private case class Global(id: Int) extends VarType
 
-private case class VarTypes(numReferences: Map[Sym, Int],
-                            referringMethods: Map[Sym, Set[Sym]]) {
-  var globals = Map.empty[Sym, Global]
-  var locals = Map.empty[Sym, Map[Sym, Local]]
+final private case class VarTypes(numReferences: Map[Sym, Int],
+                                  referringMethods: Map[Sym, Set[Sym]]) {
+  var globals: Map[Sym, Global] = Map.empty
+  var locals: Map[Sym, Map[Sym, Local]] = Map.empty
 
   def apply(sym: Sym): VarType = {
     if (numReferences(sym) == 1)

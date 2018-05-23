@@ -4,7 +4,7 @@ abstract class Predictor[X, Y, Z](implicit ev: Z <:< Distribution[Y])
     extends Likelihood[(X, Y)] {
   def apply(x: X): Z
 
-  def fit(pair: (X, Y)) = {
+  def fit(pair: (X, Y)): RandomVariable[Generator[(X, Y)]] = {
     val (x, y) = pair
     ev(apply(x)).fit(y).map { g =>
       g.map { yy =>
@@ -24,8 +24,9 @@ abstract class Predictor[X, Y, Z](implicit ev: Z <:< Distribution[Y])
 }
 
 object Predictor {
-  def from[X, Y, Z](fn: X => Z)(implicit ev: Z <:< Distribution[Y]) =
+  def from[X, Y, Z](fn: X => Z)(
+      implicit ev: Z <:< Distribution[Y]): Predictor[X, Y, Z] =
     new Predictor[X, Y, Z] {
-      def apply(x: X) = fn(x)
+      def apply(x: X): Z = fn(x)
     }
 }

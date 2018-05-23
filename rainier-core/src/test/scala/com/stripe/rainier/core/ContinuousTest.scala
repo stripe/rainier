@@ -5,9 +5,9 @@ import com.stripe.rainier.sampler._
 import org.scalatest.FunSuite
 
 class ContinuousTest extends FunSuite {
-  implicit val rng = RNG.default
+  implicit val rng: RNG = RNG.default
 
-  def check(description: String)(fn: Real => Continuous) = {
+  def check(description: String)(fn: Real => Continuous): Unit = {
     println(description)
     List((Walkers(100), 10000), (HMC(5), 1000)).foreach {
       case (sampler, iterations) =>

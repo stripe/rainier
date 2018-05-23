@@ -9,31 +9,35 @@ import com.stripe.rainier.sampler._
 object Benchmarks {
   trait BenchmarkState {
     def expression: Real
-    val expr = expression
-    val vars = expr.variables
+    val expr: Real = expression
+    val vars: Seq[Variable] =
+      expr.variables
 
-    val a = compileAsm
-    val g = Compiler.default.compileGradient(vars, expr)
+    val a: Array[Double] => Double =
+      compileAsm
+    val g: Array[Double] => (Double, Array[Double]) =
+      Compiler.default.compileGradient(vars, expr)
 
-    implicit val rng = RNG.default
-    def runAsm =
+    implicit val rng: RNG = RNG.default
+    def runAsm: Double =
       a(vars.map { _ =>
         rng.standardUniform
       }.toArray)
-    def runGradient =
+    def runGradient: Double =
       a(vars.map { _ =>
         rng.standardUniform
       }.toArray)
-    def compileAsm = Compiler.default.compile(vars, expr)
-    def sampleHMC(steps: Int) =
+    def compileAsm: Array[Double] => Double =
+      Compiler.default.compile(vars, expr)
+    def sampleHMC(steps: Int): List[Sample] =
       HMC(steps).sample(expr, 1000).take(10000).toList
-    def sampleWalkers(walkers: Int) =
+    def sampleWalkers(walkers: Int): List[Sample] =
       Walkers(walkers).sample(expr, 1000).take(10000).toList
-    def endToEndHMC(steps: Int) = {
+    def endToEndHMC(steps: Int): List[Double] = {
       val d = expression
       RandomVariable(d, d).sample(HMC(steps), 1000, 10000)
     }
-    def endToEndWalkers(walkers: Int) = {
+    def endToEndWalkers(walkers: Int): List[Double] = {
       val d = expression
       RandomVariable(d, d).sample(Walkers(walkers), 1000, 10000)
     }
@@ -41,7 +45,7 @@ object Benchmarks {
 
   @State(Scope.Benchmark)
   class NormalBenchmark extends BenchmarkState {
-    def expression = {
+    def expression: Real = {
       val x = new Variable
       Normal(x, 1).logDensities(
         Range.BigDecimal(0d, 2d, 0.001d).map(_.toDouble).toList)
@@ -50,7 +54,7 @@ object Benchmarks {
 
   @State(Scope.Benchmark)
   class PoissonBenchmark extends BenchmarkState {
-    def expression = {
+    def expression: Real = {
       val x = new Variable
       Poisson(x).logDensities(0.to(10).toList)
     }
@@ -58,7 +62,7 @@ object Benchmarks {
 
   @State(Scope.Benchmark)
   class FullNormalBenchmark extends BenchmarkState {
-    def expression = {
+    def expression: Real = {
       val r = new scala.util.Random
       val trueMean = 3.0
       val trueStddev = 2.0
@@ -78,7 +82,7 @@ object Benchmarks {
 
   @State(Scope.Benchmark)
   class BernoulliBenchmark extends BenchmarkState {
-    def expression = {
+    def expression: Real = {
       val data =
         List(false, true, false, false, false, false, false, false, false, true)
 
@@ -93,7 +97,7 @@ object Benchmarks {
 
   @State(Scope.Benchmark)
   class FunnelBenchmark extends BenchmarkState {
-    def expression = {
+    def expression: Real = {
       val model =
         for {
           y <- Normal(0, 3).param

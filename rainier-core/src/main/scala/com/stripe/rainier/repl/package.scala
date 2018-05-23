@@ -15,5 +15,5 @@ package object repl {
         .mkString("\n"))
   }
 
-  implicit val rng = RNG.default
+  implicit val rng: RNG = RNG.default
 }

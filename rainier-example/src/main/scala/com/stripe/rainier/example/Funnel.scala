@@ -1,11 +1,12 @@
 package com.stripe.rainier.example
 
+import com.stripe.rainier.compute.Real
 import com.stripe.rainier.core._
 import com.stripe.rainier.sampler._
 import com.stripe.rainier.repl._
 
 object Funnel {
-  val model =
+  val model: RandomVariable[(Real, Real)] =
     for {
       y <- Normal(0, 3).param
       x <- RandomVariable.traverse(1.to(9).map { _ =>

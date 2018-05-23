@@ -2,7 +2,7 @@ package com.stripe.rainier.sampler
 
 import com.stripe.rainier.compute._
 
-case class HMC(nSteps: Int) extends Sampler {
+final case class HMC(nSteps: Int) extends Sampler {
   def sample(density: Real, warmupIterations: Int)(
       implicit rng: RNG): Stream[Sample] = {
     val (tunedChain, tunedStepSize) =

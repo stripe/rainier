@@ -10,7 +10,9 @@ private object Gradient {
       diffs.getOrElseUpdate(real, new CompoundDiff)
     }
 
-    diff(output).register(new Diff { val toReal = Real.one })
+    diff(output).register(new Diff {
+      val toReal: Real = Real.one
+    })
 
     var visited = Set[Real]()
     def visit(real: Real): Unit = {
@@ -58,8 +60,8 @@ private object Gradient {
     def toReal: Real
   }
 
-  private class CompoundDiff extends Diff {
-    var parts = List.empty[Diff]
+  private sealed class CompoundDiff extends Diff {
+    var parts: List[Diff] = List.empty[Diff]
 
     def register(part: Diff): Unit = {
       parts = part :: parts
@@ -71,12 +73,14 @@ private object Gradient {
     }
   }
 
-  private case class ProductDiff(other: Double, gradient: Diff) extends Diff {
-    def toReal = gradient.toReal * other
+  private final case class ProductDiff(other: Double, gradient: Diff)
+      extends Diff {
+    def toReal: Real = gradient.toReal * other
   }
 
-  private case class UnaryDiff(child: Unary, gradient: Diff) extends Diff {
-    def toReal = child.op match {
+  private final case class UnaryDiff(child: Unary, gradient: Diff)
+      extends Diff {
+    def toReal: Real = child.op match {
       case LogOp => gradient.toReal * (Real.one / child.original)
       case ExpOp => gradient.toReal * child
       case AbsOp =>
@@ -84,20 +88,20 @@ private object Gradient {
     }
   }
 
-  private case class IfDiff(child: If, gradient: Diff, nzBranch: Boolean)
+  private final case class IfDiff(child: If, gradient: Diff, nzBranch: Boolean)
       extends Diff {
-    def toReal =
+    def toReal: Real =
       if (nzBranch)
         If(child.test, gradient.toReal, Real.zero)
       else
         If(child.test, Real.zero, gradient.toReal)
   }
 
-  private case class LogLineDiff(child: LogLine,
-                                 gradient: Diff,
-                                 term: NonConstant)
+  private final case class LogLineDiff(child: LogLine,
+                                       gradient: Diff,
+                                       term: NonConstant)
       extends Diff {
-    def toReal = {
+    def toReal: Real = {
       val exponent = child.ax(term)
       val otherTerms =
         if (child.ax.size == 1)

@@ -24,10 +24,10 @@ object Compiler {
   var default: Compiler = IRCompiler(200, false)
 }
 
-case class InstrumentingCompiler(orig: Compiler, printEvery: Int)
+final case class InstrumentingCompiler(orig: Compiler, printEvery: Int)
     extends Compiler {
-  var count = 0L
-  var nanos = 0L
+  var count: Long = 0L
+  var nanos: Long = 0L
   def compile(inputs: Seq[Variable],
               outputs: Seq[Real]): Array[Double] => Array[Double] = {
     val cf = orig.compile(inputs, outputs)
@@ -46,7 +46,7 @@ case class InstrumentingCompiler(orig: Compiler, printEvery: Int)
   }
 }
 
-case class IRCompiler(methodSizeLimit: Int, writeToTmpFile: Boolean)
+final case class IRCompiler(methodSizeLimit: Int, writeToTmpFile: Boolean)
     extends Compiler {
   def compile(inputs: Seq[Variable],
               outputs: Seq[Real]): Array[Double] => Array[Double] = {

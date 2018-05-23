@@ -1,12 +1,12 @@
 package com.stripe.rainier.ir
 
-private case class ApplyMethodGenerator(className: String,
-                                        outputMethods: Seq[Int],
-                                        numGlobals: Int)
+final private case class ApplyMethodGenerator(className: String,
+                                              outputMethods: Seq[Int],
+                                              numGlobals: Int)
     extends MethodGenerator {
-  val isPrivate = false
-  val methodName = "apply"
-  val methodDesc = "([D)[D"
+  val isPrivate: Boolean = false
+  val methodName: String = "apply"
+  val methodDesc: String = "([D)[D"
 
   newArrayOfSize(numGlobals)
   storeGlobalVars()

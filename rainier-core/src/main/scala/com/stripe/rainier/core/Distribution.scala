@@ -8,8 +8,9 @@ trait Distribution[T] extends Likelihood[T] { self =>
 
   def generator: Generator[T]
 
-  def fit(t: T) = RandomVariable(generator, logDensity(t))
-  override def fit(list: Seq[T]) =
+  def fit(t: T): RandomVariable[Generator[T]] =
+    RandomVariable(generator, logDensity(t))
+  override def fit(list: Seq[T]): RandomVariable[Generator[Seq[T]]] =
     RandomVariable(generator.repeat(list.size), logDensities(list))
 }
 

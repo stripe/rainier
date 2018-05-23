@@ -4,19 +4,19 @@ sealed trait BinaryOp {
   def isCommutative: Boolean
 }
 object AddOp extends BinaryOp {
-  val isCommutative = true
+  val isCommutative: Boolean = true
 }
 object MultiplyOp extends BinaryOp {
-  val isCommutative = true
+  val isCommutative: Boolean = true
 }
 object SubtractOp extends BinaryOp {
-  val isCommutative = false
+  val isCommutative: Boolean = false
 }
 object DivideOp extends BinaryOp {
-  val isCommutative = false
+  val isCommutative: Boolean = false
 }
 object PowOp extends BinaryOp {
-  val isCommutative = false
+  val isCommutative: Boolean = false
 }
 
 sealed trait UnaryOp
