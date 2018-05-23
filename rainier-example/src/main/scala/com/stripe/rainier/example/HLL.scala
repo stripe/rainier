@@ -3,8 +3,8 @@ package com.stripe.rainier.example
 import scala.util.hashing.MurmurHash3
 import com.stripe.rainier.compute.Real
 
-case class HLL(bits: Int) {
-  val size = Math.pow(2.0, bits.toDouble)
+final case class HLL(bits: Int) {
+  val size: Double = Math.pow(2.0, bits.toDouble)
 
   //optimizing for clarity not speed
   def apply(hashes: Seq[Int]): Map[Int, Byte] =
@@ -23,7 +23,7 @@ case class HLL(bits: Int) {
   def strings(strings: Seq[String]): Map[Int, Byte] =
     apply(strings.map(MurmurHash3.stringHash))
 
-  val maxZeros = 32 - bits
+  val maxZeros: Int = 32 - bits
   private def trailingZeros(x: Int): Int =
     if (x == 0)
       maxZeros + 1
@@ -34,7 +34,7 @@ case class HLL(bits: Int) {
 
   def logDensity(lambda: Real, hll: Map[Int, Byte]): Real = {
     val lm = lambda * Real(-1) / Real(size)
-    val c = MultiplicityVector(hll)
+    val c = new MultiplicityVector(hll)
 
     Real(c(0)) * lm +
       Real.sum(1.to(maxZeros).map { k =>
@@ -45,8 +45,8 @@ case class HLL(bits: Int) {
 
   private def pow2(n: Int) = Real(Math.pow(2.0, n.toDouble))
 
-  private case class MultiplicityVector(hll: Map[Int, Byte]) {
-    val cs =
+  final private class MultiplicityVector(hll: Map[Int, Byte]) {
+    val cs: Map[Int, Int] =
       hll.values
         .groupBy(_.toInt)
         .map { case (n, registers) => n -> registers.size }

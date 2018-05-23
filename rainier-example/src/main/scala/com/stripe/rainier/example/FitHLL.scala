@@ -5,11 +5,11 @@ import com.stripe.rainier.core._
 import com.stripe.rainier.sampler._
 
 object FitHLL {
-  val hll = HLL(10)
-  val rand = new scala.util.Random
-  implicit val rng = RNG.default
+  val hll: HLL = HLL(10)
+  val rand: scala.util.Random = new scala.util.Random
+  implicit val rng: RNG = RNG.default
 
-  def model(sketch: Map[Int, Byte]) =
+  def model(sketch: Map[Int, Byte]): RandomVariable[Real] =
     LogNormal(0, 1).param.condition { lambda =>
       hll.logDensity(lambda, sketch)
     }
