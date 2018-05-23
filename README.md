@@ -2,6 +2,10 @@
 
 # Rainier
 
+[![Build status](https://img.shields.io/travis/stripe/rainier/master.svg)](https://travis-ci.org/stripe/rainier)
+[![Coverage status](https://img.shields.io/codecov/c/github/stripe/rainier/master.svg)](https://codecov.io/github/stripe/rainier)
+[![Maven Central](https://img.shields.io/maven-central/v/com.stripe/rainier-core_2.12.svg)](https://maven-badges.herokuapp.com/maven-central/com.stripe/rainier_2.12)
+
 Rainier provides an idiomatic, high-performance functional Scala API for bayesian inference via Markov Chain Monte Carlo.
 
 Rainier allows you to describe a complex prior distribution by composing primitive distributions using familiar combinators like `map`, `flatMap`, and `zip`; condition that prior on your observed data; and, after an inference step, sample from the resulting posterior distribution.
