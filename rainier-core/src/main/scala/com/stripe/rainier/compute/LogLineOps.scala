@@ -28,6 +28,17 @@ private[compute] object LogLineOps {
   If possible, return a representation of ax as a list of terms to be summed. Within limits, it's helpful here
   to distribute the multiplications across any internal sums, because that may well surface some terms
   that are in common with whatever we're about to sum this with.
+
+  That is, what we are doing here is:
+
+    * assume we have some expression s = y_0^k_0 * y_1^k_1 * ..., where k_n is constant
+    * assume that the y_n terms in s are of themselves of the form a_n_0 * x_n_0 + a_n_1 * x_n_1 + ...
+      where a_n_m is constant
+    * assume we are now trying to construct s + t for some unknown t
+    * we want to restructure s to end up as something like ((a_0_0 * a_1_0 * ...) * (x_0_0 * x_1_0 * ...)) + ...),
+      up to some maximum number of additive terms
+    * we want to do this because we hope that the non-constant (x_0_0...) parts of these terms may be in
+      common with something in t (or some later thing we will add s+t to), and we can combine the constants
    */
   val DistributeToMaxTerms = 20
   def distribute(line: LogLine): Option[Line] = {
