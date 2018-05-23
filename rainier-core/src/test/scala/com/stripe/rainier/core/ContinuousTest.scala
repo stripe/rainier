@@ -5,7 +5,7 @@ import com.stripe.rainier.sampler._
 import org.scalatest.FunSuite
 
 class ContinuousTest extends FunSuite {
-  implicit val rng: RNG = RNG.default
+  implicit val rng: RNG = ScalaRNG(1527095581342L)
 
   def check(description: String)(fn: Real => Continuous): Unit = {
     println(description)
@@ -36,13 +36,13 @@ class ContinuousTest extends FunSuite {
           val xErr = (fitMean - trueValue) / trueValue
 
           test(
-            s"y ~ $description, x = $trueValue, sampler = $sampler, E(y) within 0.26 SD") {
-            assert(yErr.abs < 0.26)
+            s"y ~ $description, x = $trueValue, sampler = $sampler, E(y) within 0.2 SD") {
+            assert(yErr.abs < 0.2)
           }
 
           test(
-            s"y ~ $description, x = $trueValue, sampler = $sampler, E(x) within 6%") {
-            assert(xErr.abs < 0.06)
+            s"y ~ $description, x = $trueValue, sampler = $sampler, E(x) within 5%") {
+            assert(xErr.abs < 0.05)
           }
         }
     }

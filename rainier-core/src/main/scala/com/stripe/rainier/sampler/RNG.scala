@@ -10,7 +10,11 @@ trait RNG {
 }
 
 object RNG {
-  val default: RNG = new ScalaRNG(System.currentTimeMillis)
+  lazy val default: RNG = {
+    val seed = System.currentTimeMillis
+    println("Initializing RNG with seed " + seed)
+    ScalaRNG(seed)
+  }
 }
 
 final case class ScalaRNG(seed: Long) extends RNG {
