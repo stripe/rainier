@@ -97,9 +97,9 @@ Or if you want to use a different set of parameter values:
 
 ```tut
 val eval2 = new Evaluator(Map(x -> 1.0, y -> -1.0))
-eval.toDouble(x)
-eval.toDouble(xTwo)
-eval.toDouble(xy)
+eval2.toDouble(x)
+eval2.toDouble(xTwo)
+eval2.toDouble(xy)
 ```
 
 However, this method of evaluating a `Real` is relatively slow. If you want to be more efficient, you need to use the `Compiler` to produce an `Array[Double] => Double` for a fixed set of inputs and outputs. So if we want a function from `(x,y)` to `xy`, we can make one like this:

@@ -46,7 +46,7 @@ A `Variable` doesn't really need anything other than its own identity (they don'
 
 ```scala
 scala> val x = new Variable
-x: com.stripe.rainier.compute.Variable = com.stripe.rainier.compute.Variable@51287648
+x: com.stripe.rainier.compute.Variable = com.stripe.rainier.compute.Variable@42a3b292
 ```
 
 Taken by itself, `x` here represents a function that extracts a specific single parameter from the (conceptually infinite) parameter vector. We can denote that like this:
@@ -59,7 +59,7 @@ Just like before, we can do basic arithmetic on `x` to get a new `Real`:
 
 ```scala
 scala> val xTwo = x * 2
-xTwo: com.stripe.rainier.compute.Real = com.stripe.rainier.compute.Line@4392df0e
+xTwo: com.stripe.rainier.compute.Real = com.stripe.rainier.compute.Line@4300b768
 ```
 
 Unlike before, this can't just return a constant, because we don't know the value of `x`. Instead, we end up with a function like this:
@@ -72,17 +72,17 @@ However, `Real` will still try to immediately evaluate as much as it can. One wa
 
 ```scala
 scala> xTwo / 2
-res0: com.stripe.rainier.compute.Real = com.stripe.rainier.compute.Variable@51287648
+res0: com.stripe.rainier.compute.Real = com.stripe.rainier.compute.Variable@42a3b292
 ```
 
 We can also construct functions that depend on multiple variables, as you'd expect:
 
 ```scala
 scala> val y = new Variable
-y: com.stripe.rainier.compute.Variable = com.stripe.rainier.compute.Variable@106e8740
+y: com.stripe.rainier.compute.Variable = com.stripe.rainier.compute.Variable@694c9968
 
 scala> val xy = x * y
-xy: com.stripe.rainier.compute.Real = LogLine(Map(com.stripe.rainier.compute.Variable@106e8740 -> 1.0, com.stripe.rainier.compute.Variable@51287648 -> 1.0))
+xy: com.stripe.rainier.compute.Real = LogLine(Map(com.stripe.rainier.compute.Variable@694c9968 -> 1.0, com.stripe.rainier.compute.Variable@42a3b292 -> 1.0))
 ```
 
 This, of course, represents the function `xy(Θ) = Θ_x * Θ_y`.
@@ -97,7 +97,7 @@ If you want to actually evaluate a function, you have to provide values for the 
 
 ```scala
 scala> val eval = new Evaluator(Map(x -> 3.0, y -> 2.0))
-eval: com.stripe.rainier.compute.Evaluator = com.stripe.rainier.compute.Evaluator@50c163f9
+eval: com.stripe.rainier.compute.Evaluator = com.stripe.rainier.compute.Evaluator@32440170
 
 scala> eval.toDouble(x)
 res1: Double = 3.0
@@ -113,23 +113,23 @@ Or if you want to use a different set of parameter values:
 
 ```scala
 scala> val eval2 = new Evaluator(Map(x -> 1.0, y -> -1.0))
-eval2: com.stripe.rainier.compute.Evaluator = com.stripe.rainier.compute.Evaluator@3a9a4bc2
+eval2: com.stripe.rainier.compute.Evaluator = com.stripe.rainier.compute.Evaluator@22a4e4f3
 
-scala> eval.toDouble(x)
-res4: Double = 3.0
+scala> eval2.toDouble(x)
+res4: Double = 1.0
 
-scala> eval.toDouble(xTwo)
-res5: Double = 6.0
+scala> eval2.toDouble(xTwo)
+res5: Double = 2.0
 
-scala> eval.toDouble(xy)
-res6: Double = 6.0
+scala> eval2.toDouble(xy)
+res6: Double = -1.0
 ```
 
 However, this method of evaluating a `Real` is relatively slow. If you want to be more efficient, you need to use the `Compiler` to produce an `Array[Double] => Double` for a fixed set of inputs and outputs. So if we want a function from `(x,y)` to `xy`, we can make one like this:
 
 ```scala
 scala> val xyFn = Compiler.default.compile(List(x,y), xy)
-xyFn: Array[Double] => Double = scala.Function1$$Lambda$18048/1781916000@49342a12
+xyFn: Array[Double] => Double = scala.Function1$$Lambda$22782/1507142391@2c8a37ce
 ```
 
 And now we can use it as many times as we want:
@@ -152,7 +152,7 @@ For example, if we construct something like this:
 
 ```scala
 scala> val f1 = (x - 3).pow(2) + (x + 3).pow(2)
-f1: com.stripe.rainier.compute.Real = com.stripe.rainier.compute.Line@37986dbd
+f1: com.stripe.rainier.compute.Real = com.stripe.rainier.compute.Line@5ad813ee
 ```
 
 We can see what kind of code it would produce like this:
@@ -161,9 +161,9 @@ We can see what kind of code it would produce like this:
 scala> Real.trace(f1)
 def apply(params: Array[Double]): Array[Double] = {
   val globals = new Array[Double](0)
-  Array(f707(params, globals))
+  Array(f709(params, globals))
 }
-def f707(params: Array[Double], globals: Array[Double]): Double = {
+def f709(params: Array[Double], globals: Array[Double]): Double = {
   val tmp0 = 9.0 + (params(0) * params(0))
   tmp0 + tmp0
 }
@@ -182,7 +182,7 @@ scala> val data = 1.to(100).toList
 data: List[Int] = List(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100)
 
 scala> val err = data.map{n => (x - n).pow(2)}.reduce(_ + _) / data.size
-err: com.stripe.rainier.compute.Real = com.stripe.rainier.compute.Line@12c47a19
+err: com.stripe.rainier.compute.Real = com.stripe.rainier.compute.Line@6fff5ee4
 ```
 
 If we trace this, we'll see that `Real` was able to evaluate this completely enough to fully collapse out the list of data points, and the final calculation just involves an `x` and `x^2` term:
@@ -191,9 +191,9 @@ If we trace this, we'll see that `Real` was able to evaluate this completely eno
 scala> Real.trace(err)
 def apply(params: Array[Double]): Array[Double] = {
   val globals = new Array[Double](0)
-  Array(f712(params, globals))
+  Array(f714(params, globals))
 }
-def f712(params: Array[Double], globals: Array[Double]): Double = {
+def f714(params: Array[Double], globals: Array[Double]): Double = {
   (3383.5 + (params(0) * params(0))) - (params(0) * 101.0)
 }
 ```
@@ -202,33 +202,33 @@ Of course, this won't always work. For example, if we change from L2 to L1 error
 
 ```scala
 scala> val err2 = data.map{n => (x - n).abs}.reduce(_ + _) / data.size
-err2: com.stripe.rainier.compute.Real = com.stripe.rainier.compute.Line@6fa410de
+err2: com.stripe.rainier.compute.Real = com.stripe.rainier.compute.Line@7c74513a
 
 scala> Real.trace(err2)
 def apply(params: Array[Double]): Array[Double] = {
   val globals = new Array[Double](0)
-  Array(f1019(params, globals))
-}
-def f1017(params: Array[Double], globals: Array[Double]): Double = {
-  (((Math.abs(-90.0 + params(0)) + Math.abs(-78.0 + params(0))) + (Math.abs(-93.0 + params(0)) + Math.abs(-72.0 + params(0)))) + ((Math.abs(-4.0 + params(0)) + Math.abs(-95.0 + params(0))) + (Math.abs(-43.0 + params(0)) + Math.abs(-17.0 + params(0))))) + (((Math.abs(-45.0 + params(0)) + Math.abs(-79.0 + params(0))) + (Math.abs(-37.0 + params(0)) + Math.abs(-31.0 + params(0)))) + ((Math.abs(-74.0 + params(0)) + Math.abs(-89.0 + params(0))) + (Math.abs(-46.0 + params(0)) + Math.abs(-63.0 + params(0)))))
-}
-def f1013(params: Array[Double], globals: Array[Double]): Double = {
-  (((Math.abs(-54.0 + params(0)) + Math.abs(-7.0 + params(0))) + (Math.abs(-80.0 + params(0)) + Math.abs(-3.0 + params(0)))) + ((Math.abs(-91.0 + params(0)) + Math.abs(-13.0 + params(0))) + (Math.abs(-2.0 + params(0)) + Math.abs(-5.0 + params(0))))) + (((Math.abs(-15.0 + params(0)) + Math.abs(-40.0 + params(0))) + (Math.abs(-55.0 + params(0)) + Math.abs(-65.0 + params(0)))) + ((Math.abs(-25.0 + params(0)) + Math.abs(-51.0 + params(0))) + (Math.abs(-34.0 + params(0)) + Math.abs(-59.0 + params(0)))))
-}
-def f1016(params: Array[Double], globals: Array[Double]): Double = {
-  (((Math.abs(-41.0 + params(0)) + Math.abs(-98.0 + params(0))) + (Math.abs(-29.0 + params(0)) + Math.abs(-14.0 + params(0)))) + ((Math.abs(-57.0 + params(0)) + Math.abs(-71.0 + params(0))) + (Math.abs(-21.0 + params(0)) + Math.abs(-87.0 + params(0))))) + (((Math.abs(-33.0 + params(0)) + Math.abs(-53.0 + params(0))) + (Math.abs(-75.0 + params(0)) + Math.abs(-67.0 + params(0)))) + ((Math.abs(-42.0 + params(0)) + Math.abs(-92.0 + params(0))) + (Math.abs(-56.0 + params(0)) + Math.abs(-94.0 + params(0)))))
-}
-def f1018(params: Array[Double], globals: Array[Double]): Double = {
-  (((Math.abs(-11.0 + params(0)) + Math.abs(-23.0 + params(0))) + (Math.abs(-70.0 + params(0)) + Math.abs(-20.0 + params(0)))) + ((Math.abs(-85.0 + params(0)) + Math.abs(-50.0 + params(0))) + (Math.abs(-32.0 + params(0)) + Math.abs(-36.0 + params(0))))) + (((Math.abs(-86.0 + params(0)) + Math.abs(-81.0 + params(0))) + (Math.abs(-60.0 + params(0)) + Math.abs(-64.0 + params(0)))) + ((Math.abs(-68.0 + params(0)) + Math.abs(-30.0 + params(0))) + (Math.abs(-88.0 + params(0)) + Math.abs(-38.0 + params(0)))))
-}
-def f1015(params: Array[Double], globals: Array[Double]): Double = {
-  (((Math.abs(-28.0 + params(0)) + Math.abs(-48.0 + params(0))) + (Math.abs(-26.0 + params(0)) + Math.abs(-77.0 + params(0)))) + ((Math.abs(-8.0 + params(0)) + Math.abs(-39.0 + params(0))) + (Math.abs(-66.0 + params(0)) + Math.abs(-1.0 + params(0))))) + (((Math.abs(-82.0 + params(0)) + Math.abs(-16.0 + params(0))) + (Math.abs(-24.0 + params(0)) + Math.abs(-52.0 + params(0)))) + ((Math.abs(-47.0 + params(0)) + Math.abs(-97.0 + params(0))) + (Math.abs(-49.0 + params(0)) + Math.abs(-61.0 + params(0)))))
-}
-def f1014(params: Array[Double], globals: Array[Double]): Double = {
-  (((Math.abs(-99.0 + params(0)) + Math.abs(-18.0 + params(0))) + (Math.abs(-12.0 + params(0)) + Math.abs(-22.0 + params(0)))) + ((Math.abs(-62.0 + params(0)) + Math.abs(-58.0 + params(0))) + (Math.abs(-19.0 + params(0)) + Math.abs(-27.0 + params(0))))) + (((Math.abs(-73.0 + params(0)) + Math.abs(-84.0 + params(0))) + (Math.abs(-10.0 + params(0)) + Math.abs(-76.0 + params(0)))) + ((Math.abs(-6.0 + params(0)) + Math.abs(-100.0 + params(0))) + (Math.abs(-44.0 + params(0)) + Math.abs(-83.0 + params(0)))))
+  Array(f1021(params, globals))
 }
 def f1019(params: Array[Double], globals: Array[Double]): Double = {
-  (((f1013(params, globals) + f1014(params, globals)) + (f1015(params, globals) + f1016(params, globals))) + ((f1017(params, globals) + f1018(params, globals)) + ((Math.abs(-69.0 + params(0)) + Math.abs(-35.0 + params(0))) + (Math.abs(-9.0 + params(0)) + Math.abs(-96.0 + params(0)))))) * 0.01
+  (((Math.abs(-79.0 + params(0)) + Math.abs(-78.0 + params(0))) + (Math.abs(-36.0 + params(0)) + Math.abs(-27.0 + params(0)))) + ((Math.abs(-13.0 + params(0)) + Math.abs(-82.0 + params(0))) + (Math.abs(-88.0 + params(0)) + Math.abs(-10.0 + params(0))))) + (((Math.abs(-41.0 + params(0)) + Math.abs(-50.0 + params(0))) + (Math.abs(-70.0 + params(0)) + Math.abs(-2.0 + params(0)))) + ((Math.abs(-35.0 + params(0)) + Math.abs(-43.0 + params(0))) + (Math.abs(-33.0 + params(0)) + Math.abs(-51.0 + params(0)))))
+}
+def f1018(params: Array[Double], globals: Array[Double]): Double = {
+  (((Math.abs(-46.0 + params(0)) + Math.abs(-53.0 + params(0))) + (Math.abs(-64.0 + params(0)) + Math.abs(-6.0 + params(0)))) + ((Math.abs(-69.0 + params(0)) + Math.abs(-73.0 + params(0))) + (Math.abs(-30.0 + params(0)) + Math.abs(-67.0 + params(0))))) + (((Math.abs(-60.0 + params(0)) + Math.abs(-32.0 + params(0))) + (Math.abs(-11.0 + params(0)) + Math.abs(-75.0 + params(0)))) + ((Math.abs(-20.0 + params(0)) + Math.abs(-31.0 + params(0))) + (Math.abs(-81.0 + params(0)) + Math.abs(-93.0 + params(0)))))
+}
+def f1015(params: Array[Double], globals: Array[Double]): Double = {
+  (((Math.abs(-17.0 + params(0)) + Math.abs(-99.0 + params(0))) + (Math.abs(-21.0 + params(0)) + Math.abs(-95.0 + params(0)))) + ((Math.abs(-3.0 + params(0)) + Math.abs(-61.0 + params(0))) + (Math.abs(-87.0 + params(0)) + Math.abs(-92.0 + params(0))))) + (((Math.abs(-49.0 + params(0)) + Math.abs(-97.0 + params(0))) + (Math.abs(-40.0 + params(0)) + Math.abs(-28.0 + params(0)))) + ((Math.abs(-77.0 + params(0)) + Math.abs(-44.0 + params(0))) + (Math.abs(-63.0 + params(0)) + Math.abs(-15.0 + params(0)))))
+}
+def f1016(params: Array[Double], globals: Array[Double]): Double = {
+  (((Math.abs(-71.0 + params(0)) + Math.abs(-42.0 + params(0))) + (Math.abs(-80.0 + params(0)) + Math.abs(-45.0 + params(0)))) + ((Math.abs(-37.0 + params(0)) + Math.abs(-98.0 + params(0))) + (Math.abs(-1.0 + params(0)) + Math.abs(-14.0 + params(0))))) + (((Math.abs(-34.0 + params(0)) + Math.abs(-94.0 + params(0))) + (Math.abs(-65.0 + params(0)) + Math.abs(-91.0 + params(0)))) + ((Math.abs(-59.0 + params(0)) + Math.abs(-5.0 + params(0))) + (Math.abs(-18.0 + params(0)) + Math.abs(-48.0 + params(0)))))
+}
+def f1020(params: Array[Double], globals: Array[Double]): Double = {
+  (((Math.abs(-83.0 + params(0)) + Math.abs(-57.0 + params(0))) + (Math.abs(-38.0 + params(0)) + Math.abs(-56.0 + params(0)))) + ((Math.abs(-24.0 + params(0)) + Math.abs(-16.0 + params(0))) + (Math.abs(-8.0 + params(0)) + Math.abs(-7.0 + params(0))))) + (((Math.abs(-68.0 + params(0)) + Math.abs(-96.0 + params(0))) + (Math.abs(-74.0 + params(0)) + Math.abs(-84.0 + params(0)))) + ((Math.abs(-89.0 + params(0)) + Math.abs(-47.0 + params(0))) + (Math.abs(-66.0 + params(0)) + Math.abs(-25.0 + params(0)))))
+}
+def f1017(params: Array[Double], globals: Array[Double]): Double = {
+  (((Math.abs(-55.0 + params(0)) + Math.abs(-54.0 + params(0))) + (Math.abs(-62.0 + params(0)) + Math.abs(-76.0 + params(0)))) + ((Math.abs(-86.0 + params(0)) + Math.abs(-58.0 + params(0))) + (Math.abs(-26.0 + params(0)) + Math.abs(-23.0 + params(0))))) + (((Math.abs(-12.0 + params(0)) + Math.abs(-39.0 + params(0))) + (Math.abs(-72.0 + params(0)) + Math.abs(-85.0 + params(0)))) + ((Math.abs(-9.0 + params(0)) + Math.abs(-90.0 + params(0))) + (Math.abs(-4.0 + params(0)) + Math.abs(-19.0 + params(0)))))
+}
+def f1021(params: Array[Double], globals: Array[Double]): Double = {
+  (((f1015(params, globals) + f1016(params, globals)) + (f1017(params, globals) + f1018(params, globals))) + ((f1019(params, globals) + f1020(params, globals)) + ((Math.abs(-52.0 + params(0)) + Math.abs(-22.0 + params(0))) + (Math.abs(-100.0 + params(0)) + Math.abs(-29.0 + params(0)))))) * 0.01
 }
 ```
 
