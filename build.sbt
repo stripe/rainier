@@ -1,5 +1,6 @@
 organization in ThisBuild := "com.stripe"
 scalaVersion in ThisBuild := "2.12.4"
+crossScalaVersions in ThisBuild := List("2.11.12", "2.12.4")
 
 val unpublished = Seq(publish := {}, publishLocal := {}, publishArtifact := false)
 

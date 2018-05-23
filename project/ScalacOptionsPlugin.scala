@@ -82,8 +82,8 @@ object ScalacOptionsPlugin extends AutoPlugin {
     "-language:existentials",
     "-language:higherKinds",
     "-language:implicitConversions",
-    "-Ypartial-unification",
-    "-Yno-predef")
+    "-Ypartial-unification"
+  )
 
   private[this] def scalacOptionsConsoleFilter: Set[String] = Set(
     "-Ywarn-unused:imports",
