@@ -1,5 +1,5 @@
 organization in ThisBuild := "com.stripe"
-scalaVersion in ThisBuild := "2.12.6"
+scalaVersion in ThisBuild := "2.12.4"
 
 val unpublished = Seq(publish := {}, publishLocal := {}, publishArtifact := false)
 
