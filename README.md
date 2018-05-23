@@ -80,6 +80,14 @@ Rainier uses [SBT](https://www.scala-sbt.org/) to build. If you have SBT install
        2.691    2.750    2.810    2.869    2.929    2.988    3.048    3.107    3.167  
 ```
 
+## Using Rainier from SBT or Maven
+
+Rainier is published on sonatype. To use it in your SBT project, you can add the following to your build.sbt:
+
+```scala
+libraryDependencies += "com.stripe" %% "rainier-core" % "0.1.0"
+```
+
 ## Authors 
 
 Rainier was written primarily by [Avi Bryant](http://twitter.com/avibryant), with guidance and contributions from [Roban Kramer](https://twitter.com/robanhk), [Mio Alter](https://twitter.com/mioalter), and [Grzegorz Kossakowski](https://twitter.com/gkossakowski).
