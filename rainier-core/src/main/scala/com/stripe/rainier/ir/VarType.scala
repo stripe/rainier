@@ -9,9 +9,8 @@ final private case class Global(id: Int) extends VarType
 
 final private case class VarTypes(numReferences: Map[Sym, Int],
                                   referringMethods: Map[Sym, Set[Sym]]) {
-  var globals: Map[Sym, Global] = Map.empty[Sym, Global]
-  var locals: Map[Sym, Map[Sym, Local]] =
-    Map.empty[Sym, Map[Sym, Local]]
+  var globals: Map[Sym, Global] = Map.empty
+  var locals: Map[Sym, Map[Sym, Local]] = Map.empty
 
   def apply(sym: Sym): VarType = {
     if (numReferences(sym) == 1)

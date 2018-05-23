@@ -158,7 +158,7 @@ private class Translator {
   and its ref equally well.
    */
   private class SymCache[K] {
-    var cache: Map[(List[Ref], K), Sym] = Map.empty[(List[Ref], K), Sym]
+    var cache: Map[(List[Ref], K), Sym] = Map.empty
     def memoize(irKeys: Seq[List[IR]], opKey: K, ir: => IR): IR = {
       val refKeys = irKeys.map { l =>
         l.map(ref)
