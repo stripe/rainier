@@ -7,14 +7,14 @@ private[compute] object LineOps {
     if (merged.isEmpty)
       Constant(left.b + right.b)
     else
-      Line(merged, left.b + right.b)
+      simplify(merged, left.b + right.b)
   }
 
-  def scale(line: Line, v: Double): Line =
-    Line(line.ax.map { case (x, a) => (x, a * v) }, line.b * v)
+  def scale(line: Line, v: Double): NonConstant =
+    simplify(line.ax.map { case (x, a) => (x, a * v) }, line.b * v)
 
-  def translate(line: Line, v: Double): Line =
-    Line(line.ax, line.b + v)
+  def translate(line: Line, v: Double): NonConstant =
+    simplify(line.ax, line.b + v)
 
   /*
   Multiply two lines, using the distribution rule, to produce a new Line.
@@ -85,7 +85,7 @@ private[compute] object LineOps {
 
     val (k, cnt) = coefficientFreqs.maxBy(_._2)
     if (cnt > coefficientFreqs.getOrElse(1.0, 0))
-      (scale(line, 1.0 / k), k)
+      (Line(scale(line, 1.0 / k)), k)
     else
       (line, 1.0)
   }
@@ -112,6 +112,13 @@ private[compute] object LineOps {
         else
           acc + (k -> newV)
     }
+  }
+
+  private def simplify(ax: Map[NonConstant, Double], b: Double): NonConstant = {
+    if (b == 0.0 && ax.size == 1 && ax.head._2 == 1.0)
+      ax.head._1
+    else
+      Line(ax, b)
   }
 
   object Line1 {

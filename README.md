@@ -45,7 +45,7 @@ As a rough comparison, Rainier seems to yield a 10x or more speedup relative to 
 
 A good starting point is the [Tour of Rainier's Core](docs/tour.md).
 
-If you want to dig deeper, there are some detailed [implementation notes](docs/impl.md).
+If you want to dig deeper, there's a tour of [the underlying compute graph](docs/real.md), as well as some detailed [implementation notes](docs/impl.md).
 
 If you're more familiar with deep learning systems like TensorFlow or PyTorch, you might also be interested in [this brief summary of some of the similarities and differences](docs/dl.md) between DL and MCMC.
 
