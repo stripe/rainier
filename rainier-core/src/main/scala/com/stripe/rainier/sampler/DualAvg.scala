@@ -2,7 +2,7 @@ package com.stripe.rainier.sampler
 
 import scala.annotation.tailrec
 
-private case class DualAvg(
+final private case class DualAvg(
     delta: Double,
     nSteps: Int,
     logStepSize: Double,
@@ -15,8 +15,8 @@ private case class DualAvg(
     acceptanceProbUpdateDenom: Int = 10,
     decayRate: Double = 0.75
 ) {
-  val stepSize = Math.exp(logStepSize)
-  val finalStepSize = Math.exp(logStepSizeBar)
+  val stepSize: Double = Math.exp(logStepSize)
+  val finalStepSize: Double = Math.exp(logStepSizeBar)
 
   def update(newAcceptanceProb: Double): DualAvg = {
     val newIteration = iteration + 1

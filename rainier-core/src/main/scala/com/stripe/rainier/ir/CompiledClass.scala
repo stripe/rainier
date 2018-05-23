@@ -13,9 +13,9 @@ private[ir] trait CompiledFunction {
 
 private[ir] class CompiledClass(name: String, methods: Seq[MethodNode]) {
 
-  val classNode = createClass
-  val bytes = writeBytecode
-  lazy val instance = createInstance
+  val classNode: ClassNode = createClass
+  val bytes: Array[Byte] = writeBytecode
+  lazy val instance: CompiledFunction = createInstance
 
   def writeToTmpFile(): Unit =
     FileUtils.writeByteArrayToFile(new File("/tmp/" + name + ".class"), bytes)

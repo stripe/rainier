@@ -2,14 +2,14 @@ package com.stripe.rainier.sampler
 
 import com.stripe.rainier.compute._
 
-private case class WalkersChain(cf: Array[Double] => Double,
-                                walkers: Vector[Array[Double]],
-                                scores: Vector[Double],
-                                accepted: Boolean,
-                                walker: Int)(implicit rng: RNG) {
+final private case class WalkersChain(cf: Array[Double] => Double,
+                                      walkers: Vector[Array[Double]],
+                                      scores: Vector[Double],
+                                      accepted: Boolean,
+                                      walker: Int)(implicit rng: RNG) {
 
-  val variables = walkers(walker)
-  val score = scores(walker)
+  val variables: Array[Double] = walkers(walker)
+  val score: Double = scores(walker)
 
   def toStream: Stream[WalkersChain] =
     this #:: next.toStream

@@ -1,15 +1,15 @@
 package com.stripe.rainier.repl
 
-case class DensityPlot(nRows: Int = 20,
-                       nColumns: Int = 80,
-                       xLabelWidth: Int = 9,
-                       yLabelWidth: Int = 9,
-                       yLabelEvery: Int = 5,
-                       logX: Boolean = false,
-                       logY: Boolean = false,
-                       logMarkers: Boolean = false,
-                       clip: Double = 0.0,
-                       markers: String = "·∘○") {
+final case class DensityPlot(nRows: Int = 20,
+                             nColumns: Int = 80,
+                             xLabelWidth: Int = 9,
+                             yLabelWidth: Int = 9,
+                             yLabelEvery: Int = 5,
+                             logX: Boolean = false,
+                             logY: Boolean = false,
+                             logMarkers: Boolean = false,
+                             clip: Double = 0.0,
+                             markers: String = "·∘○") {
 
   def plot2D(points: Seq[(Double, Double)]): Seq[String] = {
     val (fullXs, fullYs) = points.unzip

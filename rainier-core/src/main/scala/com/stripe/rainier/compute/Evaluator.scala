@@ -26,13 +26,13 @@ class Evaluator(var cache: Map[Real, Double]) extends Numeric[Real] {
     case v: Variable => sys.error(s"No value provided for $v")
   }
 
-  def compare(x: Real, y: Real) = toDouble(x).compare(toDouble(y))
-  def fromInt(x: Int) = Real(x)
-  def minus(x: Real, y: Real) = x - y
-  def negate(x: Real) = x * -1
-  def plus(x: Real, y: Real) = x + y
-  def times(x: Real, y: Real) = x * y
-  def toFloat(x: Real) = toDouble(x).toFloat
-  def toInt(x: Real) = toDouble(x).toInt
-  def toLong(x: Real) = toDouble(x).toLong
+  def compare(x: Real, y: Real): Int = toDouble(x).compare(toDouble(y))
+  def fromInt(x: Int): Real = Real(x)
+  def minus(x: Real, y: Real): Real = x - y
+  def negate(x: Real): Real = x * -1
+  def plus(x: Real, y: Real): Real = x + y
+  def times(x: Real, y: Real): Real = x * y
+  def toFloat(x: Real): Float = toDouble(x).toFloat
+  def toInt(x: Real): Int = toDouble(x).toInt
+  def toLong(x: Real): Long = toDouble(x).toLong
 }

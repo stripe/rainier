@@ -2,10 +2,10 @@ package com.stripe.rainier.sampler
 
 import com.stripe.rainier.compute._
 
-private case class HamiltonianChain(accepted: Boolean,
-                                    acceptanceProb: Double,
-                                    hParams: HParams,
-                                    lf: LeapFrog) {
+final private case class HamiltonianChain(accepted: Boolean,
+                                          acceptanceProb: Double,
+                                          hParams: HParams,
+                                          lf: LeapFrog) {
 
   // Take a single leapfrog step without re-initializing momenta
   // for use in tuning the step size
@@ -35,7 +35,7 @@ private case class HamiltonianChain(accepted: Boolean,
   def logAcceptanceProb(nextChain: HamiltonianChain): Double =
     this.hParams.logAcceptanceProb(nextChain.hParams)
 
-  def variables = hParams.variables
+  def variables: Array[Double] = hParams.variables
 }
 
 private object HamiltonianChain {
@@ -53,10 +53,10 @@ array(n..(n*2-1)) == qs
 array(n*2) == potential
 array(n*2+1) == stepSize
  */
-case class HParams(array: Array[Double]) {
-  val n = (array.size - 2) / 2
-  def potentialIndex = n * 2
-  def stepSizeIndex = potentialIndex + 1
+final case class HParams(array: Array[Double]) {
+  val n: Int = (array.size - 2) / 2
+  def potentialIndex: Int = n * 2
+  def stepSizeIndex: Int = potentialIndex + 1
 
   /**
     * This is the dot product (ps^T ps).

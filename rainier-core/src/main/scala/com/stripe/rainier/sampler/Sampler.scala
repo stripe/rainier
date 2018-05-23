@@ -7,13 +7,13 @@ trait Sampler {
       implicit rng: RNG): Stream[Sample]
 }
 
-case class Sample(accepted: Boolean, parameters: Array[Double])
+final case class Sample(accepted: Boolean, parameters: Array[Double])
 
 object Sampler {
   object Default {
-    val sampler = Walkers(100)
-    val iterations = 10000
-    val warmupIterations = 10000
+    val sampler: Walkers = Walkers(100)
+    val iterations: Int = 10000
+    val warmupIterations: Int = 10000
   }
 
   def gelmanRubin(chains: List[List[Array[Double]]]): List[Double] = {

@@ -90,7 +90,8 @@ class RandomVariable[+T](private val value: T,
     }
   }
 
-  val density = Real.sum(densities.toList.map(_.toReal))
+  val density: Real =
+    Real.sum(densities.toList.map(_.toReal))
 }
 
 object RandomVariable {

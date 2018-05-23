@@ -142,12 +142,12 @@ private class Translator {
       case _              => sys.error("Should only see refs and vardefs")
     }
 
-  private case class Ring(times: BinaryOp,
-                          plus: BinaryOp,
-                          minus: BinaryOp,
-                          zero: Double)
-  private val multiplyRing = Ring(MultiplyOp, AddOp, SubtractOp, 0.0)
-  private val powRing = Ring(PowOp, MultiplyOp, DivideOp, 1.0)
+  private final class Ring(val times: BinaryOp,
+                           val plus: BinaryOp,
+                           val minus: BinaryOp,
+                           val zero: Double)
+  private val multiplyRing = new Ring(MultiplyOp, AddOp, SubtractOp, 0.0)
+  private val powRing = new Ring(PowOp, MultiplyOp, DivideOp, 1.0)
 
   /*
   This performs hash-consing aka the flyweight pattern to ensure that we don't
@@ -158,7 +158,7 @@ private class Translator {
   and its ref equally well.
    */
   private class SymCache[K] {
-    var cache = Map.empty[(List[Ref], K), Sym]
+    var cache: Map[(List[Ref], K), Sym] = Map.empty[(List[Ref], K), Sym]
     def memoize(irKeys: Seq[List[IR]], opKey: K, ir: => IR): IR = {
       val refKeys = irKeys.map { l =>
         l.map(ref)

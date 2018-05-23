@@ -13,8 +13,8 @@ object RNG {
   val default: RNG = new ScalaRNG(System.currentTimeMillis)
 }
 
-case class ScalaRNG(seed: Long) extends RNG {
-  val rand = new Random(seed)
-  def standardUniform = rand.nextDouble
-  def standardNormal = rand.nextGaussian
+final case class ScalaRNG(seed: Long) extends RNG {
+  val rand: Random = new Random(seed)
+  def standardUniform: Double = rand.nextDouble
+  def standardNormal: Double = rand.nextGaussian
 }
