@@ -87,7 +87,7 @@ final case class Binomial(p: Real, k: Int) extends Distribution[Int] {
       m.getOrElse(true, 0)
     }
   def logDensity(t: Int): Real =
-    multi.logDensity(Map(true -> t))
+    multi.logDensity(Map(true -> t, false -> (k - t)))
 }
 
 final case class Mixture[T, D](pmf: Map[D, Real])(
