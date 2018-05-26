@@ -3,6 +3,9 @@ package com.stripe.rainier.core
 import com.stripe.rainier.compute._
 import com.stripe.rainier.sampler._
 
+/**
+  * The main probability monad used in Rainier for constructing probabilistic programs which can be sampled
+  */
 class RandomVariable[+T](private val value: T,
                          private val densities: Set[RandomVariable.BoxedReal]) {
 
@@ -94,6 +97,9 @@ class RandomVariable[+T](private val value: T,
     Real.sum(densities.toList.map(_.toReal))
 }
 
+/**
+  * The main probability monad used in Rainier for constructing probabilistic programs which can be sampled
+  */
 object RandomVariable {
 
   //this exists to provide a reference-equality wrapper

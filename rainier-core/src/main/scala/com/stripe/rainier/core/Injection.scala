@@ -3,6 +3,9 @@ package com.stripe.rainier.core
 import com.stripe.rainier.compute._
 import com.stripe.rainier.unused
 
+/**
+  * Injective transformations
+  */
 trait Injection { self =>
 
   def forwards(x: Real): Real
@@ -32,6 +35,9 @@ trait Injection { self =>
   }
 }
 
+/**
+  * Class to scale a distribution under multiplication by a scale factor
+  */
 final case class Scale(a: Real) extends Injection {
   private val lj = a.log * -1
   def forwards(x: Real): Real = x * a
@@ -40,6 +46,9 @@ final case class Scale(a: Real) extends Injection {
   val requirements: Set[Real] = Set(a)
 }
 
+/**
+  * Class to translate a distribution by adding a constant
+  */
 final case class Translate(b: Real) extends Injection {
   def forwards(x: Real): Real = x + b
   def backwards(y: Real): Real = y - b
@@ -47,6 +56,9 @@ final case class Translate(b: Real) extends Injection {
   val requirements: Set[Real] = Set(b)
 }
 
+/**
+  * Object to exponentiate a distribution
+  */
 object Exp extends Injection {
   def forwards(x: Real): Real = x.exp
   def backwards(y: Real): Real = y.log

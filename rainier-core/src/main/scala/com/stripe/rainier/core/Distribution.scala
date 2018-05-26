@@ -2,6 +2,9 @@ package com.stripe.rainier.core
 
 import com.stripe.rainier.compute.Real
 
+/**
+  * Basic probability distribution trait
+  */
 trait Distribution[T] extends Likelihood[T] { self =>
   def logDensity(t: T): Real
   def logDensities(list: Seq[T]): Real = Real.sum(list.map(logDensity))
@@ -14,6 +17,9 @@ trait Distribution[T] extends Likelihood[T] { self =>
     RandomVariable(generator.repeat(list.size), logDensities(list))
 }
 
+/**
+  * Combinatoric functions required for log density calculations. Note that they all return the log of the function described.
+  */
 object Combinatrics {
   def gamma(z: Real): Real = {
     val w = z + (Real.one / ((12 * z) - (Real.one / (10 * z))))

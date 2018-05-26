@@ -3,6 +3,9 @@ package com.stripe.rainier.core
 import com.stripe.rainier.compute._
 import com.stripe.rainier.sampler.RNG
 
+/**
+  * Trait for things which can be sampled
+  */
 trait Sampleable[-S, +T] {
   def requirements(value: S): Set[Real]
   def get(value: S)(implicit r: RNG, n: Numeric[Real]): T
@@ -32,6 +35,9 @@ trait Sampleable[-S, +T] {
   }
 }
 
+/**
+  * Things which can be sampled
+  */
 object Sampleable {
   implicit def generator[T]: Sampleable[Generator[T], T] =
     new Sampleable[Generator[T], T] {
