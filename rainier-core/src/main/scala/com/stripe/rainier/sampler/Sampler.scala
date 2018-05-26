@@ -29,7 +29,7 @@ object Diagnostics {
       t.sum / n
     }
 
-    val meanMean = means.sum / n
+    val meanMean = means.sum / m
 
     val b = (n / (m - 1)) * means.map { m =>
       Math.pow(m - meanMean, 2)
