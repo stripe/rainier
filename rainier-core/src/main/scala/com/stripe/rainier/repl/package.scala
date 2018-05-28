@@ -3,7 +3,6 @@ package com.stripe.rainier
 import java.io.File
 
 import com.cibo.evilplot.numeric.Point
-import com.cibo.evilplot.plot.ContourPlot
 import com.stripe.rainier.sampler._
 
 package object repl {
@@ -25,13 +24,7 @@ package object repl {
     val points = seq.map {
       case (x, y) => Point(m.toDouble(x), n.toDouble((y)))
     }
-
-    import com.cibo.evilplot.plot.aesthetics.DefaultTheme.defaultTheme
-    ContourPlot(points, contours = Some(contours))
-      .xAxis()
-      .yAxis()
-      .frame()
-      .render()
+    ContourPlot(points, contours)
       .write(new File(file))
   }
 
