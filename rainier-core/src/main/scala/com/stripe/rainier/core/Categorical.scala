@@ -2,6 +2,11 @@ package com.stripe.rainier.core
 
 import com.stripe.rainier.compute.Real
 
+/**
+  * A finite discrete distribution
+  *
+  * @param pmf A map with keys corresponding to the possible outcomes and values corresponding to the probabilities of those outcomes
+  */
 final case class Categorical[T](pmf: Map[T, Real]) extends Distribution[T] {
   def map[U](fn: T => U): Categorical[U] =
     flatMap { t =>
@@ -64,6 +69,12 @@ object Categorical {
     })
 }
 
+/**
+  * A Multinomial distribution
+  *
+  * @param pmf A map with keys corresponding to the possible outcomes of a single multinomial trial and values corresponding to the probabilities of those outcomes
+  * @param k The number of multinomial trials
+  */
 final case class Multinomial[T](pmf: Map[T, Real], k: Int)
     extends Distribution[Map[T, Int]] {
   def generator: Generator[Map[T, Int]] =
@@ -78,6 +89,12 @@ final case class Multinomial[T](pmf: Map[T, Real], k: Int)
     })
 }
 
+/**
+  * A Binomial distribution with expectation `k*p`
+  *
+  * @param p The probability of success
+  * @param k The number of trials
+  */
 final case class Binomial(p: Real, k: Int) extends Distribution[Int] {
   val multi: Multinomial[Boolean] =
     Categorical.boolean(p).toMultinomial(k)
@@ -90,6 +107,11 @@ final case class Binomial(p: Real, k: Int) extends Distribution[Int] {
     multi.logDensity(Map(true -> t, false -> (k - t)))
 }
 
+/**
+  * A Mixture distribution
+  *
+  * @param pmf A Map with keys representing component distributions and values corresponding to the probabilities of those components
+  */
 final case class Mixture[T, D](pmf: Map[D, Real])(
     implicit ev: D <:< Distribution[T])
     extends Distribution[T] {

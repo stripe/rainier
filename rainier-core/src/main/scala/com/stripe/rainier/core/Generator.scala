@@ -3,6 +3,9 @@ package com.stripe.rainier.core
 import com.stripe.rainier.compute.Real
 import com.stripe.rainier.sampler.RNG
 
+/**
+  * Generator trait, for posterior predictive distributions to be forwards sampled during sampling
+  */
 trait Generator[T] { self =>
   def requirements: Set[Real]
 
@@ -26,6 +29,9 @@ trait Generator[T] { self =>
   }
 }
 
+/**
+  * Generator object, for posterior predictive distributions to be forwards sampled during sampling
+  */
 object Generator {
   def apply[T](t: T): Generator[T] = new Generator[T] {
     val requirements: Set[Real] = Set.empty

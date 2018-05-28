@@ -2,6 +2,11 @@ package com.stripe.rainier.core
 
 import com.stripe.rainier.compute.Real
 
+/**
+  * Poisson distribution with expectation `lambda`
+  *
+  * @param lambda The mean of the Poisson distribution
+  */
 final case class Poisson(lambda: Real) extends Distribution[Int] {
   def logDensity(t: Int): Real = {
     lambda.log * t - lambda - Combinatrics.factorial(t)

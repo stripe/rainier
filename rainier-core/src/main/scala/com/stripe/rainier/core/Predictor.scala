@@ -1,5 +1,8 @@
 package com.stripe.rainier.core
 
+/**
+  * Predictor class, for fitting data with covariates
+  */
 abstract class Predictor[X, Y, Z](implicit ev: Z <:< Distribution[Y])
     extends Likelihood[(X, Y)] {
   def apply(x: X): Z
@@ -23,6 +26,9 @@ abstract class Predictor[X, Y, Z](implicit ev: Z <:< Distribution[Y])
   def predict(x: X): Generator[Y] = ev(apply(x)).generator
 }
 
+/**
+  * Predictor object, for fitting data with covariates
+  */
 object Predictor {
   def from[X, Y, Z](fn: X => Z)(
       implicit ev: Z <:< Distribution[Y]): Predictor[X, Y, Z] =
