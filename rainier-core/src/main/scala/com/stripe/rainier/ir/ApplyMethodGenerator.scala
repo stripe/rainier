@@ -1,17 +1,15 @@
 package com.stripe.rainier.ir
 
 final private case class ApplyMethodGenerator(className: String,
-                                              outputMethods: Seq[Int],
-                                              numGlobals: Int)
+                                              outputMethods: Seq[Int])
     extends MethodGenerator {
   val isPrivate: Boolean = false
   val methodName: String = "apply"
-  val methodDesc: String = "([D)[D"
+  val methodDesc: String = "([D[D[D)V"
 
-  newArrayOfSize(numGlobals)
-  storeGlobalVars()
-  newArray(outputMethods) { n =>
-    callExprMethod(n)
+  outputMethods.zipWithIndex.foreach {
+    case (m, i) =>
+      storeOutput(i) { callExprMethod(m) }
   }
-  returnArray()
+  returnVoid()
 }
