@@ -5,17 +5,14 @@ import com.stripe.rainier.compute._
 final case class HMC(nSteps: Int) extends Sampler {
   def sample(density: Real, warmupIterations: Int, iterations: Int)(
       implicit rng: RNG): List[Array[Double]] = {
-    val (tunedChain, tunedStepSize) =
-      DualAvg.findStepSize(HamiltonianChain(density.variables, density),
-                           0.65,
-                           nSteps,
-                           warmupIterations)
+    val chain = HamiltonianChain(density.variables, density)
+    val stepSize =
+      DualAvg.findStepSize(chain, 0.65, nSteps, warmupIterations)
     1.to(iterations)
-      .scanLeft(tunedChain) {
-        case (chain, _) =>
-          chain.nextHMC(tunedStepSize, nSteps)
-      }
-      .map(_.variables)
       .toList
+      .map { _ =>
+        chain.step(stepSize, nSteps)
+        chain.variables
+      }
   }
 }

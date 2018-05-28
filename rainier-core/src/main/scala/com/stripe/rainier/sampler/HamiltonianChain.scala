@@ -3,157 +3,140 @@ package com.stripe.rainier.sampler
 import com.stripe.rainier.compute._
 import com.stripe.rainier.ir.CompiledFunction
 
-final private case class HamiltonianChain(accepted: Boolean,
-                                          acceptanceProb: Double,
-                                          hParams: HParams,
-                                          lf: LeapFrog) {
+final private class HamiltonianChain(lf: LeapFrog)(implicit rng: RNG) {
+  private var params = lf.initialize
+  private var newParams = params.clone
+
+  private def accept(): Unit = {
+    val tmp = params
+    params = newParams
+    newParams = tmp
+  }
 
   // Take a single leapfrog step without re-initializing momenta
   // for use in tuning the step size
-  def stepOnce(stepSize: Double): HamiltonianChain = {
-    val newParams = lf.steps(1, hParams.stepSize(stepSize))
-    copy(hParams = newParams)
+  def stepOnce(stepSize: Double): Double = {
+    lf.steps(1, params, newParams, stepSize, false)
+    val logAcceptanceProb = lf.logAcceptanceProb(params, newParams)
+    accept()
+    logAcceptanceProb
   }
 
-  def nextHMC(stepSize: Double, nSteps: Int)(
-      implicit rng: RNG): HamiltonianChain = {
-    val initialParams = hParams.nextIteration(stepSize)
-    val finalParams = lf.steps(nSteps, initialParams)
-    val logAcceptanceProb = initialParams.logAcceptanceProb(finalParams)
-    val (newParams, newAccepted) = {
-      if (Math.log(rng.standardUniform) < logAcceptanceProb)
-        (finalParams, true)
-      else
-        (initialParams, false)
-    }
-    copy(
-      hParams = newParams,
-      accepted = newAccepted,
-      acceptanceProb = Math.exp(logAcceptanceProb)
-    )
+  def step(stepSize: Double, nSteps: Int): Double = {
+    lf.steps(nSteps, params, newParams, stepSize, true)
+    val logAcceptanceProb = lf.logAcceptanceProb(params, newParams)
+    if (Math.log(rng.standardUniform) < logAcceptanceProb)
+      accept()
+    logAcceptanceProb
   }
 
-  def logAcceptanceProb(nextChain: HamiltonianChain): Double =
-    this.hParams.logAcceptanceProb(nextChain.hParams)
+  def variables: Array[Double] = lf.variables(params)
 
-  def variables: Array[Double] = hParams.variables
+  override def clone: HamiltonianChain = new HamiltonianChain(lf)
 }
 
-private object HamiltonianChain {
+private[sampler] object HamiltonianChain {
   def apply(variables: Seq[Variable], density: Real)(
       implicit rng: RNG): HamiltonianChain = {
     val lf = LeapFrog(variables.toList, density)
-    val hParams = lf.initialize
-    HamiltonianChain(true, 1.0, hParams, lf)
+    new HamiltonianChain(lf)
   }
 }
 
 /*
+Params layout:
 array(0..(n-1)) == ps
 array(n..(n*2-1)) == qs
 array(n*2) == potential
 array(n*2+1) == stepSize
  */
-final case class HParams(array: Array[Double]) {
-  val n: Int = (array.size - 2) / 2
-  def potentialIndex: Int = n * 2
-  def stepSizeIndex: Int = potentialIndex + 1
-
-  /**
-    * This is the dot product (ps^T ps).
-    * The fancier variations of HMC involve changing this kinetic term
-    * to either take the dot product with respect to a non-identity matrix (ps^T M ps)
-    * (a non-standard Euclidean metric) or a matrix that depends on the qs
-    * (ps^T M(qs) ps) (a Riemannian metric)
-    */
-  private def kinetic = {
-    var k = 0.0
-    var i = 0
-    while (i < n) {
-      val p = array(i)
-      k += (p * p)
-      i += 1
-    }
-    k / 2.0
-  }
-
-  private def potential = array(potentialIndex)
-
-  def logAcceptanceProb(nextParams: HParams): Double = {
-    val deltaH = nextParams.kinetic + nextParams.potential - kinetic - potential
-    if (deltaH.isNaN) { Math.log(0.0) } else { (-deltaH).min(0.0) }
-  }
-
-  def nextIteration(newStepSize: Double)(implicit rng: RNG): HParams = {
-    val newArray = array.clone
-    var i = 0
-    while (i < n) {
-      newArray(i) = rng.standardNormal
-      i += 1
-    }
-    newArray(stepSizeIndex) = newStepSize
-    HParams(newArray)
-  }
-
-  def stepSize(newStepSize: Double): HParams = {
-    val newArray = array.clone
-    newArray(stepSizeIndex) = newStepSize
-    HParams(newArray)
-  }
-
-  def variables: Array[Double] = {
-    val newArray = new Array[Double](n)
-    var i = 0
-    while (i < n) {
-      newArray(i) = array(i + n)
-      i += 1
-    }
-    newArray
-  }
-}
-
 private class LeapFrog(
     nVars: Int,
     initialHalfThenFullStep: CompiledFunction,
     twoFullSteps: CompiledFunction,
     finalHalfStep: CompiledFunction
 ) {
-  val globalsSize =
+  private val potentialIndex = nVars * 2
+  private val stepSizeIndex = potentialIndex + 1
+  private val inputOutputSize = stepSizeIndex + 1
+  private val ioBuf = new Array[Double](inputOutputSize)
+
+  private val globalsSize =
     List(initialHalfThenFullStep, twoFullSteps, finalHalfStep)
       .map(_.numGlobals)
       .max
-  val globals = new Array[Double](globalsSize)
-  val inputOutputSize = nVars * 2 + 2
+  private val globals = new Array[Double](globalsSize)
 
-  def steps(n: Int, params: HParams): HParams = {
-    val output = new Array[Double](inputOutputSize)
-    initialHalfThenFullStep(params.array, globals, output)
-    val input = output.clone
+  //we're allowed to clobber to but need to preserve from
+  def steps(n: Int,
+            from: Array[Double],
+            to: Array[Double],
+            stepSize: Double,
+            initPs: Boolean)(implicit rng: RNG): Unit = {
+    System.arraycopy(from, 0, to, 0, inputOutputSize)
+    if (initPs)
+      initializePs(to, stepSize)
+    else
+      to(stepSizeIndex) = stepSize
+
+    initialHalfThenFullStep(to, globals, ioBuf)
     var i = 1
     while (i < n) {
-      twoFullSteps(input, globals, output)
-      System.arraycopy(output, 0, input, 0, inputOutputSize)
+      System.arraycopy(ioBuf, 0, to, 0, inputOutputSize)
+      twoFullSteps(to, globals, ioBuf)
       i += 1
     }
-    finalHalfStep(input, globals, output)
-    HParams(output)
+    finalHalfStep(ioBuf, globals, to)
   }
 
-  //we want the invariant that an HParams always has the potential which
+  //we want the invariant that a params array always has the potential which
   //matches the qs. That means when we initialize a new one
   //we need to compute the potential. We can do that (slightly wastefully)
   //by using initialHalfThenFullStep with a stepSize of 0.0
-  def initialize(implicit rng: RNG): HParams = {
-    val input = new Array[Double](inputOutputSize)
+  def initialize(implicit rng: RNG): Array[Double] = {
+    initializePs(ioBuf, 0.0)
     var i = nVars
     val j = nVars * 2
     while (i < j) {
-      input(i) = rng.standardNormal
+      ioBuf(i) = rng.standardNormal
       i += 1
     }
-    val output = new Array[Double](inputOutputSize)
-    initialHalfThenFullStep(input, globals, output)
-    HParams(output).nextIteration(0.0)
+    val array = new Array[Double](inputOutputSize)
+    initialHalfThenFullStep(ioBuf, globals, array)
+    array
+  }
+
+  def initializePs(array: Array[Double], stepSize: Double)(
+      implicit rng: RNG): Unit = {
+    var i = 0
+    while (i < nVars) {
+      array(i) = rng.standardNormal
+      i += 1
+    }
+    array(stepSizeIndex) = stepSize
+  }
+
+  def variables(array: Array[Double]): Array[Double] = {
+    val newArray = new Array[Double](nVars)
+    var i = 0
+    while (i < nVars) {
+      newArray(i) = array(i + nVars)
+      i += 1
+    }
+    newArray
+  }
+
+  def logAcceptanceProb(from: Array[Double], to: Array[Double]): Double = {
+    var deltaH = 0.0
+    deltaH += to(potentialIndex) - from(potentialIndex)
+    var i = 0
+    while (i < nVars) {
+      val p1 = from(i)
+      val p2 = to(i)
+      deltaH += ((p2 * p2) - (p1 * p1)) / 2.0
+      i += 1
+    }
+    if (deltaH.isNaN) { Math.log(0.0) } else { (-deltaH).min(0.0) }
   }
 }
 

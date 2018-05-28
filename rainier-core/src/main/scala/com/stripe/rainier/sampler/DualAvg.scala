@@ -18,7 +18,8 @@ final private case class DualAvg(
   val stepSize: Double = Math.exp(logStepSize)
   val finalStepSize: Double = Math.exp(logStepSizeBar)
 
-  def update(newAcceptanceProb: Double): DualAvg = {
+  def update(logAcceptanceProb: Double): DualAvg = {
+    val newAcceptanceProb = Math.exp(logAcceptanceProb)
     val newIteration = iteration + 1
     val avgAcceptanceProbMultiplier =
       1.0 / (newIteration.toDouble + acceptanceProbUpdateDenom)
@@ -59,25 +60,21 @@ private object DualAvg {
       shrinkageTarget = Math.log(10 * stepSize)
     )
 
-  def findStepSize(
-      chain: HamiltonianChain,
-      delta: Double,
-      nSteps: Int,
-      iterations: Int)(implicit rng: RNG): (HamiltonianChain, Double) = {
-    val stepSize0 = findReasonableStepSize(chain)
+  def findStepSize(chain: HamiltonianChain,
+                   delta: Double,
+                   nSteps: Int,
+                   iterations: Int): Double = {
+    val stepSize0 = findReasonableStepSize(chain.clone)
     val dualAvg = DualAvg(delta, nSteps, stepSize0)
-    def go(chain: HamiltonianChain,
-           dualAvg: DualAvg,
-           remaining: Int): (HamiltonianChain, DualAvg) = {
+    def go(dualAvg: DualAvg, remaining: Int): DualAvg = {
       if (remaining > 0) {
-        val nextChain = chain.nextHMC(dualAvg.stepSize, dualAvg.nSteps)
-        val nextAcceptanceProb = nextChain.acceptanceProb
-        val nextDualAvg = dualAvg.update(nextAcceptanceProb)
-        go(nextChain, nextDualAvg, remaining - 1)
-      } else (chain, dualAvg)
+        val logAcceptanceProb = chain.step(dualAvg.stepSize, dualAvg.nSteps)
+        val nextDualAvg = dualAvg.update(logAcceptanceProb)
+        go(nextDualAvg, remaining - 1)
+      } else dualAvg
     }
-    val (tunedChain, finalDualAvg) = go(chain, dualAvg, iterations)
-    (tunedChain, finalDualAvg.finalStepSize)
+    val finalDualAvg = go(dualAvg, iterations)
+    finalDualAvg.finalStepSize
   }
 
   private def computeExponent(logAcceptanceProb: Double): Double =
@@ -88,28 +85,27 @@ private object DualAvg {
 
   private def continueTuningStepSize(logAcceptanceProb: Double,
                                      exponent: Double): Boolean =
-    exponent * logAcceptanceProb > -exponent * Math.log(2)
+    !logAcceptanceProb.isNegInfinity &&
+      (exponent * logAcceptanceProb > -exponent * Math.log(2))
 
   @tailrec
   private def tuneStepSize(
       chain: HamiltonianChain,
-      nextChain: HamiltonianChain,
-      exponent: Double,
+      logAcceptanceProb: Double,
       stepSize: Double
   ): Double = {
-    val logAcceptanceProb = chain.logAcceptanceProb(nextChain)
+    val exponent = computeExponent(logAcceptanceProb)
+    println((logAcceptanceProb, exponent))
     if (continueTuningStepSize(logAcceptanceProb, exponent)) {
       val newStepSize = updateStepSize(stepSize, exponent)
-      val newNextChain = chain.stepOnce(newStepSize)
-      tuneStepSize(chain, newNextChain, exponent, newStepSize)
+      val newLogAcceptanceProb = chain.stepOnce(newStepSize)
+      tuneStepSize(chain, newLogAcceptanceProb, newStepSize)
     } else { stepSize }
   }
 
   private def findReasonableStepSize(chain: HamiltonianChain): Double = {
     val initialStepSize = 1.0
-    val nextChain = chain.stepOnce(initialStepSize)
-    val logAcceptanceProb = chain.logAcceptanceProb(nextChain)
-    val exponent = computeExponent(logAcceptanceProb)
-    tuneStepSize(chain, nextChain, exponent, initialStepSize)
+    val logAcceptanceProb = chain.stepOnce(initialStepSize)
+    tuneStepSize(chain, logAcceptanceProb, initialStepSize)
   }
 }
