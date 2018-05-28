@@ -53,12 +53,10 @@ class RandomVariable[+T](private val value: T,
                                     sampleable: Sampleable[T, V]): List[V] = {
     val fn = sampleable.prepare(value, density.variables)
     sampler
-      .sample(density, warmupIterations, iterations)
-      .sliding(1, keepEvery)
-      .map { arrays =>
-        fn(arrays.head)._2
+      .sample(density, warmupIterations, iterations, keepEvery)
+      .map { array =>
+        fn(array)._2
       }
-      .toList
   }
 
   val density: Real =
