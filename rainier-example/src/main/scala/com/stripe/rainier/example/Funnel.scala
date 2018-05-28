@@ -15,6 +15,9 @@ object Funnel {
     } yield (x(0), y)
 
   def main(args: Array[String]): Unit = {
-    plot2D(model.sample(HMC(5), 1000, 10000))
+    val results = model.sample(HMC(5), 1000, 10000)
+    plot2D(results)
+    contourPlot(results, "funnel.png")
+
   }
 }

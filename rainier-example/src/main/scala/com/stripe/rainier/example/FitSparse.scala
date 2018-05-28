@@ -22,8 +22,9 @@ object FitSparse {
         }
         .fit(data)
     } yield (w1, w2)
-
-    plot2D(normalModel.sample())
+    val normalResults = normalModel.sample()
+    plot2D(normalResults)
+    contourPlot(normalResults, "fitSparse-normal.png")
 
     val laplaceModel = for {
       w1 <- Laplace(0, 0.01).param
@@ -36,7 +37,9 @@ object FitSparse {
         }
         .fit(data)
     } yield (w1, w2)
+    val laplaceResults = laplaceModel.sample()
+    plot2D(laplaceResults)
+    contourPlot(laplaceResults, "fitSparse-laplace.png")
 
-    plot2D(laplaceModel.sample())
   }
 }
