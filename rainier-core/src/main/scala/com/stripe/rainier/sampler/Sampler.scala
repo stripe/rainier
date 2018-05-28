@@ -3,11 +3,9 @@ package com.stripe.rainier.sampler
 import com.stripe.rainier.compute._
 
 trait Sampler {
-  def sample(density: Real, warmupIterations: Int)(
-      implicit rng: RNG): Stream[Sample]
+  def sample(density: Real, warmupIterations: Int, iterations: Int)(
+      implicit rng: RNG): List[Array[Double]]
 }
-
-final case class Sample(accepted: Boolean, parameters: Array[Double])
 
 object Sampler {
   object Default {

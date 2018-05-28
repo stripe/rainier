@@ -3,10 +3,10 @@ package com.stripe.rainier.sampler
 import com.stripe.rainier.compute._
 
 final case class MAP(stepSize: Double) extends Sampler {
-  def sample(density: Real, warmupIterations: Int)(
-      implicit rng: RNG): Stream[Sample] = {
+  def sample(density: Real, warmupIterations: Int, iterations: Int)(
+      implicit rng: RNG): List[Array[Double]] = {
     val values = MAP.optimize(density, warmupIterations, stepSize)
-    Stream.continually(Sample(true, values))
+    List(values)
   }
 }
 

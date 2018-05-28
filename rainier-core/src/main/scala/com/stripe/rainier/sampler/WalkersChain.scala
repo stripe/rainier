@@ -11,9 +11,6 @@ final private case class WalkersChain(cf: Array[Double] => Double,
   val variables: Array[Double] = walkers(walker)
   val score: Double = scores(walker)
 
-  def toStream: Stream[WalkersChain] =
-    this #:: next.toStream
-
   def next: WalkersChain = {
     var target = rng.int(walkers.size)
     while (target == walker) target = rng.int(walkers.size)
