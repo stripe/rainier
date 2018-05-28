@@ -1,6 +1,7 @@
 package com.stripe.rainier.sampler
 
 import com.stripe.rainier.compute._
+import com.stripe.rainier.ir.CompiledFunction
 
 final private case class HamiltonianChain(accepted: Boolean,
                                           acceptanceProb: Double,
@@ -113,18 +114,29 @@ final case class HParams(array: Array[Double]) {
 
 private class LeapFrog(
     nVars: Int,
-    initialHalfThenFullStep: Array[Double] => Array[Double],
-    twoFullSteps: Array[Double] => Array[Double],
-    finalHalfStep: Array[Double] => Array[Double]
+    initialHalfThenFullStep: CompiledFunction,
+    twoFullSteps: CompiledFunction,
+    finalHalfStep: CompiledFunction
 ) {
-  def steps(n: Int, input: HParams): HParams = {
-    var result = initialHalfThenFullStep(input.array)
+  val globalsSize =
+    List(initialHalfThenFullStep, twoFullSteps, finalHalfStep)
+      .map(_.numGlobals)
+      .max
+  val globals = new Array[Double](globalsSize)
+  val inputOutputSize = nVars * 2 + 2
+
+  def steps(n: Int, params: HParams): HParams = {
+    val output = new Array[Double](inputOutputSize)
+    initialHalfThenFullStep(params.array, globals, output)
+    val input = output.clone
     var i = 1
     while (i < n) {
-      result = twoFullSteps(result)
+      twoFullSteps(input, globals, output)
+      System.arraycopy(output, 0, input, 0, inputOutputSize)
       i += 1
     }
-    HParams(finalHalfStep(result))
+    finalHalfStep(input, globals, output)
+    HParams(output)
   }
 
   //we want the invariant that an HParams always has the potential which
@@ -132,14 +144,16 @@ private class LeapFrog(
   //we need to compute the potential. We can do that (slightly wastefully)
   //by using initialHalfThenFullStep with a stepSize of 0.0
   def initialize(implicit rng: RNG): HParams = {
-    val array = new Array[Double](nVars * 2 + 2)
+    val input = new Array[Double](inputOutputSize)
     var i = nVars
     val j = nVars * 2
     while (i < j) {
-      array(i) = rng.standardNormal
+      input(i) = rng.standardNormal
       i += 1
     }
-    HParams(initialHalfThenFullStep(array)).nextIteration(0.0)
+    val output = new Array[Double](inputOutputSize)
+    initialHalfThenFullStep(input, globals, output)
+    HParams(output).nextIteration(0.0)
   }
 }
 
@@ -179,9 +193,9 @@ private object LeapFrog {
 
     new LeapFrog(
       qs.size,
-      Compiler.default.compile(inputs, initialHalfThenFullStep),
-      Compiler.default.compile(inputs, twoFullSteps),
-      Compiler.default.compile(inputs, finalHalfStep)
+      Compiler.default.compileUnsafe(inputs, initialHalfThenFullStep),
+      Compiler.default.compileUnsafe(inputs, twoFullSteps),
+      Compiler.default.compileUnsafe(inputs, finalHalfStep)
     )
   }
 }
