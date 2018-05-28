@@ -28,6 +28,9 @@ package object repl {
 
     import com.cibo.evilplot.plot.aesthetics.DefaultTheme.defaultTheme
     ContourPlot(points, contours = Some(contours))
+      .xAxis()
+      .yAxis()
+      .frame()
       .render()
       .write(new File(file))
   }
