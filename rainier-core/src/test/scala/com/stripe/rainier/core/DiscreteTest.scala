@@ -5,7 +5,7 @@ import com.stripe.rainier.sampler._
 import org.scalatest.FunSuite
 
 class DiscreteTest extends FunSuite {
-  implicit val rng: RNG = ScalaRNG(1527607304199L)
+  implicit val rng: RNG = ScalaRNG(1527608515939L)
 
   def check[N: Numeric](description: String)(
       fn: Real => Distribution[N]): Unit = {
