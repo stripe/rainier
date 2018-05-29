@@ -26,20 +26,24 @@ private[sampler] case class LeapFrog(nVars: Int,
       .max
   private val globals = new Array[Double](globalsSize)
 
-  def stepOnce(params: Array[Double], stepSize: Double): Double = {
+  //Compute the acceptance probability for a single step at this stepSize without
+  //re-initializing the ps, or modifying params
+  def tryStepping(params: Array[Double], stepSize: Double): Double = {
     System.arraycopy(params, 0, buf1, 0, inputOutputSize)
     buf1(stepSizeIndex) = stepSize
     initialHalfThenFullStep(buf1, globals, buf2)
-    finalHalfStep(buf2, globals, params)
-    logAcceptanceProb(buf1, params)
+    finalHalfStep(buf2, globals, buf1)
+    logAcceptanceProb(params, buf1)
   }
 
+  //attempt to take N steps
+  //this will always clobber the stepSize and ps in params,
+  //but will only update the qs if the move is accepted
   def step(params: Array[Double], n: Int, stepSize: Double)(
       implicit rng: RNG): Double = {
-    System.arraycopy(params, 0, buf1, 0, inputOutputSize)
-    buf1(stepSizeIndex) = stepSize
-    initializePs(buf1)
-    initialHalfThenFullStep(buf1, globals, buf2)
+    initializePs(params)
+    params(stepSizeIndex) = stepSize
+    initialHalfThenFullStep(params, globals, buf2)
     var i = 1
     var in = buf2
     var out = buf1
@@ -70,8 +74,7 @@ private[sampler] case class LeapFrog(nVars: Int,
   //we need to compute the potential. We can do that (slightly wastefully)
   //by using initialHalfThenFullStep with a stepSize of 0.0
   def initialize(implicit rng: RNG): Array[Double] = {
-    initializePs(buf1)
-    buf1(stepSizeIndex) = 0.0
+    java.util.Arrays.fill(buf1, 0.0)
     var i = nVars
     val j = nVars * 2
     while (i < j) {
@@ -80,20 +83,32 @@ private[sampler] case class LeapFrog(nVars: Int,
     }
     val array = new Array[Double](inputOutputSize)
     initialHalfThenFullStep(buf1, globals, array)
+    initializePs(array)
     array
+  }
+
+  /**
+    * This is the dot product (ps^T ps).
+    * The fancier variations of HMC involve changing this kinetic term
+    * to either take the dot product with respect to a non-identity matrix (ps^T M ps)
+    * (a non-standard Euclidean metric) or a matrix that depends on the qs
+    * (ps^T M(qs) ps) (a Riemannian metric)
+    */
+  private def kinetic(array: Array[Double]): Double = {
+    var k = 0.0
+    var i = 0
+    while (i < nVars) {
+      val p = array(i)
+      k += (p * p)
+      i += 1
+    }
+    k / 2.0
   }
 
   private def logAcceptanceProb(from: Array[Double],
                                 to: Array[Double]): Double = {
-    var deltaH = 0.0
-    deltaH += to(potentialIndex) - from(potentialIndex)
-    var i = 0
-    while (i < nVars) {
-      val p1 = from(i)
-      val p2 = to(i)
-      deltaH += ((p2 * p2) - (p1 * p1)) / 2.0
-      i += 1
-    }
+    val deltaH = kinetic(to) + to(potentialIndex) - kinetic(from) - from(
+      potentialIndex)
     if (deltaH.isNaN) { Math.log(0.0) } else { (-deltaH).min(0.0) }
   }
 

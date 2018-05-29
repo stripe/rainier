@@ -52,15 +52,19 @@ private object DualAvg {
                    delta: Double,
                    nSteps: Int,
                    iterations: Int)(implicit rng: RNG): Double = {
-    val stepSize0 = findReasonableStepSize(lf, params.clone)
-    val dualAvg = DualAvg(delta, stepSize0)
-    var i = 0
-    while (i < iterations) {
-      val logAcceptanceProb = lf.step(params, nSteps, dualAvg.stepSize)
-      dualAvg.update(logAcceptanceProb)
-      i += 1
+    val stepSize0 = findReasonableStepSize(lf, params)
+    if (stepSize0 == 0.0)
+      0.0
+    else {
+      val dualAvg = DualAvg(delta, stepSize0)
+      var i = 0
+      while (i < iterations) {
+        val logAcceptanceProb = lf.step(params, nSteps, dualAvg.stepSize)
+        dualAvg.update(logAcceptanceProb)
+        i += 1
+      }
+      dualAvg.finalStepSize
     }
-    dualAvg.finalStepSize
   }
 
   private def computeExponent(logAcceptanceProb: Double): Double =
@@ -68,18 +72,17 @@ private object DualAvg {
 
   private def continueTuningStepSize(logAcceptanceProb: Double,
                                      exponent: Double): Boolean =
-    !logAcceptanceProb.isNegInfinity &&
-      (exponent * logAcceptanceProb > -exponent * Math.log(2))
+    exponent * logAcceptanceProb > -exponent * Math.log(2)
 
   private def findReasonableStepSize(lf: LeapFrog,
                                      params: Array[Double]): Double = {
     var stepSize = 1.0
-    var logAcceptanceProb = lf.stepOnce(params, stepSize)
+    var logAcceptanceProb = lf.tryStepping(params, stepSize)
     val exponent = computeExponent(logAcceptanceProb)
     val doubleOrHalf = Math.pow(2, exponent)
     while (continueTuningStepSize(logAcceptanceProb, exponent)) {
       stepSize *= doubleOrHalf
-      logAcceptanceProb = lf.stepOnce(params, stepSize)
+      logAcceptanceProb = lf.tryStepping(params, stepSize)
     }
     stepSize
   }
