@@ -47,15 +47,16 @@ private object DualAvg {
       shrinkageTarget = Math.log(10 * stepSize)
     )
 
-  def findStepSize(chain: HamiltonianChain,
+  def findStepSize(lf: LeapFrog,
+                   params: Array[Double],
                    delta: Double,
                    nSteps: Int,
-                   iterations: Int): Double = {
-    val stepSize0 = findReasonableStepSize(chain.clone)
+                   iterations: Int)(implicit rng: RNG): Double = {
+    val stepSize0 = findReasonableStepSize(lf, params.clone)
     val dualAvg = DualAvg(delta, stepSize0)
     var i = 0
     while (i < iterations) {
-      val logAcceptanceProb = chain.step(dualAvg.stepSize, nSteps)
+      val logAcceptanceProb = lf.step(params, nSteps, dualAvg.stepSize)
       dualAvg.update(logAcceptanceProb)
       i += 1
     }
@@ -70,14 +71,15 @@ private object DualAvg {
     !logAcceptanceProb.isNegInfinity &&
       (exponent * logAcceptanceProb > -exponent * Math.log(2))
 
-  private def findReasonableStepSize(chain: HamiltonianChain): Double = {
+  private def findReasonableStepSize(lf: LeapFrog,
+                                     params: Array[Double]): Double = {
     var stepSize = 1.0
-    var logAcceptanceProb = chain.stepOnce(stepSize)
+    var logAcceptanceProb = lf.stepOnce(params, stepSize)
     val exponent = computeExponent(logAcceptanceProb)
     val doubleOrHalf = Math.pow(2, exponent)
     while (continueTuningStepSize(logAcceptanceProb, exponent)) {
       stepSize *= doubleOrHalf
-      logAcceptanceProb = chain.stepOnce(stepSize)
+      logAcceptanceProb = lf.stepOnce(params, stepSize)
     }
     stepSize
   }
