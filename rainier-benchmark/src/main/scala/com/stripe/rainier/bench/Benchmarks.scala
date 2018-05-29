@@ -29,10 +29,10 @@ object Benchmarks {
       }.toArray)
     def compileAsm: Array[Double] => Double =
       Compiler.default.compile(vars, expr)
-    def sampleHMC(steps: Int): List[Sample] =
-      HMC(steps).sample(expr, 1000).take(10000).toList
-    def sampleWalkers(walkers: Int): List[Sample] =
-      Walkers(walkers).sample(expr, 1000).take(10000).toList
+    def sampleHMC(steps: Int): List[Array[Double]] =
+      HMC(steps).sample(expr, 1000, 10000, 1)
+    def sampleWalkers(walkers: Int): List[Array[Double]] =
+      Walkers(walkers).sample(expr, 1000, 10000, 1)
     def endToEndHMC(steps: Int): List[Double] = {
       val d = expression
       RandomVariable(d, d).sample(HMC(steps), 1000, 10000)
