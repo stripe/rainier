@@ -1,60 +1,47 @@
 package com.stripe.rainier.sampler
 
-import scala.annotation.tailrec
-
-final private case class DualAvg(
+final private class DualAvg(
     delta: Double,
-    nSteps: Int,
-    logStepSize: Double,
-    logStepSizeBar: Double,
-    acceptanceProb: Double,
-    avgAcceptanceProb: Double,
-    iteration: Int,
+    var logStepSize: Double,
+    var logStepSizeBar: Double,
+    var avgAcceptanceProb: Double,
+    var iteration: Int,
     shrinkageTarget: Double,
     stepSizeUpdateDenom: Double = 0.05,
     acceptanceProbUpdateDenom: Int = 10,
     decayRate: Double = 0.75
 ) {
-  val stepSize: Double = Math.exp(logStepSize)
-  val finalStepSize: Double = Math.exp(logStepSizeBar)
+  def stepSize: Double = Math.exp(logStepSize)
+  def finalStepSize: Double = Math.exp(logStepSizeBar)
 
-  def update(logAcceptanceProb: Double): DualAvg = {
+  def update(logAcceptanceProb: Double): Unit = {
     val newAcceptanceProb = Math.exp(logAcceptanceProb)
-    val newIteration = iteration + 1
+    iteration = iteration + 1
     val avgAcceptanceProbMultiplier =
-      1.0 / (newIteration.toDouble + acceptanceProbUpdateDenom)
-    val stepSizeMultiplier = Math.pow(newIteration.toDouble, -decayRate)
-    val newAvgAcceptanceProb = (
+      1.0 / (iteration.toDouble + acceptanceProbUpdateDenom)
+    val stepSizeMultiplier = Math.pow(iteration.toDouble, -decayRate)
+
+    avgAcceptanceProb = (
       (1.0 - avgAcceptanceProbMultiplier) * avgAcceptanceProb
         + (avgAcceptanceProbMultiplier * (delta - newAcceptanceProb))
     )
 
-    val newLogStepSize = (
+    logStepSize = (
       shrinkageTarget
-        - (newAvgAcceptanceProb * Math.sqrt(newIteration.toDouble) / stepSizeUpdateDenom)
+        - (avgAcceptanceProb * Math.sqrt(iteration.toDouble) / stepSizeUpdateDenom)
     )
 
-    val newLogStepSizeBar = (stepSizeMultiplier * newLogStepSize
+    logStepSizeBar = (stepSizeMultiplier * logStepSize
       + (1.0 - stepSizeMultiplier) * logStepSizeBar)
-
-    copy(
-      iteration = newIteration,
-      acceptanceProb = newAcceptanceProb,
-      avgAcceptanceProb = newAvgAcceptanceProb,
-      logStepSize = newLogStepSize,
-      logStepSizeBar = newLogStepSizeBar
-    )
   }
 }
 
 private object DualAvg {
-  def apply(delta: Double, nSteps: Int, stepSize: Double): DualAvg =
-    DualAvg(
+  def apply(delta: Double, stepSize: Double): DualAvg =
+    new DualAvg(
       delta = delta,
-      nSteps = nSteps,
       logStepSize = Math.log(stepSize),
       logStepSizeBar = 0.0,
-      acceptanceProb = 1.0,
       avgAcceptanceProb = 0.0,
       iteration = 0,
       shrinkageTarget = Math.log(10 * stepSize)
@@ -65,47 +52,33 @@ private object DualAvg {
                    nSteps: Int,
                    iterations: Int): Double = {
     val stepSize0 = findReasonableStepSize(chain.clone)
-    val dualAvg = DualAvg(delta, nSteps, stepSize0)
-    def go(dualAvg: DualAvg, remaining: Int): DualAvg = {
-      if (remaining > 0) {
-        val logAcceptanceProb = chain.step(dualAvg.stepSize, dualAvg.nSteps)
-        val nextDualAvg = dualAvg.update(logAcceptanceProb)
-        go(nextDualAvg, remaining - 1)
-      } else dualAvg
+    val dualAvg = DualAvg(delta, stepSize0)
+    var i = 0
+    while (i < iterations) {
+      val logAcceptanceProb = chain.step(dualAvg.stepSize, nSteps)
+      dualAvg.update(logAcceptanceProb)
+      i += 1
     }
-    val finalDualAvg = go(dualAvg, iterations)
-    finalDualAvg.finalStepSize
+    dualAvg.finalStepSize
   }
 
   private def computeExponent(logAcceptanceProb: Double): Double =
     if (logAcceptanceProb > Math.log(0.5)) { 1.0 } else { -1.0 }
-
-  private def updateStepSize(stepSize: Double, exponent: Double): Double =
-    stepSize * Math.pow(2, exponent)
 
   private def continueTuningStepSize(logAcceptanceProb: Double,
                                      exponent: Double): Boolean =
     !logAcceptanceProb.isNegInfinity &&
       (exponent * logAcceptanceProb > -exponent * Math.log(2))
 
-  @tailrec
-  private def tuneStepSize(
-      chain: HamiltonianChain,
-      exponent: Double,
-      logAcceptanceProb: Double,
-      stepSize: Double
-  ): Double = {
-    if (continueTuningStepSize(logAcceptanceProb, exponent)) {
-      val newStepSize = updateStepSize(stepSize, exponent)
-      val newLogAcceptanceProb = chain.stepOnce(newStepSize)
-      tuneStepSize(chain, exponent, newLogAcceptanceProb, newStepSize)
-    } else { stepSize }
-  }
-
   private def findReasonableStepSize(chain: HamiltonianChain): Double = {
-    val initialStepSize = 1.0
-    val logAcceptanceProb = chain.stepOnce(initialStepSize)
+    var stepSize = 1.0
+    var logAcceptanceProb = chain.stepOnce(stepSize)
     val exponent = computeExponent(logAcceptanceProb)
-    tuneStepSize(chain, exponent, logAcceptanceProb, initialStepSize)
+    val doubleOrHalf = Math.pow(2, exponent)
+    while (continueTuningStepSize(logAcceptanceProb, exponent)) {
+      stepSize *= doubleOrHalf
+      logAcceptanceProb = chain.stepOnce(stepSize)
+    }
+    stepSize
   }
 }
