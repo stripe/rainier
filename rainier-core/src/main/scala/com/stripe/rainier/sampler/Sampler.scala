@@ -11,12 +11,19 @@ trait Sampler {
 final case class Sample(accepted: Boolean, parameters: Array[Double])
 final case class Diagnostics(rHat: Double, effectiveSampleSize: Double)
 
+/**
+This is a direct implementation of the equations described in
+sections 30.3 (for rHat and v) and 30.4 (for autocorrelation and ess)
+of the Stan manual.
+**/
 object Diagnostics {
   def apply(traces: Seq[Array[Double]]): Diagnostics = {
     val m = traces.size.toDouble
     val n = traces.head.size.toDouble
     val (rHat, v) = rHatAndV(traces, n, m)
     val ac = autocorrelation(traces, n, m, v, 1, 0.0)
+    //note: this doesn't match the stan manual 2.17 because of a known bug
+    //that will be fixed in 2.18
     val ess = n * m / (1 + (2 * ac))
     Diagnostics(rHat, ess)
   }
@@ -64,6 +71,8 @@ object Diagnostics {
       variogram(trace, lag)
     }.sum / m
     val pt = 1.0 - (vt / (2.0 * v))
+    //TODO: this termination criteria is designed for NUTS
+    //and we may want something different for straight HMC
     if (pt > 0.0 && lag < 100)
       autocorrelation(traces, n, m, v, lag + 1, acc + pt)
     else
