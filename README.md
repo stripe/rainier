@@ -54,31 +54,41 @@ If you're more familiar with deep learning systems like TensorFlow or PyTorch, y
 Rainier uses [SBT](https://www.scala-sbt.org/) to build. If you have SBT installed, you can build Rainier and test that it's working by executing `sbt "project rainierExample" run` and then selecting `rainier.example.FitNormal`. You should see output something like this:
 
 ```
-[info] Running rainier.example.FitNormal 
-    2.19 |                                                                                
-         |                                 ·           ··                                 
-         |               ·           ·  · ·· ·  ···  ·  ·· ·  ·    · · ·                  
-         |                ·   ·   ··························· ··· ·      ·  ···           
-         |                   · ·············································      ··      
-    2.10 |             ·····   ···············································  ···       
-         |          · ·  ···················································· ····      · 
-         |·   ·  ·   ···························∘··∘·····························  ·      
-         |      ··························∘·∘∘∘∘∘∘∘∘∘∘∘∘∘∘∘∘∘···················· ··      
-         |     ·      ··················∘∘∘∘∘∘∘∘∘○○○○∘○○∘∘∘∘∘∘···················· · ·    
-    2.00 |        ·····················∘∘∘∘∘∘○○○○○○○○○○○○○∘∘∘∘∘∘······················ ·  
-         |           ··················∘∘∘∘∘∘○○○○○○○○○○○○○∘∘∘∘∘∘···················       
-         |         ·····················∘∘∘∘∘∘∘○○○○○∘∘○○∘∘∘∘∘∘∘∘················ ·····    
-         |          ·······················∘∘∘∘∘∘∘∘∘∘∘∘∘∘∘∘······················· ··  ·  
+[info] Running rainier.example.FitNormal
+    2.19 |
+         |                                 ·           ··
+         |               ·           ·  · ·· ·  ···  ·  ·· ·  ·    · · ·
+         |                ·   ·   ··························· ··· ·      ·  ···
+         |                   · ·············································      ··
+    2.10 |             ·····   ···············································  ···
+         |          · ·  ···················································· ····      ·
+         |·   ·  ·   ···························∘··∘·····························  ·
+         |      ··························∘·∘∘∘∘∘∘∘∘∘∘∘∘∘∘∘∘∘···················· ··
+         |     ·      ··················∘∘∘∘∘∘∘∘∘○○○○∘○○∘∘∘∘∘∘···················· · ·
+    2.00 |        ·····················∘∘∘∘∘∘○○○○○○○○○○○○○∘∘∘∘∘∘······················ ·
+         |           ··················∘∘∘∘∘∘○○○○○○○○○○○○○∘∘∘∘∘∘···················
+         |         ·····················∘∘∘∘∘∘∘○○○○○∘∘○○∘∘∘∘∘∘∘∘················ ·····
+         |          ·······················∘∘∘∘∘∘∘∘∘∘∘∘∘∘∘∘······················· ··  ·
          |       ·· ··························································   ·  ·    ·
-    1.90 |          ·  ························································     ·     
-         |                ············································· ···· ·    · ·     
-         |                      ·   · ··· ··················· ···· ·  ·    ·              
-         |                           ··· ·  · ·· ·· ·  ··  · ·· ··                        
-         |                              ·        ··                                       
-    1.81 |                                       ·                                        
+    1.90 |          ·  ························································     ·
+         |                ············································· ···· ·    · ·
+         |                      ·   · ··· ··················· ···· ·  ·    ·
+         |                           ··· ·  · ·· ·· ·  ··  · ·· ··
+         |                              ·        ··
+    1.81 |                                       ·
          |--------|--------|--------|--------|--------|--------|--------|--------|--------
-       2.691    2.750    2.810    2.869    2.929    2.988    3.048    3.107    3.167  
+       2.691    2.750    2.810    2.869    2.929    2.988    3.048    3.107    3.167
 ```
+
+## Contributing
+
+Contributions to Rainier are welcomed. Please note that fatal warnings
+are enabled in the CI environment so be sure to fix all warnings before
+submitting a pull request for final review.
+
+You can enable fatal warnings locally by either setting
+`SCALAC_FATAL_WARNINGS=true` before running SBT or entering
+`scalacFatalWarnings := true` in the SBT prompt.
 
 ## Using Rainier from SBT or Maven
 
@@ -88,7 +98,7 @@ Rainier is published on sonatype. To use it in your SBT project, you can add the
 libraryDependencies += "com.stripe" %% "rainier-core" % "0.1.0"
 ```
 
-## Authors 
+## Authors
 
 Rainier was written primarily by [Avi Bryant](http://twitter.com/avibryant), with guidance and contributions from [Roban Kramer](https://twitter.com/robanhk), [Mio Alter](https://twitter.com/mioalter), and [Grzegorz Kossakowski](https://twitter.com/gkossakowski).
 
