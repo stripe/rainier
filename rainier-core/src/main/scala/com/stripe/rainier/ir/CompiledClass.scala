@@ -7,11 +7,11 @@ import com.stripe.rainier.internal.asm.Opcodes._
 import com.stripe.rainier.internal.asm.tree.{ClassNode, MethodNode}
 import com.stripe.rainier.internal.asm.ClassWriter
 
-private[ir] trait CompiledFunction {
-  def apply(inputs: Array[Double]): Array[Double]
-}
-
-private[ir] class CompiledClass(name: String, methods: Seq[MethodNode]) {
+private[ir] class CompiledClass(name: String,
+                                methods: Seq[MethodNode],
+                                numInputs: Int,
+                                numGlobals: Int,
+                                numOutputs: Int) {
 
   val classNode: ClassNode = createClass
   val bytes: Array[Byte] = writeBytecode
@@ -29,6 +29,9 @@ private[ir] class CompiledClass(name: String, methods: Seq[MethodNode]) {
               "java/lang/Object",
               Array("com/stripe/rainier/ir/CompiledFunction"))
     cls.methods.add(createInit)
+    cls.methods.add(createConstantMethod("numInputs", numInputs))
+    cls.methods.add(createConstantMethod("numGlobals", numGlobals))
+    cls.methods.add(createConstantMethod("numOutputs", numOutputs))
     methods.foreach { m =>
       cls.methods.add(m)
     }
@@ -43,6 +46,13 @@ private[ir] class CompiledClass(name: String, methods: Seq[MethodNode]) {
     m.visitInsn(RETURN)
     m.visitMaxs(1, 1)
     m.visitEnd()
+    m
+  }
+
+  private def createConstantMethod(name: String, value: Int): MethodNode = {
+    val m = new MethodNode(ACC_PUBLIC, name, "()I", null, null)
+    m.visitLdcInsn(value)
+    m.visitInsn(IRETURN)
     m
   }
 
@@ -69,9 +79,6 @@ private[ir] object CompiledClass {
     id += 1
     name
   }
-
-  def methods(seq: Seq[MethodNode]): CompiledClass =
-    new CompiledClass(freshName, seq)
 }
 
 private class SingleClassLoader(name: String,

@@ -40,6 +40,13 @@ private trait MethodGenerator {
     loadGlobalVar(pos)
   }
 
+  def storeOutput(pos: Int)(fn: => Unit): Unit = {
+    loadOutputs()
+    methodNode.visitLdcInsn(pos)
+    fn
+    methodNode.visitInsn(DASTORE)
+  }
+
   def loadParameter(pos: Int): Unit = {
     loadParams()
     methodNode.visitLdcInsn(pos)
@@ -85,30 +92,14 @@ private trait MethodGenerator {
                                false)
   }
 
-  def returnArray(): Unit =
-    methodNode.visitInsn(ARETURN)
+  def returnVoid(): Unit =
+    methodNode.visitInsn(RETURN)
 
   def returnDouble(): Unit =
     methodNode.visitInsn(DRETURN)
 
   def constant(value: Double): Unit =
     methodNode.visitLdcInsn(value)
-
-  def newArrayOfSize(size: Int): Unit = {
-    methodNode.visitLdcInsn(size)
-    methodNode.visitIntInsn(NEWARRAY, T_DOUBLE)
-  }
-
-  def newArray[T](values: Seq[T])(fn: T => Unit): Unit = {
-    newArrayOfSize(values.size)
-    values.zipWithIndex.foreach {
-      case (v, i) =>
-        methodNode.visitInsn(DUP)
-        methodNode.visitLdcInsn(i)
-        fn(v)
-        methodNode.visitInsn(DASTORE)
-    }
-  }
 
   def swapIfEqThenPop(): Unit = {
     val label = new Label
@@ -123,9 +114,9 @@ private trait MethodGenerator {
   /**
   The local var layout is assumed to be:
   0: this
-  1: params array (always passed in)
-  2: globals array (either passed in or locally allocated)
-  3..N: locally allocated doubles (two slots each)
+  1: params array
+  2: globals array
+  3: output array OR 3..N: locally allocated doubles (two slots each)
   **/
   def loadThis(): Unit =
     methodNode.visitVarInsn(ALOAD, 0)
@@ -136,8 +127,8 @@ private trait MethodGenerator {
   def loadGlobalVars(): Unit =
     methodNode.visitVarInsn(ALOAD, 2)
 
-  def storeGlobalVars(): Unit =
-    methodNode.visitVarInsn(ASTORE, 2)
+  def loadOutputs(): Unit =
+    methodNode.visitVarInsn(ALOAD, 3)
 
   private def localVarSlot(pos: Int) = 3 + (pos * 2)
 }

@@ -50,47 +50,41 @@ class RandomVariable[+T](private val value: T,
                 warmupIterations: Int,
                 iterations: Int,
                 keepEvery: Int = 1)(implicit rng: RNG,
-                                    sampleable: Sampleable[T, V]): List[V] =
-    toStream(sampler, warmupIterations)
-      .take(iterations)
-      .sliding(1, keepEvery)
-      .map(_.head.apply())
-      .toList
+                                    sampleable: Sampleable[T, V]): List[V] = {
+    val fn = sampleable.prepare(value, density.variables)
+    sampler
+      .sample(density, warmupIterations, iterations, keepEvery)
+      .map { array =>
+        fn(array)
+      }
+  }
 
   def sampleWithDiagnostics[V](sampler: Sampler,
+                               chains: Int,
                                warmupIterations: Int,
                                iterations: Int,
-                               chains: Int)(
+                               keepEvery: Int = 1)(
       implicit rng: RNG,
       sampleable: Sampleable[T, V]): (List[V], List[Diagnostics]) = {
     val fn = sampleable.prepare(value, density.variables)
-    val samples = 1.to(chains).par.map { _ =>
-      sampler
-        .sample(density, warmupIterations)
-        .take(iterations)
-        .map { s =>
-          (s.parameters, fn(s.parameters))
-        }
-        .toList
-    }
-    val allSamples = samples.toList.flatMap { chain =>
+    val samples = 1
+      .to(chains)
+      .par
+      .map { _ =>
+        sampler
+          .sample(density, warmupIterations, iterations, keepEvery)
+          .map { array =>
+            (array, fn(array))
+          }
+      }
+      .toList
+    val allSamples = samples.flatMap { chain =>
       chain.map(_._2)
     }
-    val diagnostics = Sampler.diagnostics(samples.toList.map { chain =>
+    val diagnostics = Sampler.diagnostics(samples.map { chain =>
       chain.map(_._1)
     })
     (allSamples, diagnostics)
-  }
-
-  def toStream[V](sampler: Sampler, warmupIterations: Int)(
-      implicit rng: RNG,
-      sampleable: Sampleable[T, V]): Stream[() => V] = {
-    val fn = sampleable.prepare(value, density.variables)
-    sampler.sample(density, warmupIterations).map { s =>
-      { () =>
-        fn(s.parameters)
-      }
-    }
   }
 
   val density: Real =

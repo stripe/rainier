@@ -1,23 +1,29 @@
 package com.stripe.rainier.sampler
 
 import com.stripe.rainier.compute._
+import scala.collection.mutable.ListBuffer
 
 final case class HMC(nSteps: Int) extends Sampler {
-  def sample(density: Real, warmupIterations: Int)(
-      implicit rng: RNG): Stream[Sample] = {
-    val (tunedChain, tunedStepSize) =
-      DualAvg.findStepSize(HamiltonianChain(density.variables, density),
-                           0.65,
-                           nSteps,
-                           warmupIterations)
-    toStream(density, tunedChain, tunedStepSize)
+  def sample(density: Real,
+             warmupIterations: Int,
+             iterations: Int,
+             keepEvery: Int)(implicit rng: RNG): List[Array[Double]] = {
+    val lf = LeapFrog(density.variables.toList, density)
+    val params = lf.initialize
+    val stepSize =
+      DualAvg.findStepSize(lf, params, 0.65, nSteps, warmupIterations)
+    if (stepSize == 0.0) //something's wrong, bail early
+      List(lf.variables(params))
+    else {
+      val buf = new ListBuffer[Array[Double]]
+      var i = 0
+      while (i < iterations) {
+        lf.step(params, nSteps, stepSize)
+        if (i % keepEvery == 0)
+          buf += lf.variables(params)
+        i += 1
+      }
+      buf.toList
+    }
   }
-
-  private def toStream(density: Real,
-                       chain: HamiltonianChain,
-                       stepSize: Double)(implicit rng: RNG): Stream[Sample] =
-    Sample(chain.accepted, chain.variables) #:: toStream(
-      density,
-      chain.nextHMC(stepSize, nSteps),
-      stepSize)
 }

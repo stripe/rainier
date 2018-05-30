@@ -71,7 +71,7 @@ private[compute] object RealOps {
   private def nonZeroIsPositive(real: Real): Real =
     ((real.abs / real) + 1) / 2
 
-  def variables(real: Real): Set[Variable] = {
+  def variables(real: Real): List[Variable] = {
     def loop(r: Real, acc: Set[Variable]): Set[Variable] =
       r match {
         case Constant(_) => acc
@@ -85,6 +85,6 @@ private[compute] object RealOps {
           loop(z, acc3)
       }
 
-    loop(real, Set.empty)
+    loop(real, Set.empty).toList.sortBy(_.param.sym.id)
   }
 }

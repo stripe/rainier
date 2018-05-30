@@ -4,11 +4,12 @@ import com.stripe.rainier.compute._
 import scala.annotation.tailrec
 
 trait Sampler {
-  def sample(density: Real, warmupIterations: Int)(
-      implicit rng: RNG): Stream[Sample]
+  def sample(density: Real,
+             warmupIterations: Int,
+             iterations: Int,
+             keepEvery: Int)(implicit rng: RNG): List[Array[Double]]
 }
 
-final case class Sample(accepted: Boolean, parameters: Array[Double])
 final case class Diagnostics(rHat: Double, effectiveSampleSize: Double)
 
 /**
