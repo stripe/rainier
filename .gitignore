@@ -3,3 +3,4 @@ bazel-*
 project/target
 target/
 .DS_Store
+.rainier-shaded-asm

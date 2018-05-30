@@ -11,13 +11,13 @@ trait Sampleable[-S, +T] {
   def get(value: S)(implicit r: RNG, n: Numeric[Real]): T
 
   def prepare(value: S, variables: Seq[Variable])(
-      implicit r: RNG): Array[Double] => (Array[Double], T) = {
+      implicit r: RNG): Array[Double] => T = {
     val reqs = requirements(value).toList
     if (reqs.isEmpty) { array =>
       {
         implicit val evaluator: Evaluator =
           new Evaluator(variables.zip(array).toMap)
-        (Array.empty[Double], get(value))
+        get(value)
       }
     } else {
       val cf = Compiler.default.compile(variables, reqs)
@@ -29,7 +29,7 @@ trait Sampleable[-S, +T] {
               variables.zip(array).toMap ++
                 reqs.zip(reqValues).toMap
             )
-          (reqValues, get(value))
+          get(value)
         }
     }
   }

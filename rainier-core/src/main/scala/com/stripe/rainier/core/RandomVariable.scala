@@ -55,8 +55,30 @@ class RandomVariable[+T](private val value: T,
     sampler
       .sample(density, warmupIterations, iterations, keepEvery)
       .map { array =>
-        fn(array)._2
+        fn(array)
       }
+
+  def sampleWithDiagnostics[V](sampler: Sampler,
+                               warmupIterations: Int,
+                               iterations: Int,
+                               chains: Int)(
+      implicit rng: RNG,
+      sampleable: Sampleable[T, V]): (List[V], List[Diagnostics]) = {
+    val fn = sampleable.prepare(value, density.variables)
+    val samples = 1.to(chains).par.map { _ =>
+      sampler
+        .sample(density, warmupIterations, iterations, keepEvery)
+        .map { s =>
+          (s.parameters, fn(s.parameters))
+        }
+    }.toList
+    val allSamples = samples.flatMap { chain =>
+      chain.map(_._2)
+    }
+    val diagnostics = Sampler.diagnostics(samples.map { chain =>
+      chain.map(_._1)
+    })
+    (allSamples, diagnostics)
   }
 
   val density: Real =
