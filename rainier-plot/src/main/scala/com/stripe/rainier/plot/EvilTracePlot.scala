@@ -1,5 +1,5 @@
 /*
-EvilTraceplots.scala
+EvilTracePlot.scala
 
 Some diagnostic plots using EvilPlot
 
@@ -7,12 +7,29 @@ Some diagnostic plots using EvilPlot
 
 package com.stripe.rainier.plot
 
-object EvilTraceplots {
+object EvilTracePlot {
 
   import com.cibo.evilplot.plot._
   import com.cibo.evilplot.colors._
   import com.cibo.evilplot.plot.aesthetics.DefaultTheme._
   import com.cibo.evilplot.numeric.Point
+  import com.cibo.evilplot.geometry.Extent
+
+  /**
+    * Render plots to disk as a PNG file
+    *
+    * @param plots A collection of plots, possibly produced by `traces` or `pairs`
+    * @param path A file path as a string giving the name of a file to be written
+    * @param extent The size of the image to be rendered
+    */
+  def render(plots: List[List[Plot]],
+             path: String = "plots.png",
+             extent: Extent = Extent(1400, 1400)): Unit = {
+    javax.imageio.ImageIO.write(Facets(plots).render(extent).asBufferedImage,
+                                "png",
+                                new java.io.File(path))
+    ()
+  }
 
   /**
     * Autocorrelation function
@@ -23,9 +40,12 @@ object EvilTraceplots {
   def acf(x: Seq[Double], lm: Int): List[Double] = {
     val m = x.sum / x.length
     val xx = x map (_ - m)
-    val v = (xx map (xi => xi * xi)).reduce(_ + _) / x.length
+    val v = (xx.map(xi => xi * xi)).reduce(_ + _) / x.length
     ((0 until lm) map ((k: Int) =>
-      (((xx zip (xx drop k)) map (p => p._1 * p._2)) reduce (_ + _)) / (v * xx.length))).toList
+      (((xx
+        .zip(xx drop k))
+        .map(p => p._1 * p._2))
+        .reduce(_ + _)) / (v * xx.length))).toList
   }
 
   /**
