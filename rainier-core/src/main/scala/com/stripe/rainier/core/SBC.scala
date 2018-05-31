@@ -3,6 +3,7 @@ package com.stripe.rainier.core
 import com.stripe.rainier.sampler._
 import com.stripe.rainier.compute._
 
+//implements Simulation-Based Calibration from https://arxiv.org/abs/1804.06788
 final case class SBC[T](priorGenerators: Seq[Generator[Double]],
                         priorParams: Seq[Real],
                         posterior: RandomVariable[(Distribution[T], Real)]) {
@@ -72,7 +73,7 @@ final case class SBC[T](priorGenerators: Seq[Generator[Double]],
 
       val lower = binomialQuantile(0.005, reps, 1.0 / bins)
       val upper = binomialQuantile(0.995, reps, 1.0 / bins)
-      println((bins, reps, lower, upper))
+      println("\n" * (bins + 1))
       1.to(reps).foreach { i =>
         val list = stream.take(i).toList
         val timeTaken = System.currentTimeMillis - t0
@@ -107,9 +108,11 @@ final case class SBC[T](priorGenerators: Seq[Generator[Double]],
                      reps: Int,
                      lower: Int,
                      upper: Int,
-                     nanosRemaining: Long): Unit = {
-      println(
-        s"Repetition $rep/$reps. Estimated time remaining: ${nanosRemaining}")
+                     millisRemaining: Long): Unit = {
+      println("\u001b[1000D") //move left
+      println(s"\u001b[${bins + 3}A") //move up
+      val remaining = formatMillis(millisRemaining)
+      println(s"Repetition $rep/$reps. Estimated time remaining: $remaining")
       val binMap = list.groupBy(identity).mapValues(_.size)
       val binCounts = 0.until(bins).map { i =>
         binMap.getOrElse(i, 0)
@@ -130,6 +133,11 @@ final case class SBC[T](priorGenerators: Seq[Generator[Double]],
         " " * width
       else
         "#" * (fill.min(width)) + (" " * (width - fill))
+
+    private def formatMillis(millis: Long): String = {
+      val s = millis / 1000
+      "%d:%02d:%02d".format(s / 3600, (s % 3600) / 60, s % 60)
+    }
 
     private def binomialQuantile(q: Double, n: Int, p: Double): Int = {
       var cmf = 0.0
