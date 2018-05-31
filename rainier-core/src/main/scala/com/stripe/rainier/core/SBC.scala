@@ -65,11 +65,14 @@ final case class SBC[T](priorGenerators: Seq[Generator[Double]],
                  thin: Int,
                  rHat: Double)(implicit rng: RNG) {
 
-    def animate(logBins: Int): Stream[Int] = {
+    def animate(logBins: Int): Unit = {
       val t0 = System.currentTimeMillis
       val stream = simulate(logBins)
       val bins = 1 << logBins
       val reps = bins * RepsPerBin
+
+      println(
+        s"\nRunning simulation-based calibration. rHat: $rHat, thinning factor: $thin")
 
       val lower = binomialQuantile(0.005, reps, 1.0 / bins)
       val upper = binomialQuantile(0.995, reps, 1.0 / bins)
@@ -80,7 +83,6 @@ final case class SBC[T](priorGenerators: Seq[Generator[Double]],
         val timeRemaining = timeTaken * (reps - i) / i
         plot(list, bins, i, reps, lower, upper, timeRemaining)
       }
-      stream
     }
 
     def simulate(logBins: Int): Stream[Int] = {
@@ -118,11 +120,16 @@ final case class SBC[T](priorGenerators: Seq[Generator[Double]],
         binMap.getOrElse(i, 0)
       }
       binCounts.foreach { n =>
+        if (n < lower || n > upper)
+          print("\u001b[31m") //red
+        else
+          print("\u001b[32m") //green
         print(paddedBar(n, lower))
         print("[")
         print(paddedBar(n - lower, upper - lower))
         print("]")
         println(paddedBar(n - upper, n - upper))
+        print("\u001b[0m") //reset color
       }
     }
 
