@@ -6,7 +6,7 @@ import com.stripe.rainier.sampler._
 /**
   * The main probability monad used in Rainier for constructing probabilistic programs which can be sampled
   */
-class RandomVariable[+T](private val value: T,
+class RandomVariable[+T](val value: T,
                          private val densities: Set[RandomVariable.BoxedReal]) {
 
   def flatMap[U](fn: T => RandomVariable[U]): RandomVariable[U] = {
