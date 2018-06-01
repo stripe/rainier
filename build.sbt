@@ -1,6 +1,8 @@
 organization in ThisBuild := "com.stripe"
 scalaVersion in ThisBuild := "2.12.4"
 
+val scalaVersions = List("2.11.12", "2.12.4")
+
 val unpublished = Seq(publish := {}, publishLocal := {}, publishArtifact := false)
 
 val publishSettings = Seq(
@@ -28,8 +30,7 @@ val publishSettings = Seq(
   ),
   developers := List(
     Developer("avibryant", "Avi Bryant", "", url("https://twitter.com/avibryant"))
-  ),
-  crossScalaVersions := List("2.11.12", "2.12.4")
+  )
 )
 
 scalafmtOnCompile in ThisBuild := true
@@ -45,6 +46,7 @@ lazy val rainierCore = project.
   settings(name := "rainier-core").
   enablePlugins(TutPlugin).
   settings(Seq(
+    crossScalaVersions := scalaVersions,
     libraryDependencies ++= Seq(
       "commons-io" % "commons-io" % "2.6",
       "org.scalatest" %% "scalatest" % "3.0.5" % Test),
@@ -60,14 +62,18 @@ lazy val rainierPlot = project.
   settings(name := "rainier-plot").
   dependsOn(rainierCore).
   settings(
+    crossScalaVersions := scalaVersions.tail,
     resolvers += Resolver.bintrayRepo("cibotech", "public"),
     libraryDependencies += "com.cibo" %% "evilplot" % "0.2.0").
-  settings(unpublished: _*)
+  settings(publishSettings)
 
 lazy val rainierExample = project.
   in(file("rainier-example")).
   settings(name := "rainier-example").
   dependsOn(rainierPlot).
+  settings(
+    crossScalaVersions := scalaVersions.tail
+  ).
   settings(unpublished: _*)
 
 lazy val rainierBenchmark = project.
@@ -75,6 +81,7 @@ lazy val rainierBenchmark = project.
   settings(name := "rainier-benchmark").
   enablePlugins(JmhPlugin).
   settings(
+    crossScalaVersions := scalaVersions,
     scalacOptions ~= (_.filterNot(Set(
       "-Ywarn-value-discard")))).
   dependsOn(rainierCore).
@@ -85,6 +92,7 @@ lazy val shadedAsm = project.
   in(file(".rainier-shaded-asm")).
   settings(name := "rainier-shaded-asm").
   settings(
+    crossScalaVersions := scalaVersions,
     exportJars := true,
     packageBin in Compile := (assembly in asmDeps).value).
   settings(publishSettings)
@@ -97,6 +105,7 @@ lazy val asmDeps = project.
     libraryDependencies += "org.ow2.asm" % "asm-tree" % "6.0",
   ).
   settings(
+    crossScalaVersions := scalaVersions,
     skip in publish := true,
     assemblyOption in assembly := (assemblyOption in assembly).value.copy(
       includeBin = false,
