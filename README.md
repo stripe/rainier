@@ -100,6 +100,10 @@ libraryDependencies += "com.stripe" %% "rainier-core" % "0.1.0"
 
 ## Authors
 
-Rainier was written primarily by [Avi Bryant](http://twitter.com/avibryant), with guidance and contributions from [Roban Kramer](https://twitter.com/robanhk), [Mio Alter](https://twitter.com/mioalter), and [Grzegorz Kossakowski](https://twitter.com/gkossakowski).
+Rainier was written primarily by [Avi Bryant](http://twitter.com/avibryant), with guidance and contributions from:
+ * [Roban Kramer](https://twitter.com/robanhk)
+ * [Mio Alter](https://twitter.com/mioalter)
+ * [Grzegorz Kossakowski](https://twitter.com/gkossakowski)
+ * [Darren Wilkinson](https://twitter.com/darrenjw)
 
-Thanks also to Aaron Steele and Michael Manapat for organizational support.
+Thanks also to Aaron Steele and Michael Manapat for organizational support, and Travis Brown and Andy Scott for build wrangling and other dev infrastructure.
