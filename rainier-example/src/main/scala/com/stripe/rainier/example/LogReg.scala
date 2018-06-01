@@ -28,7 +28,7 @@ object LogReg {
     }
     def expit(x: Double): Double = 1.0 / (1.0 + math.exp(-x))
     val p = theta map expit
-    val y = p map (pi => if (rng.standardUniform < pi) 1 else 0)
+    val y = p map (pi => (rng.standardUniform < pi))
     println(y.take(10))
     println(x.take(10))
 
@@ -41,7 +41,7 @@ object LogReg {
           {
             val theta = beta0 + beta1 * x
             val p = Real(1.0) / (Real(1.0) + (Real(0.0) - theta).exp)
-            Binomial(p, 1)
+            Categorical.boolean(p)
           }
         }
         .fit(x zip y)
