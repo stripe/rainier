@@ -11,21 +11,6 @@ import com.stripe.rainier.compute._
 import com.stripe.rainier.core._
 import com.stripe.rainier.sampler._
 
-// example of declaring a custom distribution - not strictly needed
-case class Bernoulli(p: Real) extends Distribution[Int] {
-
-  def logDensity(b: Int): Real = {
-    p.log * b + (Real.one - p).log * (1 - b)
-  }
-
-  val generator = Generator.from { (r, n) =>
-    val pd = n.toDouble(p)
-    val u = r.standardUniform
-    if (u < pd) 1 else 0
-  }
-
-}
-
 object LogReg {
 
   def main(args: Array[String]): Unit = {
@@ -43,7 +28,7 @@ object LogReg {
     }
     def expit(x: Double): Double = 1.0 / (1.0 + math.exp(-x))
     val p = theta map expit
-    val y = p map (pi => if (rng.standardUniform < pi) 1 else 0)
+    val y = p map (pi => (rng.standardUniform < pi))
     println(y.take(10))
     println(x.take(10))
 
@@ -56,8 +41,7 @@ object LogReg {
           {
             val theta = beta0 + beta1 * x
             val p = Real(1.0) / (Real(1.0) + (Real(0.0) - theta).exp)
-            //Bernoulli(p)
-            Binomial(p, 1)
+            Categorical.boolean(p)
           }
         }
         .fit(x zip y)
