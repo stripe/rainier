@@ -3,6 +3,7 @@ scalaVersion in ThisBuild := "2.12.4"
 
 val unpublished = Seq(publish := {}, publishLocal := {}, publishArtifact := false)
 
+
 val publishSettings = Seq(
   releaseCrossBuild := true,
   releasePublishArtifactsAction := PgpKeys.publishSigned.value,
@@ -45,7 +46,9 @@ lazy val rainierCore = project.
   settings(name := "rainier-core").
   enablePlugins(TutPlugin).
   settings(Seq(
+    resolvers += Resolver.bintrayRepo("cibotech", "public"),
     libraryDependencies ++= Seq(
+      "com.cibo" %% "evilplot" % "0.3.0",
       "commons-io" % "commons-io" % "2.6",
       "org.scalatest" %% "scalatest" % "3.0.5" % Test),
     scalacOptions in Tut ~= {

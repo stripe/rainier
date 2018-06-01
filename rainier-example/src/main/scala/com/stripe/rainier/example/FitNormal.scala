@@ -21,6 +21,8 @@ object FitNormal {
   }
 
   def main(args: Array[String]): Unit = {
-    plot2D(model(1000).sample())
+    val data = model(1000).sample()
+    plot2D(data)
+    contourPlot(data, "fitNormal.png")
   }
 }
