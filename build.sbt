@@ -1,6 +1,5 @@
 organization in ThisBuild := "com.stripe"
 scalaVersion in ThisBuild := "2.12.4"
-crossScalaVersions in ThisBuild := List("2.11.12", "2.12.4")
 
 val unpublished = Seq(publish := {}, publishLocal := {}, publishArtifact := false)
 
@@ -29,14 +28,15 @@ val publishSettings = Seq(
   ),
   developers := List(
     Developer("avibryant", "Avi Bryant", "", url("https://twitter.com/avibryant"))
-  )
+  ),
+  crossScalaVersions := List("2.11.12", "2.12.4")
 )
 
 scalafmtOnCompile in ThisBuild := true
 
 lazy val root = project.
   in(file(".")).
-  aggregate(rainierCore, rainierExample, rainierBenchmark).
+  aggregate(rainierCore, rainierPlot, rainierExample, rainierBenchmark).
   aggregate(shadedAsm).
   settings(unpublished: _*)
 
@@ -55,10 +55,19 @@ lazy val rainierCore = project.
   dependsOn(shadedAsm).
   settings(publishSettings)
 
+lazy val rainierPlot = project.
+  in(file("rainier-plot")).
+  settings(name := "rainier-plot").
+  dependsOn(rainierCore).
+  settings(
+    resolvers += Resolver.bintrayRepo("cibotech", "public"),
+    libraryDependencies += "com.cibo" %% "evilplot" % "0.2.0").
+  settings(unpublished: _*)
+
 lazy val rainierExample = project.
   in(file("rainier-example")).
   settings(name := "rainier-example").
-  dependsOn(rainierCore).
+  dependsOn(rainierPlot).
   settings(unpublished: _*)
 
 lazy val rainierBenchmark = project.
