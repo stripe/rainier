@@ -115,27 +115,33 @@ private class Translator {
   }
 
   private def combineTerms(terms: Seq[(Real, Double)], ring: Ring): IR = {
-    val ir = terms.map {
-      case (x, 1.0) => toIR(x)
+    val lazyIR = terms.map {
+      case (x, 1.0) =>
+        () =>
+          toIR(x)
       case (x, 2.0) =>
-        binaryIR(toIR(x), toIR(x), ring.plus)
+        () =>
+          binaryIR(toIR(x), toIR(x), ring.plus)
       case (l: LogLine, a) => //this can only happen for a Line's terms
-        factoredLine(l.ax, a, 1.0, powRing)
+        () =>
+          factoredLine(l.ax, a, 1.0, powRing)
       case (x, a) =>
-        binaryIR(toIR(x), Const(a), ring.times)
+        () =>
+          binaryIR(toIR(x), Const(a), ring.times)
     }
-    combineTree(ir, ring)
+    combineTree(lazyIR, ring)
   }
 
-  private def combineTree(terms: Seq[IR], ring: Ring): IR =
+  private def combineTree(terms: Seq[() => IR], ring: Ring): IR =
     terms match {
-      case Seq(t) => t
+      case Seq(t) => t()
       case _ =>
         combineTree(
           terms.grouped(2).toList.map {
             case Seq(t) => t
             case Seq(left, right) =>
-              binaryIR(left, right, ring.plus)
+              () =>
+                binaryIR(left(), right(), ring.plus)
             case _ => sys.error("Should only have 1 or 2 elems")
           },
           ring
