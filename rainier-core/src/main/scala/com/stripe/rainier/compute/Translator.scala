@@ -6,14 +6,21 @@ private class Translator {
   private val binary = new SymCache[BinaryOp]
   private val unary = new SymCache[UnaryOp]
   private val ifs = new SymCache[Unit]
+  private var reals = Map.empty[Real, IR]
 
-  def toIR(r: Real): IR = r match {
-    case v: Variable         => v.param
-    case Constant(value)     => Const(value)
-    case Unary(original, op) => unaryIR(toIR(original), op)
-    case i: If               => ifIR(toIR(i.whenNonZero), toIR(i.whenZero), toIR(i.test))
-    case l: Line             => lineIR(l)
-    case l: LogLine          => logLineIR(l)
+  def toIR(r: Real): IR = reals.get(r) match {
+    case Some(ir) => ref(ir)
+    case None =>
+      val ir = r match {
+        case v: Variable         => v.param
+        case Constant(value)     => Const(value)
+        case Unary(original, op) => unaryIR(toIR(original), op)
+        case i: If               => ifIR(toIR(i.whenNonZero), toIR(i.whenZero), toIR(i.test))
+        case l: Line             => lineIR(l)
+        case l: LogLine          => logLineIR(l)
+      }
+      reals += r -> ir
+      ir
   }
 
   private def unaryIR(original: IR, op: UnaryOp): IR =
@@ -108,27 +115,33 @@ private class Translator {
   }
 
   private def combineTerms(terms: Seq[(Real, Double)], ring: Ring): IR = {
-    val ir = terms.map {
-      case (x, 1.0) => toIR(x)
+    val lazyIR = terms.map {
+      case (x, 1.0) =>
+        () =>
+          toIR(x)
       case (x, 2.0) =>
-        binaryIR(toIR(x), toIR(x), ring.plus)
+        () =>
+          binaryIR(toIR(x), toIR(x), ring.plus)
       case (l: LogLine, a) => //this can only happen for a Line's terms
-        factoredLine(l.ax, a, 1.0, powRing)
+        () =>
+          factoredLine(l.ax, a, 1.0, powRing)
       case (x, a) =>
-        binaryIR(toIR(x), Const(a), ring.times)
+        () =>
+          binaryIR(toIR(x), Const(a), ring.times)
     }
-    combineTree(ir, ring)
+    combineTree(lazyIR, ring)
   }
 
-  private def combineTree(terms: Seq[IR], ring: Ring): IR =
+  private def combineTree(terms: Seq[() => IR], ring: Ring): IR =
     terms match {
-      case Seq(t) => t
+      case Seq(t) => t()
       case _ =>
         combineTree(
           terms.grouped(2).toList.map {
             case Seq(t) => t
             case Seq(left, right) =>
-              binaryIR(left, right, ring.plus)
+              () =>
+                binaryIR(left(), right(), ring.plus)
             case _ => sys.error("Should only have 1 or 2 elems")
           },
           ring
@@ -168,7 +181,10 @@ private class Translator {
           opt.orElse { cache.get((k, opKey)) }
       }
       hit match {
-        case Some(sym) => VarRef(sym)
+        case Some(sym) =>
+          if (!irKeys.head.collect { case d: VarDef => d }.isEmpty)
+            sys.error("VarRef was used before its VarDef")
+          VarRef(sym)
         case None =>
           val sym = Sym.freshSym()
           cache += (refKeys.head, opKey) -> sym
