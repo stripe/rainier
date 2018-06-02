@@ -6,14 +6,21 @@ private class Translator {
   private val binary = new SymCache[BinaryOp]
   private val unary = new SymCache[UnaryOp]
   private val ifs = new SymCache[Unit]
+  private var reals = Map.empty[Real, IR]
 
-  def toIR(r: Real): IR = r match {
-    case v: Variable         => v.param
-    case Constant(value)     => Const(value)
-    case Unary(original, op) => unaryIR(toIR(original), op)
-    case i: If               => ifIR(toIR(i.whenNonZero), toIR(i.whenZero), toIR(i.test))
-    case l: Line             => lineIR(l)
-    case l: LogLine          => logLineIR(l)
+  def toIR(r: Real): IR = reals.get(r) match {
+    case Some(ir) => ref(ir)
+    case None =>
+      val ir = r match {
+        case v: Variable         => v.param
+        case Constant(value)     => Const(value)
+        case Unary(original, op) => unaryIR(toIR(original), op)
+        case i: If               => ifIR(toIR(i.whenNonZero), toIR(i.whenZero), toIR(i.test))
+        case l: Line             => lineIR(l)
+        case l: LogLine          => logLineIR(l)
+      }
+      reals += r -> ir
+      ir
   }
 
   private def unaryIR(original: IR, op: UnaryOp): IR =
