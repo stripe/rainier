@@ -175,7 +175,10 @@ private class Translator {
           opt.orElse { cache.get((k, opKey)) }
       }
       hit match {
-        case Some(sym) => VarRef(sym)
+        case Some(sym) =>
+          if (!irKeys.head.collect { case d: VarDef => d }.isEmpty)
+            sys.error("VarRef was used before its VarDef")
+          VarRef(sym)
         case None =>
           val sym = Sym.freshSym()
           cache += (refKeys.head, opKey) -> sym
