@@ -38,6 +38,8 @@ sealed trait Real {
 
   lazy val variables: Seq[Variable] = RealOps.variables(this).toList
   def gradient: Seq[Real] = Gradient.derive(variables, this)
+
+  def nop: Real = RealOps.unary(this, ir.NoOp)
 }
 
 object Real {

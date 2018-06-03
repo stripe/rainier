@@ -23,3 +23,4 @@ sealed trait UnaryOp
 case object ExpOp extends UnaryOp
 case object LogOp extends UnaryOp
 case object AbsOp extends UnaryOp
+case object NoOp extends UnaryOp

@@ -11,6 +11,7 @@ private[compute] object RealOps {
           case ExpOp => Constant(Math.exp(value))
           case LogOp => Constant(Math.log(value))
           case AbsOp => Constant(Math.abs(value))
+          case NoOp  => original
         }
       case nc: NonConstant =>
         val opt = (op, nc) match {

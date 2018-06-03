@@ -116,5 +116,6 @@ object Tracer {
       case LogOp => "Math.log"
       case ExpOp => "Math.exp"
       case AbsOp => "Math.abs"
+      case NoOp  => ""
     }
 }

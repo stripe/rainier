@@ -68,16 +68,19 @@ private trait MethodGenerator {
     }
 
   def unaryOp(op: UnaryOp): Unit = {
-    val methodName = op match {
-      case LogOp => "log"
-      case ExpOp => "exp"
-      case AbsOp => "abs"
+    val methodNameOpt = op match {
+      case LogOp => Some("log")
+      case ExpOp => Some("exp")
+      case AbsOp => Some("abs")
+      case NoOp  => None
     }
-    methodNode.visitMethodInsn(INVOKESTATIC,
-                               "java/lang/Math",
-                               methodName,
-                               "(D)D",
-                               false)
+    methodNameOpt.foreach { methodName =>
+      methodNode.visitMethodInsn(INVOKESTATIC,
+                                 "java/lang/Math",
+                                 methodName,
+                                 "(D)D",
+                                 false)
+    }
   }
 
   def exprMethodName(id: Int): String = s"_$id"
