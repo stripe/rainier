@@ -67,9 +67,10 @@ private object Gradient {
       parts = part :: parts
     }
 
-    def toReal: Real = parts match {
+    lazy val toReal: Real = parts match {
       case head :: Nil => head.toReal
-      case _           => Real.sum(parts.map(_.toReal))
+      case _ =>
+        Real.sum(parts.map(_.toReal))
     }
   }
 
@@ -103,15 +104,7 @@ private object Gradient {
       extends Diff {
     def toReal: Real = {
       val exponent = child.ax(term)
-      val otherTerms =
-        if (child.ax.size == 1)
-          Real.one
-        else
-          LogLine(child.ax - term)
-      gradient.toReal *
-        exponent *
-        term.pow(exponent - 1) *
-        otherTerms
+      gradient.toReal * child * exponent / term
     }
   }
 }
