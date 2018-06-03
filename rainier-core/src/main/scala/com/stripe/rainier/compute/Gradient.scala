@@ -104,7 +104,15 @@ private object Gradient {
       extends Diff {
     def toReal: Real = {
       val exponent = child.ax(term)
-      gradient.toReal * child * exponent / term
+      val otherTerms =
+        if (child.ax.size == 1)
+          Real.one
+        else
+          LogLine(child.ax - term)
+      gradient.toReal *
+        exponent *
+        term.pow(exponent - 1) *
+        otherTerms
     }
   }
 }
