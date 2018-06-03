@@ -40,7 +40,7 @@ private[compute] object LogLineOps {
    * we want to do this because we hope that the non-constant (x_0_0...) parts of these terms may be in
       common with something in t (or some later thing we will add s+t to), and we can combine the constants
    */
-  val DistributeToMaxTerms = 0
+  val DistributeToMaxTerms = 20
   def distribute(line: LogLine): Option[Line] = {
 
     def nTerms(l: Line): Int =
