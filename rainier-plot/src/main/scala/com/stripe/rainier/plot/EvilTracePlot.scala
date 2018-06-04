@@ -10,6 +10,7 @@ package com.stripe.rainier.plot
 object EvilTracePlot {
 
   import com.cibo.evilplot.plot._
+  import com.cibo.evilplot.plot.renderers.PointRenderer
   import com.cibo.evilplot.colors._
   import com.cibo.evilplot.plot.aesthetics.DefaultTheme._
   import com.cibo.evilplot.numeric.Point
@@ -84,6 +85,7 @@ object EvilTracePlot {
         .frame()
         .xLabel(k)
         .yLabel("Frequency")
+        .title("Marginal density")
       truth.get(k) match {
         case None    => List(trace, aplot, hist)
         case Some(v) => List(trace.hline(v), aplot, hist.vline(v))
@@ -116,12 +118,15 @@ object EvilTracePlot {
             case Some(v) => hist.vline(v)
           }
         } else if (k1 < k2) {
-          val scat = ScatterPlot(out.map(p => Point(p(k1), p(k2))))
-            .xAxis()
-            .yAxis()
-            .frame()
-            .xLabel(k1)
-            .yLabel(k2)
+          val scat =
+            ScatterPlot(out.map(p => Point(p(k1), p(k2))),
+                        pointRenderer =
+                          Some(PointRenderer.default(Some(HSL(210, 100, 56)))))
+              .xAxis()
+              .yAxis()
+              .frame()
+              .xLabel(k1)
+              .yLabel(k2)
           val scat1 = truth.get(k1) match {
             case None    => scat
             case Some(v) => scat.vline(v)
