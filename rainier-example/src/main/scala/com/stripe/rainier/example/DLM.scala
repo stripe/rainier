@@ -49,7 +49,8 @@ object DLM {
         static = tup._1
         states = tup._2
         os = states.head
-        ns <- Normal(static.mu + static.a * (os - static.mu), static.sig).param
+        ns <- Normal(((Real.one - static.a) * static.mu) + (static.a * os),
+                     static.sig).param
         _ <- Normal(ns, static.sigD).fit(obs(i))
       } yield (static, ns :: states)
 
