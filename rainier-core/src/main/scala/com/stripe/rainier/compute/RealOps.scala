@@ -72,19 +72,26 @@ private[compute] object RealOps {
     ((real.abs / real) + 1) / 2
 
   def variables(real: Real): List[Variable] = {
-    def loop(r: Real, acc: Set[Variable]): Set[Variable] =
-      r match {
-        case Constant(_) => acc
-        case v: Variable => acc + v
-        case u: Unary    => loop(u.original, acc)
-        case l: Line     => l.ax.foldLeft(acc) { case (a, (r, _)) => loop(r, a) }
-        case l: LogLine  => l.ax.foldLeft(acc) { case (a, (r, _)) => loop(r, a) }
-        case If(test, nz, z) =>
-          val acc2 = loop(test, acc)
-          val acc3 = loop(nz, acc2)
-          loop(z, acc3)
+    var seen = Set.empty[Real]
+    var vars = List.empty[Variable]
+    def loop(r: Real): Unit =
+      if (!seen.contains(r)) {
+        seen += r
+        r match {
+          case Constant(_) => ()
+          case v: Variable => vars = v :: vars
+          case u: Unary    => loop(u.original)
+          case l: Line     => l.ax.keys.foreach(loop)
+          case l: LogLine  => l.ax.keys.foreach(loop)
+          case If(test, nz, z) =>
+            loop(test)
+            loop(nz)
+            loop(z)
+        }
       }
 
-    loop(real, Set.empty).toList.sortBy(_.param.sym.id)
+    loop(real)
+
+    vars.sortBy(_.param.sym.id)
   }
 }

@@ -67,9 +67,10 @@ private object Gradient {
       parts = part :: parts
     }
 
-    def toReal: Real = parts match {
+    lazy val toReal: Real = parts match {
       case head :: Nil => head.toReal
-      case _           => Real.sum(parts.map(_.toReal))
+      case _ =>
+        Real.sum(parts.map(_.toReal))
     }
   }
 
