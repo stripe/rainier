@@ -72,11 +72,11 @@ final case class SBC[T](priorGenerators: Seq[Generator[Double]],
       val reps = bins * RepsPerBin
 
       println(
-        s"\nRunning simulation-based calibration. rHat: $rHat, thinning factor: $thin")
-
+        s"\nRunning simulation-based calibration.\nrHat: $rHat, thinning factor: $thin")
+      println("99% of bins should end up between the [ and ] quantile markers")
       val lower = binomialQuantile(0.005, reps, 1.0 / bins)
       val upper = binomialQuantile(0.995, reps, 1.0 / bins)
-      println("\n" * (bins + 1))
+      println("\n" * (bins + 2))
       1.to(reps).foreach { i =>
         val list = stream.take(i).toList
         val timeTaken = System.currentTimeMillis - t0
@@ -160,6 +160,13 @@ final case class SBC[T](priorGenerators: Seq[Generator[Double]],
 }
 
 object SBC {
+  /*
+  fn is a function that takes a Seq[Real]
+  specifying the values of all the parameters (one for each Continuous in the prior)
+  and returns a (Distribution[T], Real) which is a pair of values:
+  1) a distribution describing the likelihood of the observed data, given the parameter values,
+  2) the parameter value or summary stat we're calibrating on
+   */
   def apply[T](priors: Seq[Continuous])(
       fn: Seq[Real] => (Distribution[T], Real)): SBC[T] = {
     val priorParams = priors.map(_.param)
