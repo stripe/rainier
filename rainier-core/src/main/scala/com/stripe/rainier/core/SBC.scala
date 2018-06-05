@@ -113,6 +113,7 @@ final case class SBC[T](priorGenerators: Seq[Generator[Double]],
                                                       Chains,
                                                       warmupIterations,
                                                       (Samples / Chains) * thin,
+                                                      true,
                                                       thin)
 
     val maxRHat = diag.map(_.rHat).max
