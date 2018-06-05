@@ -76,7 +76,7 @@ final case class SBC[T](priorGenerators: Seq[Generator[Double]],
       sample(sampler, warmupIterations, syntheticSamples, thin)
     val ms = System.currentTimeMillis - t0
 
-    if (trials > 1 && (effectiveSampleSize < Samples || rHat > MaxRHat)) {
+    if (trials > 1 && effectiveSampleSize < Samples) {
       val newThin =
         Math
           .ceil(Samples.toDouble / effectiveSampleSize)
@@ -218,10 +218,9 @@ object SBC {
       (fn(l.head), l.head)
     }
 
-  val Samples = 128
+  val Samples = 1024
   val Chains = 4
   val RepsPerBin = 40
-  val MaxRHat = 1.1
   val Trials = 5
 
   case class Rep(rank: Int,
