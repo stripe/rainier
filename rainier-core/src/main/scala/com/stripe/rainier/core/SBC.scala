@@ -14,19 +14,83 @@ final case class SBC[T](priorGenerators: Seq[Generator[Double]],
   val priorGenerator = Generator.traverse(priorGenerators)
   val emptyEvaluator = new Evaluator(Map.empty)
 
-  def prepare(sampler: Sampler, warmupIterations: Int, syntheticSamples: Int)(
-      implicit rng: RNG): Run = {
-    val initialThin = 2
-    val (_, maxRHat, minEffectiveSampleSize) =
-      sample(sampler, warmupIterations, syntheticSamples, initialThin)
-    val thin =
-      if (minEffectiveSampleSize < Samples)
+  def animate(sampler: Sampler,
+              warmupIterations: Int,
+              syntheticSamples: Int,
+              logBins: Int = 3)(implicit rng: RNG): Unit = {
+    val t0 = System.currentTimeMillis
+    val stream = simulate(sampler, warmupIterations, syntheticSamples, logBins)
+    val bins = 1 << logBins
+    val reps = bins * RepsPerBin
+
+    println(s"\nRunning simulation-based calibration.")
+
+    val lower = binomialQuantile(0.005, reps, 1.0 / bins)
+    val upper = binomialQuantile(0.995, reps, 1.0 / bins)
+    println("\n" * (bins + 3))
+    1.to(reps).foreach { i =>
+      val list = stream.take(i).toList
+      val timeTaken = System.currentTimeMillis - t0
+      val timeRemaining = timeTaken * (reps - i) / i
+      plot(list, bins, i, reps, lower, upper, timeRemaining)
+    }
+  }
+
+  def simulate(sampler: Sampler,
+               warmupIterations: Int,
+               syntheticSamples: Int,
+               logBins: Int = 3)(implicit rng: RNG): Stream[Rep] = {
+    require(logBins > 0)
+    val bins = 1 << logBins
+    require(bins <= Samples)
+
+    val reps = bins * RepsPerBin
+    repStream(sampler, warmupIterations, syntheticSamples, bins, reps)
+  }
+
+  private def repStream(sampler: Sampler,
+                        warmupIterations: Int,
+                        syntheticSamples: Int,
+                        bins: Int,
+                        remaining: Int)(implicit rng: RNG): Stream[Rep] =
+    if (remaining == 0)
+      Stream.empty
+    else {
+      val rep =
+        repetition(sampler, warmupIterations, syntheticSamples, bins, Trials, 1)
+      rep #:: repStream(sampler,
+                        warmupIterations,
+                        syntheticSamples,
+                        bins,
+                        remaining - 1)
+    }
+
+  private def repetition(sampler: Sampler,
+                         warmupIterations: Int,
+                         syntheticSamples: Int,
+                         bins: Int,
+                         trials: Int,
+                         thin: Int)(implicit rng: RNG): Rep = {
+    val t0 = System.currentTimeMillis
+    val (rawRank, rHat, effectiveSampleSize) =
+      sample(sampler, warmupIterations, syntheticSamples, thin)
+    val ms = System.currentTimeMillis - t0
+
+    if (trials > 1 && (effectiveSampleSize < Samples || rHat > MaxRHat)) {
+      val newThin =
         Math
-          .ceil(initialThin.toDouble * Samples / minEffectiveSampleSize)
+          .ceil(Samples.toDouble / effectiveSampleSize)
           .toInt
-      else
-        initialThin
-    Run(sampler, warmupIterations, syntheticSamples, thin, maxRHat)
+      repetition(sampler,
+                 warmupIterations,
+                 syntheticSamples,
+                 bins,
+                 trials - 1,
+                 newThin)
+    } else {
+      val rank = (rawRank * bins) / Samples
+      Rep(rank, rHat, thin, effectiveSampleSize, ms)
+    }
   }
 
   private def sample(sampler: Sampler,
@@ -59,103 +123,76 @@ final case class SBC[T](priorGenerators: Seq[Generator[Double]],
     (rawRank, maxRHat, minEffectiveSampleSize)
   }
 
-  case class Run(sampler: Sampler,
-                 warmupIterations: Int,
-                 syntheticSamples: Int,
-                 thin: Int,
-                 rHat: Double)(implicit rng: RNG) {
+  private def plot(list: List[Rep],
+                   bins: Int,
+                   rep: Int,
+                   reps: Int,
+                   lower: Int,
+                   upper: Int,
+                   millisRemaining: Long): Unit = {
+    println("\u001b[1000D") //move left
+    println(s"\u001b[${bins + 6}A") //move up
+    val remaining = formatMillis(millisRemaining)
+    val maxRHat = formatRHat(list.map(_.rHat).max)
+    val maxThin = list.map(_.thin).max
+    val totalEffectiveSamples = list.map(_.effectiveSampleSize).sum
+    val totalTime = list.map(_.ms).sum
+    val samplesPerSecond = formatRate(
+      (totalEffectiveSamples * 1000).toDouble / totalTime)
+    println(s"Repetition $rep/$reps. Estimated time remaining: $remaining")
+    println(
+      s"Samples/sec: $samplesPerSecond. Max rHat: $maxRHat. Max thinning factor: $maxThin   ")
+    println("99% of bins should end up between the [ and ] quantile markers\n")
 
-    def animate(logBins: Int): Unit = {
-      val t0 = System.currentTimeMillis
-      val stream = simulate(logBins)
-      val bins = 1 << logBins
-      val reps = bins * RepsPerBin
-
-      println(
-        s"\nRunning simulation-based calibration.\nrHat: $rHat, thinning factor: $thin")
-      println("99% of bins should end up between the [ and ] quantile markers")
-      val lower = binomialQuantile(0.005, reps, 1.0 / bins)
-      val upper = binomialQuantile(0.995, reps, 1.0 / bins)
-      println("\n" * (bins + 2))
-      1.to(reps).foreach { i =>
-        val list = stream.take(i).toList
-        val timeTaken = System.currentTimeMillis - t0
-        val timeRemaining = timeTaken * (reps - i) / i
-        plot(list, bins, i, reps, lower, upper, timeRemaining)
-      }
+    val binMap = list.groupBy(_.rank).mapValues(_.size)
+    val binCounts = 0.until(bins).map { i =>
+      binMap.getOrElse(i, 0)
     }
-
-    def simulate(logBins: Int): Stream[Int] = {
-      require(logBins > 0)
-      val bins = 1 << logBins
-      require(bins <= Samples)
-
-      val reps = bins * RepsPerBin
-      rankStream(bins, reps)
-    }
-
-    private def rankStream(bins: Int, remaining: Int): Stream[Int] =
-      if (remaining == 0)
-        Stream.empty
-      else {
-        val (rawRank, _, _) =
-          sample(sampler, warmupIterations, syntheticSamples, thin)
-        val rank = (rawRank * bins) / Samples
-        rank #:: rankStream(bins, remaining - 1)
-      }
-
-    private def plot(list: List[Int],
-                     bins: Int,
-                     rep: Int,
-                     reps: Int,
-                     lower: Int,
-                     upper: Int,
-                     millisRemaining: Long): Unit = {
-      println("\u001b[1000D") //move left
-      println(s"\u001b[${bins + 3}A") //move up
-      val remaining = formatMillis(millisRemaining)
-      println(s"Repetition $rep/$reps. Estimated time remaining: $remaining")
-      val binMap = list.groupBy(identity).mapValues(_.size)
-      val binCounts = 0.until(bins).map { i =>
-        binMap.getOrElse(i, 0)
-      }
-      binCounts.foreach { n =>
-        if (n < lower || n > upper)
-          print("\u001b[31m") //red
-        else
-          print("\u001b[32m") //green
-        print(paddedBar(n, lower))
-        print("[")
-        print(paddedBar(n - lower, upper - lower))
-        print("]")
-        println(paddedBar(n - upper, n - upper))
-        print("\u001b[0m") //reset color
-      }
-    }
-
-    private def paddedBar(fill: Int, width: Int): String =
-      if (width <= 0)
-        ""
-      else if (fill <= 0)
-        " " * width
+    binCounts.foreach { n =>
+      if (n < lower || n > upper)
+        print("\u001b[31m") //red
       else
-        "#" * (fill.min(width)) + (" " * (width - fill))
-
-    private def formatMillis(millis: Long): String = {
-      val s = millis / 1000
-      "%d:%02d:%02d".format(s / 3600, (s % 3600) / 60, s % 60)
+        print("\u001b[32m") //green
+      print(paddedBar(n, lower))
+      print("[")
+      print(paddedBar(n - lower, upper - lower))
+      print("]")
+      println(paddedBar(n - upper, n - upper))
+      print("\u001b[0m") //reset color
     }
+  }
 
-    private def binomialQuantile(q: Double, n: Int, p: Double): Int = {
-      var cmf = 0.0
-      var k = -1
-      while (cmf < q) {
-        k += 1
-        val logPmf = Binomial(p, n).logDensity(k)
-        cmf += emptyEvaluator.toDouble(logPmf.exp)
-      }
-      k
+  private def paddedBar(fill: Int, width: Int): String =
+    if (width <= 0)
+      ""
+    else if (fill <= 0)
+      " " * width
+    else
+      "#" * (fill.min(width)) + (" " * (width - fill))
+
+  private def formatMillis(millis: Long): String = {
+    val s = millis / 1000
+    "%d:%02d:%02d".format(s / 3600, (s % 3600) / 60, s % 60)
+  }
+
+  private def formatRHat(rHat: Double): String =
+    "%.3f".format(rHat)
+
+  private def formatRate(rate: Double): String =
+    if (rate > 1)
+      rate.toInt.toString
+    else
+      "%.3f".format(rate)
+
+  private def binomialQuantile(q: Double, n: Int, p: Double): Int = {
+    var cmf = 0.0
+    var k = -1
+    while (cmf < q) {
+      k += 1
+      val logPmf = Binomial(p, n).logDensity(k)
+      cmf += emptyEvaluator.toDouble(logPmf.exp)
     }
+    k
   }
 }
 
@@ -184,4 +221,11 @@ object SBC {
   val Chains = 4
   val RepsPerBin = 40
   val MaxRHat = 1.1
+  val Trials = 5
+
+  case class Rep(rank: Int,
+                 rHat: Double,
+                 thin: Int,
+                 effectiveSampleSize: Double,
+                 ms: Long)
 }
