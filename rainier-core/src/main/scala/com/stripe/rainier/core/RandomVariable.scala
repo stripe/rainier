@@ -63,21 +63,20 @@ class RandomVariable[+T](val value: T,
                                chains: Int,
                                warmupIterations: Int,
                                iterations: Int,
+                               parallel: Boolean = true,
                                keepEvery: Int = 1)(
       implicit rng: RNG,
       sampleable: Sampleable[T, V]): (List[V], List[Diagnostics]) = {
     val fn = sampleable.prepare(value, density.variables)
-    val samples = 1
-      .to(chains)
-      .par
-      .map { _ =>
+    val range = if (parallel) 1.to(chains).par else 1.to(chains)
+    val samples =
+      range.map { _ =>
         sampler
           .sample(density, warmupIterations, iterations, keepEvery)
           .map { array =>
             (array, fn(array))
           }
-      }
-      .toList
+      }.toList
     val allSamples = samples.flatMap { chain =>
       chain.map(_._2)
     }
