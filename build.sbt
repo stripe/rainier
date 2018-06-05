@@ -29,7 +29,6 @@ val publishSettings = Seq(
   developers := List(
     Developer("avibryant", "Avi Bryant", "", url("https://twitter.com/avibryant"))
   ),
-  crossScalaVersions := List("2.11.12", "2.12.4")
 )
 
 scalafmtOnCompile in ThisBuild := true
@@ -50,7 +49,8 @@ lazy val rainierCore = project.
       "org.scalatest" %% "scalatest" % "3.0.5" % Test),
     scalacOptions in Tut ~= {
       _.filterNot(Set("-Ywarn-unused-import", "-Yno-predef", "-Ywarn-unused:imports"))
-    }
+    },
+    crossScalaVersions := List("2.11.12", "2.12.4")
   )).
   dependsOn(shadedAsm).
   settings(publishSettings)
@@ -62,7 +62,7 @@ lazy val rainierPlot = project.
   settings(
     resolvers += Resolver.bintrayRepo("cibotech", "public"),
     libraryDependencies += "com.cibo" %% "evilplot" % "0.2.0").
-  settings(unpublished: _*)
+  settings(publishSettings)
 
 lazy val rainierExample = project.
   in(file("rainier-example")).
@@ -86,7 +86,8 @@ lazy val shadedAsm = project.
   settings(name := "rainier-shaded-asm").
   settings(
     exportJars := true,
-    packageBin in Compile := (assembly in asmDeps).value).
+    packageBin in Compile := (assembly in asmDeps).value,
+    crossScalaVersions := List("2.11.12", "2.12.4")).
   settings(publishSettings)
 
 // phantom project to bundle deps for shading
@@ -97,6 +98,7 @@ lazy val asmDeps = project.
     libraryDependencies += "org.ow2.asm" % "asm-tree" % "6.0",
   ).
   settings(
+    crossScalaVersions := List("2.11.12", "2.12.4"),
     skip in publish := true,
     assemblyOption in assembly := (assemblyOption in assembly).value.copy(
       includeBin = false,
