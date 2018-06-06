@@ -80,4 +80,13 @@ class RealTest extends FunSuite {
       (x * x)) * x) +
       (x * x * x))
   }
+
+  val exponents = scala.util.Random.shuffle(-40.to(40))
+  run("exponent sums") { x =>
+    //don't try this for x=0, because (0/0 * 0) will optimize to 0 in the constant case
+    If(x, exponents.foldLeft(x) {
+      case (a, e) =>
+        (a + x.pow(e)) * x
+    }, x)
+  }
 }
