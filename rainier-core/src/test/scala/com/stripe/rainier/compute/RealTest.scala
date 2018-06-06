@@ -68,4 +68,10 @@ class RealTest extends FunSuite {
   run("poisson") { x =>
     Poisson(x.abs + 1).logDensities(0.to(10).toList)
   }
+
+  run("4x^3") { x =>
+    (((((x + x) * x) +
+      (x * x)) * x) +
+      (x * x * x))
+  }
 }
