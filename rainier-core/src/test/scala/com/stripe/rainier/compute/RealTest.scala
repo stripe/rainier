@@ -16,15 +16,17 @@ class RealTest extends FunSuite {
         val withVar = eval.toDouble(result)
         assertWithinEpsilon(constant.asInstanceOf[Constant].value,
                             withVar,
-                            s"[n=$n]")
+                            s"[c/ev, n=$n]")
         val compiled = c(Array(n))
-        assertWithinEpsilon(withVar, compiled, s"[ir, n=$n]")
+        assertWithinEpsilon(withVar, compiled, s"[ev/ir, n=$n]")
       }
     }
   }
 
   def assertWithinEpsilon(x: Double, y: Double, clue: String): Unit = {
-    assert(x.isNaN && y.isNaN || x == y || (x - y).abs < 0.000000001, clue)
+    val relativeError = ((x - y).abs / x)
+    if (!(x.isNaN && y.isNaN || relativeError < 0.001))
+      assert(x == y, clue)
     ()
   }
 
@@ -73,5 +75,14 @@ class RealTest extends FunSuite {
     (((((x + x) * x) +
       (x * x)) * x) +
       (x * x * x))
+  }
+
+  val exponents = scala.util.Random.shuffle(-40.to(40))
+  run("exponent sums") { x =>
+    //don't try this for x=0, because (0/0 * 0) will optimize to 0 in the constant case
+    If(x, exponents.foldLeft(x) {
+      case (a, e) =>
+        (a + x.pow(e)) * x
+    }, x)
   }
 }
