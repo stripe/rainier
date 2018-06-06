@@ -43,6 +43,22 @@ abstract class RealBenchmark {
     gf(vars.map { _ =>
       rng.standardUniform
     }.toArray)
+  @Benchmark
+  def eval = {
+    val evaluator = new Evaluator(vars.map { v =>
+      v -> rng.standardUniform
+    }.toMap)
+    evaluator.toDouble(expr)
+  }
+  @Benchmark
+  def evalGradient = {
+    val evaluator = new Evaluator(vars.map { v =>
+      v -> rng.standardUniform
+    }.toMap)
+    grad.map { g =>
+      evaluator.toDouble(g)
+    }
+  }
 }
 
 class TrivialBenchmark extends RealBenchmark {

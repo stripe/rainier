@@ -79,7 +79,7 @@ private[compute] object LogLineOps {
             case ((nAx, nB), (x, a)) =>
               multiply(ll, LogLine(x)) match {
                 case Constant(v)     => (nAx, nB + v * a)
-                case nc: NonConstant => (nAx + (nc -> a), nB)
+                case nc: NonConstant => (LineOps.merge(nAx, Map(nc -> a)), nB)
               }
           }
         Line(newAx, newB)
