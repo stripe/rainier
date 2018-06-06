@@ -62,10 +62,10 @@ private[compute] object LineOps {
   a.pow(k) * x.pow(k). Since we can precompute a.pow(k), this just moves
   a multiply around, and there's a chance that a.pow(k) will simplify further.
    */
-  def pow(line: Line, exponent: Double): Option[Real] =
+  def pow(line: Line, exponent: Int): Option[Real] =
     line match {
       case Line1(a, x, 0) =>
-        Some(x.pow(exponent) * Math.pow(a, exponent))
+        Some(x.pow(exponent) * Math.pow(a, exponent.toDouble))
       case _ => None
     }
 
@@ -90,8 +90,8 @@ private[compute] object LineOps {
       (line, 1.0)
   }
 
-  def merge(left: Map[NonConstant, Double],
-            right: Map[NonConstant, Double]): Map[NonConstant, Double] = {
+  def merge[N](left: Map[NonConstant, N], right: Map[NonConstant, N])(
+      implicit n: Numeric[N]): Map[NonConstant, N] = {
     val (big, small) =
       if (left.size > right.size)
         (left, right)
@@ -103,11 +103,11 @@ private[compute] object LineOps {
         val newV = big
           .get(k)
           .map { bigV =>
-            bigV + v
+            n.plus(bigV, v)
           }
           .getOrElse(v)
 
-        if (newV == 0.0)
+        if (newV == n.zero)
           acc - k
         else
           acc + (k -> newV)

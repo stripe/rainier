@@ -22,8 +22,8 @@ sealed trait Real {
   def -(other: Real): Real = this + (other * -1)
   def /(other: Real): Real = this * other.pow(-1)
 
-  def pow[N](exponent: N)(implicit num: Numeric[N]): Real =
-    RealOps.pow(this, num.toDouble(exponent))
+  def pow(exponent: Int): Real =
+    RealOps.pow(this, exponent)
 
   def exp: Real = RealOps.unary(this, ir.ExpOp)
   def log: Real = RealOps.unary(this, ir.LogOp)
@@ -119,7 +119,7 @@ Luckily, this aligns well with the demands of numerical stability: if you have t
 together, you are better off adding their logs.
  */
 private final case class LogLine(
-    ax: Map[NonConstant, Double]
+    ax: Map[NonConstant, Int]
 ) extends NonConstant {
   require(ax.size > 0)
 }
@@ -128,7 +128,7 @@ private object LogLine {
   def apply(nc: NonConstant): LogLine =
     nc match {
       case l: LogLine => l
-      case _          => LogLine(Map(nc -> 1.0))
+      case _          => LogLine(Map(nc -> 1))
     }
 }
 
