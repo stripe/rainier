@@ -7,24 +7,30 @@ class RealTest extends FunSuite {
   def run(description: String)(fn: Real => Real): Unit = {
     test(description) {
       val x = new Variable
+      val x2 = new Variable
       val result = fn(x)
+      val result2 = fn(x2)
       val c = Compiler.default.compile(List(x), result)
       List(1.0, 0.0, -1.0, 2.0, -2.0, 0.5, -0.5).foreach { n =>
         val constant = fn(Constant(n))
-        assert(constant.isInstanceOf[Constant], s"[n=$n]")
-        val eval = new Evaluator(Map(x -> n))
+        assert(constant.isInstanceOf[Constant], s"[c, n=$n]")
+        val eval = new Evaluator(Map(x -> n, x2 -> n))
         val withVar = eval.toDouble(result)
         assertWithinEpsilon(constant.asInstanceOf[Constant].value,
                             withVar,
-                            s"[n=$n]")
+                            s"[c/ev, n=$n]")
         val compiled = c(Array(n))
-        assertWithinEpsilon(withVar, compiled, s"[ir, n=$n]")
+        assertWithinEpsilon(withVar, compiled, s"[ev/ir, n=$n]")
+        val withVar2 = eval.toDouble(result2)
+        assertWithinEpsilon(withVar, withVar2, s"[ev/ev, n=$n]")
       }
     }
   }
 
   def assertWithinEpsilon(x: Double, y: Double, clue: String): Unit = {
-    assert(x.isNaN && y.isNaN || x == y || (x - y).abs < 0.000000001, clue)
+    val relativeError = ((x - y).abs / x)
+    if (!(x.isNaN && y.isNaN || relativeError < 0.001))
+      assert(x == y, clue)
     ()
   }
 
@@ -67,5 +73,13 @@ class RealTest extends FunSuite {
   }
   run("poisson") { x =>
     Poisson(x.abs + 1).logDensities(0.to(10).toList)
+  }
+
+  run("exponent sums") { x =>
+    val exponents = (-40).to(40)
+    exponents.foldLeft(x) {
+      case (a, e) =>
+        (a + x.pow(e)) * x
+    }
   }
 }
