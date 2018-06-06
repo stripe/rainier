@@ -48,7 +48,10 @@ private class Translator {
 
   private def logLineIR(line: LogLine): IR = {
     val (y, k) = LogLineOps.factor(line)
-    factoredLine(y.ax, 1.0, k, powRing)
+    factoredLine(y.ax.map { case (x, a) => (x, a.toDouble) },
+                 1.0,
+                 k.toDouble,
+                 powRing)
   }
 
   /**
@@ -124,7 +127,10 @@ private class Translator {
           binaryIR(toIR(x), toIR(x), ring.plus)
       case (l: LogLine, a) => //this can only happen for a Line's terms
         () =>
-          factoredLine(l.ax, a, 1.0, powRing)
+          factoredLine(l.ax.map { case (y, b) => (y, b.toDouble) },
+                       a,
+                       1.0,
+                       powRing)
       case (x, a) =>
         () =>
           binaryIR(toIR(x), Const(a), ring.times)

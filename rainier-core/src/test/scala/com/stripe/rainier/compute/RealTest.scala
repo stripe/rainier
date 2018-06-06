@@ -11,7 +11,7 @@ class RealTest extends FunSuite {
       val result = fn(x)
       val result2 = fn(x2)
       val c = Compiler.default.compile(List(x), result)
-      List(1.0, 0.0, -1.0, 2.0, -2.0, 0.5, -0.5).foreach { n =>
+      List(1.0, /*0.0,*/ -1.0, 2.0, -2.0, 0.5, -0.5).foreach { n =>
         val constant = fn(Constant(n))
         assert(constant.isInstanceOf[Constant], s"[c, n=$n]")
         val eval = new Evaluator(Map(x -> n, x2 -> n))
@@ -75,11 +75,17 @@ class RealTest extends FunSuite {
     Poisson(x.abs + 1).logDensities(0.to(10).toList)
   }
 
+  val exponents = scala.util.Random.shuffle(-40.to(40))
   run("exponent sums") { x =>
-    val exponents = (-40).to(40)
     exponents.foldLeft(x) {
       case (a, e) =>
         (a + x.pow(e)) * x
     }
+  }
+
+  run("4x^3") { x =>
+    (((((x + x) * x) +
+      (x * x)) * x) +
+      (x * x * x))
   }
 }

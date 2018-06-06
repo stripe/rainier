@@ -12,7 +12,7 @@ private[compute] object LogLineOps {
       LogLine(merged)
   }
 
-  def pow(line: LogLine, v: Double): LogLine =
+  def pow(line: LogLine, v: Int): LogLine =
     LogLine(line.ax.map { case (x, a) => x -> a * v })
 
   /*
@@ -53,16 +53,16 @@ private[compute] object LogLineOps {
       (n * (n + 1)) / 2
     }
 
-    val initial = (List.empty[(NonConstant, Double)], Option.empty[Line])
+    val initial = (List.empty[(NonConstant, Int)], Option.empty[Line])
     val (factors, terms) = line.ax.foldLeft(initial) {
-      case ((f, None), (l: Line, 1.0)) if (nTerms(l) < DistributeToMaxTerms) =>
+      case ((f, None), (l: Line, 1)) if (nTerms(l) < DistributeToMaxTerms) =>
         (f, Some(l))
-      case ((f, Some(t)), (l: Line, 1.0))
+      case ((f, Some(t)), (l: Line, 1))
           if ((nTerms(t) * nTerms(l)) < DistributeToMaxTerms) =>
         (f, Some(LineOps.multiply(t, l)))
-      case ((f, None), (l: Line, 2.0)) if (nTerms2(l) < DistributeToMaxTerms) =>
+      case ((f, None), (l: Line, 2)) if (nTerms2(l) < DistributeToMaxTerms) =>
         (f, Some(LineOps.multiply(l, l)))
-      case ((f, Some(t)), (l: Line, 2.0))
+      case ((f, Some(t)), (l: Line, 2))
           if (nTerms(t) * nTerms2(l) < DistributeToMaxTerms) =>
         (f, Some(LineOps.multiply(t, LineOps.multiply(l, l))))
       case ((f, opt), xa) =>
@@ -79,7 +79,7 @@ private[compute] object LogLineOps {
             case ((nAx, nB), (x, a)) =>
               multiply(ll, LogLine(x)) match {
                 case Constant(v)     => (nAx, nB + v * a)
-                case nc: NonConstant => (nAx + (nc -> a), nB)
+                case nc: NonConstant => (LineOps.merge(nAx, Map(nc -> a)), nB)
               }
           }
         Line(newAx, newB)
@@ -94,21 +94,12 @@ private[compute] object LogLineOps {
   But at the last minute before compilation, this can reduce the total number of
   pow ops needed, or simplify them to optimizable special cases like 2.
 
-  Our current approach for picking k is to find the GCD of the exponents
-  if they are all integers; otherwise, give up and just pick 1. (We don't
-  want a fractional k since non-integer exponents are presumed to be expensive.)
+  Our current approach for picking k is to find the GCD of the exponents.
    */
-  def factor(line: LogLine): (LogLine, Double) = {
+  def factor(line: LogLine): (LogLine, Int) = {
     val exponents = line.ax.values.toList
-    val k =
-      if (exponents.forall { x =>
-            x % 1 == 0.0
-          })
-        exponents.map(_.toInt).reduce(gcd)
-      else
-        1
-
-    (pow(line, 1.0 / k), k.toDouble)
+    val k = exponents.reduce(gcd)
+    (LogLine(line.ax.map { case (x, a) => (x, a / k) }), k)
   }
 
   @tailrec

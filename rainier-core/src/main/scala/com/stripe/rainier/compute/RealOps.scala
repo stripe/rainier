@@ -49,11 +49,11 @@ private[compute] object RealOps {
         LogLineOps.multiply(LogLine(nc1), LogLine(nc2))
     }
 
-  def pow(original: Real, exponent: Double): Real =
+  def pow(original: Real, exponent: Int): Real =
     (original, exponent) match {
-      case (Constant(v), _) => Constant(Math.pow(v, exponent))
-      case (_, 0.0)         => Real.one
-      case (_, 1.0)         => original
+      case (Constant(v), _) => Constant(Math.pow(v, exponent.toDouble))
+      case (_, 0)           => Real.one
+      case (_, 1)           => original
       case (l: Line, _) =>
         LineOps.pow(l, exponent).getOrElse {
           LogLineOps.pow(LogLine(l), exponent)
