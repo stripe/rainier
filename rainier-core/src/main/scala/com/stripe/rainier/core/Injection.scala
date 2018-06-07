@@ -31,7 +31,7 @@ trait Injection { self =>
         n.toDouble(forwards(dist.generator.get(r, n)))
       }
 
-    val param: RandomVariable[Real] = dist.param.map(forwards)
+    def param: RandomVariable[Real] = dist.param.map(forwards)
   }
 }
 
