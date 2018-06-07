@@ -23,6 +23,15 @@ object CompiledFunction {
     val allMeths = packer.methods
     val varTypes = VarTypes.methods(allMeths.toList)
 
+    val methodNodes = allMeths.map { meth =>
+      val mg = new ExprMethodGenerator(meth,
+                                       inputs,
+                                       varTypes,
+                                       classPrefix,
+                                       classSizeLimit)
+      mg.className -> mg.methodNode
+    }
+
     val numInputs = inputs.size
     val numGlobals = varTypes.globals.size
     val numOutputs = outputMeths.size
@@ -33,15 +42,6 @@ object CompiledFunction {
                                       numInputs,
                                       numGlobals,
                                       numOutputs)
-
-    val methodNodes = allMeths.map { meth =>
-      val mg = new ExprMethodGenerator(meth,
-                                       inputs,
-                                       varTypes,
-                                       classPrefix,
-                                       classSizeLimit)
-      mg.className -> mg.methodNode
-    }
 
     val ecgs = methodNodes
       .groupBy(_._1)
