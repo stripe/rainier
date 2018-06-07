@@ -1,9 +1,9 @@
 package com.stripe.rainier.ir
 
-final private case class ApplyMethodGenerator(className: String,
+final private case class ApplyMethodGenerator(classPrefix: String,
+                                              classSizeLimit: Int,
                                               outputMethods: Seq[Int])
     extends MethodGenerator {
-  val isPrivate: Boolean = false
   val isStatic: Boolean = false
   val methodName: String = "apply"
   val methodDesc: String = "([D[D[D)V"

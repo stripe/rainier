@@ -6,11 +6,10 @@ import com.stripe.rainier.internal.asm.Label
 
 private trait MethodGenerator {
   def access = {
-    val priv = if (isPrivate) ACC_PRIVATE else ACC_PUBLIC
     if (isStatic)
-      priv | ACC_STATIC | ACC_FINAL
+      ACC_STATIC | ACC_PUBLIC | ACC_FINAL
     else
-      priv | ACC_FINAL
+      ACC_PUBLIC | ACC_FINAL
   }
 
   lazy val methodNode: MethodNode =
@@ -23,9 +22,9 @@ private trait MethodGenerator {
 
   def methodName: String
   def methodDesc: String
-  def isPrivate: Boolean
   def isStatic: Boolean
-  def className: String
+  def classPrefix: String
+  def classSizeLimit: Int
 
   def loadLocalVar(pos: Int): Unit =
     methodNode.visitVarInsn(DLOAD, localVarSlot(pos))
@@ -89,12 +88,14 @@ private trait MethodGenerator {
                                false)
   }
 
+  def classNameForMethod(id: Int): String =
+    classPrefix + "$" + (id / classSizeLimit)
   def exprMethodName(id: Int): String = s"_$id"
   def callExprMethod(id: Int): Unit = {
     loadParams()
     loadGlobalVars()
     methodNode.visitMethodInsn(INVOKESTATIC,
-                               className,
+                               classNameForMethod(id),
                                exprMethodName(id),
                                "([D[D)D",
                                false)

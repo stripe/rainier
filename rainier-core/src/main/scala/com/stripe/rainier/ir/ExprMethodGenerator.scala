@@ -3,11 +3,12 @@ package com.stripe.rainier.ir
 final private case class ExprMethodGenerator(method: MethodDef,
                                              inputs: Seq[Parameter],
                                              varTypes: VarTypes,
-                                             className: String)
+                                             classPrefix: String,
+                                             classSizeLimit: Int)
     extends MethodGenerator {
-  val isPrivate: Boolean = true
   val isStatic: Boolean = true
   val methodName: String = exprMethodName(method.sym.id)
+  val className: String = classNameForMethod(method.sym.id)
   val methodDesc: String = "([D[D)D"
 
   private val varIndices = inputs.zipWithIndex.toMap

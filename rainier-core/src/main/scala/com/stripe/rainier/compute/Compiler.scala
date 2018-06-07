@@ -32,7 +32,7 @@ trait Compiler {
 }
 
 object Compiler {
-  var default: Compiler = IRCompiler(200, false)
+  var default: Compiler = IRCompiler(200, 100, false)
 }
 
 final case class InstrumentingCompiler(orig: Compiler, printEvery: Int)
@@ -63,7 +63,9 @@ final case class InstrumentingCompiler(orig: Compiler, printEvery: Int)
   }
 }
 
-final case class IRCompiler(methodSizeLimit: Int, writeToTmpFile: Boolean)
+final case class IRCompiler(methodSizeLimit: Int,
+                            classSizeLimit: Int,
+                            writeToTmpFiles: Boolean)
     extends Compiler {
   def compileUnsafe(inputs: Seq[Variable],
                     outputs: Seq[Real]): ir.CompiledFunction = {
@@ -74,6 +76,10 @@ final case class IRCompiler(methodSizeLimit: Int, writeToTmpFile: Boolean)
     val irs = outputs.map { r =>
       translator.toIR(r)
     }
-    ir.ClassGenerator.generate(params, irs, methodSizeLimit, writeToTmpFile)
+    ir.CompiledFunction(params,
+                        irs,
+                        methodSizeLimit,
+                        classSizeLimit,
+                        writeToTmpFiles)
   }
 }

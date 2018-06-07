@@ -1,44 +1,69 @@
 package com.stripe.rainier.ir
 
-trait CompiledFunction {
-  def numInputs: Int
-  def numGlobals: Int
-  def numOutputs: Int
-  def apply(inputs: Array[Double],
-            globals: Array[Double],
-            outputs: Array[Double]): Unit
+import java.io.File
+import org.apache.commons.io.FileUtils
+
+import com.stripe.rainier.internal.asm.Opcodes._
+import com.stripe.rainier.internal.asm.tree.{ClassNode, MethodNode}
+import com.stripe.rainier.internal.asm.ClassWriter
+
+private[ir] trait ClassGenerator {
+
+  val bytes: Array[Byte] = writeBytecode(createClass)
+
+  def name: String
+  def superClasses: Array[String]
+  def methods: Seq[MethodNode]
+
+  def writeToTmpFile(): Unit =
+    FileUtils.writeByteArrayToFile(new File("/tmp/" + name + ".class"), bytes)
+
+  private def createClass: ClassNode = {
+    val cls = new ClassNode()
+    cls.visit(V1_5,
+              ACC_PUBLIC | ACC_SUPER,
+              name,
+              null,
+              "java/lang/Object",
+              superClasses)
+    cls.methods.add(createInit)
+    methods.foreach { m =>
+      cls.methods.add(m)
+    }
+    cls
+  }
+
+  private def createInit: MethodNode = {
+    val m = new MethodNode(ACC_PUBLIC, "<init>", "()V", null, null)
+    m.visitCode()
+    m.visitVarInsn(ALOAD, 0)
+    m.visitMethodInsn(INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false)
+    m.visitInsn(RETURN)
+    m.visitMaxs(1, 1)
+    m.visitEnd()
+    m
+  }
+
+  protected def createConstantMethod(name: String, value: Int): MethodNode = {
+    val m = new MethodNode(ACC_PUBLIC, name, "()I", null, null)
+    m.visitLdcInsn(value)
+    m.visitInsn(IRETURN)
+    m
+  }
+
+  private def writeBytecode(classNode: ClassNode): Array[Byte] = {
+    val cw = new ClassWriter(
+      ClassWriter.COMPUTE_FRAMES + ClassWriter.COMPUTE_MAXS)
+    classNode.accept(cw)
+    cw.toByteArray
+  }
 }
 
-object ClassGenerator {
-  def generate(inputs: Seq[Parameter],
-               irs: Seq[IR],
-               methodSizeLimit: Int,
-               writeToTmpFile: Boolean): CompiledFunction = {
-    val className = CompiledClass.freshName
-    val packer = new Packer(methodSizeLimit)
-    val outputMeths = irs.map { ir =>
-      packer.pack(ir)
-    }
-    val allMeths = packer.methods
-
-    val varTypes = VarTypes.methods(allMeths.toList)
-    val methodNodes = allMeths.map { meth =>
-      val mg = new ExprMethodGenerator(meth, inputs, varTypes, className)
-      mg.methodNode
-    }
-    val amg = new ApplyMethodGenerator(className, outputMeths.map(_.sym.id))
-
-    val numInputs = inputs.size
-    val numGlobals = varTypes.globals.size
-    val numOutputs = outputMeths.size
-
-    val cc = new CompiledClass(className,
-                               amg.methodNode :: methodNodes.toList,
-                               numInputs,
-                               numGlobals,
-                               numOutputs)
-    if (writeToTmpFile)
-      cc.writeToTmpFile
-    cc.instance
+private[ir] object ClassGenerator {
+  @volatile private var id: Int = 0
+  def freshName: String = this.synchronized {
+    val name = "CompiledFunction$" + id
+    id += 1
+    name
   }
 }
