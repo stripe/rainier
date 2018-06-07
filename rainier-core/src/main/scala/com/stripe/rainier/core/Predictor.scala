@@ -1,5 +1,7 @@
 package com.stripe.rainier.core
 
+import com.stripe.rainier.compute._
+
 /**
   * Predictor class, for fitting data with covariates
   */
@@ -7,11 +9,13 @@ abstract class Predictor[X, Y, Z](implicit ev: Z <:< Distribution[Y])
     extends Likelihood[(X, Y)] {
   def apply(x: X): Z
 
-  def fit(pair: (X, Y)): RandomVariable[Predictor[X,Y,Z]] =
+  def fit(pair: (X, Y)): RandomVariable[Predictor[X, Y, Z]] =
     RandomVariable(this, ev(apply(pair._1)).logDensity(pair._2))
 
-  def fit(seq: (X, Y)): RandomVariable[Predictor[X,Y,Z]] =
-    RandomVariable(this, Real.sum(seq.map{case (x,y) => ev(apply(x)).logDensity(y)))
+  def fit(seq: Seq[(X, Y)]): RandomVariable[Predictor[X, Y, Z]] =
+    RandomVariable(this, Real.sum(seq.map {
+      case (x, y) => ev(apply(x)).logDensity(y)
+    }))
 
   def predict(x: X): Generator[Y] = ev(apply(x)).generator
 
