@@ -7,14 +7,13 @@ abstract class Predictor[X, Y, Z](implicit ev: Z <:< Distribution[Y])
     extends Likelihood[(X, Y)] {
   def apply(x: X): Z
 
-  def fit(pair: (X, Y)): RandomVariable[Generator[(X, Y)]] = {
-    val (x, y) = pair
-    ev(apply(x)).fit(y).map { g =>
-      g.map { yy =>
-        (x, yy)
-      }
-    }
-  }
+  def fit(pair: (X, Y)): RandomVariable[Predictor[X,Y,Z]] =
+    RandomVariable(this, ev(apply(pair._1)).logDensity(pair._2))
+
+  def fit(seq: (X, Y)): RandomVariable[Predictor[X,Y,Z]] =
+    RandomVariable(this, Real.sum(seq.map{case (x,y) => ev(apply(x)).logDensity(y)))
+
+  def predict(x: X): Generator[Y] = ev(apply(x)).generator
 
   def predict(seq: Seq[X]): Generator[Seq[(X, Y)]] =
     Generator.traverse(seq.map { x =>
@@ -22,8 +21,6 @@ abstract class Predictor[X, Y, Z](implicit ev: Z <:< Distribution[Y])
         (x, y)
       }
     })
-
-  def predict(x: X): Generator[Y] = ev(apply(x)).generator
 }
 
 /**
