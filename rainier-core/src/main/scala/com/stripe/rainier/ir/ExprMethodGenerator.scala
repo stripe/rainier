@@ -6,6 +6,7 @@ final private case class ExprMethodGenerator(method: MethodDef,
                                              className: String)
     extends MethodGenerator {
   val isPrivate: Boolean = true
+  val isStatic: Boolean = true
   val methodName: String = exprMethodName(method.sym.id)
   val methodDesc: String = "([D[D)D"
 

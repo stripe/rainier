@@ -5,17 +5,26 @@ import com.stripe.rainier.internal.asm.tree.MethodNode
 import com.stripe.rainier.internal.asm.Label
 
 private trait MethodGenerator {
+  def access = {
+    val priv = if (isPrivate) ACC_PRIVATE else ACC_PUBLIC
+    if (isStatic)
+      priv | ACC_STATIC | ACC_FINAL
+    else
+      priv | ACC_FINAL
+  }
+
   lazy val methodNode: MethodNode =
-    new MethodNode(ASM6, //api
-                   if (isPrivate) ACC_PRIVATE else ACC_PUBLIC, //access
-                   methodName, //name
-                   methodDesc, //desc
+    new MethodNode(ASM6,
+                   access,
+                   methodName,
+                   methodDesc,
                    null, //signature
                    Array.empty) //exceptions
 
   def methodName: String
   def methodDesc: String
   def isPrivate: Boolean
+  def isStatic: Boolean
   def className: String
 
   def loadLocalVar(pos: Int): Unit =
@@ -82,10 +91,9 @@ private trait MethodGenerator {
 
   def exprMethodName(id: Int): String = s"_$id"
   def callExprMethod(id: Int): Unit = {
-    loadThis()
     loadParams()
     loadGlobalVars()
-    methodNode.visitMethodInsn(INVOKESPECIAL,
+    methodNode.visitMethodInsn(INVOKESTATIC,
                                className,
                                exprMethodName(id),
                                "([D[D)D",
@@ -113,22 +121,28 @@ private trait MethodGenerator {
 
   /**
   The local var layout is assumed to be:
+  For static methods:
+  0: params array
+  1: globals array
+  2..N: locally allocated doubles (two slots each)
+
+  Otherwise (eg apply):
   0: this
   1: params array
   2: globals array
-  3: output array OR 3..N: locally allocated doubles (two slots each)
+  3: output array
   **/
+  def loadParams(): Unit =
+    methodNode.visitVarInsn(ALOAD, if (isStatic) 0 else 1)
+
+  def loadGlobalVars(): Unit =
+    methodNode.visitVarInsn(ALOAD, if (isStatic) 1 else 2)
+
+  private def localVarSlot(pos: Int) = 2 + (pos * 2)
+
   def loadThis(): Unit =
     methodNode.visitVarInsn(ALOAD, 0)
 
-  def loadParams(): Unit =
-    methodNode.visitVarInsn(ALOAD, 1)
-
-  def loadGlobalVars(): Unit =
-    methodNode.visitVarInsn(ALOAD, 2)
-
   def loadOutputs(): Unit =
     methodNode.visitVarInsn(ALOAD, 3)
-
-  private def localVarSlot(pos: Int) = 3 + (pos * 2)
 }
