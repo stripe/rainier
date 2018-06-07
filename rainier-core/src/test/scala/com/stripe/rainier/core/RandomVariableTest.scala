@@ -1,7 +1,7 @@
 package com.stripe.rainier.core
 
 import com.stripe.rainier.compute._
-import com.stripe.rainier.sampler.RNG
+import com.stripe.rainier.sampler.{RNG, Walkers}
 import org.scalatest.FunSuite
 
 class RandomVariableTest extends FunSuite {
@@ -70,5 +70,40 @@ class RandomVariableTest extends FunSuite {
                   (x: Real) => x.exp,
                   (x: Real) => Uniform(0, x).param,
                   (x: Real) => Exponential(x).param)
+  }
+
+  test("sampleWithDiagnostics") {
+    implicit val rng = RNG.default
+
+    val valueDist = Uniform(0, 1)
+    val initial = LogNormal(-6.42345013664, 1).param.map { List(_) }
+    val rv = 1
+      .to(2)
+      .foldLeft(initial) {
+        case (acc, _) =>
+          acc.flatMap { ls =>
+            val f = valueDist.param
+              .condition { x =>
+                Cauchy.logDensity(ls.head - x)
+              }
+              .map { l =>
+                assert(l != ls.head)
+                l :: ls
+              }
+            f
+          }
+      }
+      .map { ls =>
+        ls.reverse.zipWithIndex.map {
+          case (l, i) =>
+            i.toString -> l
+        }.toMap
+      }
+
+    assert(rv.density.variables.size == 3)
+    val (_, diagnostics) =
+      rv.sampleWithDiagnostics(sampler = Walkers(1000), chains = 4, 100, 200)
+
+    assert(diagnostics.size == 3)
   }
 }
