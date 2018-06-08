@@ -57,10 +57,10 @@ private[compute] object RealOps {
         throw new ArithmeticException("Cannot multiply -inf by zero")
       case (Constant(Real.BigZero), Infinity) =>
         throw new ArithmeticException("Cannot multiply +inf by zero")
-      case (NegInfinity, _)               => NegInfinity
-      case (_, NegInfinity)               => NegInfinity
-      case (Infinity, _)                  => Infinity
-      case (_, Infinity)                  => Infinity
+      case (NegInfinity, r)               => If(r > 0, NegInfinity, Infinity)
+      case (r, NegInfinity)               => If(r > 0, NegInfinity, Infinity)
+      case (Infinity, r)                  => If(r > 0, Infinity, NegInfinity)
+      case (r, Infinity)                  => If(r > 0, Infinity, NegInfinity)
       case (_, Constant(Real.BigZero))    => Real.zero
       case (Constant(Real.BigZero), _)    => Real.zero
       case (_, Constant(Real.BigOne))     => left
