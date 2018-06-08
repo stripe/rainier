@@ -137,7 +137,7 @@ Instead, we can sample the quantity we're actually interested in. Let's recreate
 val rate = for {
     x <- Normal(0,1).param
     ex = x.exp
-    _ <- Poisson(ex).fit(sales)
+    poisson <- Poisson(ex).fit(sales)
 } yield ex
 ```
 
@@ -149,19 +149,19 @@ plot1D(rate.sample())
 
 ## `generator` and `Generator`
 
-The rate parameter is nice to have, but what we originally said is that we wanted to predict how many sales to expect tomorrow. For that we need to plug the rate back into a Poisson distribution, but in this case, instead of fitting data *to* that distribution, we want to generate data *from* that distribution. You might think that we could do this with `param`, that is, with something like this:
+The rate parameter is nice to have, but what we originally said is that we wanted to predict how many sales to expect tomorrow. You might notice that above, we got a `poisson` value back from `fit` but we didn't do anything with it. This value is just the distribution we used for the `fit`, that is, `Poisson(ex)`. Now, instead of fitting data *to* that distribution, we want to generate data *from* that distribution. One idea might be to do that with `param`, that is, with something like this:
 
 ```scala
 //This code won't compile
 for {
     x <- Normal(0,1).param
     ex = x.exp
-    _ <- Poisson(ex).fit(sales)
-    prediction <- Poisson(ex).param
+    poisson <- Poisson(ex).fit(sales)
+    prediction <- poisson.param
 } yield prediction
 ```
 
-This has a couple of problems. First, it seems conceptually wrong to think of a prediction as a parameter: there is no true value of "how many sales will we have tomorrow" for us to infer, and we have no observational data that can influence our belief about its value; once we've derived the rate parameter, the prediction is purely generative. Second, as a practical matter, Rainier only supports continuous parameters, and here we need to generate discrete values, so `Poisson(ex).param` won't, in fact, compile.
+This has a couple of problems. First, it seems conceptually wrong to think of a prediction as a parameter: there is no true value of "how many sales will we have tomorrow" for us to infer, and we have no observational data that can influence our belief about its value; once we've derived the rate parameter, the prediction is purely generative. Second, as a practical matter, Rainier only supports continuous parameters, and here we need to generate discrete values, so `poisson.param` won't, in fact, compile.
 
 Luckily, all distributions, continious or discrete, implement `generator`, which gives us what we need: a way to randomly generate new values from a distribution as part of the sampling process. Every `Distribution[T]` can give us a `Generator[T]`, and if we sample from a `RandomVariable[Generator[T]]`, we will get values of type `T`. (You can think of `Real` as being a special case that acts in this sense like a `Generator[Double]`).
 
@@ -171,8 +171,9 @@ Here's one way we could implement what we're looking for:
 val prediction = for {
     x <- Normal(0,1).param
     ex = x.exp
-    _ <- Poisson(ex).fit(sales)    
-} yield Poisson(ex).generator
+    poisson <- Poisson(ex).fit(sales)
+    prediction <- poisson.param
+} yield poisson.generator
 ```
 
 This is almost the same model as `rate` above, but instead of taking the real-valued `ex` rate parameter as the output, we're producing poisson-distributed integers. The samples look like this:
@@ -180,22 +181,10 @@ This is almost the same model as `rate` above, but instead of taking the real-va
 ```tut
 prediction.sample()
 ```
-
-It's very common to want to generate new data that mimics the data you fit against. We've been carefully ignoring the type of `RandomVariable` that `fit` returns, but in fact, it contains a `Generator` to do just that. That gives us another way to implement the same thing. (While we're at it, let's make use of the `LogNormal` distribution instead of rolling our own.)
-
-```tut
-val prediction2 = for {
-    ex <- LogNormal(0,1).param
-    poisson <- Poisson(ex).fit(sales)    
-} yield poisson.map(_.head)
-```  
-
-There's a bit of a twist here: because we `fit` against a list of 7 data points, the generator returned from there will try to produce output of the same shape, with each sample having a sequence of 7 ints. Luckily, `Generator` has the usual `map` and `flatMap` methods, so we can fix that by grabbing just the first value with `head`.
-
-Let's plot it this time:
+Or, if we plot them, like this:
 
 ```tut
-plot1D(prediction2.sample())
+plot1D(prediction.sample())
 ```
 
 ## `Likelihood` and `Predictor`
