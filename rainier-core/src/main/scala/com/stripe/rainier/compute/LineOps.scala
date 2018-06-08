@@ -90,8 +90,9 @@ private[compute] object LineOps {
       (line, 1.0)
   }
 
-  def merge(left: Map[NonConstant, Double],
-            right: Map[NonConstant, Double]): Map[NonConstant, Double] = {
+  def merge(
+      left: Map[NonConstant, BigDecimal],
+      right: Map[NonConstant, BigDecimal]): Map[NonConstant, BigDecimal] = {
     val (big, small) =
       if (left.size > right.size)
         (left, right)
@@ -107,15 +108,16 @@ private[compute] object LineOps {
           }
           .getOrElse(v)
 
-        if (newV == 0.0)
+        if (newV == Real.BigZero)
           acc - k
         else
           acc + (k -> newV)
     }
   }
 
-  private def simplify(ax: Map[NonConstant, Double], b: Double): NonConstant = {
-    if (b == 0.0 && ax.size == 1 && ax.head._2 == 1.0)
+  private def simplify(ax: Map[NonConstant, BigDecimal],
+                       b: BigDecimal): NonConstant = {
+    if (b == Real.BigZero && ax.size == 1 && ax.head._2 == Real.BigOne)
       ax.head._1
     else
       Line(ax, b)

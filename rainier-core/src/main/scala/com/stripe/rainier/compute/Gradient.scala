@@ -74,9 +74,9 @@ private object Gradient {
     }
   }
 
-  private final case class ProductDiff(other: Double, gradient: Diff)
+  private final case class ProductDiff(other: BigDecimal, gradient: Diff)
       extends Diff {
-    def toReal: Real = gradient.toReal * other
+    def toReal: Real = gradient.toReal * Constant(other)
   }
 
   private final case class UnaryDiff(child: Unary, gradient: Diff)
