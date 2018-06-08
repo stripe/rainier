@@ -19,8 +19,9 @@ private object Gradient {
       if (!visited.contains(real)) {
         visited += real
         real match {
-          case _: Variable => ()
-          case _: Constant => ()
+          case _: Variable            => ()
+          case _: Constant            => ()
+          case Infinity | NegInfinity => ()
 
           case u: Unary =>
             diff(u.original).register(UnaryDiff(u, diff(u)))

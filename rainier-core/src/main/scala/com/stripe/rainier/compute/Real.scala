@@ -67,11 +67,13 @@ object Real {
   private[compute] val BigTwo = BigDecimal(2.0)
   val zero: Real = Constant(BigZero)
   val one: Real = Constant(BigOne)
-  val infinity: Real = Constant(BigDecimal(1e100))
-  val negInfinity: Real = Constant(BigDecimal(-1e100))
+  val infinity: Real = Infinity
+  val negInfinity: Real = NegInfinity
 }
 
 final private case class Constant(value: BigDecimal) extends Real
+final private object Infinity extends Real
+final private object NegInfinity extends Real
 
 sealed trait NonConstant extends Real
 
@@ -151,9 +153,9 @@ final case class If private (test: NonConstant,
 object If {
   def apply(test: Real, whenNonZero: Real, whenZero: Real): Real =
     test match {
-      case Constant(Real.BigZero) => whenZero
-      case Constant(_)            => whenNonZero
-      case nc: NonConstant        => new If(nc, whenNonZero, whenZero)
+      case Constant(Real.BigZero)               => whenZero
+      case Constant(_) | Infinity | NegInfinity => whenNonZero
+      case nc: NonConstant                      => new If(nc, whenNonZero, whenZero)
     }
 }
 /*

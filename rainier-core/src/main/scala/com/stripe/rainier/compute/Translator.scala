@@ -13,6 +13,8 @@ private class Translator {
     case None =>
       val ir = r match {
         case v: Variable         => v.param
+        case Infinity            => Const(1.0 / 0.0)
+        case NegInfinity         => Const(-1.0 / 0.0)
         case Constant(value)     => Const(value.toDouble)
         case Unary(original, op) => unaryIR(toIR(original), op)
         case i: If               => ifIR(toIR(i.whenNonZero), toIR(i.whenZero), toIR(i.test))
