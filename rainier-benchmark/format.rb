@@ -10,7 +10,7 @@ class Benchmark
   attr_reader :klass, :method
 
   def rounded_time
-    oom = 10 ** (Math.log(@stddev) / Math.log(10)).to_i
+    oom = 10 ** Math.log10(@stddev).to_i
     rnd_dev = ((@stddev / oom).ceil * oom) * 2
     (@timing.to_f / rnd_dev).ceil.to_f * rnd_dev
   end
