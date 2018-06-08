@@ -66,7 +66,7 @@ private[compute] object LineOps {
   def pow(line: Line, exponent: BigDecimal): Option[Real] =
     line match {
       case Line1(a, x, Real.BigZero) =>
-        Some(x.pow(exponent) * Evaluator.pow(a, exponent))
+        Some(x.pow(exponent) * RealOps.pow(a, exponent))
       case _ => None
     }
 

@@ -29,8 +29,10 @@ private[compute] object RealOps {
 
   def add(left: Real, right: Real): Real =
     (left, right) match {
-      case (Infinity, NegInfinity)        => sys.error("Cannot add +inf and -inf")
-      case (NegInfinity, Infinity)        => sys.error("Cannot add +inf and -inf")
+      case (Infinity, NegInfinity) =>
+        throw new ArithmeticException("Cannot add +inf and -inf")
+      case (NegInfinity, Infinity) =>
+        throw new ArithmeticException("Cannot add +inf and -inf")
       case (Infinity, _)                  => Infinity
       case (_, Infinity)                  => Infinity
       case (NegInfinity, _)               => NegInfinity
@@ -48,13 +50,13 @@ private[compute] object RealOps {
     (left, right) match {
       case (NegInfinity, NegInfinity) => Infinity
       case (NegInfinity, Constant(Real.BigZero)) =>
-        sys.error("Cannot multiply -inf by zero")
+        throw new ArithmeticException("Cannot multiply -inf by zero")
       case (Infinity, Constant(Real.BigZero)) =>
-        sys.error("Cannot multiply +inf by zero")
+        throw new ArithmeticException("Cannot multiply +inf by zero")
       case (Constant(Real.BigZero), NegInfinity) =>
-        sys.error("Cannot multiply -inf by zero")
+        throw new ArithmeticException("Cannot multiply -inf by zero")
       case (Constant(Real.BigZero), Infinity) =>
-        sys.error("Cannot multiply +inf by zero")
+        throw new ArithmeticException("Cannot multiply +inf by zero")
       case (NegInfinity, _)               => NegInfinity
       case (_, NegInfinity)               => NegInfinity
       case (Infinity, _)                  => Infinity
@@ -86,7 +88,7 @@ private[compute] object RealOps {
           NegInfinity
         else
           Infinity
-      case (Constant(v), _) => Real(Evaluator.pow(v, exponent))
+      case (Constant(v), _) => Real(pow(v, exponent))
       case (l: Line, _) =>
         LineOps.pow(l, exponent).getOrElse {
           LogLineOps.pow(LogLine(l), exponent)
@@ -94,6 +96,12 @@ private[compute] object RealOps {
       case (nc: NonConstant, _) =>
         LogLineOps.pow(LogLine(nc), exponent)
     }
+
+  def pow(a: BigDecimal, b: BigDecimal): BigDecimal =
+    if (b.isValidInt)
+      a.pow(b.toInt)
+    else
+      BigDecimal(Math.pow(a.toDouble, b.toDouble))
 
   def isPositive(real: Real): Real =
     If(real, nonZeroIsPositive(real), Real.zero)

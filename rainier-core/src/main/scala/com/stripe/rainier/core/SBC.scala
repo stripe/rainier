@@ -97,9 +97,7 @@ final case class SBC[T](priorGenerators: Seq[Generator[Double]],
                      warmupIterations: Int,
                      syntheticSamples: Int,
                      thin: Int)(implicit rng: RNG): (Int, Double, Double) = {
-    val trueValues = priorGenerator.get(rng, emptyEvaluator).map { d =>
-      BigDecimal(d)
-    }
+    val trueValues = priorGenerator.get(rng, emptyEvaluator)
     implicit val trueEval = new Evaluator(priorParams.zip(trueValues).toMap)
     val trueOutput = posterior.map(_._2).get
 

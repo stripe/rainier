@@ -18,9 +18,7 @@ trait Sampleable[-S, +T] {
         implicit val evaluator: Evaluator =
           new Evaluator(
             variables
-              .zip(array.map { d =>
-                BigDecimal(d)
-              })
+              .zip(array)
               .toMap)
         get(value)
       }
@@ -28,15 +26,11 @@ trait Sampleable[-S, +T] {
       val cf = Compiler.default.compile(variables, reqs)
       array =>
         {
-          val reqValues = cf(array).map { d =>
-            BigDecimal(d)
-          }
+          val reqValues = cf(array)
           implicit val evaluator: Evaluator =
             new Evaluator(
               variables
-                .zip(array.map { d =>
-                  BigDecimal(d)
-                })
+                .zip(array)
                 .toMap ++
                 reqs.zip(reqValues).toMap
             )

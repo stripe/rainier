@@ -14,10 +14,10 @@ trait LowPriToReal {
     new ToReal[N] {
       def apply(n: N): Real = {
         val double = implicitly[Numeric[N]].toDouble(n)
-        if (double.isInfinity)
-          Real.infinity
-        else if (double.isNegInfinity)
+        if (double.isNegInfinity)
           Real.negInfinity
+        else if (double.isInfinity)
+          Real.infinity
         else
           Constant(BigDecimal(double))
       }

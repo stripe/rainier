@@ -1,34 +1,33 @@
 package com.stripe.rainier.compute
 
-class Evaluator(var cache: Map[Real, BigDecimal]) extends Numeric[Real] {
+class Evaluator(var cache: Map[Real, Double]) extends Numeric[Real] {
 
-  def toDouble(x: Real): Double = memoize(x).toDouble
-
-  private def memoize(real: Real): BigDecimal = cache.get(real) match {
+  def toDouble(x: Real): Double = cache.get(x) match {
     case Some(v) => v
     case None => {
-      val v = eval(real)
-      cache += real -> v
+      val v = eval(x)
+      cache += x -> v
       v
     }
   }
 
-  private def eval(real: Real): BigDecimal = real match {
-    case l: Line => l.ax.map { case (r, d) => memoize(r) * d }.sum + l.b
+  private def eval(real: Real): Double = real match {
+    case Infinity        => 1.0 / 0.0
+    case NegInfinity     => -1.0 / 0.0
+    case Constant(value) => value.toDouble
+    case l: Line =>
+      l.ax.map { case (r, d) => toDouble(r) * d.toDouble }.sum + l.b.toDouble
     case l: LogLine =>
       l.ax
-        .map {
-          case (r, d) => Evaluator.pow(memoize(r), d)
-        }
+        .map { case (r, d) => Math.pow(toDouble(r), d.toDouble) }
         .reduce(_ * _)
     case Unary(original, op) =>
-      eval(RealOps.unary(Real(memoize(original)), op))
-    case Constant(value) => value
+      eval(RealOps.unary(Constant(toDouble(original)), op))
     case If(test, nz, z) =>
-      if (memoize(test) == Real.BigZero)
-        memoize(z)
+      if (toDouble(test) == 0.0)
+        toDouble(z)
       else
-        memoize(nz)
+        toDouble(nz)
     case v: Variable => sys.error(s"No value provided for $v")
   }
 
@@ -41,12 +40,4 @@ class Evaluator(var cache: Map[Real, BigDecimal]) extends Numeric[Real] {
   def toFloat(x: Real): Float = toDouble(x).toFloat
   def toInt(x: Real): Int = toDouble(x).toInt
   def toLong(x: Real): Long = toDouble(x).toLong
-}
-
-object Evaluator {
-  def pow(a: BigDecimal, b: BigDecimal): BigDecimal =
-    if (b.isValidInt)
-      a.pow(b.toInt)
-    else
-      BigDecimal(Math.pow(a.toDouble, b.toDouble))
 }

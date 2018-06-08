@@ -2,7 +2,7 @@ package com.stripe.rainier.compute
 
 import org.scalatest._
 import com.stripe.rainier.core._
-
+import scala.util.{Try, Success, Failure}
 class RealTest extends FunSuite {
   def run(description: String)(fn: Real => Real): Unit = {
     test(description) {
@@ -10,13 +10,16 @@ class RealTest extends FunSuite {
       val result = fn(x)
       val c = Compiler.default.compile(List(x), result)
       List(1.0, 0.0, -1.0, 2.0, -2.0, 0.5, -0.5).foreach { n =>
-        val constant = fn(Constant(n))
-        assert(constant.isInstanceOf[Constant], s"[n=$n]")
-        val eval = new Evaluator(Map(x -> BigDecimal(n)))
+        val constant = Try { fn(Constant(n)) } match {
+          case Success(Infinity)               => 1.0 / 0.0
+          case Success(NegInfinity)            => -1.0 / 0.0
+          case Success(Constant(bd))           => bd.toDouble
+          case Failure(_: ArithmeticException) => 0.0 / 0.0
+          case _                               => sys.error("Non-constant value")
+        }
+        val eval = new Evaluator(Map(x -> n))
         val withVar = eval.toDouble(result)
-        assertWithinEpsilon(constant.asInstanceOf[Constant].value.toDouble,
-                            withVar,
-                            s"[c/ev, n=$n]")
+        assertWithinEpsilon(constant, withVar, s"[c/ev, n=$n]")
         val compiled = c(Array(n))
         assertWithinEpsilon(withVar, compiled, s"[ev/ir, n=$n]")
       }
@@ -79,10 +82,9 @@ class RealTest extends FunSuite {
 
   val exponents = scala.util.Random.shuffle(-40.to(40))
   run("exponent sums") { x =>
-    //don't try this for x=0, because (0/0 * 0) will optimize to 0 in the constant case
-    If(x, exponents.foldLeft(x) {
+    exponents.foldLeft(x) {
       case (a, e) =>
         (a + x.pow(e)) * x
-    }, x)
+    }
   }
 }
