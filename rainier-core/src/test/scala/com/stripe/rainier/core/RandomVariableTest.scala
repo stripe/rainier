@@ -22,7 +22,7 @@ class RandomVariableTest extends FunSuite {
     val variables = x.density.variables
     implicit val num: Evaluator =
       new Evaluator(variables.map { v =>
-        v -> paramValue
+        v -> BigDecimal(paramValue)
       }.toMap)
     implicit val rng: RNG = RNG.default
 

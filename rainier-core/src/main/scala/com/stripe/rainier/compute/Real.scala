@@ -64,6 +64,7 @@ object Real {
 
   private[compute] val BigZero = BigDecimal(0.0)
   private[compute] val BigOne = BigDecimal(1.0)
+  private[compute] val BigTwo = BigDecimal(2.0)
   val zero: Real = Constant(BigZero)
   val one: Real = Constant(BigOne)
 }

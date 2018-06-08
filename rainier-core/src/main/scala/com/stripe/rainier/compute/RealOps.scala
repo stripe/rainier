@@ -8,9 +8,9 @@ private[compute] object RealOps {
     original match {
       case Constant(value) =>
         op match {
-          case ExpOp => Constant(Math.exp(value))
-          case LogOp => Constant(Math.log(value))
-          case AbsOp => Constant(Math.abs(value))
+          case ExpOp => Constant(Math.exp(value.toDouble))
+          case LogOp => Constant(Math.log(value.toDouble))
+          case AbsOp => Constant(Math.abs(value.toDouble))
         }
       case nc: NonConstant =>
         val opt = (op, nc) match {
@@ -27,8 +27,8 @@ private[compute] object RealOps {
 
   def add(left: Real, right: Real): Real =
     (left, right) match {
-      case (_, Constant(0.0))             => left
-      case (Constant(0.0), _)             => right
+      case (_, Constant(Real.BigZero))    => left
+      case (Constant(Real.BigZero), _)    => right
       case (Constant(x), Constant(y))     => Constant(x + y)
       case (Constant(x), nc: NonConstant) => LineOps.translate(Line(nc), x)
       case (nc: NonConstant, Constant(x)) => LineOps.translate(Line(nc), x)
@@ -38,10 +38,10 @@ private[compute] object RealOps {
 
   def multiply(left: Real, right: Real): Real =
     (left, right) match {
-      case (_, Constant(0.0))             => Real.zero
-      case (Constant(0.0), _)             => Real.zero
-      case (_, Constant(1.0))             => left
-      case (Constant(1.0), _)             => right
+      case (_, Constant(Real.BigZero))    => Real.zero
+      case (Constant(Real.BigZero), _)    => Real.zero
+      case (_, Constant(Real.BigOne))     => left
+      case (Constant(Real.BigOne), _)     => right
       case (Constant(x), Constant(y))     => Constant(x * y)
       case (Constant(x), nc: NonConstant) => LineOps.scale(Line(nc), x)
       case (nc: NonConstant, Constant(x)) => LineOps.scale(Line(nc), x)
@@ -49,11 +49,11 @@ private[compute] object RealOps {
         LogLineOps.multiply(LogLine(nc1), LogLine(nc2))
     }
 
-  def pow(original: Real, exponent: Double): Real =
+  def pow(original: Real, exponent: BigDecimal): Real =
     (original, exponent) match {
-      case (Constant(v), _) => Constant(Math.pow(v, exponent))
-      case (_, 0.0)         => Real.one
-      case (_, 1.0)         => original
+      case (Constant(v), _)  => Constant(Evaluator.pow(v, exponent))
+      case (_, Real.BigZero) => Real.one
+      case (_, Real.BigOne)  => original
       case (l: Line, _) =>
         LineOps.pow(l, exponent).getOrElse {
           LogLineOps.pow(LogLine(l), exponent)

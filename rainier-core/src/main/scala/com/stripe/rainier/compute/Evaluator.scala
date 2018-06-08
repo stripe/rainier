@@ -18,11 +18,7 @@ class Evaluator(var cache: Map[Real, BigDecimal]) extends Numeric[Real] {
     case l: LogLine =>
       l.ax
         .map {
-          case (r, d) =>
-            if (d.isValidInt)
-              memoize(r).pow(d.toInt)
-            else
-              BigDecimal(Math.pow(memoize(r).toDouble, d.toDouble))
+          case (r, d) => Evaluator.pow(memoize(r), d)
         }
         .reduce(_ * _)
     case Unary(original, op) =>
@@ -45,4 +41,12 @@ class Evaluator(var cache: Map[Real, BigDecimal]) extends Numeric[Real] {
   def toFloat(x: Real): Float = toDouble(x).toFloat
   def toInt(x: Real): Int = toDouble(x).toInt
   def toLong(x: Real): Long = toDouble(x).toLong
+}
+
+object Evaluator {
+  def pow(a: BigDecimal, b: BigDecimal): BigDecimal =
+    if (b.isValidInt)
+      a.pow(b.toInt)
+    else
+      BigDecimal(Math.pow(a.toDouble, b.toDouble))
 }
