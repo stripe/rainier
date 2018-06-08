@@ -9,12 +9,27 @@ sealed abstract class ToReal[A] {
   def apply(a: A): Real
 }
 
-object ToReal {
-  def apply[A](a: A)(implicit toReal: ToReal[A]): Real = toReal(a)
-
+trait LowPriToReal {
   implicit def numeric[N: Numeric]: ToReal[N] =
     new ToReal[N] {
-      def apply(n: N): Real = Constant(implicitly[Numeric[N]].toDouble(n))
+      def apply(n: N): Real = {
+        val double = implicitly[Numeric[N]].toDouble(n)
+        if (double.isInfinity)
+          Real.infinity
+        else if (double.isNegInfinity)
+          Real.negInfinity
+        else
+          Constant(BigDecimal(double))
+      }
+    }
+}
+
+object ToReal extends LowPriToReal {
+  def apply[A](a: A)(implicit toReal: ToReal[A]): Real = toReal(a)
+
+  implicit val fromBigDecimal: ToReal[BigDecimal] =
+    new ToReal[BigDecimal] {
+      def apply(r: BigDecimal): Real = Constant(r)
     }
 
   implicit val fromReal: ToReal[Real] =

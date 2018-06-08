@@ -8,9 +8,9 @@ private[compute] object RealOps {
     original match {
       case Constant(value) =>
         op match {
-          case ExpOp => Constant(Math.exp(value.toDouble))
-          case LogOp => Constant(Math.log(value.toDouble))
-          case AbsOp => Constant(Math.abs(value.toDouble))
+          case ExpOp => Real(Math.exp(value.toDouble))
+          case LogOp => Real(Math.log(value.toDouble))
+          case AbsOp => Real(Math.abs(value.toDouble))
         }
       case nc: NonConstant =>
         val opt = (op, nc) match {
@@ -29,7 +29,7 @@ private[compute] object RealOps {
     (left, right) match {
       case (_, Constant(Real.BigZero))    => left
       case (Constant(Real.BigZero), _)    => right
-      case (Constant(x), Constant(y))     => Constant(x + y)
+      case (Constant(x), Constant(y))     => Real(x + y)
       case (Constant(x), nc: NonConstant) => LineOps.translate(Line(nc), x)
       case (nc: NonConstant, Constant(x)) => LineOps.translate(Line(nc), x)
       case (nc1: NonConstant, nc2: NonConstant) =>
@@ -42,7 +42,7 @@ private[compute] object RealOps {
       case (Constant(Real.BigZero), _)    => Real.zero
       case (_, Constant(Real.BigOne))     => left
       case (Constant(Real.BigOne), _)     => right
-      case (Constant(x), Constant(y))     => Constant(x * y)
+      case (Constant(x), Constant(y))     => Real(x * y)
       case (Constant(x), nc: NonConstant) => LineOps.scale(Line(nc), x)
       case (nc: NonConstant, Constant(x)) => LineOps.scale(Line(nc), x)
       case (nc1: NonConstant, nc2: NonConstant) =>
@@ -51,7 +51,7 @@ private[compute] object RealOps {
 
   def pow(original: Real, exponent: BigDecimal): Real =
     (original, exponent) match {
-      case (Constant(v), _)  => Constant(Evaluator.pow(v, exponent))
+      case (Constant(v), _)  => Real(Evaluator.pow(v, exponent))
       case (_, Real.BigZero) => Real.one
       case (_, Real.BigOne)  => original
       case (l: Line, _) =>

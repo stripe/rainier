@@ -67,6 +67,8 @@ object Real {
   private[compute] val BigTwo = BigDecimal(2.0)
   val zero: Real = Constant(BigZero)
   val one: Real = Constant(BigOne)
+  val infinity: Real = Constant(BigDecimal(1e100))
+  val negInfinity: Real = Constant(BigDecimal(-1e100))
 }
 
 final private case class Constant(value: BigDecimal) extends Real

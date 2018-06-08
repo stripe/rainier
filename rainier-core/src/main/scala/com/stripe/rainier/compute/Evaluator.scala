@@ -22,7 +22,7 @@ class Evaluator(var cache: Map[Real, BigDecimal]) extends Numeric[Real] {
         }
         .reduce(_ * _)
     case Unary(original, op) =>
-      eval(RealOps.unary(Constant(memoize(original)), op))
+      eval(RealOps.unary(Real(memoize(original)), op))
     case Constant(value) => value
     case If(test, nz, z) =>
       if (memoize(test) == Real.BigZero)
