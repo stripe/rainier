@@ -2,7 +2,7 @@ package com.stripe.rainier.compute
 
 import org.scalatest._
 import com.stripe.rainier.core._
-
+import scala.util.{Try, Success, Failure}
 class RealTest extends FunSuite {
   def run(description: String)(fn: Real => Real): Unit = {
     test(description) {
@@ -10,21 +10,26 @@ class RealTest extends FunSuite {
       val result = fn(x)
       val c = Compiler.default.compile(List(x), result)
       List(1.0, 0.0, -1.0, 2.0, -2.0, 0.5, -0.5).foreach { n =>
-        val constant = fn(Constant(n))
-        assert(constant.isInstanceOf[Constant], s"[n=$n]")
+        val constant = Try { fn(Constant(n)) } match {
+          case Success(Infinity)               => 1.0 / 0.0
+          case Success(NegInfinity)            => -1.0 / 0.0
+          case Success(Constant(bd))           => bd.toDouble
+          case Failure(_: ArithmeticException) => 0.0 / 0.0
+          case _                               => sys.error("Non-constant value")
+        }
         val eval = new Evaluator(Map(x -> n))
         val withVar = eval.toDouble(result)
-        assertWithinEpsilon(constant.asInstanceOf[Constant].value,
-                            withVar,
-                            s"[n=$n]")
+        assertWithinEpsilon(constant, withVar, s"[c/ev, n=$n]")
         val compiled = c(Array(n))
-        assertWithinEpsilon(withVar, compiled, s"[ir, n=$n]")
+        assertWithinEpsilon(withVar, compiled, s"[ev/ir, n=$n]")
       }
     }
   }
 
   def assertWithinEpsilon(x: Double, y: Double, clue: String): Unit = {
-    assert(x.isNaN && y.isNaN || x == y || (x - y).abs < 0.000000001, clue)
+    val relativeError = ((x - y).abs / x)
+    if (!(x.isNaN && y.isNaN || relativeError < 0.001))
+      assert(x == y, clue)
     ()
   }
 
@@ -73,5 +78,13 @@ class RealTest extends FunSuite {
     (((((x + x) * x) +
       (x * x)) * x) +
       (x * x * x))
+  }
+
+  val exponents = scala.util.Random.shuffle(-40.to(40))
+  run("exponent sums") { x =>
+    exponents.foldLeft(x) {
+      case (a, e) =>
+        (a + x.pow(e)) * x
+    }
   }
 }

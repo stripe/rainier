@@ -49,9 +49,6 @@ object Real {
   def sum(seq: Seq[Real]): Real =
     seq.foldLeft(Real.zero)(_ + _)
 
-  val zero: Real = Real(0.0)
-  val one: Real = Real(1.0)
-
   //print out Scala code that is equivalent to what the Compiler
   //would produce as JVM bytecode
   def trace(reals: Seq[Real]): Unit = {
@@ -64,9 +61,19 @@ object Real {
   }
 
   def trace(real: Real): Unit = trace(List(real))
+
+  private[compute] val BigZero = BigDecimal(0.0)
+  private[compute] val BigOne = BigDecimal(1.0)
+  private[compute] val BigTwo = BigDecimal(2.0)
+  val zero: Real = Constant(BigZero)
+  val one: Real = Constant(BigOne)
+  val infinity: Real = Infinity
+  val negInfinity: Real = NegInfinity
 }
 
-final private case class Constant(value: Double) extends Real
+final private case class Constant(value: BigDecimal) extends Real
+final private object Infinity extends Real
+final private object NegInfinity extends Real
 
 sealed trait NonConstant extends Real
 
@@ -88,12 +95,12 @@ Because it is common for ax to have a large number of terms, this is deliberatel
 as equality comparisons would be too expensive. The impact of this is subtle, see [0] at the bottom of this file
 for an example.
  */
-private final class Line private (val ax: Map[NonConstant, Double],
-                                  val b: Double)
+private final class Line private (val ax: Map[NonConstant, BigDecimal],
+                                  val b: BigDecimal)
     extends NonConstant
 
 private object Line {
-  def apply(ax: Map[NonConstant, Double], b: Double): Line = {
+  def apply(ax: Map[NonConstant, BigDecimal], b: BigDecimal): Line = {
     require(ax.size > 0)
     new Line(ax, b)
   }
@@ -104,8 +111,8 @@ private object Line {
       case l: LogLine =>
         LogLineOps
           .distribute(l)
-          .getOrElse(Line(Map(l -> 1.0), 0.0))
-      case _ => Line(Map(nc -> 1.0), 0.0)
+          .getOrElse(Line(Map(l -> Real.BigOne), Real.BigZero))
+      case _ => Line(Map(nc -> Real.BigOne), Real.BigZero)
     }
 }
 
@@ -119,7 +126,7 @@ Luckily, this aligns well with the demands of numerical stability: if you have t
 together, you are better off adding their logs.
  */
 private final case class LogLine(
-    ax: Map[NonConstant, Double]
+    ax: Map[NonConstant, BigDecimal]
 ) extends NonConstant {
   require(ax.size > 0)
 }
@@ -128,7 +135,7 @@ private object LogLine {
   def apply(nc: NonConstant): LogLine =
     nc match {
       case l: LogLine => l
-      case _          => LogLine(Map(nc -> 1.0))
+      case _          => LogLine(Map(nc -> Real.BigOne))
     }
 }
 
@@ -146,9 +153,9 @@ final case class If private (test: NonConstant,
 object If {
   def apply(test: Real, whenNonZero: Real, whenZero: Real): Real =
     test match {
-      case Constant(0.0)   => whenZero
-      case Constant(_)     => whenNonZero
-      case nc: NonConstant => new If(nc, whenNonZero, whenZero)
+      case Constant(Real.BigZero)               => whenZero
+      case Constant(_) | Infinity | NegInfinity => whenNonZero
+      case nc: NonConstant                      => new If(nc, whenNonZero, whenZero)
     }
 }
 /*

@@ -10,10 +10,10 @@ private[compute] object LineOps {
       simplify(merged, left.b + right.b)
   }
 
-  def scale(line: Line, v: Double): NonConstant =
+  def scale(line: Line, v: BigDecimal): NonConstant =
     simplify(line.ax.map { case (x, a) => (x, a * v) }, line.b * v)
 
-  def translate(line: Line, v: Double): NonConstant =
+  def translate(line: Line, v: BigDecimal): NonConstant =
     simplify(line.ax, line.b + v)
 
   /*
@@ -29,12 +29,13 @@ private[compute] object LineOps {
             (x * y, a * c)
         }
     }
-    val (newAx, newB) = terms.foldLeft((Map.empty[NonConstant, Double], 0.0)) {
-      case ((nAx, nB), (x: NonConstant, a)) =>
-        (merge(nAx, Map(x -> a)), nB)
-      case ((nAx, nB), (Constant(x), a)) =>
-        (nAx, nB + x * a)
-    }
+    val (newAx, newB) =
+      terms.foldLeft((Map.empty[NonConstant, BigDecimal], Real.BigZero)) {
+        case ((nAx, nB), (x: NonConstant, a)) =>
+          (merge(nAx, Map(x -> a)), nB)
+        case ((nAx, nB), (Constant(x), a)) =>
+          (nAx, nB + x * a)
+      }
     Line(newAx, newB)
   }
 
@@ -49,8 +50,8 @@ private[compute] object LineOps {
 
   def log(line: Line): Option[Real] =
     line match {
-      case Line1(a, x, 0) if a >= 0 =>
-        Some(x.log + Math.log(a))
+      case Line1(a, x, Real.BigZero) if a >= Real.BigZero =>
+        Some(x.log + Math.log(a.toDouble))
       case _ => None
     }
 
@@ -62,10 +63,10 @@ private[compute] object LineOps {
   a.pow(k) * x.pow(k). Since we can precompute a.pow(k), this just moves
   a multiply around, and there's a chance that a.pow(k) will simplify further.
    */
-  def pow(line: Line, exponent: Double): Option[Real] =
+  def pow(line: Line, exponent: BigDecimal): Option[Real] =
     line match {
-      case Line1(a, x, 0) =>
-        Some(x.pow(exponent) * Math.pow(a, exponent))
+      case Line1(a, x, Real.BigZero) =>
+        Some(x.pow(exponent) * RealOps.pow(a, exponent))
       case _ => None
     }
 
@@ -77,21 +78,22 @@ private[compute] object LineOps {
   multiplication ops needed, by reducing some of the weights in ax down to 1 or -1.
   We want to pick the k that maximizes how many get reduced that way.
    */
-  def factor(line: Line): (Line, Double) = {
+  def factor(line: Line): (Line, BigDecimal) = {
     val coefficientFreqs =
       line.ax.values
         .groupBy(_.abs)
         .map { case (a, xs) => (a, xs.size) }
 
     val (k, cnt) = coefficientFreqs.maxBy(_._2)
-    if (cnt > coefficientFreqs.getOrElse(1.0, 0))
-      (Line(scale(line, 1.0 / k)), k)
+    if (cnt > coefficientFreqs.getOrElse(Real.BigOne, 0))
+      (Line(scale(line, Real.BigOne / k)), k)
     else
-      (line, 1.0)
+      (line, Real.BigOne)
   }
 
-  def merge(left: Map[NonConstant, Double],
-            right: Map[NonConstant, Double]): Map[NonConstant, Double] = {
+  def merge(
+      left: Map[NonConstant, BigDecimal],
+      right: Map[NonConstant, BigDecimal]): Map[NonConstant, BigDecimal] = {
     val (big, small) =
       if (left.size > right.size)
         (left, right)
@@ -107,22 +109,23 @@ private[compute] object LineOps {
           }
           .getOrElse(v)
 
-        if (newV == 0.0)
+        if (newV == Real.BigZero)
           acc - k
         else
           acc + (k -> newV)
     }
   }
 
-  private def simplify(ax: Map[NonConstant, Double], b: Double): NonConstant = {
-    if (b == 0.0 && ax.size == 1 && ax.head._2 == 1.0)
+  private def simplify(ax: Map[NonConstant, BigDecimal],
+                       b: BigDecimal): NonConstant = {
+    if (b == Real.BigZero && ax.size == 1 && ax.head._2 == Real.BigOne)
       ax.head._1
     else
       Line(ax, b)
   }
 
   object Line1 {
-    def unapply(line: Line): Option[(Double, NonConstant, Double)] = {
+    def unapply(line: Line): Option[(BigDecimal, NonConstant, BigDecimal)] = {
       if (line.ax.size == 1)
         Some((line.ax.head._2, line.ax.head._1, line.b))
       else

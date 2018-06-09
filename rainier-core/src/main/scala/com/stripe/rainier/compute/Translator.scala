@@ -13,7 +13,9 @@ private class Translator {
     case None =>
       val ir = r match {
         case v: Variable         => v.param
-        case Constant(value)     => Const(value)
+        case Infinity            => Const(1.0 / 0.0)
+        case NegInfinity         => Const(-1.0 / 0.0)
+        case Constant(value)     => Const(value.toDouble)
         case Unary(original, op) => unaryIR(toIR(original), op)
         case i: If               => ifIR(toIR(i.whenNonZero), toIR(i.whenZero), toIR(i.test))
         case l: Line             => lineIR(l)
@@ -43,12 +45,12 @@ private class Translator {
 
   private def lineIR(line: Line): IR = {
     val (y, k) = LineOps.factor(line)
-    factoredLine(y.ax, y.b, k, multiplyRing)
+    factoredLine(y.ax, y.b, k.toDouble, multiplyRing)
   }
 
   private def logLineIR(line: LogLine): IR = {
     val (y, k) = LogLineOps.factor(line)
-    factoredLine(y.ax, 1.0, k, powRing)
+    factoredLine(y.ax, Real.BigOne, k.toDouble, powRing)
   }
 
   /**
@@ -78,19 +80,19 @@ private class Translator {
   The result may also be multiplied by a constant scaling factor (generally
   factored out of the original summation).
   **/
-  private def factoredLine(ax: Map[NonConstant, Double],
-                           b: Double,
+  private def factoredLine(ax: Map[NonConstant, BigDecimal],
+                           b: BigDecimal,
                            factor: Double,
                            ring: Ring): IR = {
-    val posTerms = ax.filter(_._2 > 0.0).toList
+    val posTerms = ax.filter(_._2 > Real.BigZero).toList
     val negTerms =
-      ax.filter(_._2 < 0.0).map { case (x, a) => x -> a.abs }.toList
+      ax.filter(_._2 < Real.BigZero).map { case (x, a) => x -> a.abs }.toList
 
     val allPosTerms =
       if (b == ring.zero)
         posTerms
       else
-        (Constant(b), 1.0) :: posTerms
+        (Constant(b), Real.BigOne) :: posTerms
 
     val (ir, sign) =
       (allPosTerms.isEmpty, negTerms.isEmpty) match {
@@ -114,12 +116,12 @@ private class Translator {
     }
   }
 
-  private def combineTerms(terms: Seq[(Real, Double)], ring: Ring): IR = {
+  private def combineTerms(terms: Seq[(Real, BigDecimal)], ring: Ring): IR = {
     val lazyIR = terms.map {
-      case (x, 1.0) =>
+      case (x, Real.BigOne) =>
         () =>
           toIR(x)
-      case (x, 2.0) =>
+      case (x, Real.BigTwo) =>
         () =>
           binaryIR(toIR(x), toIR(x), ring.plus)
       case (l: LogLine, a) => //this can only happen for a Line's terms
@@ -127,7 +129,7 @@ private class Translator {
           factoredLine(l.ax, a, 1.0, powRing)
       case (x, a) =>
         () =>
-          binaryIR(toIR(x), Const(a), ring.times)
+          binaryIR(toIR(x), Const(a.toDouble), ring.times)
     }
     combineTree(lazyIR, ring)
   }
