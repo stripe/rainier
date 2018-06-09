@@ -46,14 +46,14 @@ abstract class RealBenchmark {
   @Benchmark
   def eval = {
     val evaluator = new Evaluator(vars.map { v =>
-      v -> BigDecimal(rng.standardUniform)
+      v -> rng.standardUniform
     }.toMap)
     evaluator.toDouble(expr)
   }
   @Benchmark
   def evalGradient = {
     val evaluator = new Evaluator(vars.map { v =>
-      v -> BigDecimal(rng.standardUniform)
+      v -> rng.standardUniform
     }.toMap)
     grad.map { g =>
       evaluator.toDouble(g)
