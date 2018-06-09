@@ -66,7 +66,7 @@ Since the only information we have about `x` so far is its `Normal` prior, this 
 For now, though, let's explore what we can do just with priors. `RandomVariable` has more than just `sample`: you can use the familiar collection methods like `map`, `flatMap`, and `zip` to transform and combine the parameters you create. For example, we can create a log-normal distribution just by mapping over `e^x`:
 
 ```tut
-val ex = x.map(_.exp)
+val e_x = x.map(_.exp)
 plot1D(ex.sample())
 ```
 
@@ -119,10 +119,10 @@ We can use this to find the likelihood ratio of these two hypotheses. Since the 
 val lr = (poisson9.density - poisson10.density).exp
 ```
 
-We can see here that our data is about 3x as likely to have come from a `Poisson(9)` as it is to have come from a `Poisson(10)`. We could keep doing this with a large number of values to build up a sense of the rate distribution, but it would be tedious, and we'd be ignoring any prior we had on the rate. Instead, the right way to do this in Rainier is to make the rate a parameter, and let the library do the hard work of exploring the space. Specifically, we can use `flatMap` to chain the creation of the parameter with the creation and fit of the `Poisson` distribution. Since we want our rate to be a positive number, and expect it to be more likely to be on the small side than the large side, the log-normal parameter we created earlier as `ex` seems like a reasonable choice.
+We can see here that our data is about 3x as likely to have come from a `Poisson(9)` as it is to have come from a `Poisson(10)`. We could keep doing this with a large number of values to build up a sense of the rate distribution, but it would be tedious, and we'd be ignoring any prior we had on the rate. Instead, the right way to do this in Rainier is to make the rate a parameter, and let the library do the hard work of exploring the space. Specifically, we can use `flatMap` to chain the creation of the parameter with the creation and fit of the `Poisson` distribution. Since we want our rate to be a positive number, and expect it to be more likely to be on the small side than the large side, the log-normal parameter we created earlier as `e_x` seems like a reasonable choice.
 
 ```tut
-val poisson: RandomVariable[_] = ex.flatMap{r => Poisson(r).fit(sales)}
+val poisson: RandomVariable[_] = e_x.flatMap{r => Poisson(r).fit(sales)}
 ```
 
 By the way: before, when we looked at `poisson9.density`, the model had no parameters and so we got a constant value back. Now, since the model's density is a function of the parameter value, we get something more opaque back. This is why inspecting `density` is not normally useful.
@@ -131,32 +131,56 @@ By the way: before, when we looked at `poisson9.density`, the model had no param
 poisson.density
 ```
 
-Instead, we can sample the quantity we're actually interested in. Let's recreate this model from the start, with the slightly friendlier `for` syntax:
+Instead, we can sample the quantity we're actually interested in. To start with, let's try to sample the rate parameter of the Poisson, conditioned by our observed data. Here's almost the same thing we had above, recreated with the slightly friendlier `for` syntax, and yielding the `r` parameter at the end:
 
 ```tut
 val rate = for {
-    x <- Normal(0,1).param
-    ex = x.exp
-    poisson <- Poisson(ex).fit(sales)
-} yield ex
+    r <- e_x
+    poisson <- Poisson(r).fit(sales)
+} yield r
 ```
 
-Here we're creating our log-normal prior, using it as the rate on a Poisson distribution, fitting that distribution to the data, and then outputting the rate. Let's plot it!
+This is our first "full" model: we have a parameter with a log-normal prior, bundled into the `RandomVariable` named `e_x`; we use that parameter to initialize a `Poisson` noise distribution which we fit to our observations; and at the end, we output the same parameter (referenced by `r`) as the quantity we're interested in sampling from the posterior.
+
+Let's plot the results!
 
 ```tut
 plot1D(rate.sample())
 ```
 
+## A mathematical digression
+
+Please feel free to skip this section if it's not helping you.
+
+One thing that sometimes confuses people at this stage is, what is the line with `fit` actually doing? It seems to return a `poisson` object that we just ignore. (That object, by the way, is just the `Poisson(r)` distribution object that we used to do the `fit`.) And yet the line is clearly doing something, because sampling from `rate` gives quite different results from just sampling directly from `e_x`.
+
+They key is to remember that a `RandomVariable` has two parts: a `value` and a `density`. Mathematically, you should think of these as two different *functions* of the same latent parameter space `Q`. That is, you should think of `value` as being some deterministic function `f = F(q)`, and `density` as being the (unnormalized) probability function `P(Q=q)`.
+
+ When we `map` or `flatMap` a `RandomVariable` (whether explicitly or inside a `for` construct), what we're working with (like, the `r` above) is the `value` object. And we can see in the definition of `for` that it's just passing that value object through to the end; it should end up with the same `value` function as the prior, `e_x`. And indeed, it does:
+
+```tut
+e_x.value == rate.value
+```
+
+So, for the same input in the latent parameter space, `e_x` and `rate` will produce the same output.
+
+However, when we `flatMap`, behind the scenes we're also working with the `density` object. Specifically, when we start with one `RandomVariable` (like `e_x`), and use `flatMap` to flatten another `RandomVariable` into it (like the result of `fit`), the resulting `RandomVariable` (like `rate`) will have a `density` that *combines* the densities of the other two `RandomVariable`s. Put another way, `flatMap` is the bayesian update operation: you're putting in a prior, coming up with a likelihood, and getting back the posterior. And if we look at the densities, we'll see that they are indeed different:
+
+```tut
+e_x.density == rate.density
+```
+
+So although `F(q)` has not changed, `P(Q=q)` *has* changed; which means that `P(F(q)=f)` has also changed, and it's that change which we're observing when we see that sampling values of `F` produces different results in the two cases.
+
 ## `generator` and `Generator`
 
-The rate parameter is nice to have, but what we originally said is that we wanted to predict how many sales to expect tomorrow. You might notice that above, we got a `poisson` value back from `fit` but we didn't do anything with it. This value is just the distribution we used for the `fit`, that is, `Poisson(ex)`. Now, instead of fitting data *to* that distribution, we want to generate data *from* that distribution. One idea might be to do that with `param`, that is, with something like this:
+Sampling from the rate parameter is nice, but what we originally said is that we wanted to predict how many sales to expect tomorrow. As we just discussed in the digression, we got a `poisson` value back from `fit` but didn't do anything with it. This value is just the distribution we used for the `fit`, that is, `Poisson(r)`. Now, instead of fitting data *to* that distribution, we want to generate data *from* that distribution. One idea might be to do that with `param`, that is, with something like this:
 
 ```scala
 //This code won't compile
 for {
-    x <- Normal(0,1).param
-    ex = x.exp
-    poisson <- Poisson(ex).fit(sales)
+    r <- e_x
+    poisson <- Poisson(r).fit(sales)
     prediction <- poisson.param
 } yield prediction
 ```
@@ -169,14 +193,12 @@ Here's one way we could implement what we're looking for:
 
 ```tut
 val prediction = for {
-    x <- Normal(0,1).param
-    ex = x.exp
-    poisson <- Poisson(ex).fit(sales)
-    prediction <- poisson.param
+    r <- e_x
+    poisson <- Poisson(r).fit(sales)
 } yield poisson.generator
 ```
 
-This is almost the same model as `rate` above, but instead of taking the real-valued `ex` rate parameter as the output, we're producing poisson-distributed integers. The samples look like this:
+This is almost the same model as `rate` above, but instead of taking the real-valued `r` rate parameter as the output, we're producing poisson-distributed integers. The samples look like this:
 
 ```tut
 prediction.sample()
