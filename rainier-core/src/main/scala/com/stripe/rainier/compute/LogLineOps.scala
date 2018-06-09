@@ -64,7 +64,7 @@ private[compute] object LogLineOps {
       case ((f, None), (l: Line, Real.BigTwo))
           if (nTerms2(l) < DistributeToMaxTerms) =>
         (f, Some(LineOps.multiply(l, l)))
-      case ((f, Some(t)), (l: Line, Real.BigOne))
+      case ((f, Some(t)), (l: Line, Real.BigTwo))
           if (nTerms(t) * nTerms2(l) < DistributeToMaxTerms) =>
         (f, Some(LineOps.multiply(t, LineOps.multiply(l, l))))
       case ((f, opt), xa) =>
