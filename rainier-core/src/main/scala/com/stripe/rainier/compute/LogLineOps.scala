@@ -12,7 +12,7 @@ private[compute] object LogLineOps {
       LogLine(merged)
   }
 
-  def pow(line: LogLine, v: Double): LogLine =
+  def pow(line: LogLine, v: BigDecimal): LogLine =
     LogLine(line.ax.map { case (x, a) => x -> a * v })
 
   /*
@@ -53,16 +53,18 @@ private[compute] object LogLineOps {
       (n * (n + 1)) / 2
     }
 
-    val initial = (List.empty[(NonConstant, Double)], Option.empty[Line])
+    val initial = (List.empty[(NonConstant, BigDecimal)], Option.empty[Line])
     val (factors, terms) = line.ax.foldLeft(initial) {
-      case ((f, None), (l: Line, 1.0)) if (nTerms(l) < DistributeToMaxTerms) =>
+      case ((f, None), (l: Line, Real.BigOne))
+          if (nTerms(l) < DistributeToMaxTerms) =>
         (f, Some(l))
-      case ((f, Some(t)), (l: Line, 1.0))
+      case ((f, Some(t)), (l: Line, Real.BigOne))
           if ((nTerms(t) * nTerms(l)) < DistributeToMaxTerms) =>
         (f, Some(LineOps.multiply(t, l)))
-      case ((f, None), (l: Line, 2.0)) if (nTerms2(l) < DistributeToMaxTerms) =>
+      case ((f, None), (l: Line, Real.BigTwo))
+          if (nTerms2(l) < DistributeToMaxTerms) =>
         (f, Some(LineOps.multiply(l, l)))
-      case ((f, Some(t)), (l: Line, 2.0))
+      case ((f, Some(t)), (l: Line, Real.BigTwo))
           if (nTerms(t) * nTerms2(l) < DistributeToMaxTerms) =>
         (f, Some(LineOps.multiply(t, LineOps.multiply(l, l))))
       case ((f, opt), xa) =>
@@ -75,9 +77,11 @@ private[compute] object LogLineOps {
       else {
         val ll = LogLine(factors.toMap)
         val (newAx, newB) =
-          l.ax.foldLeft((Map[NonConstant, Double](ll -> l.b), 0.0)) {
+          l.ax.foldLeft((Map[NonConstant, BigDecimal](ll -> l.b), Real.BigZero)) {
             case ((nAx, nB), (x, a)) =>
               multiply(ll, LogLine(x)) match {
+                case Infinity | NegInfinity =>
+                  ??? //I think this should never happen
                 case Constant(v)     => (nAx, nB + v * a)
                 case nc: NonConstant => (LineOps.merge(nAx, Map(nc -> a)), nB)
               }
@@ -98,17 +102,15 @@ private[compute] object LogLineOps {
   if they are all integers; otherwise, give up and just pick 1. (We don't
   want a fractional k since non-integer exponents are presumed to be expensive.)
    */
-  def factor(line: LogLine): (LogLine, Double) = {
+  def factor(line: LogLine): (LogLine, Int) = {
     val exponents = line.ax.values.toList
     val k =
-      if (exponents.forall { x =>
-            x % 1 == 0.0
-          })
+      if (exponents.forall(_.isValidInt))
         exponents.map(_.toInt).reduce(gcd)
       else
         1
 
-    (pow(line, 1.0 / k), k.toDouble)
+    (pow(line, Real.BigOne / k), k)
   }
 
   @tailrec

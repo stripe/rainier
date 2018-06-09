@@ -6,11 +6,13 @@ private[compute] object RealOps {
 
   def unary(original: Real, op: UnaryOp): Real =
     original match {
+      case Infinity    => Infinity
+      case NegInfinity => NegInfinity
       case Constant(value) =>
         op match {
-          case ExpOp => Constant(Math.exp(value))
-          case LogOp => Constant(Math.log(value))
-          case AbsOp => Constant(Math.abs(value))
+          case ExpOp => Real(Math.exp(value.toDouble))
+          case LogOp => Real(Math.log(value.toDouble))
+          case AbsOp => Real(Math.abs(value.toDouble))
         }
       case nc: NonConstant =>
         val opt = (op, nc) match {
@@ -27,9 +29,17 @@ private[compute] object RealOps {
 
   def add(left: Real, right: Real): Real =
     (left, right) match {
-      case (_, Constant(0.0))             => left
-      case (Constant(0.0), _)             => right
-      case (Constant(x), Constant(y))     => Constant(x + y)
+      case (Infinity, NegInfinity) =>
+        throw new ArithmeticException("Cannot add +inf and -inf")
+      case (NegInfinity, Infinity) =>
+        throw new ArithmeticException("Cannot add +inf and -inf")
+      case (Infinity, _)                  => Infinity
+      case (_, Infinity)                  => Infinity
+      case (NegInfinity, _)               => NegInfinity
+      case (_, NegInfinity)               => NegInfinity
+      case (_, Constant(Real.BigZero))    => left
+      case (Constant(Real.BigZero), _)    => right
+      case (Constant(x), Constant(y))     => Real(x + y)
       case (Constant(x), nc: NonConstant) => LineOps.translate(Line(nc), x)
       case (nc: NonConstant, Constant(x)) => LineOps.translate(Line(nc), x)
       case (nc1: NonConstant, nc2: NonConstant) =>
@@ -38,22 +48,47 @@ private[compute] object RealOps {
 
   def multiply(left: Real, right: Real): Real =
     (left, right) match {
-      case (_, Constant(0.0))             => Real.zero
-      case (Constant(0.0), _)             => Real.zero
-      case (_, Constant(1.0))             => left
-      case (Constant(1.0), _)             => right
-      case (Constant(x), Constant(y))     => Constant(x * y)
+      case (NegInfinity, NegInfinity) => Infinity
+      case (NegInfinity, Constant(Real.BigZero)) =>
+        throw new ArithmeticException("Cannot multiply -inf by zero")
+      case (Infinity, Constant(Real.BigZero)) =>
+        throw new ArithmeticException("Cannot multiply +inf by zero")
+      case (Constant(Real.BigZero), NegInfinity) =>
+        throw new ArithmeticException("Cannot multiply -inf by zero")
+      case (Constant(Real.BigZero), Infinity) =>
+        throw new ArithmeticException("Cannot multiply +inf by zero")
+      case (NegInfinity, r)               => If(r > 0, NegInfinity, Infinity)
+      case (r, NegInfinity)               => If(r > 0, NegInfinity, Infinity)
+      case (Infinity, r)                  => If(r > 0, Infinity, NegInfinity)
+      case (r, Infinity)                  => If(r > 0, Infinity, NegInfinity)
+      case (_, Constant(Real.BigZero))    => Real.zero
+      case (Constant(Real.BigZero), _)    => Real.zero
+      case (_, Constant(Real.BigOne))     => left
+      case (Constant(Real.BigOne), _)     => right
+      case (Constant(x), Constant(y))     => Real(x * y)
       case (Constant(x), nc: NonConstant) => LineOps.scale(Line(nc), x)
       case (nc: NonConstant, Constant(x)) => LineOps.scale(Line(nc), x)
       case (nc1: NonConstant, nc2: NonConstant) =>
         LogLineOps.multiply(LogLine(nc1), LogLine(nc2))
     }
 
-  def pow(original: Real, exponent: Double): Real =
+  def pow(original: Real, exponent: BigDecimal): Real =
     (original, exponent) match {
-      case (Constant(v), _) => Constant(Math.pow(v, exponent))
-      case (_, 0.0)         => Real.one
-      case (_, 1.0)         => original
+      case (_, Real.BigZero) => Real.one
+      case (_, Real.BigOne)  => original
+      case (Infinity, _) =>
+        if (exponent < Real.BigZero)
+          Real.zero
+        else
+          Infinity
+      case (NegInfinity, _) =>
+        if (exponent < Real.BigZero)
+          Real.zero
+        else if (exponent.isWhole && exponent.toInt % 2 == 1)
+          NegInfinity
+        else
+          Infinity
+      case (Constant(v), _) => Real(pow(v, exponent))
       case (l: Line, _) =>
         LineOps.pow(l, exponent).getOrElse {
           LogLineOps.pow(LogLine(l), exponent)
@@ -61,6 +96,12 @@ private[compute] object RealOps {
       case (nc: NonConstant, _) =>
         LogLineOps.pow(LogLine(nc), exponent)
     }
+
+  def pow(a: BigDecimal, b: BigDecimal): BigDecimal =
+    if (b.isValidInt)
+      a.pow(b.toInt)
+    else
+      BigDecimal(Math.pow(a.toDouble, b.toDouble))
 
   def isPositive(real: Real): Real =
     If(real, nonZeroIsPositive(real), Real.zero)
@@ -78,11 +119,11 @@ private[compute] object RealOps {
       if (!seen.contains(r)) {
         seen += r
         r match {
-          case Constant(_) => ()
-          case v: Variable => vars = v :: vars
-          case u: Unary    => loop(u.original)
-          case l: Line     => l.ax.keys.foreach(loop)
-          case l: LogLine  => l.ax.keys.foreach(loop)
+          case Constant(_) | Infinity | NegInfinity => ()
+          case v: Variable                          => vars = v :: vars
+          case u: Unary                             => loop(u.original)
+          case l: Line                              => l.ax.keys.foreach(loop)
+          case l: LogLine                           => l.ax.keys.foreach(loop)
           case If(test, nz, z) =>
             loop(test)
             loop(nz)

@@ -12,12 +12,17 @@ class Evaluator(var cache: Map[Real, Double]) extends Numeric[Real] {
   }
 
   private def eval(real: Real): Double = real match {
-    case l: Line => l.ax.map { case (r, d) => toDouble(r) * d }.sum + l.b
+    case Infinity        => 1.0 / 0.0
+    case NegInfinity     => -1.0 / 0.0
+    case Constant(value) => value.toDouble
+    case l: Line =>
+      l.ax.map { case (r, d) => toDouble(r) * d.toDouble }.sum + l.b.toDouble
     case l: LogLine =>
-      l.ax.map { case (r, d) => Math.pow(toDouble(r), d) }.reduce(_ * _)
+      l.ax
+        .map { case (r, d) => Math.pow(toDouble(r), d.toDouble) }
+        .reduce(_ * _)
     case Unary(original, op) =>
       eval(RealOps.unary(Constant(toDouble(original)), op))
-    case Constant(value) => value
     case If(test, nz, z) =>
       if (toDouble(test) == 0.0)
         toDouble(z)
