@@ -147,7 +147,7 @@ object Exponential {
 object Beta {
   def apply(a: Real, b: Real): Continuous = new Continuous {
     def realLogDensity(real: Real): Real =
-      If(real < 0, Real.negInfinity, If(real > 1, Real.negInfinity, betaDensity(real)))
+      Uniform.standard.realLogDensity(real) + betaDensity(real)
 
     def param: RandomVariable[Real] =
       Uniform.standard.param.flatMap { u =>
