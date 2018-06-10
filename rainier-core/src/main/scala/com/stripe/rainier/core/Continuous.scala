@@ -161,11 +161,11 @@ object Beta {
       RandomVariable(logistic, density)
     }
 
-    def generator: Generator[Double] = Generator.require(Set(a, b)) { (r, n) =>
-      val z1 = Gamma(a, 1).generator.get(r, n)
-      val z2 = Gamma(b, 1).generator.get(r, n)
-      z1 / (z1 + z2)
-    }
+    def generator: Generator[Double] =
+      Gamma(a, 1).generator.zip(Gamma(b, 1).generator).map {
+        case (z1, z2) =>
+          z1 / (z1 + z2)
+      }
   }
 }
 
