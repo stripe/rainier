@@ -148,10 +148,10 @@ object Beta {
   def apply(a: Real, b: Real): Continuous = new Continuous {
     def realLogDensity(p: Real): Real =
       If(p < 0,
-        Real.zero.log,
-        If(p > 1,
-          Real.zero.log,
-          (a - 1) * p.log + (b - 1) * (1 - p).log - Combinatrics.beta(a, b)))
+         Real.zero.log,
+         If(p > 1,
+            Real.zero.log,
+            (a - 1) * p.log + (b - 1) * (1 - p).log - Combinatrics.beta(a, b)))
 
     def param: RandomVariable[Real] = {
       val x = new Variable
