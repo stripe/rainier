@@ -142,6 +142,30 @@ object Exponential {
 }
 
 /**
+  * A Beta distribution with expectation `a/(a + b)` and variance `ab/((a + b)^2 (1 + a + b))`.
+  */
+object Beta {
+  def apply(a: Real, b: Real): Continuous = new Continuous {
+    def realLogDensity(real: Real): Real =
+      Uniform.standard.realLogDensity(real) + betaDensity(real)
+
+    def param: RandomVariable[Real] =
+      Uniform.standard.param.flatMap { u =>
+        RandomVariable(u, betaDensity(u))
+      }
+
+    val generator: Generator[Double] =
+      Gamma(a, 1).generator.zip(Gamma(b, 1).generator).map {
+        case (z1, z2) =>
+          z1 / (z1 + z2)
+      }
+
+    private def betaDensity(u: Real): Real =
+      (a - 1) * u.log + (b - 1) * (1 - u).log - Combinatrics.beta(a, b)
+  }
+}
+
+/**
   * A LogNormal distribution representing the exponential of a Gaussian random variable with expectation `location` and standard deviation `scale`. It therefore has expectation `exp(location + scale*scale/2)`.
   */
 object LogNormal {

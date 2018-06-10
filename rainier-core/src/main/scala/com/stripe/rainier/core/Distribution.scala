@@ -22,8 +22,13 @@ trait Distribution[T] extends Likelihood[T] { self =>
   */
 object Combinatorics {
   def gamma(z: Real): Real = {
-    val w = z + (Real.one / ((12 * z) - (Real.one / (10 * z))))
-    (Real(Math.PI * 2).log / 2) - (z.log / 2) + (z * (w.log - 1))
+    // This is Gergő Nemes' approximation to the log Gamma function, plus a trick taken from Boost's lgamma function:
+    // since the Nemes approximation isn't very accurate for small z, we instead calculate LogGamma(z + 1) - Log(z).
+    // See https://en.wikipedia.org/wiki/Stirling%27s_approximation and
+    // https://www.boost.org/doc/libs/1_50_0/libs/math/doc/sf_and_dist/html/math_toolkit/special/sf_gamma/lgamma.html.
+    val v = z + 1
+    val w = v + (Real.one / ((12 * v) - (Real.one / (10 * v))))
+    (Real(Math.PI * 2).log / 2) - (v.log / 2) + (v * (w.log - 1)) - z.log
   }
 
   def beta(a: Real, b: Real): Real =
