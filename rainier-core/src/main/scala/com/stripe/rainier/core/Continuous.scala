@@ -146,26 +146,22 @@ object Exponential {
   */
 object Beta {
   def apply(a: Real, b: Real): Continuous = new Continuous {
-    def realLogDensity(p: Real): Real =
-      If(p < 0,
-         Real.negInfinity,
-         If(p > 1,
-            Real.negInfinity,
-            (a - 1) * p.log + (b - 1) * (1 - p).log - Combinatrics.beta(a, b)))
+    def realLogDensity(real: Real): Real =
+      If(real < 0, Real.negInfinity, If(real > 1, Real.negInfinity, betaDensity(real)))
 
-    def param: RandomVariable[Real] = {
-      val x = new Variable
-      val logistic = Real.one / (Real.one + (x * -1).exp)
-      val logisticJacobian = logistic * (1 - logistic)
-      val density = realLogDensity(logistic) + logisticJacobian.log
-      RandomVariable(logistic, density)
-    }
+    def param: RandomVariable[Real] =
+      Uniform.standard.param.flatMap { u =>
+        RandomVariable(u, betaDensity(u))
+      }
 
     val generator: Generator[Double] =
       Gamma(a, 1).generator.zip(Gamma(b, 1).generator).map {
         case (z1, z2) =>
           z1 / (z1 + z2)
       }
+
+    private def betaDensity(u: Real): Real =
+      (a - 1) * u.log + (b - 1) * (1 - u).log - Combinatrics.beta(a, b)
   }
 }
 
