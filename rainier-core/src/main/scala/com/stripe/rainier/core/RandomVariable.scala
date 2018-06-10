@@ -42,9 +42,20 @@ class RandomVariable[+T](val value: T,
     sampleable.get(value)(rng, num)
 
   def sample[V]()(implicit rng: RNG, sampleable: Sampleable[T, V]): List[V] =
-    sample(Sampler.Default.sampler,
-           Sampler.Default.warmupIterations,
-           Sampler.Default.iterations)
+    sample(Sampler.Default.iterations)
+
+  def sample[V](iterations: Int)(implicit rng: RNG,
+                                 sampleable: Sampleable[T, V]): List[V] =
+    if (density.variables.isEmpty) {
+      val fn = sampleable.prepare(value, density.variables)
+      1.to(iterations).toList.map { _ =>
+        fn(Array.empty[Double])
+      }
+    } else {
+      sample(Sampler.Default.sampler,
+             Sampler.Default.warmupIterations,
+             iterations)
+    }
 
   def sample[V](sampler: Sampler,
                 warmupIterations: Int,
