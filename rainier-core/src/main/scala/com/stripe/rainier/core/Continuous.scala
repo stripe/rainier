@@ -161,7 +161,7 @@ object Beta {
       RandomVariable(logistic, density)
     }
 
-    def generator: Generator[Double] =
+    val generator: Generator[Double] =
       Gamma(a, 1).generator.zip(Gamma(b, 1).generator).map {
         case (z1, z2) =>
           z1 / (z1 + z2)
