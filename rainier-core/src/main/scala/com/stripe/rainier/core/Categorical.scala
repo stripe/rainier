@@ -83,9 +83,9 @@ final case class Multinomial[T](pmf: Map[T, Real], k: Int)
     }
 
   def logDensity(t: Map[T, Int]): Real =
-    Combinatrics.factorial(k) + Real.sum(t.toList.map {
+    Combinatorics.factorial(k) + Real.sum(t.toList.map {
       case (v, i) =>
-        i * pmf.getOrElse(v, Real.zero).log - Combinatrics.factorial(i)
+        i * pmf.getOrElse(v, Real.zero).log - Combinatorics.factorial(i)
     })
 }
 
