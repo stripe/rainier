@@ -21,11 +21,10 @@ trait Generator[T] { self =>
     def get(implicit r: RNG, n: Numeric[Real]): U = fn(self.get).get
   }
 
-  def zip[U](other: Generator[U]): Generator[(T, U)] =
-    for {
-      t <- this
-      u <- other
-    } yield (t, u)
+  def zip[U](other: Generator[U]): Generator[(T, U)] = new Generator[(T, U)] {
+    val requirements: Set[Real] = self.requirements ++ other.requirements
+    def get(implicit r: RNG, n: Numeric[Real]): (T, U) = (self.get, other.get)
+  }
 
   def repeat(k: Int): Generator[Seq[T]] = new Generator[Seq[T]] {
     val requirements: Set[Real] = self.requirements
