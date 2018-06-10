@@ -5,7 +5,7 @@ import com.stripe.rainier.sampler._
 import org.scalatest.FunSuite
 
 class ContinuousTest extends FunSuite {
-  implicit val rng: RNG = ScalaRNG(1527721207572L)
+  implicit val rng: RNG = ScalaRNG(1528673302081L)
 
   def check(description: String)(fn: Real => Continuous): Unit = {
     println(description)

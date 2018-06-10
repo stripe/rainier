@@ -161,7 +161,7 @@ object Beta {
       }
 
     private def betaDensity(u: Real): Real =
-      (a - 1) * u.log + (b - 1) * (1 - u).log - Combinatrics.beta(a, b)
+      (a - 1) * u.log + (b - 1) * (1 - u).log - Combinatorics.beta(a, b)
   }
 }
 
