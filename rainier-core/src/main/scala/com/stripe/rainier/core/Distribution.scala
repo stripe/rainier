@@ -20,7 +20,7 @@ trait Distribution[T] extends Likelihood[T] { self =>
 /**
   * Combinatoric functions required for log density calculations. Note that they all return the log of the function described.
   */
-object Combinatrics {
+object Combinatorics {
   def gamma(z: Real): Real = {
     val w = z + (Real.one / ((12 * z) - (Real.one / (10 * z))))
     (Real(Math.PI * 2).log / 2) - (z.log / 2) + (z * (w.log - 1))

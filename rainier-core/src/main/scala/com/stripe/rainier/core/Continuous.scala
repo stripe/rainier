@@ -86,7 +86,7 @@ object Gamma {
     def realLogDensity(real: Real): Real =
       If(real > 0,
          (shape - 1) * real.log -
-           Combinatrics.gamma(shape) - real,
+           Combinatorics.gamma(shape) - real,
          Real.zero.log)
 
     /*
