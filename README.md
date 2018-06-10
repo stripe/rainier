@@ -5,6 +5,7 @@
 [![Build status](https://img.shields.io/travis/stripe/rainier/master.svg)](https://travis-ci.org/stripe/rainier)
 [![Coverage status](https://img.shields.io/codecov/c/github/stripe/rainier/master.svg)](https://codecov.io/github/stripe/rainier)
 [![Maven Central](https://img.shields.io/maven-central/v/com.stripe/rainier-core_2.12.svg)](https://maven-badges.herokuapp.com/maven-central/com.stripe/rainier_2.12)
+[![Gitter chat](https://badges.gitter.im/com_stripe_rainier/Lobby.png)](https://gitter.im/com_stripe_rainier/Lobby)
 
 Rainier provides an idiomatic, high-performance functional Scala API for bayesian inference via Markov Chain Monte Carlo.
 
