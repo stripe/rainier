@@ -88,6 +88,13 @@ class RandomVariable[+T](val value: T,
 
   val density: Real =
     Real.sum(densities.toList.map(_.toReal))
+
+  //this is really just here to allow destructuring in for{}
+  def withFilter(fn: T => Boolean): RandomVariable[T] =
+    if (fn(value))
+      this
+    else
+      RandomVariable(value, Real.zero.log)
 }
 
 /**
