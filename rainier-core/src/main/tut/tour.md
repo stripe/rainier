@@ -18,7 +18,7 @@ val model = for {
     slope <- LogNormal(0,1).param
     intercept <- LogNormal(0,1).param
     regression <- Predictor.from{x: Int => Poisson(x*slope + intercept)}.fit(data)
-} yield regression
+} yield regression.predict(21)
 ```
 
 ## Distribution
@@ -67,7 +67,7 @@ For now, though, let's explore what we can do just with priors. `RandomVariable`
 
 ```tut
 val e_x = x.map(_.exp)
-plot1D(ex.sample())
+plot1D(e_x.sample())
 ```
 
 Or we can create another `Normal` parameter and zip the two together to produce a 2D gaussian. Since there's nothing relating these two parameters to each other, you can see in the plot that they're completely independent.
@@ -148,6 +148,8 @@ Let's plot the results!
 plot1D(rate.sample())
 ```
 
+Looks like our daily rate is probably somewhere between 6 and 9, which corresponds well to the steep 3x dropoff we saw before between 9 and 10.
+
 ## A mathematical digression
 
 Please feel free to skip this section if it's not helping you.
@@ -156,7 +158,7 @@ One thing that sometimes confuses people at this stage is, what is the line with
 
 They key is to remember that a `RandomVariable` has two parts: a `value` and a `density`. Mathematically, you should think of these as two different *functions* of the same latent parameter space `Q`. That is, you should think of `value` as being some deterministic function `f = F(q)`, and `density` as being the (unnormalized) probability function `P(Q=q)`.
 
- When we `map` or `flatMap` a `RandomVariable` (whether explicitly or inside a `for` construct), what we're working with (like, the `r` above) is the `value` object. And we can see in the definition of `for` that it's just passing that value object through to the end; it should end up with the same `value` function as the prior, `e_x`. And indeed, it does:
+ When we `map` or `flatMap` a `RandomVariable` (whether explicitly or inside a `for` construct), the object we see and work with (like, the `r` above) is the `value` object. And we can see in the definition of `rate` that it's just passing that value object through to the end; it should end up with the same `value` function as the prior, `e_x`. And indeed, it does:
 
 ```tut
 e_x.value == rate.value
@@ -164,7 +166,7 @@ e_x.value == rate.value
 
 So, for the same input in the latent parameter space, `e_x` and `rate` will produce the same output.
 
-However, when we `flatMap`, behind the scenes we're also working with the `density` object. Specifically, when we start with one `RandomVariable` (like `e_x`), and use `flatMap` to flatten another `RandomVariable` into it (like the result of `fit`), the resulting `RandomVariable` (like `rate`) will have a `density` that *combines* the densities of the other two `RandomVariable`s. Put another way, `flatMap` is the bayesian update operation: you're putting in a prior, coming up with a likelihood, and getting back the posterior. And if we look at the densities, we'll see that they are indeed different:
+However, when we `flatMap`, behind the scenes we're also working with the `density` object. Specifically, when we start with one `RandomVariable` (like `e_x`), and use `flatMap` to flatten another `RandomVariable` into it (like the result of `fit`), the resulting `RandomVariable` (like `rate`) will have a `density` that *combines* the densities of the other two `RandomVariable`s. Put another way, `flatMap` is the bayesian update operation: you're putting in a prior, coming up with a likelihood, and getting back the posterior. That's what the `fit` line is doing: constructing a likelihood function that we can incorporate into our posterior density. And if we look at the densities, we'll see that they are indeed different:
 
 ```tut
 e_x.density == rate.density
@@ -223,7 +225,7 @@ Plotting the data gives a clear sense of the trend:
 plot2D(data)
 ```
 
-How should we model this? We'll need to know what the rate was on day 0 (the intercept), as well as how fast the rate increases each day (the slope). We know they're both positive and not too large, so let's keep using LogNormal priors.
+How should we model this? We'll need to know what the rate was on day 0 (the intercept), as well as how fast the rate increases each day (the slope). We know they're both positive and not too large, so let's keep using log-normal priors. (This time we can just use the builtin `LogNormal` instead of deriving it ourselves).
 
 ```tut
 val prior = for {
@@ -234,44 +236,38 @@ val prior = for {
 
 Now, for any given day `i`, we want to check the number of sales against `Poisson(intercept + slope*i)`. We could write some kind of recursive flatMap to build and fit each of these different distribution objects in turn, but this is a common enough pattern that Rainier already has something built in for it: `Predictor`. `Predictor` is not a `Distribution`, but instead wraps a function from `X => Distribution[Y]` for some `(X,Y)`; you can use this any time you have a dependent variable of type `Y` that you're modeling with some independent variables jointly represented as `X`. 
 
-Like `Distribution`, `Predictor` implements `fit` (in fact, they both extend the `Likelihood` trait which provides that method). So we can create and use it like this:
+Like `Distribution`, `Predictor` implements `fit` (in fact, they both extend the `Likelihood` trait which provides that method). So we can extend the previous model to create and use a `Predictor` like this:
 
 ```tut
-val regr = prior.flatMap {case (slope, intercept) =>
-  Predictor.from{i: Int => Poisson(intercept + slope*i)}.fit(data) 
-}
+val regr = for {
+    (slope, intercept) <- prior
+    predictor <- Predictor.from{i: Int =>
+                    Poisson(intercept + slope*i)
+                }.fit(data) 
+} yield (slope, intercept)
+```
+As before, we're starting out by just sampling the parameters. By plotting them, we can see that the model's confidence in the intercept, in particular, is pretty low: although it's most likely to be somewhere around 8, it could be anywhere from 3 to 13 or even higher. Second, as you'd hope, the two parameters are anti-correlated: a smaller intercept would imply a higher slope, and vice versa.
+
+```tut
+plot2D(regr.sample())
 ```
 
-As before, the return value from `fit` will be a `Generator` that tries to recreate the input data. In this case, it will keep the `X` the same but generate a new `Y` for each data point. If we flatten all of the samples out, we can plot them and compare to the observed data to get a sense of whether our model is any good.
+Alternatively, as in the earlier example, we could try to predict what will happen tomorrow. This is similar to calling `poisson.generator` before, but this time, we use the `predict` method on `Predictor`, which takes the covariate (the day, in this case), and returns a `Generator` for the dependent variable (the number of sales). Putting it all together, it looks like this:
 
 ```tut
-plot2D(regr.sample().flatten)
-```
-
-Although there's a lot of uncertainty, you can see the dense line down the middle matches fairly closely to the observed data, so our model isn't totally off-base. We can also learn something by plotting the slope vs the intercept. (Rather than redefining everything as we did in the previous section, we'll use `zip` to sneak the parameters back in to the fully-specified model.)
-
-```tut
-val regr2 = regr.zip(prior).map(_._2)
-plot2D(regr2.sample())
-```
-
-There are two things to see here. First, the tails are very wide: although there's the greatest density with a small slope and intercept, the model can't rule out that one of them is quite large. Second, as you'd hope, the two parameters are anti-correlated: a large slope necessarily implies a small intercept, and vice-versa.
-
-Alternatively, as before, we could try to predict what will happen tomorrow. Let's recreate the whole model again this time for maximum clarity, and ask the predictor to generate a value for day 21 (having given it days 0 through 20).
-
-```tut
-val regr3 = for {
+val regr2 = for {
     slope <- LogNormal(0,1).param
     intercept <- LogNormal(0,1).param
-    predictor = Predictor.from{i: Int => Poisson(intercept + slope*i)}
-    _ <- predictor.fit(data)
+    predictor <- Predictor.from{i: Int => 
+                    Poisson(intercept + slope*i)
+                }.fit(data)
 } yield predictor.predict(21)
 ```
 
-Plotting this is a bit ugly because of binning artifacts, but it's interesting to see the secondary mode down around 38, which represents the small chance that there was a very high intercept but basically no slope, and all the variation in the original data was just noise.
+Plotting this gives us a prediction which incorporates both the natural noise of a poisson distribution and our uncertainty about its underlying parameterization.
 
 ```tut
-plot1D(regr3.sample())
+plot1D(regr2.sample())
 ```
 
 Finally, let's close with a small and somewhat contrived example of a hierarchical model, where we have two separate regressions that share a parameter. For the sake of the example, let's assume that we have a second sales dataset, much like the first, where we know they had the same rate at the start of the observations, but may have grown at different rates - so their intercepts will be equal but their slopes will not. Here's the data:
@@ -283,19 +279,19 @@ val data2 = List((0,9), (1,2), (2,3), (3,17), (4,21), (5,12), (6,21), (7,19), (8
 It's straightforward to set up two separate slopes, two separate predictor, but the same interecept. We'll still just sample the first slope so we can compare to the previous model.
 
 ```tut
-val regr4 = for {
+val regr3 = for {
     slope1 <- LogNormal(0,1).param
     slope2 <- LogNormal(0,1).param
     intercept <- LogNormal(0,1).param
-    _ <- Predictor.from{i: Int => Poisson(intercept + slope1*i)}.fit(data)
-    _ <- Predictor.from{i: Int => Poisson(intercept + slope2*i)}.fit(data2)
+    pred1 <- Predictor.from{i: Int => Poisson(intercept + slope1*i)}.fit(data)
+    pred2 <- Predictor.from{i: Int => Poisson(intercept + slope2*i)}.fit(data2)
 } yield (slope1, intercept)
 ```
 
-Plotting slope vs intercept now, we can see that, even though these are two separate regressions, we get tighter bounds than before by letting the new data influence the shared parameter:
+Plotting slope vs intercept now, we can see that, even though these are two separate regressions, we get tighter bounds than before by letting the new data influence the shared parameter. It makes sense that we'd get more confidence on the intercept, since we have two different time series to learn from now; but because of the anti-correlation, that also leads to somewhat more confidence than before on the `slope1` parameter as well.
 
 ```tut
-plot2D(regr4.sample())
+plot2D(regr3.sample())
 ```
 
 ## Learning More
