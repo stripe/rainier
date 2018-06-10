@@ -23,6 +23,12 @@ private object Gradient {
           case _: Constant            => ()
           case Infinity | NegInfinity => ()
 
+          case p: Pow =>
+            diff(p.base).register(PowDiff(p, diff(p), false))
+            diff(p.exponent).register(PowDiff(p, diff(p), true))
+            visit(p.base)
+            visit(p.exponent)
+
           case u: Unary =>
             diff(u.original).register(UnaryDiff(u, diff(u)))
             visit(u.original)
@@ -97,6 +103,18 @@ private object Gradient {
         If(child.test, gradient.toReal, Real.zero)
       else
         If(child.test, Real.zero, gradient.toReal)
+  }
+
+  private final case class PowDiff(child: Pow,
+                                   gradient: Diff,
+                                   isExponent: Boolean)
+      extends Diff {
+
+    def toReal: Real =
+      if (isExponent)
+        gradient.toReal * child * If(child.base, child.base, Real.one).log
+      else
+        gradient.toReal * child.exponent * child.base.pow(child.exponent - 1)
   }
 
   private final case class LogLineDiff(child: LogLine,

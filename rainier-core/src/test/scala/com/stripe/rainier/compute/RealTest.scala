@@ -11,11 +11,12 @@ class RealTest extends FunSuite {
       val c = Compiler.default.compile(List(x), result)
       List(1.0, 0.0, -1.0, 2.0, -2.0, 0.5, -0.5).foreach { n =>
         val constant = Try { fn(Constant(n)) } match {
-          case Success(Infinity)               => 1.0 / 0.0
-          case Success(NegInfinity)            => -1.0 / 0.0
-          case Success(Constant(bd))           => bd.toDouble
-          case Failure(_: ArithmeticException) => 0.0 / 0.0
-          case _                               => sys.error("Non-constant value")
+          case Success(Infinity)                 => 1.0 / 0.0
+          case Success(NegInfinity)              => -1.0 / 0.0
+          case Success(Constant(bd))             => bd.toDouble
+          case Failure(_: ArithmeticException)   => 0.0 / 0.0
+          case Failure(_: NumberFormatException) => 0.0 / 0.0
+          case x                                 => sys.error("Non-constant value " + x)
         }
         val eval = new Evaluator(Map(x -> n))
         val withVar = eval.toDouble(result)
@@ -86,5 +87,9 @@ class RealTest extends FunSuite {
       case (a, e) =>
         (a + x.pow(e)) * x
     }
+  }
+
+  run("pow") { x =>
+    x.pow(x)
   }
 }
