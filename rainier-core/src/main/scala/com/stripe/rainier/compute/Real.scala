@@ -152,7 +152,7 @@ final case class If private (test: NonConstant,
     extends NonConstant
 
 object If {
-  def apply(test: Real, whenNonZero: Real, whenZero: Real): Real =
+  def apply(test: Real, whenNonZero: => Real, whenZero: => Real): Real =
     test match {
       case Constant(Real.BigZero)               => whenZero
       case Constant(_) | Infinity | NegInfinity => whenNonZero
