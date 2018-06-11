@@ -46,16 +46,9 @@ class RandomVariable[+T](val value: T,
 
   def sample[V](iterations: Int)(implicit rng: RNG,
                                  sampleable: Sampleable[T, V]): List[V] =
-    if (density.variables.isEmpty) {
-      val fn = sampleable.prepare(value, density.variables)
-      1.to(iterations).toList.map { _ =>
-        fn(Array.empty[Double])
-      }
-    } else {
-      sample(Sampler.Default.sampler,
-             Sampler.Default.warmupIterations,
-             iterations)
-    }
+    sample(Sampler.Default.sampler,
+           Sampler.Default.warmupIterations,
+           iterations)
 
   def sample[V](sampler: Sampler,
                 warmupIterations: Int,
@@ -63,8 +56,7 @@ class RandomVariable[+T](val value: T,
                 keepEvery: Int = 1)(implicit rng: RNG,
                                     sampleable: Sampleable[T, V]): List[V] = {
     val fn = sampleable.prepare(value, density.variables)
-    sampler
-      .sample(density, warmupIterations, iterations, keepEvery)
+    sampleParameters(sampler, warmupIterations, iterations, keepEvery)
       .map { array =>
         fn(array)
       }
@@ -82,8 +74,7 @@ class RandomVariable[+T](val value: T,
     val range = if (parallel) 1.to(chains).par else 1.to(chains)
     val samples =
       range.map { _ =>
-        sampler
-          .sample(density, warmupIterations, iterations, keepEvery)
+        sampleParameters(sampler, warmupIterations, iterations, keepEvery)
           .map { array =>
             (array, fn(array))
           }
@@ -96,6 +87,17 @@ class RandomVariable[+T](val value: T,
     })
     (allSamples, diagnostics)
   }
+
+  def sampleParameters(sampler: Sampler,
+                       warmupIterations: Int,
+                       iterations: Int,
+                       keepEvery: Int)(implicit rng: RNG): List[Array[Double]] =
+    if (density.variables.isEmpty)
+      1.to(iterations / keepEvery).toList.map { _ =>
+        Array.empty[Double]
+      } else
+      sampler
+        .sample(density, warmupIterations, iterations, keepEvery)
 
   val density: Real =
     Real.sum(densities.toList.map(_.toReal))
