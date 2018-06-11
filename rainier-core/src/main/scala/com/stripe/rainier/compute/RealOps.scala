@@ -90,6 +90,14 @@ private[compute] object RealOps {
         LogLineOps.multiply(LogLine(nc1), LogLine(nc2))
     }
 
+  def pow(original: Real, exponent: Real): Real =
+    exponent match {
+      case Infinity       => Infinity
+      case NegInfinity    => Real.zero
+      case Constant(e)    => pow(original, e)
+      case e: NonConstant => Pow(original, e)
+    }
+
   def pow(original: Real, exponent: BigDecimal): Real =
     (original, exponent) match {
       case (_, Real.BigZero) => Real.one
@@ -146,6 +154,9 @@ private[compute] object RealOps {
             loop(test)
             loop(nz)
             loop(z)
+          case Pow(base, exponent) =>
+            loop(base)
+            loop(exponent)
         }
       }
 

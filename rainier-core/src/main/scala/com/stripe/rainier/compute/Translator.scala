@@ -20,6 +20,7 @@ private class Translator {
         case i: If               => ifIR(toIR(i.whenNonZero), toIR(i.whenZero), toIR(i.test))
         case l: Line             => lineIR(l)
         case l: LogLine          => logLineIR(l)
+        case Pow(base, exponent) => binaryIR(toIR(base), toIR(exponent), PowOp)
       }
       reals += r -> ir
       ir

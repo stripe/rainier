@@ -22,8 +22,7 @@ sealed trait Real {
   def -(other: Real): Real = this + (other * -1)
   def /(other: Real): Real = this * other.pow(-1)
 
-  def pow[N](exponent: N)(implicit num: Numeric[N]): Real =
-    RealOps.pow(this, num.toDouble(exponent))
+  def pow(exponent: Real): Real = RealOps.pow(this, exponent)
 
   def exp: Real = RealOps.unary(this, ir.ExpOp)
   def log: Real = RealOps.unary(this, ir.LogOp)
@@ -159,6 +158,10 @@ object If {
       case nc: NonConstant                      => new If(nc, whenNonZero, whenZero)
     }
 }
+
+private final case class Pow private (base: Real, exponent: NonConstant)
+    extends NonConstant
+
 /*
 [0] For example, of the following four ways of computing the same result, only the first two will have the most efficient
 representation:
