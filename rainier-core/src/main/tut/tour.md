@@ -18,7 +18,7 @@ val model = for {
     slope <- LogNormal(0,1).param
     intercept <- LogNormal(0,1).param
     regression <- Predictor.from{x: Int => Poisson(x*slope + intercept)}.fit(data)
-} yield regression
+} yield regression.predict(21)
 ```
 
 ## Distribution
@@ -66,8 +66,8 @@ Since the only information we have about `x` so far is its `Normal` prior, this 
 For now, though, let's explore what we can do just with priors. `RandomVariable` has more than just `sample`: you can use the familiar collection methods like `map`, `flatMap`, and `zip` to transform and combine the parameters you create. For example, we can create a log-normal distribution just by mapping over `e^x`:
 
 ```tut
-val ex = x.map(_.exp)
-plot1D(ex.sample())
+val e_x = x.map(_.exp)
+plot1D(e_x.sample())
 ```
 
 Or we can create another `Normal` parameter and zip the two together to produce a 2D gaussian. Since there's nothing relating these two parameters to each other, you can see in the plot that they're completely independent.
@@ -119,10 +119,10 @@ We can use this to find the likelihood ratio of these two hypotheses. Since the 
 val lr = (poisson9.density - poisson10.density).exp
 ```
 
-We can see here that our data is about 3x as likely to have come from a `Poisson(9)` as it is to have come from a `Poisson(10)`. We could keep doing this with a large number of values to build up a sense of the rate distribution, but it would be tedious, and we'd be ignoring any prior we had on the rate. Instead, the right way to do this in Rainier is to make the rate a parameter, and let the library do the hard work of exploring the space. Specifically, we can use `flatMap` to chain the creation of the parameter with the creation and fit of the `Poisson` distribution. Since we want our rate to be a positive number, and expect it to be more likely to be on the small side than the large side, the log-normal parameter we created earlier as `ex` seems like a reasonable choice.
+We can see here that our data is about 3x as likely to have come from a `Poisson(9)` as it is to have come from a `Poisson(10)`. We could keep doing this with a large number of values to build up a sense of the rate distribution, but it would be tedious, and we'd be ignoring any prior we had on the rate. Instead, the right way to do this in Rainier is to make the rate a parameter, and let the library do the hard work of exploring the space. Specifically, we can use `flatMap` to chain the creation of the parameter with the creation and fit of the `Poisson` distribution. Since we want our rate to be a positive number, and expect it to be more likely to be on the small side than the large side, the log-normal parameter we created earlier as `e_x` seems like a reasonable choice.
 
 ```tut
-val poisson: RandomVariable[_] = ex.flatMap{r => Poisson(r).fit(sales)}
+val poisson: RandomVariable[_] = e_x.flatMap{r => Poisson(r).fit(sales)}
 ```
 
 By the way: before, when we looked at `poisson9.density`, the model had no parameters and so we got a constant value back. Now, since the model's density is a function of the parameter value, we get something more opaque back. This is why inspecting `density` is not normally useful.
@@ -131,37 +131,63 @@ By the way: before, when we looked at `poisson9.density`, the model had no param
 poisson.density
 ```
 
-Instead, we can sample the quantity we're actually interested in. Let's recreate this model from the start, with the slightly friendlier `for` syntax:
+Instead, we can sample the quantity we're actually interested in. To start with, let's try to sample the rate parameter of the Poisson, conditioned by our observed data. Here's almost the same thing we had above, recreated with the slightly friendlier `for` syntax, and yielding the `r` parameter at the end:
 
 ```tut
 val rate = for {
-    x <- Normal(0,1).param
-    ex = x.exp
-    _ <- Poisson(ex).fit(sales)
-} yield ex
+    r <- e_x
+    poisson <- Poisson(r).fit(sales)
+} yield r
 ```
 
-Here we're creating our log-normal prior, using it as the rate on a Poisson distribution, fitting that distribution to the data, and then outputting the rate. Let's plot it!
+This is our first "full" model: we have a parameter with a log-normal prior, bundled into the `RandomVariable` named `e_x`; we use that parameter to initialize a `Poisson` noise distribution which we fit to our observations; and at the end, we output the same parameter (referenced by `r`) as the quantity we're interested in sampling from the posterior.
+
+Let's plot the results!
 
 ```tut
 plot1D(rate.sample())
 ```
 
+Looks like our daily rate is probably somewhere between 6 and 9, which corresponds well to the steep 3x dropoff we saw before between 9 and 10.
+
+## A mathematical digression
+
+Please feel free to skip this section if it's not helping you.
+
+One thing that sometimes confuses people at this stage is, what is the line with `fit` actually doing? It seems to return a `poisson` object that we just ignore. (That object, by the way, is just the `Poisson(r)` distribution object that we used to do the `fit`.) And yet the line is clearly doing something, because sampling from `rate` gives quite different results from just sampling directly from `e_x`.
+
+They key is to remember that a `RandomVariable` has two parts: a `value` and a `density`. Mathematically, you should think of these as two different *functions* of the same latent parameter space `Q`. That is, you should think of `value` as being some deterministic function `f = F(q)`, and `density` as being the (unnormalized) probability function `P(Q=q)`.
+
+ When we `map` or `flatMap` a `RandomVariable` (whether explicitly or inside a `for` construct), the object we see and work with (like, the `r` above) is the `value` object. And we can see in the definition of `rate` that it's just passing that value object through to the end; it should end up with the same `value` function as the prior, `e_x`. And indeed, it does:
+
+```tut
+e_x.value == rate.value
+```
+
+So, for the same input in the latent parameter space, `e_x` and `rate` will produce the same output.
+
+However, when we `flatMap`, behind the scenes we're also working with the `density` object. Specifically, when we start with one `RandomVariable` (like `e_x`), and use `flatMap` to flatten another `RandomVariable` into it (like the result of `fit`), the resulting `RandomVariable` (like `rate`) will have a `density` that *combines* the densities of the other two `RandomVariable`s. Put another way, `flatMap` is the bayesian update operation: you're putting in a prior, coming up with a likelihood, and getting back the posterior. That's what the `fit` line is doing: constructing a likelihood function that we can incorporate into our posterior density. And if we look at the densities, we'll see that they are indeed different:
+
+```tut
+e_x.density == rate.density
+```
+
+So although `F(q)` has not changed, `P(Q=q)` *has* changed; which means that `P(F(q)=f)` has also changed, and it's that change which we're observing when we see that sampling values of `F` produces different results in the two cases.
+
 ## `generator` and `Generator`
 
-The rate parameter is nice to have, but what we originally said is that we wanted to predict how many sales to expect tomorrow. For that we need to plug the rate back into a Poisson distribution, but in this case, instead of fitting data *to* that distribution, we want to generate data *from* that distribution. You might think that we could do this with `param`, that is, with something like this:
+Sampling from the rate parameter is nice, but what we originally said is that we wanted to predict how many sales to expect tomorrow. As we just discussed in the digression, we got a `poisson` value back from `fit` but didn't do anything with it. This value is just the distribution we used for the `fit`, that is, `Poisson(r)`. Now, instead of fitting data *to* that distribution, we want to generate data *from* that distribution. One idea might be to do that with `param`, that is, with something like this:
 
 ```scala
 //This code won't compile
 for {
-    x <- Normal(0,1).param
-    ex = x.exp
-    _ <- Poisson(ex).fit(sales)
-    prediction <- Poisson(ex).param
+    r <- e_x
+    poisson <- Poisson(r).fit(sales)
+    prediction <- poisson.param
 } yield prediction
 ```
 
-This has a couple of problems. First, it seems conceptually wrong to think of a prediction as a parameter: there is no true value of "how many sales will we have tomorrow" for us to infer, and we have no observational data that can influence our belief about its value; once we've derived the rate parameter, the prediction is purely generative. Second, as a practical matter, Rainier only supports continuous parameters, and here we need to generate discrete values, so `Poisson(ex).param` won't, in fact, compile.
+This has a couple of problems. First, it seems conceptually wrong to think of a prediction as a parameter: there is no true value of "how many sales will we have tomorrow" for us to infer, and we have no observational data that can influence our belief about its value; once we've derived the rate parameter, the prediction is purely generative. Second, as a practical matter, Rainier only supports continuous parameters, and here we need to generate discrete values, so `poisson.param` won't, in fact, compile.
 
 Luckily, all distributions, continious or discrete, implement `generator`, which gives us what we need: a way to randomly generate new values from a distribution as part of the sampling process. Every `Distribution[T]` can give us a `Generator[T]`, and if we sample from a `RandomVariable[Generator[T]]`, we will get values of type `T`. (You can think of `Real` as being a special case that acts in this sense like a `Generator[Double]`).
 
@@ -169,33 +195,20 @@ Here's one way we could implement what we're looking for:
 
 ```tut
 val prediction = for {
-    x <- Normal(0,1).param
-    ex = x.exp
-    _ <- Poisson(ex).fit(sales)    
-} yield Poisson(ex).generator
+    r <- e_x
+    poisson <- Poisson(r).fit(sales)
+} yield poisson.generator
 ```
 
-This is almost the same model as `rate` above, but instead of taking the real-valued `ex` rate parameter as the output, we're producing poisson-distributed integers. The samples look like this:
+This is almost the same model as `rate` above, but instead of taking the real-valued `r` rate parameter as the output, we're producing poisson-distributed integers. The samples look like this:
 
 ```tut
 prediction.sample()
 ```
-
-It's very common to want to generate new data that mimics the data you fit against. We've been carefully ignoring the type of `RandomVariable` that `fit` returns, but in fact, it contains a `Generator` to do just that. That gives us another way to implement the same thing. (While we're at it, let's make use of the `LogNormal` distribution instead of rolling our own.)
-
-```tut
-val prediction2 = for {
-    ex <- LogNormal(0,1).param
-    poisson <- Poisson(ex).fit(sales)    
-} yield poisson.map(_.head)
-```  
-
-There's a bit of a twist here: because we `fit` against a list of 7 data points, the generator returned from there will try to produce output of the same shape, with each sample having a sequence of 7 ints. Luckily, `Generator` has the usual `map` and `flatMap` methods, so we can fix that by grabbing just the first value with `head`.
-
-Let's plot it this time:
+Or, if we plot them, like this:
 
 ```tut
-plot1D(prediction2.sample())
+plot1D(prediction.sample())
 ```
 
 ## `Likelihood` and `Predictor`
@@ -212,7 +225,7 @@ Plotting the data gives a clear sense of the trend:
 plot2D(data)
 ```
 
-How should we model this? We'll need to know what the rate was on day 0 (the intercept), as well as how fast the rate increases each day (the slope). We know they're both positive and not too large, so let's keep using LogNormal priors.
+How should we model this? We'll need to know what the rate was on day 0 (the intercept), as well as how fast the rate increases each day (the slope). We know they're both positive and not too large, so let's keep using log-normal priors. (This time we can just use the builtin `LogNormal` instead of deriving it ourselves).
 
 ```tut
 val prior = for {
@@ -223,44 +236,38 @@ val prior = for {
 
 Now, for any given day `i`, we want to check the number of sales against `Poisson(intercept + slope*i)`. We could write some kind of recursive flatMap to build and fit each of these different distribution objects in turn, but this is a common enough pattern that Rainier already has something built in for it: `Predictor`. `Predictor` is not a `Distribution`, but instead wraps a function from `X => Distribution[Y]` for some `(X,Y)`; you can use this any time you have a dependent variable of type `Y` that you're modeling with some independent variables jointly represented as `X`. 
 
-Like `Distribution`, `Predictor` implements `fit` (in fact, they both extend the `Likelihood` trait which provides that method). So we can create and use it like this:
+Like `Distribution`, `Predictor` implements `fit` (in fact, they both extend the `Likelihood` trait which provides that method). So we can extend the previous model to create and use a `Predictor` like this:
 
 ```tut
-val regr = prior.flatMap {case (slope, intercept) =>
-  Predictor.from{i: Int => Poisson(intercept + slope*i)}.fit(data) 
-}
+val regr = for {
+    (slope, intercept) <- prior
+    predictor <- Predictor.from{i: Int =>
+                    Poisson(intercept + slope*i)
+                }.fit(data) 
+} yield (slope, intercept)
+```
+As before, we're starting out by just sampling the parameters. By plotting them, we can see that the model's confidence in the intercept, in particular, is pretty low: although it's most likely to be somewhere around 8, it could be anywhere from 3 to 13 or even higher. Second, as you'd hope, the two parameters are anti-correlated: a smaller intercept would imply a higher slope, and vice versa.
+
+```tut
+plot2D(regr.sample())
 ```
 
-As before, the return value from `fit` will be a `Generator` that tries to recreate the input data. In this case, it will keep the `X` the same but generate a new `Y` for each data point. If we flatten all of the samples out, we can plot them and compare to the observed data to get a sense of whether our model is any good.
+Alternatively, as in the earlier example, we could try to predict what will happen tomorrow. This is similar to calling `poisson.generator` before, but this time, we use the `predict` method on `Predictor`, which takes the covariate (the day, in this case), and returns a `Generator` for the dependent variable (the number of sales). Putting it all together, it looks like this:
 
 ```tut
-plot2D(regr.sample().flatten)
-```
-
-Although there's a lot of uncertainty, you can see the dense line down the middle matches fairly closely to the observed data, so our model isn't totally off-base. We can also learn something by plotting the slope vs the intercept. (Rather than redefining everything as we did in the previous section, we'll use `zip` to sneak the parameters back in to the fully-specified model.)
-
-```tut
-val regr2 = regr.zip(prior).map(_._2)
-plot2D(regr2.sample())
-```
-
-There are two things to see here. First, the tails are very wide: although there's the greatest density with a small slope and intercept, the model can't rule out that one of them is quite large. Second, as you'd hope, the two parameters are anti-correlated: a large slope necessarily implies a small intercept, and vice-versa.
-
-Alternatively, as before, we could try to predict what will happen tomorrow. Let's recreate the whole model again this time for maximum clarity, and ask the predictor to generate a value for day 21 (having given it days 0 through 20).
-
-```tut
-val regr3 = for {
+val regr2 = for {
     slope <- LogNormal(0,1).param
     intercept <- LogNormal(0,1).param
-    predictor = Predictor.from{i: Int => Poisson(intercept + slope*i)}
-    _ <- predictor.fit(data)
+    predictor <- Predictor.from{i: Int => 
+                    Poisson(intercept + slope*i)
+                }.fit(data)
 } yield predictor.predict(21)
 ```
 
-Plotting this is a bit ugly because of binning artifacts, but it's interesting to see the secondary mode down around 38, which represents the small chance that there was a very high intercept but basically no slope, and all the variation in the original data was just noise.
+Plotting this gives us a prediction which incorporates both the natural noise of a poisson distribution and our uncertainty about its underlying parameterization.
 
 ```tut
-plot1D(regr3.sample())
+plot1D(regr2.sample())
 ```
 
 Finally, let's close with a small and somewhat contrived example of a hierarchical model, where we have two separate regressions that share a parameter. For the sake of the example, let's assume that we have a second sales dataset, much like the first, where we know they had the same rate at the start of the observations, but may have grown at different rates - so their intercepts will be equal but their slopes will not. Here's the data:
@@ -272,19 +279,19 @@ val data2 = List((0,9), (1,2), (2,3), (3,17), (4,21), (5,12), (6,21), (7,19), (8
 It's straightforward to set up two separate slopes, two separate predictor, but the same interecept. We'll still just sample the first slope so we can compare to the previous model.
 
 ```tut
-val regr4 = for {
+val regr3 = for {
     slope1 <- LogNormal(0,1).param
     slope2 <- LogNormal(0,1).param
     intercept <- LogNormal(0,1).param
-    _ <- Predictor.from{i: Int => Poisson(intercept + slope1*i)}.fit(data)
-    _ <- Predictor.from{i: Int => Poisson(intercept + slope2*i)}.fit(data2)
+    pred1 <- Predictor.from{i: Int => Poisson(intercept + slope1*i)}.fit(data)
+    pred2 <- Predictor.from{i: Int => Poisson(intercept + slope2*i)}.fit(data2)
 } yield (slope1, intercept)
 ```
 
-Plotting slope vs intercept now, we can see that, even though these are two separate regressions, we get tighter bounds than before by letting the new data influence the shared parameter:
+Plotting slope vs intercept now, we can see that, even though these are two separate regressions, we get tighter bounds than before by letting the new data influence the shared parameter. It makes sense that we'd get more confidence on the intercept, since we have two different time series to learn from now; but because of the anti-correlation, that also leads to somewhat more confidence than before on the `slope1` parameter as well.
 
 ```tut
-plot2D(regr4.sample())
+plot2D(regr3.sample())
 ```
 
 ## Learning More
