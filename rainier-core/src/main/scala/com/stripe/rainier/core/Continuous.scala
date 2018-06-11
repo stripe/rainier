@@ -147,12 +147,17 @@ object Exponential {
 object Beta {
   def apply(a: Real, b: Real): Continuous = new Continuous {
     def realLogDensity(real: Real): Real =
-      Uniform.standard.realLogDensity(real) + betaDensity(real)
+      If(real >= 0,
+         If(real <= 1, betaDensity(real), Real.negInfinity),
+         Real.negInfinity)
 
-    def param: RandomVariable[Real] =
-      Uniform.standard.param.flatMap { u =>
-        RandomVariable(u, betaDensity(u))
-      }
+    def param: RandomVariable[Real] = {
+      val x = new Variable
+      val logistic = Real.one / (Real.one + (x * -1).exp)
+      val logisticJacobian = logistic * (1 - logistic)
+      val density = betaDensity(logistic) + logisticJacobian.log
+      RandomVariable(logistic, density)
+    }
 
     val generator: Generator[Double] =
       Gamma(a, 1).generator.zip(Gamma(b, 1).generator).map {
@@ -161,7 +166,9 @@ object Beta {
       }
 
     private def betaDensity(u: Real): Real =
-      (a - 1) * u.log + (b - 1) * (1 - u).log - Combinatorics.beta(a, b)
+      (a - 1) *
+        u.log + (b - 1) *
+        (1 - u).log - Combinatorics.beta(a, b)
   }
 }
 
@@ -177,20 +184,14 @@ object LogNormal {
   * A Uniform distribution over `[from,to]` with expectation `(to-from)/2`.
   */
 object Uniform {
+  val beta11 = Beta(1, 1)
   val standard: Continuous = new Continuous {
-    def realLogDensity(real: Real): Real =
-      If(real >= 0, If(real <= 1, Real.zero, Real.zero.log), Real.zero.log)
-
+    def realLogDensity(real: Real): Real = beta11.realLogDensity(real)
+    def param: RandomVariable[Real] = beta11.param
     val generator: Generator[Double] =
       Generator.from { (r, n) =>
         r.standardUniform
       }
-    def param: RandomVariable[Real] = {
-      val x = new Variable
-      val logistic = Real.one / (Real.one + (x * -1).exp)
-      val density = (logistic * (Real.one - logistic)).log
-      RandomVariable(logistic, density)
-    }
   }
 
   def apply(from: Real, to: Real): Continuous =
