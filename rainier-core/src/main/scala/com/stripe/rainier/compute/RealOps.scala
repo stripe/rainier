@@ -6,12 +6,30 @@ private[compute] object RealOps {
 
   def unary(original: Real, op: UnaryOp): Real =
     original match {
-      case Infinity    => Infinity
-      case NegInfinity => NegInfinity
+      case Infinity => Infinity
+      case NegInfinity =>
+        op match {
+          case ExpOp => Real.zero
+          case LogOp =>
+            throw new ArithmeticException(
+              "Cannot take the log of a negative number")
+          case AbsOp => Infinity
+        }
+      case Constant(Real.BigZero) =>
+        op match {
+          case ExpOp => Real.one
+          case LogOp => NegInfinity
+          case AbsOp => Real.zero
+        }
       case Constant(value) =>
         op match {
           case ExpOp => Real(Math.exp(value.toDouble))
-          case LogOp => Real(Math.log(value.toDouble))
+          case LogOp =>
+            if (value.toDouble < 0)
+              throw new ArithmeticException(
+                "Cannot take the log of " + value.toDouble)
+            else
+              Real(Math.log(value.toDouble))
           case AbsOp => Real(Math.abs(value.toDouble))
         }
       case nc: NonConstant =>
