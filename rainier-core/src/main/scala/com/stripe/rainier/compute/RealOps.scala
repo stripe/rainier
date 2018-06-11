@@ -30,7 +30,7 @@ private[compute] object RealOps {
                 "Cannot take the log of " + value.toDouble)
             else
               Real(Math.log(value.toDouble))
-          case AbsOp => Real(Math.abs(value.toDouble))
+          case AbsOp => Real(value.abs)
         }
       case nc: NonConstant =>
         val opt = (op, nc) match {
