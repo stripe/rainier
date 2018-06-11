@@ -144,31 +144,33 @@ object Exponential {
 /**
   * A Beta distribution with expectation `a/(a + b)` and variance `ab/((a + b)^2 (1 + a + b))`.
   */
-object Beta {
-  def apply(a: Real, b: Real): Continuous = new Continuous {
-    def realLogDensity(real: Real): Real =
-      If(real >= 0,
-         If(real <= 1, betaDensity(real), Real.negInfinity),
-         Real.negInfinity)
+final case class Beta(a: Real, b: Real) {
+  def realLogDensity(real: Real): Real =
+    If(real >= 0,
+       If(real <= 1, betaDensity(real), Real.negInfinity),
+       Real.negInfinity)
 
-    def param: RandomVariable[Real] = {
-      val x = new Variable
-      val logistic = Real.one / (Real.one + (x * -1).exp)
-      val logisticJacobian = logistic * (1 - logistic)
-      val density = betaDensity(logistic) + logisticJacobian.log
-      RandomVariable(logistic, density)
+  def param: RandomVariable[Real] = {
+    val x = new Variable
+    val logistic = Real.one / (Real.one + (x * -1).exp)
+    val logisticJacobian = logistic * (1 - logistic)
+    val density = betaDensity(logistic) + logisticJacobian.log
+    RandomVariable(logistic, density)
+  }
+
+  val generator: Generator[Double] =
+    Gamma(a, 1).generator.zip(Gamma(b, 1).generator).map {
+      case (z1, z2) =>
+        z1 / (z1 + z2)
     }
 
-    val generator: Generator[Double] =
-      Gamma(a, 1).generator.zip(Gamma(b, 1).generator).map {
-        case (z1, z2) =>
-          z1 / (z1 + z2)
-      }
+  private def betaDensity(u: Real): Real =
+    (a - 1) *
+      u.log + (b - 1) *
+      (1 - u).log - Combinatorics.beta(a, b)
 
-    private def betaDensity(u: Real): Real =
-      (a - 1) *
-        u.log + (b - 1) *
-        (1 - u).log - Combinatorics.beta(a, b)
+  def binomial: Predictor[Int, Int, BetaBinomial] = Predictor.from { k: Int =>
+    BetaBinomial(a, b, k)
   }
 }
 
