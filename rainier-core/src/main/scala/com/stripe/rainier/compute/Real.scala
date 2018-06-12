@@ -116,6 +116,17 @@ private object Line {
     }
 }
 
+private final class BigLine private (val a: List[NonConstant],
+                                     val b: BigDecimal)
+    extends NonConstant
+
+private object BigLine {
+  def apply(a: List[NonConstant], b: BigDecimal): BigLine = {
+    require(a.size > 0)
+    new BigLine(a, b)
+  }
+}
+
 /*
 This node type represents non-linear transformations from an input vector to a scalar,
 of the form `x^a * y^b * z^c ...` where x,y,z are the elements of the input vector,

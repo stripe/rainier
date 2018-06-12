@@ -1,6 +1,7 @@
 package com.stripe.rainier.compute
 
 import com.stripe.rainier.ir._
+import java.util.{Collections, IdentityHashMap}
 
 private[compute] object RealOps {
 
@@ -58,8 +59,12 @@ private[compute] object RealOps {
       case (_, Constant(Real.BigZero))    => left
       case (Constant(Real.BigZero), _)    => right
       case (Constant(x), Constant(y))     => Real(x + y)
+      case (Constant(x), bl: BigLine)     => LineOps.translate(bl, x)
+      case (bl: BigLine, Constant(x))     => LineOps.translate(bl, x)
       case (Constant(x), nc: NonConstant) => LineOps.translate(Line(nc), x)
       case (nc: NonConstant, Constant(x)) => LineOps.translate(Line(nc), x)
+      case (nc: NonConstant, bl: BigLine) => LineOps.sum(bl, nc)
+      case (bl: BigLine, nc: NonConstant) => LineOps.sum(bl, nc)
       case (nc1: NonConstant, nc2: NonConstant) =>
         LineOps.sum(Line(nc1), Line(nc2))
     }
@@ -140,17 +145,20 @@ private[compute] object RealOps {
 
   def variables(real: Real): List[Variable] = {
     println("finding variables")
-    val seen = new java.util.HashSet[Real]
+    val seen =
+      Collections.newSetFromMap(new IdentityHashMap[Real, java.lang.Boolean])
     var vars = List.empty[Variable]
     def loop(r: Real): Unit =
       if (!seen.contains(r)) {
-        seen.add(r)
         r match {
           case Constant(_) | Infinity | NegInfinity => ()
-          case v: Variable                          => vars = v :: vars
-          case u: Unary                             => loop(u.original)
-          case l: Line                              => l.ax.keys.foreach(loop)
-          case l: LogLine                           => l.ax.keys.foreach(loop)
+          case v: Variable =>
+            seen.add(r)
+            vars = v :: vars
+          case u: Unary   => loop(u.original)
+          case l: Line    => l.ax.keys.foreach(loop)
+          case l: LogLine => l.ax.keys.foreach(loop)
+          case l: BigLine => l.a.foreach(loop)
           case If(test, nz, z) =>
             loop(test)
             loop(nz)

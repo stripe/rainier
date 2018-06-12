@@ -10,11 +10,17 @@ private[compute] object LineOps {
       simplify(merged, left.b + right.b)
   }
 
+  def sum(left: BigLine, right: NonConstant): Real =
+    BigLine(right :: left.a, left.b)
+
   def scale(line: Line, v: BigDecimal): NonConstant =
     simplify(line.ax.map { case (x, a) => (x, a * v) }, line.b * v)
 
   def translate(line: Line, v: BigDecimal): NonConstant =
     simplify(line.ax, line.b + v)
+
+  def translate(line: BigLine, v: BigDecimal): NonConstant =
+    BigLine(line.a, line.b + v)
 
   /*
   Multiply two lines, using the distribution rule, to produce a new Line.
@@ -120,6 +126,8 @@ private[compute] object LineOps {
                        b: BigDecimal): NonConstant = {
     if (b == Real.BigZero && ax.size == 1 && ax.head._2 == Real.BigOne)
       ax.head._1
+    else if (ax.size > 1000)
+      BigLine(List(Line(ax, Real.BigZero)), b)
     else
       Line(ax, b)
   }
