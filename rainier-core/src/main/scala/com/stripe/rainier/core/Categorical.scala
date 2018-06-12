@@ -137,7 +137,7 @@ final case class BetaBinomial(a: Real, b: Real, k: Int)
     extends Distribution[Int] {
   def logDensity(t: Int): Real =
     Combinatorics.choose(k, t) +
-      Combinatorics.beta(a + k, t - k + b) -
+      Combinatorics.beta(a + t, k - t + b) -
       Combinatorics.beta(a, b)
 
   val generator: Generator[Int] =
