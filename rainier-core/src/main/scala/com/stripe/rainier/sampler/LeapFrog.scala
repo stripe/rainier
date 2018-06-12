@@ -87,6 +87,8 @@ private[sampler] case class LeapFrog(nVars: Int,
     array
   }
 
+  def potential(array: Array[Double]) = array(potentialIndex)
+
   /**
     * This is the dot product (ps^T ps).
     * The fancier variations of HMC involve changing this kinetic term
@@ -94,7 +96,7 @@ private[sampler] case class LeapFrog(nVars: Int,
     * (a non-standard Euclidean metric) or a matrix that depends on the qs
     * (ps^T M(qs) ps) (a Riemannian metric)
     */
-  private def kinetic(array: Array[Double]): Double = {
+  def kinetic(array: Array[Double]): Double = {
     var k = 0.0
     var i = 0
     while (i < nVars) {
@@ -107,8 +109,7 @@ private[sampler] case class LeapFrog(nVars: Int,
 
   private def logAcceptanceProb(from: Array[Double],
                                 to: Array[Double]): Double = {
-    val deltaH = kinetic(to) + to(potentialIndex) - kinetic(from) - from(
-      potentialIndex)
+    val deltaH = kinetic(to) + potential(to) - kinetic(from) - potential(from)
     if (deltaH.isNaN) { Math.log(0.0) } else { (-deltaH).min(0.0) }
   }
 

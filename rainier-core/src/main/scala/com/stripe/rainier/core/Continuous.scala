@@ -175,7 +175,8 @@ final case class Beta(a: Real, b: Real) {
 }
 
 object Beta {
-  def from(mean: Real, precision: Real) = Beta(mean * precision, (Real.one - mean) * precision)
+  def from(mean: Real, precision: Real) =
+    Beta(mean * precision, (Real.one - mean) * precision)
 }
 
 /**

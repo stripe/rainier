@@ -59,6 +59,7 @@ private object DualAvg {
       val dualAvg = DualAvg(delta, stepSize0)
       var i = 0
       while (i < iterations) {
+        println(i)
         val logAcceptanceProb = lf.step(params, nSteps, dualAvg.stepSize)
         dualAvg.update(logAcceptanceProb)
         i += 1
@@ -75,15 +76,19 @@ private object DualAvg {
     exponent * logAcceptanceProb > -exponent * Math.log(2)
 
   private def findReasonableStepSize(lf: LeapFrog,
-                                     params: Array[Double]): Double = {
-    var stepSize = 1.0
-    var logAcceptanceProb = lf.tryStepping(params, stepSize)
-    val exponent = computeExponent(logAcceptanceProb)
-    val doubleOrHalf = Math.pow(2, exponent)
-    while (continueTuningStepSize(logAcceptanceProb, exponent)) {
-      stepSize *= doubleOrHalf
-      logAcceptanceProb = lf.tryStepping(params, stepSize)
+                                     params: Array[Double]): Double =
+    if (lf.potential(params).isNaN || lf.potential(params).isInfinity)
+      0.0
+    else {
+      var stepSize = 1.0
+      var logAcceptanceProb = lf.tryStepping(params, stepSize)
+      val exponent = computeExponent(logAcceptanceProb)
+      val doubleOrHalf = Math.pow(2, exponent)
+      while (continueTuningStepSize(logAcceptanceProb, exponent)) {
+        stepSize *= doubleOrHalf
+        logAcceptanceProb = lf.tryStepping(params, stepSize)
+        println((stepSize, logAcceptanceProb))
+      }
+      stepSize
     }
-    stepSize
-  }
 }

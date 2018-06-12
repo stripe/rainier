@@ -139,11 +139,12 @@ private[compute] object RealOps {
     ((real.abs / real) + 1) / 2
 
   def variables(real: Real): List[Variable] = {
-    var seen = Set.empty[Real]
+    println("finding variables")
+    val seen = new java.util.HashSet[Real]
     var vars = List.empty[Variable]
     def loop(r: Real): Unit =
       if (!seen.contains(r)) {
-        seen += r
+        seen.add(r)
         r match {
           case Constant(_) | Infinity | NegInfinity => ()
           case v: Variable                          => vars = v :: vars
@@ -161,7 +162,7 @@ private[compute] object RealOps {
       }
 
     loop(real)
-
+    println("found " + vars.size + " variables")
     vars.sortBy(_.param.sym.id)
   }
 }

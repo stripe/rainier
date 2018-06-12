@@ -14,10 +14,10 @@ private object Gradient {
       val toReal: Real = Real.one
     })
 
-    var visited = Set[Real]()
+    val visited = new java.util.HashSet[Real]
     def visit(real: Real): Unit = {
       if (!visited.contains(real)) {
-        visited += real
+        visited.add(real)
         real match {
           case _: Variable            => ()
           case _: Constant            => ()
