@@ -3,12 +3,76 @@ package rainier.sampler
 import rainier.compute._
 import rainier.core._
 
+trait Guide {
+  def density: Real // density of variational distributions
+  def params: Seq[Variable] // params to optimize
+  def forward: Map[Variable, Real] // map between original model params and f(params, eps)
+  def generate(implicit rng: RNG): Seq[Double]
+  def sample(paramSettings: Map[Variable, Double]): Map[Variable, Double]
+  def init: Map[Variable, Double]
+
+  private def transformDensity(targetDensity: Real): Real = {
+    Real.substituteVariable(targetDensity, forward)
+  }
+  def loss(targetDensity: Real): Real = {
+    transformDensity(targetDensity) - density
+  }
+}
+
+case class MeanFieldNormalGuide(targetVariables: Seq[Variable])(
+    implicit rng: RNG)
+    extends Guide {
+  private val normals: Map[(Variable, Variable), (Real, Continuous)] =
+    targetVariables
+      .map(tv => {
+        val mu = new Variable
+        val sigma = new Variable
+        val dist = Normal(mu, sigma)
+        ((mu, sigma), (dist.param.density.variables.head, dist))
+      })
+      .toMap
+
+  override def params: Seq[Variable] = normals.keys.toSeq.flatMap {
+    case (mu, sigma) => List(mu, sigma)
+  }
+  override def density: Real = {
+    normals.foldLeft(Real(0.0)) {
+      case (joint, ((mu, sigma), (eps, dist))) =>
+        joint + dist.realLogDensity(mu + sigma * eps)
+    }
+  }
+  override def forward: Map[Variable, Real] = {
+    (targetVariables zip (normals.map {
+      case ((mu, sigma), (eps, _)) => {
+        mu + sigma * eps
+      }
+    })).toMap
+  }
+  override def generate(implicit rng: RNG) = {
+    normals.map(_ => rng.standardNormal).toSeq
+  }
+  override def sample(
+      paramSettings: Map[Variable, Double]): Map[Variable, Double] = {
+    (targetVariables zip (generate zip normals).map {
+      case (eps, ((mu, sigma), _)) => {
+        paramSettings(mu) + paramSettings(sigma) * eps
+      }
+    }).toMap
+  }
+  override def init: Map[Variable, Double] = {
+    normals.flatMap {
+      case ((mu, sigma), _) => List((mu -> 0.0), (sigma -> 1.0))
+    }
+  }
+}
+
 case class Variational(tolerance: Double,
                        maxIterations: Int,
                        nIterations: Int,
                        nSamples: Int,
                        stepsize: Double)
     extends Sampler {
+
   def description: (String, Map[String, Double]) =
     ("Variational",
      Map(
@@ -24,60 +88,24 @@ case class Variational(tolerance: Double,
       implicit rng: RNG): Stream[Sample] = {
 
     val modelVariables = density.variables
+    val guide = MeanFieldNormalGuide(modelVariables)
 
-    // use a set of independent normals as the guide
-    val K = modelVariables.length
+    val loss = guide.loss(density)
+    val guideVariables = guide.density.variables
+    val guideParams = guide.params
+    val guideEpsilons = (guideVariables.toSet -- guideParams.toSet).toSeq
 
-    val mus = List.fill(K)(new Variable)
-    val sigmas = List.fill(K)(new Variable)
-    val epsilonDistribution = Normal(0.0, 1.0)
-    val epsilons: List[(Variable, Real)] = List.fill(K) {
-      val p = epsilonDistribution.param
-      (p.density.variables.head, p.density)
-    }
+    val gradients = guideParams.map((loss.variables zip loss.gradient).toMap)
+    val cf = Compiler.default.compile(guideVariables, gradients)
 
-    def sampleFromGuide(): Seq[(Variable, Double)] = {
-      epsilons.map { case (v, d) => v -> sampleNormal(0.0, 1.0) }
-    }
-
-    val eps
-      : List[(Real, Real)] = (mus zip sigmas zip epsilons) map {
-      case ((mu, sigma), (epsilon, _)) => {
-        val f = mu + sigma * epsilon
-        (f, Normal(mu, sigma).realLogDensity(f))
-      }
-    }
-
-    val variablesToEps = (modelVariables zip eps.map(_._1)).toMap
-
-    val guideLogDensity = eps.foldLeft(Real(0.0)) {
-      case (d, (_, dens)) => {
-        d + dens
-      }
-    }
-
-    val transformedDensity = Real.substituteVariable(density, variablesToEps)
-    val surrogateLoss = transformedDensity - guideLogDensity
-    val variables = surrogateLoss.variables
-    val muSigmaVariables = mus ++ sigmas
-    val gradientsWithVariables = (surrogateLoss.gradient zip surrogateLoss.variables) filter {
-      case (gradient, variable) => muSigmaVariables.contains(variable)
-    }
-    val (gradients, variablesForCompiling) = gradientsWithVariables.unzip
-    val cf = Compiler.default.compile(variables, gradients)
-
-    val initialValues = gradients.flatMap(_ => List(0.0, 1.0))
-
-    def collectMaps[T, U](m: Seq[Map[T, U]]): Map[T, Seq[U]] = {
-      m.flatten.groupBy(_._1).mapValues(seqTuples => seqTuples.map(_._2))
-    }
+    val initialValues = guideParams.map(guide.init)
 
     val finalValues = 1.to(nIterations).foldLeft(initialValues) {
       case (values, _) =>
         val gradSamples: Seq[Array[Double]] = (1 to nSamples) map { _ =>
-          val samples = sampleFromGuide()
-          val inputs =
-            variables.map((samples ++ (muSigmaVariables zip values)).toMap)
+          val epsilons = guideEpsilons zip guide.generate
+          val settings = guideParams zip values
+          val inputs = guideVariables.map((epsilons ++ settings).toMap)
           val outputs = cf(inputs.toArray)
           outputs
         }
@@ -88,18 +116,11 @@ case class Variational(tolerance: Double,
           case (v, g) => v + stepsize * g
         }
     }
+    val finalMap = (guideParams zip finalValues).toMap
 
-    val finalValuesMap = (variables zip finalValues).toMap
-    val muValues = mus.map(finalValuesMap)
-    val sigmaValues = sigmas.map(finalValuesMap)
-    val variationals = muValues zip sigmaValues
-    println(variationals)
     Stream.continually {
-      val samples = variationals.map {
-        case (mu, sigma) => sampleNormal(mu, sigma)
-      }
-      val map = (modelVariables zip samples).toMap
-      Sample(true, new Evaluator(map))
+      val samples = guide.sample(finalMap)
+      Sample(true, new Evaluator(samples))
     }
   }
 
