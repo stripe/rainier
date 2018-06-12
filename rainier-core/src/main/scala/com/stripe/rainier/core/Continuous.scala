@@ -174,6 +174,10 @@ final case class Beta(a: Real, b: Real) {
   }
 }
 
+object Beta {
+  def from(mean: Real, precision: Real) = Beta(mean * precision, (Real.one - mean) * precision)
+}
+
 /**
   * A LogNormal distribution representing the exponential of a Gaussian random variable with expectation `location` and standard deviation `scale`. It therefore has expectation `exp(location + scale*scale/2)`.
   */
