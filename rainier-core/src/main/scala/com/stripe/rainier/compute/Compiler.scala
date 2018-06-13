@@ -8,13 +8,6 @@ trait Compiler {
       array(0)
     }
 
-  def compileGradient(inputs: Seq[Variable],
-                      output: Real): Array[Double] => (Double, Array[Double]) =
-    compile(inputs, output :: Gradient.derive(inputs, output).toList).andThen {
-      array =>
-        (array.head, array.tail)
-    }
-
   def compile(inputs: Seq[Variable],
               outputs: Seq[Real]): Array[Double] => Array[Double] = {
     val cf = compileUnsafe(inputs, outputs)
@@ -29,10 +22,6 @@ trait Compiler {
 
   def compileUnsafe(inputs: Seq[Variable],
                     outputs: Seq[Real]): ir.CompiledFunction
-}
-
-object Compiler {
-  var default: Compiler = IRCompiler(200, 100, false)
 }
 
 final case class InstrumentingCompiler(orig: Compiler, printEvery: Int)

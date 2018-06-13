@@ -10,7 +10,6 @@ final case class SBC[T](priorGenerators: Seq[Generator[Double]],
 
   import SBC._
 
-  require(priorParams.forall(_.variables.size == 1))
   val priorGenerator = Generator.traverse(priorGenerators)
   val emptyEvaluator = new Evaluator(Map.empty)
 

@@ -44,13 +44,13 @@ final private case class WalkersChain(cf: Array[Double] => Double,
 }
 
 private object WalkersChain {
-  def apply(density: Real, variables: Seq[Variable], nWalkers: Int)(
+  def apply(context: Context, nWalkers: Int)(
       implicit rng: RNG): WalkersChain = {
-    val cf = Compiler.default.compile(variables, density)
+    val cf = context.compiler.compile(context.variables, context.density)
     val walkers = 1
       .to(nWalkers)
       .map { _ =>
-        1.to(variables.size)
+        1.to(context.variables.size)
           .map { _ =>
             rng.standardNormal
           }

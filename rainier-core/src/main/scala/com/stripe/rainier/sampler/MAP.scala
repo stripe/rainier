@@ -3,27 +3,29 @@ package com.stripe.rainier.sampler
 import com.stripe.rainier.compute._
 
 final case class MAP(stepSize: Double) extends Sampler {
-  def sample(density: Real,
+  def sample(context: Context,
              warmupIterations: Int,
              iterations: Int,
              keepEvery: Int)(implicit rng: RNG): List[Array[Double]] = {
-    val values = MAP.optimize(density, warmupIterations, stepSize)
+    val values = MAP.optimize(context, warmupIterations, stepSize)
     List(values)
   }
 }
 
 object MAP {
-  def optimize(density: Real,
+  def optimize(context: Context,
                iterations: Int,
                stepSize: Double): Array[Double] = {
-    val cf = Compiler.default.compileGradient(density.variables, density)
-    val initialValues = density.variables.map { v =>
+    val cf =
+      context.compiler
+        .compile(context.variables, context.density :: context.gradient)
+    val initialValues = context.variables.map { v =>
       0.0
     }.toArray
     1.to(iterations).foldLeft(initialValues) {
       case (values, _) =>
-        val (_, gradients) = cf(values)
-        values.zip(gradients).map {
+        val _ :: gradient = cf(values).toList
+        values.zip(gradient).map {
           case (v, g) =>
             v + (stepSize * g)
         }

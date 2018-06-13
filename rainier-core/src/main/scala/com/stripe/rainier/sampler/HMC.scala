@@ -4,11 +4,11 @@ import com.stripe.rainier.compute._
 import scala.collection.mutable.ListBuffer
 
 final case class HMC(nSteps: Int) extends Sampler {
-  def sample(density: Real,
+  def sample(context: Context,
              warmupIterations: Int,
              iterations: Int,
              keepEvery: Int)(implicit rng: RNG): List[Array[Double]] = {
-    val lf = LeapFrog(density.variables.toList, density)
+    val lf = LeapFrog(context)
     val params = lf.initialize
     val stepSize =
       DualAvg.findStepSize(lf, params, 0.65, nSteps, warmupIterations)

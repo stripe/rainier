@@ -34,9 +34,6 @@ sealed trait Real {
   def <(other: Real): Real = RealOps.isNegative(this - other)
   def >=(other: Real): Real = Real.one - (this < other)
   def <=(other: Real): Real = Real.one - (this > other)
-
-  lazy val variables: Seq[Variable] = RealOps.variables(this).toList
-  def gradient: Seq[Real] = Gradient.derive(variables, this)
 }
 
 object Real {
@@ -50,16 +47,13 @@ object Real {
 
   //print out Scala code that is equivalent to what the Compiler
   //would produce as JVM bytecode
-  def trace(reals: Seq[Real]): Unit = {
+  def trace(real: Real): Unit = {
+    val context = Context(real)
     val translator = new Translator
-    val irs = reals.map { r =>
-      translator.toIR(r)
-    }
-    val params = reals.flatMap(_.variables.toSet).toList.map(_.param)
+    val irs = List(translator.toIR(real))
+    val params = context.variables.map(_.param)
     ir.Tracer.trace(params, irs)
   }
-
-  def trace(real: Real): Unit = trace(List(real))
 
   private[compute] val BigZero = BigDecimal(0.0)
   private[compute] val BigOne = BigDecimal(1.0)
