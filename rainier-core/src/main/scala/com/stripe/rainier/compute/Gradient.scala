@@ -4,62 +4,63 @@ import com.stripe.rainier.ir._
 import scala.collection.mutable.HashMap
 
 private object Gradient {
-  def derive(variables: Seq[Variable], output: Real): Seq[Real] = {
+  def derive(output: Real): List[(Variable, Real)] = {
     val diffs = HashMap.empty[Real, CompoundDiff]
-    def diff(real: Real): CompoundDiff = {
-      diffs.getOrElseUpdate(real, new CompoundDiff)
-    }
+    var variableDiffs = List.empty[(Variable, CompoundDiff)]
 
-    diff(output).register(new Diff {
+    def register(real: Real, part: Diff): Unit =
+      (real, diffs.get(real)) match {
+        case (_, Some(d)) =>
+          d.register(part)
+        case (v: Variable, None) =>
+          val d = new CompoundDiff
+          diffs.update(v, d)
+          d.register(part)
+          variableDiffs = (v, d) :: variableDiffs
+        case (nc: NonConstant, None) =>
+          val d = new CompoundDiff
+          diffs.update(nc, d)
+          d.register(part)
+          visit(nc, d)
+        case _ => ()
+      }
+
+    def visit(real: NonConstant, gradient: Diff): Unit =
+      real match {
+        case _: Variable => ()
+
+        case p: Pow =>
+          register(p.base, PowDiff(p, gradient, false))
+          register(p.exponent, PowDiff(p, gradient, true))
+
+        case u: Unary =>
+          register(u.original, UnaryDiff(u, gradient))
+
+        case l: Line =>
+          l.ax.foreach {
+            case (x, a) =>
+              register(x, ProductDiff(a, gradient))
+          }
+
+        case l: LogLine =>
+          l.ax.foreach {
+            case (x, _) =>
+              register(x, LogLineDiff(l, gradient, x))
+          }
+
+        case f: If =>
+          register(f.whenNonZero, IfDiff(f, gradient, true))
+          register(f.whenZero, IfDiff(f, gradient, false))
+          register(f.test, new Diff { val toReal = Real.zero })
+      }
+
+    register(output, new Diff {
       val toReal: Real = Real.one
     })
 
-    var visited = Set[Real]()
-    def visit(real: Real): Unit = {
-      if (!visited.contains(real)) {
-        visited += real
-        real match {
-          case _: Variable            => ()
-          case _: Constant            => ()
-          case Infinity | NegInfinity => ()
-
-          case p: Pow =>
-            diff(p.base).register(PowDiff(p, diff(p), false))
-            diff(p.exponent).register(PowDiff(p, diff(p), true))
-            visit(p.base)
-            visit(p.exponent)
-
-          case u: Unary =>
-            diff(u.original).register(UnaryDiff(u, diff(u)))
-            visit(u.original)
-
-          case l: Line =>
-            l.ax.foreach {
-              case (x, a) =>
-                diff(x).register(ProductDiff(a, diff(l)))
-            }
-            l.ax.foreach { case (x, _) => visit(x) }
-
-          case l: LogLine =>
-            l.ax.foreach {
-              case (x, _) =>
-                diff(x).register(LogLineDiff(l, diff(l), x))
-            }
-            l.ax.foreach { case (x, _) => visit(x) }
-
-          case f: If =>
-            diff(f.whenNonZero).register(IfDiff(f, diff(f), true))
-            diff(f.whenZero).register(IfDiff(f, diff(f), false))
-            visit(f.test)
-            visit(f.whenNonZero)
-            visit(f.whenZero)
-        }
-      }
-    }
-
-    visit(output)
-    variables.map { v =>
-      diff(v).toReal
+    variableDiffs.map {
+      case (v, d) =>
+        (v, d.toReal)
     }
   }
 
