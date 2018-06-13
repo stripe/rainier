@@ -122,7 +122,8 @@ private[sampler] case class LeapFrog(nVars: Int,
 }
 
 private[sampler] object LeapFrog {
-  def apply(qs: List[Variable], density: Real): LeapFrog = {
+  def apply(context: Context): LeapFrog = {
+    val qs = context.variables
     val ps = qs.map { _ =>
       new Variable
     }
@@ -130,11 +131,13 @@ private[sampler] object LeapFrog {
     val stepSize = new Variable
     val inputs: List[Variable] = (ps ++ qs) :+ potential :+ stepSize
 
-    val newPotential = density * -1
-    val grad = newPotential.gradient
+    val newPotential = context.density * -1
+    val grad = context.gradient.map { g =>
+      g * -1
+    }
 
     val halfPs =
-      ps.zip(newPotential.gradient).map {
+      ps.zip(grad).map {
         case (p, g) => p - (stepSize / 2) * g
       }
     val halfPsNewQs =
@@ -157,9 +160,9 @@ private[sampler] object LeapFrog {
 
     new LeapFrog(
       qs.size,
-      Compiler.default.compileUnsafe(inputs, initialHalfThenFullStep),
-      Compiler.default.compileUnsafe(inputs, twoFullSteps),
-      Compiler.default.compileUnsafe(inputs, finalHalfStep)
+      context.compiler.compileUnsafe(inputs, initialHalfThenFullStep),
+      context.compiler.compileUnsafe(inputs, twoFullSteps),
+      context.compiler.compileUnsafe(inputs, finalHalfStep)
     )
   }
 }

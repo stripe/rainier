@@ -20,19 +20,18 @@ abstract class RealBenchmark {
   protected def expression: Real
 
   val expr = expression
-  val vars = expr.variables
-  val grad = gradient
-  val cf = compile
+  val context = Context(expr)
+  val vars = context.variables
+  val grad = context.gradient
+  val cf = context.compiler.compile(vars, expr)
   val gf = compileGradient
 
   @Benchmark
   def build = expression
   @Benchmark
-  def gradient = expr.gradient
+  def gradient = Context(expr).gradient
   @Benchmark
-  def compile = Compiler.default.compile(vars, expr)
-  @Benchmark
-  def compileGradient = Compiler.default.compile(vars, grad)
+  def compileGradient = Context(expr).compiler.compile(vars, grad)
   @Benchmark
   def run =
     cf(vars.map { _ =>
