@@ -49,7 +49,7 @@ object Real {
   //would produce as JVM bytecode
   def trace(real: Real): Unit = {
     val context = Context(real)
-    val translator = new Translator
+    val translator = new Translator(context)
     val irs = List(translator.toIR(real))
     val params = context.variables.map(_.param)
     ir.Tracer.trace(params, irs)

@@ -2,11 +2,11 @@ package com.stripe.rainier.compute
 
 import com.stripe.rainier.ir._
 
-private class Translator {
+private class Translator(context: Context) {
   private val binary = new SymCache[BinaryOp]
   private val unary = new SymCache[UnaryOp]
   private val ifs = new SymCache[Unit]
-  private var reals = Map.empty[Real, IR]
+  private val reals = context.newTable[IR]
 
   def toIR(r: Real): IR = reals.get(r) match {
     case Some(ir) => ref(ir)
@@ -22,7 +22,7 @@ private class Translator {
         case l: LogLine          => logLineIR(l)
         case Pow(base, exponent) => binaryIR(toIR(base), toIR(exponent), PowOp)
       }
-      reals += r -> ir
+      reals.update(r, ir)
       ir
   }
 

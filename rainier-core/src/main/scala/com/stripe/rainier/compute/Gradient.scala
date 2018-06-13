@@ -1,25 +1,24 @@
 package com.stripe.rainier.compute
 
 import com.stripe.rainier.ir._
-import scala.collection.mutable.HashMap
 
 private object Gradient {
-  def derive(output: Real): List[(Variable, Real)] = {
-    val diffs = HashMap.empty[Real, CompoundDiff]
+  def derive(context: Context): List[(Variable, Real)] = {
+    val table = context.newTable[CompoundDiff]
     var variableDiffs = List.empty[(Variable, CompoundDiff)]
 
     def register(real: Real, part: Diff): Unit =
-      (real, diffs.get(real)) match {
+      (real, table.get(real)) match {
         case (_, Some(d)) =>
           d.register(part)
         case (v: Variable, None) =>
           val d = new CompoundDiff
-          diffs.update(v, d)
+          table.update(v, d)
           d.register(part)
           variableDiffs = (v, d) :: variableDiffs
         case (nc: NonConstant, None) =>
           val d = new CompoundDiff
-          diffs.update(nc, d)
+          table.update(nc, d)
           d.register(part)
           visit(nc, d)
         case _ => ()
@@ -54,7 +53,7 @@ private object Gradient {
           register(f.test, new Diff { val toReal = Real.zero })
       }
 
-    register(output, new Diff {
+    register(context.density, new Diff {
       val toReal: Real = Real.one
     })
 
