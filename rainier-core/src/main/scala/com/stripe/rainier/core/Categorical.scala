@@ -128,3 +128,20 @@ final case class Mixture[T, D](pmf: Map[D, Real])(
       d.generator
     }
 }
+
+/**
+  * A Beta-binomial distribution with expectation `a/(a + b) * k`
+  *
+  */
+final case class BetaBinomial(a: Real, b: Real, k: Int)
+    extends Distribution[Int] {
+  def logDensity(t: Int): Real =
+    Combinatorics.choose(k, t) +
+      Combinatorics.beta(a + t, k - t + b) -
+      Combinatorics.beta(a, b)
+
+  val generator: Generator[Int] =
+    Beta(a, b).generator.flatMap { p =>
+      Binomial(p, k).generator
+    }
+}
