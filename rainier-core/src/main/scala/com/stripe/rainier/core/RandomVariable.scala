@@ -7,15 +7,21 @@ import com.stripe.rainier.sampler._
   * The main probability monad used in Rainier for constructing probabilistic programs which can be sampled
   */
 class RandomVariable[+T](val value: T,
-                         private val densities: Set[RandomVariable.BoxedReal]) {
+                         private val densities: Set[RandomVariable.BoxedReal],
+                         private val observations: Set[Observations]) {
 
   def flatMap[U](fn: T => RandomVariable[U]): RandomVariable[U] = {
     val rv = fn(value)
-    new RandomVariable(rv.value, densities ++ rv.densities)
+    require(
+      observations.isEmpty || rv.observations.isEmpty ||
+        observations.head.numBatches == rv.observations.head.numBatches)
+    new RandomVariable(rv.value,
+                       densities ++ rv.densities,
+                       observations ++ rv.observations)
   }
 
   def map[U](fn: T => U): RandomVariable[U] =
-    new RandomVariable(fn(value), densities)
+    new RandomVariable(fn(value), densities, observations)
 
   def zip[U](other: RandomVariable[U]): RandomVariable[(T, U)] =
     for {
@@ -55,6 +61,7 @@ class RandomVariable[+T](val value: T,
                 iterations: Int,
                 keepEvery: Int = 1)(implicit rng: RNG,
                                     sampleable: Sampleable[T, V]): List[V] = {
+    require(observations.isEmpty)
     val context = Context(density)
     val fn = sampleable.prepare(value, context)
     Sampler
@@ -72,6 +79,7 @@ class RandomVariable[+T](val value: T,
                                keepEvery: Int = 1)(
       implicit rng: RNG,
       sampleable: Sampleable[T, V]): (List[V], List[Diagnostics]) = {
+    require(observations.isEmpty)
     val context = Context(density)
     val fn = sampleable.prepare(value, context)
     val range = if (parallel) 1.to(chains).par else 1.to(chains)
@@ -90,6 +98,28 @@ class RandomVariable[+T](val value: T,
       chain.map(_._1)
     })
     (allSamples, diagnostics)
+  }
+
+  def optimize[V](optimizer: Optimizer, iterations: Int)(
+      implicit rng: RNG,
+      sampleable: Sampleable[T, V]): V = {
+    val context = Context(density)
+    val params = optimizer.optimize(context, observations.toList, iterations)
+    val fn = sampleable.prepare(value, context)
+    fn(params)
+  }
+
+  def optimize[V](optimizer: Optimizer, iterations: Int, samples: Int)(
+      implicit rng: RNG,
+      sampleable: Sampleable[T, V]): List[V] = {
+    val context = Context(density)
+    val params = optimizer.optimize(context, observations.toList, iterations)
+    val fn = sampleable.prepare(value, context)
+    1.to(samples)
+      .map { _ =>
+        fn(params)
+      }
+      .toList
   }
 
   lazy val density: Real =
@@ -111,15 +141,20 @@ object RandomVariable {
   //this exists to provide a reference-equality wrapper
   //for use in the `densities` set
   private class BoxedReal(val toReal: Real)
+  private def box(density: Real) = Set(new BoxedReal(density))
 
   def apply[A](a: A, density: Real): RandomVariable[A] =
-    new RandomVariable(a, Set(new BoxedReal(density)))
+    new RandomVariable(a, box(density), Set.empty)
 
   def apply[A](a: A): RandomVariable[A] =
-    apply(a, Real.zero)
+    new RandomVariable(a, box(Real.zero), Set.empty)
 
   def fromDensity(density: Real): RandomVariable[Unit] =
-    apply((), density)
+    new RandomVariable((), box(density), Set.empty)
+
+  def fromObservations(density: Real,
+                       observations: Observations): RandomVariable[Unit] =
+    new RandomVariable((), box(density), Set(observations))
 
   def traverse[A](rvs: Seq[RandomVariable[A]]): RandomVariable[Seq[A]] = {
 
