@@ -100,16 +100,20 @@ final case class Binomial(p: Real, k: Int) extends Distribution[Int] {
     Categorical.boolean(p).toMultinomial(k)
 
   def generator: Generator[Int] = {
-    val n: Numeric[Real] = implicitly
-    if (n.toDouble(p) * k < 10) {
-      Poisson(p * k).generator
-    } else if (k > 1000) {
-      Normal(k * p, k * p * (1 - p)).generator.map { _.toInt }
-    } else {
-      multi.generator.map { m =>
-        m.getOrElse(true, 0)
-      }
+    val poissonGenerator = Poisson(p * k).generator
+    val normalGenerator = Normal(k * p, k * p * (1 - p)).generator.map {
+      _.toInt
     }
+    val binomialGenerator = multi.generator.map { m =>
+      m.getOrElse(true, 0)
+    }
+    Generator.from {
+      case (r, n) =>
+        if (n.toDouble(p) * k < 10) { poissonGenerator.get(r, n) } else if (k > 1000) {
+          normalGenerator.get(r, n)
+        } else { binomialGenerator.get(r, n) }
+    }
+
   }
 
   def logDensity(t: Int): Real =
