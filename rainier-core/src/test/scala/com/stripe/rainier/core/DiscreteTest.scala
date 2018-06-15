@@ -13,10 +13,10 @@ class DiscreteTest extends FunSuite {
     List((Walkers(100), 10000), (HMC(5), 1000)).foreach {
       case (sampler, iterations) =>
         println((sampler, iterations))
-        List(0.1, 0.5, 1.0).foreach { trueValue =>
+        List(0.1, 0.2, 0.5, 1.0).foreach { trueValue =>
           val trueDist = fn(Real(trueValue))
           val syntheticData =
-            RandomVariable(trueDist.generator).sample().take(1000)
+            RandomVariable(trueDist.generator).sample(1000)
           val model =
             for {
               x <- Uniform(0, 1).param
@@ -34,7 +34,7 @@ class DiscreteTest extends FunSuite {
     }
   }
 
-  check("Binomial(x,10)") { x =>
-    Binomial(x, 10)
+  check("Binomial(x, 40)") { x =>
+    Binomial(x, 40)
   }
 }
