@@ -92,4 +92,8 @@ class RealTest extends FunSuite {
   run("pow") { x =>
     x.pow(x)
   }
+
+  run("divide") { x =>
+    x / x
+  }
 }
