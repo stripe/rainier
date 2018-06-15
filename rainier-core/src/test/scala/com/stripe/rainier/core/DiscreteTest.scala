@@ -17,6 +17,7 @@ class DiscreteTest extends FunSuite {
           val trueDist = fn(Real(trueValue))
           val syntheticData =
             RandomVariable(trueDist.generator).sample(1000)
+          println(s"min syntheticData: ${syntheticData.min}")
           val model =
             for {
               x <- Uniform(0, 1).param

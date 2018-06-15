@@ -102,7 +102,7 @@ final case class Binomial(p: Real, k: Int) extends Distribution[Int] {
   def generator: Generator[Int] = {
     val poissonGenerator = Poisson(p * k).generator
     val normalGenerator = Normal(k * p, k * p * (1 - p)).generator.map {
-      _.toInt
+      _.toInt.max(0)
     }
     val binomialGenerator = multi.generator.map { m =>
       m.getOrElse(true, 0)
