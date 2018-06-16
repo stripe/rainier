@@ -17,7 +17,6 @@ class DiscreteTest extends FunSuite {
           val trueDist = fn(Real(trueValue))
           val syntheticData =
             RandomVariable(trueDist.generator).sample(1000)
-          println(s"min syntheticData: ${syntheticData.min}")
           val model =
             for {
               x <- Uniform(0, 1).param
@@ -35,10 +34,10 @@ class DiscreteTest extends FunSuite {
     }
   }
 
-  /** Binomial generator, Poisson approximation, Normal approximation **/
+  /** Binomial generator, Poisson approximation, TODO: Normal approximation **/
   check("Binomial(p, 10), p = 0.1, 0.5, 1.0")(p => Binomial(p, 10),
                                               List(0.1, 0.5, 1.0))
   check("Binomial(p, 200), p = 0.01, 0.02, 0.04")(p => Binomial(p, 200),
                                                   List(0.01, 0.02, 0.04))
-  check("Binomial(p, 200), p = 0.5")(p => Binomial(p, 2000), List(0.5))
+//  check("Binomial(p, 200), p = 0.5")(p => Binomial(p, 2000), List(0.5))
 }
