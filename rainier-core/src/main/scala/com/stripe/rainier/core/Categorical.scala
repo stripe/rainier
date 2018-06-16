@@ -100,9 +100,9 @@ final case class Binomial(p: Real, k: Int) extends Distribution[Int] {
     Categorical.boolean(p).toMultinomial(k)
 
   def generator: Generator[Int] = {
-    val poissonGenerator = Poisson(p * k).generator
+    val poissonGenerator = Poisson(p * k).generator.map { _.min(k) }
     val normalGenerator = Normal(k * p, k * p * (1 - p)).generator.map {
-      _.toInt.max(0)
+      _.toInt.max(0).min(k)
     }
     val binomialGenerator = multi.generator.map { m =>
       m.getOrElse(true, 0)
