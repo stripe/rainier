@@ -15,8 +15,6 @@ trait Distribution[T] extends Likelihood[T] { self =>
     RandomVariable(this, logDensity(t))
   def fit(list: Seq[T]): RandomVariable[Distribution[T]] =
     RandomVariable(this, logDensities(list))
-  def fit(data: Data[T])(
-      implicit observable: Observable[T]): RandomVariable[Distribution[T]] = ???
 }
 
 /**

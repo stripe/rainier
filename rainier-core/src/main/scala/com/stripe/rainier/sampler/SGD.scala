@@ -4,7 +4,7 @@ import com.stripe.rainier.compute._
 
 final case class SGD(stepSize: Double) extends Optimizer {
   def optimize(context: Context,
-               observations: List[Observations],
+               batches: Batches,
                iterations: Int)(implicit rng: RNG): Array[Double] = {
     val placeholders = observations.flatMap(_.variables)
     val state = new SGDState(context, placeholders)
