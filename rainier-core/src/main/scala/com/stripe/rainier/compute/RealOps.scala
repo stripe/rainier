@@ -164,4 +164,19 @@ private[compute] object RealOps {
 
     vars.sortBy(_.param.sym.id)
   }
+
+  def substituteVariable[T <: Real](nc: NonConstant, f: Map[Variable, NonConstant]): NonConstant = nc match {
+    case v: Variable => f(v)
+    case u: Unary => Unary(substituteVariable(u.original, f), u.op)
+    case l: Line => LineOps.substituteKeys(l, k => substituteVariable(k, f))
+    case If(test, nz, z) =>
+      If(substituteVariable(test, f),
+        substituteVariable(nz, f),
+        substituteVariable(z, f))
+  }
+
+  def substituteVariable(x: Real, f: Map[Variable, NonConstant]): Real = x match {
+    case c: Constant => c
+    case nc: NonConstant => substituteVariable(nc, f)
+  }
 }
