@@ -7,7 +7,7 @@ import com.stripe.rainier.compute.{If, Real}
   *
   * @param pmf A map with keys corresponding to the possible outcomes and values corresponding to the probabilities of those outcomes
   */
-final case class Categorical[T](pmf: Map[T, Real]) extends Distribution[T] {
+final case class Categorical[T](pmf: Map[T, Real]) extends Distribution[T,Map[T,Real]] {
   def map[U](fn: T => U): Categorical[U] =
     flatMap { t =>
       Categorical(Map(fn(t) -> Real.one))
@@ -76,14 +76,14 @@ object Categorical {
   * @param pmf A map with keys corresponding to the possible outcomes of a single multinomial trial and values corresponding to the probabilities of those outcomes
   * @param k The number of multinomial trials
   */
-final case class Multinomial[T](pmf: Map[T, Real], k: Int)
-    extends Distribution[Map[T, Int]] {
+final case class Multinomial[T](pmf: Map[T, Real], k: Real)
+    extends Distribution[Map[T, Int],Map[T,Real]] {
   def generator: Generator[Map[T, Int]] =
     Categorical(pmf).generator.repeat(k).map { seq =>
       seq.groupBy(identity).map { case (t, ts) => (t, ts.size) }
     }
 
-  def logDensity(t: Map[T, Int]): Real =
+  def logDensity(t: Map[T, Real]): Real =
     Combinatorics.factorial(k) + Real.sum(t.toList.map {
       case (v, i) =>
         val p = pmf.getOrElse(v, Real.zero)
@@ -103,7 +103,7 @@ final case class Multinomial[T](pmf: Map[T, Real], k: Int)
   * @param p The probability of success
   * @param k The number of trials
   */
-final case class Binomial(p: Real, k: Int) extends Distribution[Int] {
+final case class Binomial(p: Real, k: Real) extends Distribution[Int,Real] {
   val multi: Multinomial[Boolean] =
     Categorical.boolean(p).toMultinomial(k)
 
@@ -127,7 +127,7 @@ final case class Binomial(p: Real, k: Int) extends Distribution[Int] {
 
   }
 
-  def logDensity(t: Int): Real =
+  def logDensity(t: Real): Real =
     multi.logDensity(Map(true -> t, false -> (k - t)))
 }
 
@@ -135,9 +135,9 @@ final case class Binomial(p: Real, k: Int) extends Distribution[Int] {
   * A Beta-binomial distribution with expectation `a/(a + b) * k`
   *
   */
-final case class BetaBinomial(a: Real, b: Real, k: Int)
+final case class BetaBinomial(a: Real, b: Real, k: Real)
     extends Distribution[Int] {
-  def logDensity(t: Int): Real =
+  def logDensity(t: Real): Real =
     Combinatorics.choose(k, t) +
       Combinatorics.beta(a + t, k - t + b) -
       Combinatorics.beta(a, b)
