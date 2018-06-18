@@ -7,9 +7,8 @@ import org.scalatest.FunSuite
 class DiscreteTest extends FunSuite {
   implicit val rng: RNG = ScalaRNG(1527608515939L)
 
-  def check /**[N: Numeric]**/ (description: String)(
-      fn: Real => Distribution[Int /**N**/ ],
-      probs: List[Double]): Unit = {
+  def check[N: Numeric](description: String)(fn: Real => Distribution[N],
+                                             probs: List[Double]): Unit = {
     println(description)
     List((Walkers(100), 10000), (HMC(5), 1000)).foreach {
       case (sampler, iterations) =>
@@ -35,7 +34,7 @@ class DiscreteTest extends FunSuite {
     }
   }
 
-//  /** Binomial generator, Poisson approximation, Normal approximation **/
+  /** Binomial generator, Poisson approximation, Normal approximation **/
   check("Binomial(p, 10), p = 0.1, 0.5, 1.0")(p => Binomial(p, 10),
                                               List(0.1, 0.5, 1.0))
   check("Binomial(p, 200), p = 0.01, 0.02, 0.04")(p => Binomial(p, 200),
