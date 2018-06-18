@@ -99,10 +99,26 @@ final case class Binomial(p: Real, k: Int) extends Distribution[Int] {
   val multi: Multinomial[Boolean] =
     Categorical.boolean(p).toMultinomial(k)
 
-  def generator: Generator[Int] =
-    multi.generator.map { m =>
+  def generator: Generator[Int] = {
+    val poissonGenerator = Poisson(p * k).generator.map { _.min(k) }
+    val normalGenerator = Normal(k * p, k * p * (1 - p)).generator.map {
+      _.toInt.max(0).min(k)
+    }
+    val binomialGenerator = multi.generator.map { m =>
       m.getOrElse(true, 0)
     }
+    Generator.from {
+      case (r, n) =>
+        val pDouble = n.toDouble(p)
+        if (k >= 100 && k * pDouble <= 10) {
+          poissonGenerator.get(r, n)
+        } else if (k >= 100 && k * pDouble >= 9 && k * (1.0 - pDouble) >= 9) {
+          normalGenerator.get(r, n)
+        } else { binomialGenerator.get(r, n) }
+    }
+
+  }
+
   def logDensity(t: Int): Real =
     multi.logDensity(Map(true -> t, false -> (k - t)))
 }

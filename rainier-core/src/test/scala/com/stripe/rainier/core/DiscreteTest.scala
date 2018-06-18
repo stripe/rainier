@@ -7,16 +7,16 @@ import org.scalatest.FunSuite
 class DiscreteTest extends FunSuite {
   implicit val rng: RNG = ScalaRNG(1527608515939L)
 
-  def check[N: Numeric](description: String)(
-      fn: Real => Distribution[N]): Unit = {
+  def check[N: Numeric](description: String)(fn: Real => Distribution[N],
+                                             probs: List[Double]): Unit = {
     println(description)
     List((Walkers(100), 10000), (HMC(5), 1000)).foreach {
       case (sampler, iterations) =>
         println((sampler, iterations))
-        List(0.1, 0.5, 1.0).foreach { trueValue =>
+        probs.foreach { trueValue =>
           val trueDist = fn(Real(trueValue))
           val syntheticData =
-            RandomVariable(trueDist.generator).sample().take(1000)
+            RandomVariable(trueDist.generator).sample(1000)
           val model =
             for {
               x <- Uniform(0, 1).param
@@ -34,7 +34,10 @@ class DiscreteTest extends FunSuite {
     }
   }
 
-  check("Binomial(x,10)") { x =>
-    Binomial(x, 10)
-  }
+  /** Binomial generator, Poisson approximation, Normal approximation **/
+  check("Binomial(x, 10), x = 0.1, 0.5, 1.0")(x => Binomial(x, 10),
+                                              List(0.1, 0.5, 1.0))
+  check("Binomial(x, 200), x = 0.01, 0.02, 0.04")(x => Binomial(x, 200),
+                                                  List(0.01, 0.02, 0.04))
+  check("Binomial(x, 2000), x = 0.5")(x => Binomial(x, 2000), List(0.5))
 }
