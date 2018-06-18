@@ -35,9 +35,9 @@ class DiscreteTest extends FunSuite {
   }
 
   /** Binomial generator, Poisson approximation, Normal approximation **/
-  check("Binomial(p, 10), p = 0.1, 0.5, 1.0")(p => Binomial(p, 10),
+  check("Binomial(x, 10), x = 0.1, 0.5, 1.0")(x => Binomial(x, 10),
                                               List(0.1, 0.5, 1.0))
-  check("Binomial(p, 200), p = 0.01, 0.02, 0.04")(p => Binomial(p, 200),
+  check("Binomial(x, 200), x = 0.01, 0.02, 0.04")(x => Binomial(x, 200),
                                                   List(0.01, 0.02, 0.04))
-  check("Binomial(p, 2000), p = 0.5")(p => Binomial(p, 2000), List(0.5))
+  check("Binomial(x, 2000), x = 0.5")(x => Binomial(x, 2000), List(0.5))
 }
