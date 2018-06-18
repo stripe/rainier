@@ -110,10 +110,9 @@ final case class Binomial(p: Real, k: Int) extends Distribution[Int] {
     Generator.from {
       case (r, n) =>
         val pDouble = n.toDouble(p)
-        val oneMinusP = n.toDouble(1 - p)
         if (k >= 100 && k * pDouble <= 10) {
           poissonGenerator.get(r, n)
-        } else if (k >= 100 && k * pDouble >= 9 && k * oneMinusP >= 9) {
+        } else if (k >= 100 && k * pDouble >= 9 && k * (1.0 - pDouble) >= 9) {
           normalGenerator.get(r, n)
         } else { binomialGenerator.get(r, n) }
     }
