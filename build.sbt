@@ -45,9 +45,6 @@ lazy val rainierCore = project.
   in(file("rainier-core")).
   settings(name := "rainier-core").
   settings(
-    libraryDependencies ++= Seq(
-      "commons-io" % "commons-io" % "2.6"
-    ),
     crossScalaVersions := List("2.11.12", "2.12.4")
   ).
   dependsOn(shadedAsm).

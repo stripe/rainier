@@ -13,8 +13,7 @@ object CompiledFunction {
   def apply(inputs: Seq[Parameter],
             irs: Seq[IR],
             methodSizeLimit: Int,
-            classSizeLimit: Int,
-            writeToTmpFiles: Boolean): CompiledFunction = {
+            classSizeLimit: Int): CompiledFunction = {
     val classPrefix = ClassGenerator.freshName
     val packer = new Packer(methodSizeLimit)
     val outputMeths = irs.map { ir =>
@@ -50,11 +49,6 @@ object CompiledFunction {
           new ExprClassGenerator(className, nodes.toList.map(_._2))
       }
       .toList
-
-    if (writeToTmpFiles) {
-      acg.writeToTmpFile
-      ecgs.foreach(_.writeToTmpFile)
-    }
 
     val parentClassLoader = this.getClass.getClassLoader
     val classLoader =
