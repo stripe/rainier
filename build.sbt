@@ -36,22 +36,18 @@ scalafmtOnCompile in ThisBuild := true
 lazy val root = project.
   in(file(".")).
   aggregate(rainierCore, rainierPlot).
-  aggregate(rainierExample, rainierBenchmark).
-  aggregate(rainierTests).
+  aggregate(rainierDocs, rainierExample).
+  aggregate(rainierBenchmark, rainierTests).
   aggregate(shadedAsm).
   settings(unpublished: _*)
 
 lazy val rainierCore = project.
   in(file("rainier-core")).
   settings(name := "rainier-core").
-  enablePlugins(TutPlugin).
   settings(
     libraryDependencies ++= Seq(
       "commons-io" % "commons-io" % "2.6"
     ),
-    scalacOptions in Tut ~= {
-      _.filterNot(Set("-Ywarn-unused-import", "-Yno-predef", "-Ywarn-unused:imports"))
-    },
     crossScalaVersions := List("2.11.12", "2.12.4")
   ).
   dependsOn(shadedAsm).
@@ -92,6 +88,18 @@ lazy val rainierTests = project.
     libraryDependencies ++= Seq(
       "org.scalatest" %% "scalatest" % "3.0.5"
     ).map(_ % Test)
+  ).
+  settings(unpublished)
+
+lazy val rainierDocs = project.
+  in(file("rainier-docs")).
+  settings(name := "rainier-docs").
+  enablePlugins(TutPlugin).
+  dependsOn(rainierCore, rainierPlot).
+  settings(
+    scalacOptions in Tut ~= {
+      _.filterNot(Set("-Ywarn-unused-import", "-Yno-predef", "-Ywarn-unused:imports"))
+    },
   ).
   settings(unpublished)
 
