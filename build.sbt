@@ -35,7 +35,9 @@ scalafmtOnCompile in ThisBuild := true
 
 lazy val root = project.
   in(file(".")).
-  aggregate(rainierCore, rainierPlot, rainierExample, rainierBenchmark).
+  aggregate(rainierCore, rainierPlot).
+  aggregate(rainierExample, rainierBenchmark).
+  aggregate(rainierTests).
   aggregate(shadedAsm).
   settings(unpublished: _*)
 
@@ -43,15 +45,15 @@ lazy val rainierCore = project.
   in(file("rainier-core")).
   settings(name := "rainier-core").
   enablePlugins(TutPlugin).
-  settings(Seq(
+  settings(
     libraryDependencies ++= Seq(
-      "commons-io" % "commons-io" % "2.6",
-      "org.scalatest" %% "scalatest" % "3.0.5" % Test),
+      "commons-io" % "commons-io" % "2.6"
+    ),
     scalacOptions in Tut ~= {
       _.filterNot(Set("-Ywarn-unused-import", "-Yno-predef", "-Ywarn-unused:imports"))
     },
     crossScalaVersions := List("2.11.12", "2.12.4")
-  )).
+  ).
   dependsOn(shadedAsm).
   settings(publishSettings)
 
@@ -79,6 +81,19 @@ lazy val rainierBenchmark = project.
       "-Ywarn-value-discard")))).
   dependsOn(rainierCore).
   settings(unpublished: _*)
+
+lazy val rainierTests = project.
+  in(file("rainier-tests")).
+  settings(name := "rainier-tests").
+  dependsOn(
+    rainierCore, rainierPlot
+  ).
+  settings(
+    libraryDependencies ++= Seq(
+      "org.scalatest" %% "scalatest" % "3.0.5"
+    ).map(_ % Test)
+  ).
+  settings(unpublished)
 
 // publishable project with the shaded deps
 lazy val shadedAsm = project.
