@@ -161,3 +161,13 @@ final case class BetaBinomial(a: Real, b: Real, k: Int)
       Binomial(p, k).generator
     }
 }
+
+object BetaBinomial {
+  def logDensity(a: Real, b: Real, k: Real, n: Real): Real = {
+    val choose = Combinatorics.gamma(k + 1) - Combinatorics.gamma(n + 1) - Combinatorics
+      .gamma(k - n + 1)
+    choose +
+      Combinatorics.beta(a + n, k - n + b) +
+      Combinatorics.beta(a, b)
+  }
+}
