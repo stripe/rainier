@@ -6,16 +6,20 @@ import com.stripe.rainier.sampler._
 /**
   * The main probability monad used in Rainier for constructing probabilistic programs which can be sampled
   */
-class RandomVariable[+T](val value: T,
-                         private val densities: Set[RandomVariable.BoxedReal]) {
+class RandomVariable[+T](
+    val value: T,
+    private val densities: Set[RandomVariable.BoxedReal],
+    private val placeholders: Map[Variable, Array[Double]]) {
 
   def flatMap[U](fn: T => RandomVariable[U]): RandomVariable[U] = {
     val rv = fn(value)
-    new RandomVariable(rv.value, densities ++ rv.densities)
+    new RandomVariable(rv.value,
+                       densities ++ rv.densities,
+                       placeholders ++ rv.placeholders)
   }
 
   def map[U](fn: T => U): RandomVariable[U] =
-    new RandomVariable(fn(value), densities)
+    new RandomVariable(fn(value), densities, placeholders)
 
   def zip[U](other: RandomVariable[U]): RandomVariable[(T, U)] =
     for {
@@ -92,6 +96,25 @@ class RandomVariable[+T](val value: T,
     (allSamples, diagnostics)
   }
 
+  def optimize[V](optimizer: Optimizer, iterations: Int)(
+      implicit rng: RNG,
+      sampleable: Sampleable[T, V]): V =
+    optimize(optimizer, iterations, 1).head
+
+  def optimize[V](optimizer: Optimizer, iterations: Int, samples: Int)(
+      implicit rng: RNG,
+      sampleable: Sampleable[T, V]): List[V] = {
+    val (phVars, phData) = placeholders.toArray.unzip
+    val context = Context(density, phVars)
+    val params = optimizer.optimize(context, phData, iterations)
+    val fn = sampleable.prepare(value, context)
+    1.to(samples)
+      .map { _ =>
+        fn(params)
+      }
+      .toList
+  }
+
   lazy val density: Real =
     Real.sum(densities.toList.map(_.toReal))
 
@@ -112,8 +135,13 @@ object RandomVariable {
   //for use in the `densities` set
   private class BoxedReal(val toReal: Real)
 
+  def apply[A](a: A,
+               density: Real,
+               placeholders: Map[Variable, Array[Double]]): RandomVariable[A] =
+    new RandomVariable(a, Set(new BoxedReal(density)), placeholders)
+
   def apply[A](a: A, density: Real): RandomVariable[A] =
-    new RandomVariable(a, Set(new BoxedReal(density)))
+    apply(a, density, Map.empty)
 
   def apply[A](a: A): RandomVariable[A] =
     apply(a, Real.zero)
