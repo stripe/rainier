@@ -43,19 +43,23 @@ final case class SGD(stepSize: Double, data: Map[Variable, Array[Double]])
 
 private class SGDState(context: Context, placeholders: List[Variable])(
     implicit rng: RNG) {
+  val variables = (context.variables.toSet -- placeholders.toSet).toList
+  val grad = Gradient
+    .derive(variables ++ placeholders, context.density)
+    .take(variables.size)
+    .toList
   val cf = context.compiler
-    .compileUnsafe(context.variables ++ placeholders,
-                   context.density :: context.gradient)
+    .compileUnsafe(variables ++ placeholders, context.density :: grad)
   var inputBuf = new Array[Double](cf.numInputs)
   val outputBuf = new Array[Double](cf.numOutputs)
   val globalsBuf = new Array[Double](cf.numGlobals)
 
-  0.until(context.variables.size).foreach { i =>
+  0.until(variables.size).foreach { i =>
     inputBuf(i) = rng.standardNormal
   }
 
   def step(stepSize: Double, batch: Array[Double]): Double = {
-    val nVars = context.variables.size
+    val nVars = variables.size
     var i = 0
     while (i < batch.size) {
       inputBuf(nVars + i) = batch(i)
@@ -71,5 +75,7 @@ private class SGDState(context: Context, placeholders: List[Variable])(
   }
 
   def parameters: Array[Double] =
-    inputBuf.take(context.variables.size)
+    context.variables.map { v =>
+      inputBuf((variables ++ placeholders).indexOf(v))
+    }.toArray
 }

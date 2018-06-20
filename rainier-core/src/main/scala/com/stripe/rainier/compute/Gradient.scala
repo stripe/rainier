@@ -3,7 +3,7 @@ package com.stripe.rainier.compute
 import com.stripe.rainier.ir._
 import scala.collection.mutable.HashMap
 
-private object Gradient {
+object Gradient {
   def derive(variables: Seq[Variable], output: Real): Seq[Real] = {
     val diffs = HashMap.empty[Real, CompoundDiff]
     def diff(real: Real): CompoundDiff = {
