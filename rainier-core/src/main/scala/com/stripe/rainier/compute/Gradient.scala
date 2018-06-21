@@ -1,10 +1,14 @@
 package com.stripe.rainier.compute
 
 import com.stripe.rainier.ir._
+import scala.collection.generic.CanBuildFrom
 import scala.collection.mutable.HashMap
 
 private object Gradient {
-  def derive(variables: Seq[Variable], output: Real): Seq[Real] = {
+
+  def derive[F[α] <: TraversableOnce[α]](variables: F[Variable], output: Real)(
+      implicit cbf: CanBuildFrom[F[Real], Real, F[Real]]
+  ): F[Real] = {
     val diffs = HashMap.empty[Real, CompoundDiff]
     def diff(real: Real): CompoundDiff = {
       diffs.getOrElseUpdate(real, new CompoundDiff)
@@ -58,9 +62,10 @@ private object Gradient {
     }
 
     visit(output)
-    variables.map { v =>
-      diff(v).toReal
-    }
+
+    val builder = cbf()
+    builder ++= variables.map(v => diff(v).toReal)
+    builder.result
   }
 
   private sealed trait Diff {
