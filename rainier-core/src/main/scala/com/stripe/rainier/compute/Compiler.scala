@@ -52,9 +52,7 @@ final case class InstrumentingCompiler(orig: Compiler, printEvery: Int)
   }
 }
 
-final case class IRCompiler(methodSizeLimit: Int,
-                            classSizeLimit: Int,
-                            writeToTmpFiles: Boolean)
+final case class IRCompiler(methodSizeLimit: Int, classSizeLimit: Int)
     extends Compiler {
   def compileUnsafe(inputs: Seq[Variable],
                     outputs: Seq[Real]): ir.CompiledFunction = {
@@ -65,10 +63,6 @@ final case class IRCompiler(methodSizeLimit: Int,
     val irs = outputs.map { r =>
       translator.toIR(r)
     }
-    ir.CompiledFunction(params,
-                        irs,
-                        methodSizeLimit,
-                        classSizeLimit,
-                        writeToTmpFiles)
+    ir.CompiledFunction(params, irs, methodSizeLimit, classSizeLimit)
   }
 }
