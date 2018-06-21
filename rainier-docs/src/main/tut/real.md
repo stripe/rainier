@@ -81,7 +81,7 @@ This, of course, represents the function `xy(Θ) = Θ_x * Θ_y`.
 ## Evaluator and Compiler
 
 ```tut:silent
-import com.stripe.rainier.compute.{Evaluator,Compiler}
+import com.stripe.rainier.compute.{Evaluator,Compiler,Context}
 ```
 
 If you want to actually evaluate a function, you have to provide values for the parameters somehow. (Again, with the higher level API, you'd be unlikely to ever do this directly). One way to do that is by constructing an `Evaluator` object, and giving it a `Map[Variable,Double]` with the parameter values you want. For example:
@@ -105,7 +105,7 @@ eval2.toDouble(xy)
 However, this method of evaluating a `Real` is relatively slow. If you want to be more efficient, you need to use the `Compiler` to produce an `Array[Double] => Double` for a fixed set of inputs and outputs. So if we want a function from `(x,y)` to `xy`, we can make one like this:
 
 ```tut
-val xyFn = Compiler.default.compile(List(x,y), xy)
+val xyFn = Context(xy).compiler.compile(List(x,y), xy)
 ```
 
 And now we can use it as many times as we want:

@@ -34,6 +34,9 @@ sealed trait Real {
   def <(other: Real): Real = RealOps.isNegative(this - other)
   def >=(other: Real): Real = Real.one - (this < other)
   def <=(other: Real): Real = Real.one - (this > other)
+
+  lazy val variables: List[Variable] = RealOps.variables(this)
+  lazy val gradient: List[Real] = Gradient.derive(variables, this)
 }
 
 object Real {
