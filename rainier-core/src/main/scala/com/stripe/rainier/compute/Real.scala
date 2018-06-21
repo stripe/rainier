@@ -20,7 +20,7 @@ sealed trait Real {
   def *(other: Real): Real = RealOps.multiply(this, other)
 
   def -(other: Real): Real = this + (other * -1)
-  def /(other: Real): Real = this * other.pow(-1)
+  def /(other: Real): Real = RealOps.divide(this, other)
 
   def pow(exponent: Real): Real = RealOps.pow(this, exponent)
 

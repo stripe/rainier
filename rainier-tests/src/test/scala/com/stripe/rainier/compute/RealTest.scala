@@ -92,4 +92,8 @@ class RealTest extends FunSuite {
   run("pow") { x =>
     x.pow(x)
   }
+
+  run("<") { x =>
+    Real(5.499999999999998) < x
+  }
 }

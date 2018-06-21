@@ -90,6 +90,12 @@ private[compute] object RealOps {
         LogLineOps.multiply(LogLine(nc1), LogLine(nc2))
     }
 
+  def divide(left: Real, right: Real): Real =
+    (left, right) match {
+      case (Constant(x), Constant(y)) => Real(x / y)
+      case _                          => left * right.pow(-1)
+    }
+
   def pow(original: Real, exponent: Real): Real =
     exponent match {
       case Infinity       => Infinity
