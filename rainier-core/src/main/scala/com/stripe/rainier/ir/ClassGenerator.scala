@@ -1,8 +1,5 @@
 package com.stripe.rainier.ir
 
-import java.io.File
-import org.apache.commons.io.FileUtils
-
 import com.stripe.rainier.internal.asm.Opcodes._
 import com.stripe.rainier.internal.asm.tree.{ClassNode, MethodNode}
 import com.stripe.rainier.internal.asm.ClassWriter
@@ -14,9 +11,6 @@ private[ir] trait ClassGenerator {
   def name: String
   def superClasses: Array[String]
   def methods: Seq[MethodNode]
-
-  def writeToTmpFile(): Unit =
-    FileUtils.writeByteArrayToFile(new File("/tmp/" + name + ".class"), bytes)
 
   private def createClass: ClassNode = {
     val cls = new ClassNode()
