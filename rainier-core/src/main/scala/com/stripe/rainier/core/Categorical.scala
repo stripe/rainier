@@ -1,6 +1,6 @@
 package com.stripe.rainier.core
 
-import com.stripe.rainier.compute.Real
+import com.stripe.rainier.compute.{If, Real}
 
 /**
   * A finite discrete distribution
@@ -43,6 +43,7 @@ final case class Categorical[T](pmf: Map[T, Real]) extends Distribution[T] {
 
   def toMixture[V](implicit ev: T <:< Distribution[V]): Mixture[V, T] =
     Mixture[V, T](pmf)
+
   def toMultinomial: Predictor[Int, Map[T, Int], Multinomial[T]] =
     Predictor.from { k: Int =>
       Multinomial(pmf, k)
@@ -85,7 +86,14 @@ final case class Multinomial[T](pmf: Map[T, Real], k: Int)
   def logDensity(t: Map[T, Int]): Real =
     Combinatorics.factorial(k) + Real.sum(t.toList.map {
       case (v, i) =>
-        i * pmf.getOrElse(v, Real.zero).log - Combinatorics.factorial(i)
+        val p = pmf.getOrElse(v, Real.zero)
+        val pTerm = if (i == 0) {
+          If(p, whenNonZero = i * p.log, whenZero = Real.zero)
+        } else {
+          i * p.log
+        }
+
+        pTerm - Combinatorics.factorial(i)
     })
 }
 
