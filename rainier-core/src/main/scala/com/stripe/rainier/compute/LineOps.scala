@@ -116,13 +116,14 @@ private[compute] object LineOps {
     }
   }
 
-  def substituteKeys(line: Line, f: Variable => NonConstant): Line = {
-    val ax: Map[NonConstant, BigDecimal] = line.ax.map {
-        case (a, v) => f(a) -> v
+  def substituteKeys(line: Line, f: Map[Variable, NonConstant]): Line = {
+    val ax: Map[NonConstant, BigDecimal] = line.ax
+      .map {
+        case (a, v) => RealOps.substituteVariable(a, f) -> v
       }
       .groupBy(_._1)
-      .map {
-        case (a, vs) => vs.sum
+      .mapValues {
+        case vs => vs.map(_._2).sum
       }
     Line(ax, line.b)
   }

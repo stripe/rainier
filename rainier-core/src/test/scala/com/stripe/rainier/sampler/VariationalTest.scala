@@ -1,10 +1,9 @@
 package rainier.sampler
 
 import org.scalatest.FunSuite
-import rainier.compute._
-import rainier.core._
-import rainier.sampler._
-import rainier.repl._
+import com.stripe.rainier.sampler._
+import com.stripe.rainier.core._
+import com.stripe.rainier.repl._
 
 
 class VariationalTest extends FunSuite {
