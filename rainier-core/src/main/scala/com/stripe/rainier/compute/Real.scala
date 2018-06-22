@@ -92,8 +92,9 @@ Because it is common for ax to have a large number of terms, this is deliberatel
 as equality comparisons would be too expensive. The impact of this is subtle, see [0] at the bottom of this file
 for an example.
  */
-private[compute] final class Line private (val ax: Map[NonConstant, BigDecimal],
-                                           val b: BigDecimal)
+private[compute] final class Line private[compute] (
+    val ax: Map[NonConstant, BigDecimal],
+    val b: BigDecimal)
     extends NonConstant
 
 private object Line {
