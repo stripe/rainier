@@ -144,7 +144,7 @@ object Exponential {
 /**
   * A Beta distribution with expectation `a/(a + b)` and variance `ab/((a + b)^2 (1 + a + b))`.
   */
-final case class Beta(a: Real, b: Real) {
+final case class Beta(a: Real, b: Real) extends Continuous {
   def realLogDensity(real: Real): Real =
     If(real >= 0,
        If(real <= 1, betaDensity(real), Real.negInfinity),
