@@ -17,13 +17,14 @@ trait Injection { self =>
     See https://en.wikipedia.org/wiki/Probability_density_function#Dependent_variables_and_change_of_variables
     This function should be log(d/dy backwards(y)), where y = forwards(x).
    */
-  def logJacobian(y: Real): Real
+  def logBackwardsJacobian(y: Real): Real
+  def logForwardsJacobian(x: Real): Real
 
   def transform(dist: Continuous): Continuous = new Continuous {
     def realLogDensity(real: Real): Real =
       If(isDefinedAt(real),
          dist.realLogDensity(backwards(real)) +
-           logJacobian(real),
+           logBackwardsJacobian(real),
          Real.zero.log)
 
     val generator: Generator[Double] =
@@ -31,7 +32,14 @@ trait Injection { self =>
         n.toDouble(forwards(dist.generator.get(r, n)))
       }
 
-    def param: RandomVariable[Real] = dist.param.map(forwards)
+    override def supportTransform(v: Variable): Real =
+      forwards(dist.supportTransform(v))
+
+    override def supportTransformLogJacobian(v: Variable): Real =
+      logForwardsJacobian(supportTransform(v)) + dist
+        .supportTransformLogJacobian(v)
+
+    override def param: RandomVariable[Real] = dist.param.map(forwards)
   }
 }
 
@@ -42,7 +50,10 @@ final case class Scale(a: Real) extends Injection {
   private val lj = a.log * -1
   def forwards(x: Real): Real = x * a
   def backwards(y: Real): Real = y / a
-  def logJacobian(y: Real): Real = lj
+
+  def logBackwardsJacobian(y: Real): Real = lj
+  def logForwardsJacobian(x: Real): Real = a.log
+
   val requirements: Set[Real] = Set(a)
 }
 
@@ -52,7 +63,10 @@ final case class Scale(a: Real) extends Injection {
 final case class Translate(b: Real) extends Injection {
   def forwards(x: Real): Real = x + b
   def backwards(y: Real): Real = y - b
-  def logJacobian(y: Real): Real = Real.zero
+
+  def logBackwardsJacobian(y: Real): Real = Real.zero
+  override def logForwardsJacobian(x: Real): Real = Real.zero
+
   val requirements: Set[Real] = Set(b)
 }
 
@@ -64,7 +78,8 @@ object Exp extends Injection {
   def backwards(y: Real): Real = y.log
 
   //this is rarely important because it depends solely on y, which is usually data and not parameters
-  def logJacobian(y: Real): Real = y.log * -1
+  def logBackwardsJacobian(y: Real): Real = y.log * -1
+  override def logForwardsJacobian(x: Real): Real = x
 
   override def isDefinedAt(y: Real): Real =
     y > 0
