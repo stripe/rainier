@@ -144,7 +144,7 @@ object Exponential {
 /**
   * A Beta distribution with expectation `a/(a + b)` and variance `ab/((a + b)^2 (1 + a + b))`.
   */
-final case class Beta(a: Real, b: Real) {
+final case class Beta(a: Real, b: Real) extends Continuous {
   def realLogDensity(real: Real): Real =
     If(real >= 0,
        If(real <= 1, betaDensity(real), Real.negInfinity),
@@ -205,4 +205,42 @@ object Uniform {
 
   def apply(from: Real, to: Real): Continuous =
     standard.scale(to - from).translate(from)
+}
+
+/**
+  * A mixture distribution composed of Betas
+  *
+  * @param pmf A Map with keys representing component beta distributions and values corresponding to the probabilities of those components.
+  *            The probabilities should sum to 1.0, this is not checked for.
+  */
+final case class BetaMixture(pmf: Map[Continuous, Real]) extends Continuous {
+  def realLogDensity(t: Real): Real =
+    Real
+      .sum(pmf.toList.map {
+        case (dist, prob) =>
+          (dist.realLogDensity(t) + prob.log).exp
+      })
+      .log
+
+  def generator: Generator[Double] =
+    Categorical(pmf).generator.flatMap { d =>
+      d.generator
+    }
+
+  override def param: RandomVariable[Real] = {
+    val x = new Variable
+
+    val logistic = Real.one / (Real.one + (x * -1).exp)
+    val logisticJacobian = logistic * (1 - logistic)
+
+    val logDensity = logisticJacobian.log +
+      Real
+        .sum(pmf.toList.map {
+          case (dist, prob) =>
+            (dist.realLogDensity(logistic) + prob.log).exp
+        })
+        .log
+
+    RandomVariable(logistic, logDensity)
+  }
 }
