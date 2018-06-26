@@ -92,6 +92,10 @@ private[compute] object RealOps {
 
   def divide(left: Real, right: Real): Real =
     (left, right) match {
+      case (Constant(Real.BigZero), Constant(Real.BigZero)) =>
+        throw new ArithmeticException(
+          "Cannot divide zero by zero")
+      case (_, Constant(Real.BigZero)) => left * Infinity
       case (Constant(x), Constant(y)) => Real(x / y)
       case _                          => left * right.pow(-1)
     }
@@ -120,6 +124,8 @@ private[compute] object RealOps {
           NegInfinity
         else
           Infinity
+      case (Constant(Real.BigZero), _) if exponent < 0 =>
+        Infinity
       case (Constant(v), _) => Real(pow(v, exponent))
       case (l: Line, _) =>
         LineOps.pow(l, exponent).getOrElse {
