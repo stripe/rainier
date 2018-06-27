@@ -28,7 +28,6 @@ trait Continuous extends Distribution[Double] {
     val paramSupport = support.transform(x)
 
     val logDensity = support.logJacobian(x) + realLogDensity(paramSupport)
-    // TODO: I removed `If isDefined` from here to speed up logDensity calls; check where it's necessary
 
     RandomVariable(paramSupport, logDensity)
   }
