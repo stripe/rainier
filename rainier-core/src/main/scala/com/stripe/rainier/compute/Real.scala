@@ -68,9 +68,9 @@ object Real {
   val negInfinity: Real = NegInfinity
 }
 
-final private case class Constant(value: BigDecimal) extends Real
-final private object Infinity extends Real
-final private object NegInfinity extends Real
+final private[compute] case class Constant(value: BigDecimal) extends Real
+final private[compute] object Infinity extends Real
+final private[compute] object NegInfinity extends Real
 
 sealed trait NonConstant extends Real
 
@@ -78,7 +78,7 @@ final class Variable extends NonConstant {
   private[compute] val param = new ir.Parameter
 }
 
-final private case class Unary(original: NonConstant, op: ir.UnaryOp)
+final private[compute] case class Unary(original: NonConstant, op: ir.UnaryOp)
     extends NonConstant
 
 /*
@@ -92,8 +92,9 @@ Because it is common for ax to have a large number of terms, this is deliberatel
 as equality comparisons would be too expensive. The impact of this is subtle, see [0] at the bottom of this file
 for an example.
  */
-private final class Line private (val ax: Map[NonConstant, BigDecimal],
-                                  val b: BigDecimal)
+private[compute] final class Line private[compute] (
+    val ax: Map[NonConstant, BigDecimal],
+    val b: BigDecimal)
     extends NonConstant
 
 private object Line {
@@ -122,7 +123,7 @@ Unlike for Line, it is not expected that ax will have a large number of terms, a
 Luckily, this aligns well with the demands of numerical stability: if you have to multiply a lot of numbers
 together, you are better off adding their logs.
  */
-private final case class LogLine(
+private[compute] final case class LogLine(
     ax: Map[NonConstant, BigDecimal]
 ) extends NonConstant {
   require(ax.size > 0)

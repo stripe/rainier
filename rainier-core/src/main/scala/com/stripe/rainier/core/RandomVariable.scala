@@ -101,6 +101,14 @@ class RandomVariable[+T](val value: T,
       this
     else
       RandomVariable(value, Real.zero.log)
+
+  def show(implicit s: Show[T, String], r: Show[Real, String]): String = {
+    val valueString = s.show(value)
+    val densitiesString = densities.map { (b: RandomVariable.BoxedReal) =>
+      r.show(b.toReal)
+    }.toString
+    s"Value:$valueString;Densities:$densitiesString"
+  }
 }
 
 /**
