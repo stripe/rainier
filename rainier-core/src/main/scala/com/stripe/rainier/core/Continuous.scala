@@ -7,29 +7,34 @@ import scala.annotation.tailrec
 /**
   * A Continuous Distribution, with method `param` allowing conversion to a RandomVariable
   */
-trait Continuous extends Distribution[Double] { self =>
+trait Continuous extends Distribution[Double] {
+  self =>
   def logDensity(t: Double): Real =
     realLogDensity(Real(t))
 
   def scale(a: Real): Continuous = Scale(a).transform(this)
+
   def translate(b: Real): Continuous = Translate(b).transform(this)
+
   def exp: Continuous = Exp.transform(this)
 
   private[rainier] def realLogDensity(real: Real): Real
 
-  private[rainier] def supportTransform(v: Variable): Real
-  private[rainier] def supportTransformLogJacobian(v: Variable): Real
+  val support: Support
 
   def param: RandomVariable[Real] = {
     val x = new Variable
 
-    val support = supportTransform(x)
-    val logJacobian = supportTransformLogJacobian(x)
-    val logDensity = logJacobian + realLogDensity(support)
+    val paramSupport = support.transform(x)
 
-    RandomVariable(support, logDensity)
+    val logDensity = If(
+      support.isDefinedAt(x),
+      support.logJacobian(x) + realLogDensity(paramSupport),
+      Real.negInfinity
+    )
+
+    RandomVariable(paramSupport, logDensity)
   }
-
 }
 
 /**
@@ -47,8 +52,7 @@ trait LocationScaleFamily { self =>
     def realLogDensity(real: Real): Real =
       self.logDensity(real)
 
-    def supportTransform(v: Variable): Real = v
-    override def supportTransformLogJacobian(v: Variable): Real = Real.zero
+    val support = RealSupport
   }
 
   def apply(location: Real, scale: Real): Continuous =
@@ -100,13 +104,7 @@ object Gamma {
            Combinatorics.gamma(shape) - real,
          Real.zero.log)
 
-    /*
-    Jacobian time: we need pdf(x) and we have pdf(f(x)) where f(x) = e^x.
-    This is pdf(f(x))f'(x) which is pdf(e^x)e^x.
-    If we take the logs we get logPDF(e^x) + x.
-     */
-    override def supportTransform(v: Variable): Real = v.exp
-    override def supportTransformLogJacobian(v: Variable): Real = v
+    val support = PositiveSupport
 
     def generator: Generator[Double] = Generator.require(Set(shape)) { (r, n) =>
       val a = n.toDouble(shape)
@@ -159,10 +157,7 @@ final case class Beta(a: Real, b: Real) extends Continuous {
        If(real <= 1, betaDensity(real), Real.negInfinity),
        Real.negInfinity)
 
-  override def supportTransform(v: Variable): Real =
-    Real.one / (Real.one + (v * -1).exp)
-  def supportTransformLogJacobian(v: Variable): Real =
-    supportTransform(v).log + (1 - supportTransform(v)).log
+  val support = OpenUnitSupport
 
   val generator: Generator[Double] =
     Gamma(a, 1).generator.zip(Gamma(b, 1).generator).map {
@@ -203,10 +198,7 @@ object Uniform {
   val standard: Continuous = new Continuous {
     def realLogDensity(real: Real): Real = beta11.realLogDensity(real)
 
-    def supportTransform(v: Variable): Real =
-      beta11.supportTransform(v)
-    def supportTransformLogJacobian(v: Variable): Real =
-      beta11.supportTransformLogJacobian(v)
+    val support = beta11.support
 
     val generator: Generator[Double] =
       Generator.from { (r, n) =>
@@ -222,13 +214,9 @@ object Uniform {
   * A mixture distribution composed of continuous distributions
   *
   * @param pmf A Map with keys representing component beta distributions and values corresponding to the probabilities of those components.
-  * @param _supportTransform A function mapping a real-valued variable to the range of support of the combined mixture.
-  * @param _supportTransformLogJacobian The jacobian (derivative with respect to v) of the _supportTransform function
+  * @param support The support of the new mixture distribution.
   */
-final case class ContinuousMixture(
-    pmf: Map[Continuous, Real],
-    _supportTransform: Variable => Real,
-    _supportTransformLogJacobian: Variable => Real)
+final case class ContinuousMixture(pmf: Map[Continuous, Real], support: Support)
     extends Continuous {
   def realLogDensity(t: Real): Real =
     Real
@@ -242,16 +230,19 @@ final case class ContinuousMixture(
     Categorical(pmf).generator.flatMap { d =>
       d.generator
     }
-
-  override def supportTransform(v: Variable): Real = _supportTransform(v)
-  override def supportTransformLogJacobian(v: Variable): Real =
-    _supportTransformLogJacobian(v)
-
 }
 
 object ContinuousMixture {
-  def apply(pmfs: Seq[(Continuous, Real)]): ContinuousMixture =
-    new ContinuousMixture(pmfs.toMap,
-                          pmfs.head._1.supportTransform,
-                          pmfs.head._1.supportTransformLogJacobian)
+
+  /**
+    * Allows the creation of a mixture distribution without specifying the support, using the support of one of its components.
+    * @param supportDistribution A distribution (and its weight) in the mixture with support which is the union of all supports in the mixture.
+    * @param otherDistributions The other distributions, in a Map(distribution -> distr weight) form.
+    */
+  def apply(supportDistribution: (Continuous, Real),
+            otherDistributions: Map[Continuous, Real]): ContinuousMixture =
+    new ContinuousMixture(
+      otherDistributions + supportDistribution,
+      supportDistribution._1.support
+    )
 }

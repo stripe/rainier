@@ -20,26 +20,30 @@ trait Injection { self =>
   def logBackwardsJacobian(y: Real): Real
   def logForwardsJacobian(x: Real): Real
 
-  def transform(dist: Continuous): Continuous = new Continuous {
-    def realLogDensity(real: Real): Real =
-      If(isDefinedAt(real),
-         dist.realLogDensity(backwards(real)) +
-           logBackwardsJacobian(real),
-         Real.zero.log)
+  def transform(dist: Continuous): Continuous = {
+    val oldSupport = dist.support
 
-    val generator: Generator[Double] =
-      Generator.require(self.requirements) { (r, n) =>
-        n.toDouble(forwards(dist.generator.get(r, n)))
-      }
+    val newSupport = new Support {
+      def transform(v: Variable): Real = forwards(oldSupport.transform(v))
 
-    override def supportTransform(v: Variable): Real =
-      forwards(dist.supportTransform(v))
+      def logJacobian(v: Variable): Real =
+        oldSupport.logJacobian(v) + logForwardsJacobian(oldSupport.transform(v))
 
-    override def supportTransformLogJacobian(v: Variable): Real =
-      logForwardsJacobian(supportTransform(v)) + dist
-        .supportTransformLogJacobian(v)
+      def isDefinedAt(y: Real): Real = oldSupport.isDefinedAt(backwards(y))
+    }
 
-    override def param: RandomVariable[Real] = dist.param.map(forwards)
+    new Continuous {
+      def realLogDensity(real: Real): Real =
+        dist.realLogDensity(backwards(real)) +
+          logBackwardsJacobian(real)
+
+      val generator: Generator[Double] =
+        Generator.require(self.requirements) { (r, n) =>
+          n.toDouble(forwards(dist.generator.get(r, n)))
+        }
+
+      val support: Support = newSupport
+    }
   }
 }
 
