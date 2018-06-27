@@ -62,6 +62,23 @@ class RandomVariable[+T](val value: T,
     RecordedSample(posteriorParams.map(_.toList))
   }
 
+  def replay[V](recording: Recording)(implicit rng: RNG,
+                                      sampleable: Sampleable[T, V]): List[V] = {
+    val context = Context(density)
+    val fn = sampleable.prepare(value, context)
+    recording.samples.map(fn)
+  }
+
+  def replay[V](recording: Recording, iterations: Int)(
+      implicit rng: RNG,
+      sampleable: Sampleable[T, V]): List[V] = {
+    val context = Context(density)
+    val fn = sampleable.prepare(value, context)
+    val sampledParams = RandomVariable(
+      Categorical.list(recording.samples).generator).sample(iterations)
+    sampledParams.map(fn)
+  }
+
   def sample[V]()(implicit rng: RNG, sampleable: Sampleable[T, V]): List[V] =
     sample(Sampler.Default.iterations)
 
