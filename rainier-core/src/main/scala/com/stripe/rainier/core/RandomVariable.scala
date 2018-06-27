@@ -41,6 +41,27 @@ class RandomVariable[+T](val value: T,
              num: Numeric[Real]): V =
     sampleable.get(value)(rng, num)
 
+  def record()(implicit rng: RNG): Recording =
+    record(Sampler.Default.iterations)
+
+  def record(iterations: Int)(implicit rng: RNG): Recording =
+    record(Sampler.Default.sampler,
+           Sampler.Default.warmupIterations,
+           iterations)
+
+  def record(sampler: Sampler,
+             warmupIterations: Int,
+             iterations: Int,
+             keepEvery: Int = 1)(implicit rng: RNG): Recording = {
+    val posteriorParams = Sampler
+      .sample(Context(density),
+              sampler,
+              warmupIterations,
+              iterations,
+              keepEvery)
+    RecordedSample(posteriorParams.map(_.toList))
+  }
+
   def sample[V]()(implicit rng: RNG, sampleable: Sampleable[T, V]): List[V] =
     sample(Sampler.Default.iterations)
 
