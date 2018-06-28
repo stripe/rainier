@@ -33,18 +33,21 @@ trait Injection { self =>
     }
 
     new Continuous {
+      val support: Support = newSupport
+
       def realLogDensity(real: Real): Real =
-        If(newSupport.isDefinedAt(real),
+        /*If(support.isDefinedAt(real),
            dist.realLogDensity(backwards(real)) +
              logBackwardsJacobian(real),
-           Real.zero.log)
+           Real.zero.log)*/
+        dist.realLogDensity(backwards(real)) +
+          logBackwardsJacobian(real)
 
       val generator: Generator[Double] =
         Generator.require(self.requirements) { (r, n) =>
           n.toDouble(forwards(dist.generator.get(r, n)))
         }
 
-      val support: Support = newSupport
     }
   }
 }

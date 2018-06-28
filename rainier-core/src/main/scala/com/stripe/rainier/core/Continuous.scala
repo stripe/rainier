@@ -241,4 +241,14 @@ object ContinuousMixture {
       otherDistributions + supportDistribution,
       supportDistribution._1.support
     )
+
+  def apply(supportDistribution: Continuous,
+            otherDistributions: Map[Continuous, Real]): ContinuousMixture = {
+    val remainingWeight: Real = 1.0 - otherDistributions.values.sum
+    new ContinuousMixture(
+      otherDistributions + (supportDistribution -> remainingWeight),
+      supportDistribution.support
+    )
+  }
+
 }

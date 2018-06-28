@@ -36,13 +36,7 @@ object OpenUnitSupport extends Support {
   def logJacobian(v: Variable): Real =
     transform(v).log + (1 - transform(v)).log
 
-  // (x > 0) <=> ((x + |x|) != 0) && (x != 0) <=> (x + |x|) * x != 0
-  def greaterThan0(x: Real): Real = (x + x.abs) * x
-
-  // x is in (0, 1) <=> (x > 0) && (1 - x > 0)
-  def in01(x: Real): Real = greaterThan0(x) * greaterThan0(1 - x)
-
-  def isDefinedAt(x: Real): Real = in01(x)
+  def isDefinedAt(x: Real): Real = (x > 0.0) * (x < 1.0)
 }
 
 /**
@@ -52,16 +46,7 @@ object PositiveSupport extends Support {
   def transform(v: Variable): Real =
     v.exp
 
-  /*
-  Jacobian time: we need pdf(x) and we have pdf(f(x)) where f(x) = e^x.
-  This is pdf(f(x))f'(x) which is pdf(e^x)e^x.
-  If we take the logs we get logPDF(e^x) + x.
-   */
-  def logJacobian(v: Variable): Real =
-    v
+  def logJacobian(v: Variable): Real = v
 
-  // (x > 0) <=> ((x + |x|) != 0) && (x != 0) <=> (x + |x|) * x != 0
-  def greaterThan0(x: Real): Real = (x + x.abs) * x
-
-  def isDefinedAt(x: Real): Real = greaterThan0(x)
+  def isDefinedAt(x: Real): Real = x > 0.0
 }
