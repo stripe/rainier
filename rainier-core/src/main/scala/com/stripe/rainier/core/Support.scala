@@ -11,8 +11,6 @@ trait Support { self =>
   def transform(v: Variable): Real
 
   def logJacobian(v: Variable): Real
-
-  def isDefinedAt(x: Real): Real
 }
 
 /**
@@ -22,8 +20,6 @@ object RealSupport extends Support {
   def transform(v: Variable): Real = v
 
   def logJacobian(v: Variable): Real = Real.zero
-
-  def isDefinedAt(x: Real): Real = Real.one
 }
 
 /**
@@ -35,8 +31,6 @@ object OpenUnitSupport extends Support {
 
   def logJacobian(v: Variable): Real =
     transform(v).log + (1 - transform(v)).log
-
-  def isDefinedAt(x: Real): Real = (x > 0.0) * (x < 1.0)
 }
 
 /**
@@ -47,6 +41,4 @@ object PositiveSupport extends Support {
     v.exp
 
   def logJacobian(v: Variable): Real = v
-
-  def isDefinedAt(x: Real): Real = x > 0.0
 }

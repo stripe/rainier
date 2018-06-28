@@ -7,7 +7,6 @@ import com.stripe.rainier.unused
   * Injective transformations
   */
 trait Injection { self =>
-
   def forwards(x: Real): Real
   def backwards(y: Real): Real
   def isDefinedAt(@unused y: Real): Real = Real.one
