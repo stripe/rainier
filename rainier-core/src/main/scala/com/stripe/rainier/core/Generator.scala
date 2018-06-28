@@ -26,11 +26,12 @@ trait Generator[T] { self =>
     def get(implicit r: RNG, n: Numeric[Real]): (T, U) = (self.get, other.get)
   }
 
-  def repeat(k: Int): Generator[Seq[T]] = new Generator[Seq[T]] {
+  def repeat(k: Real): Generator[Seq[T]] = new Generator[Seq[T]] {
     val requirements: Set[Real] = self.requirements
-    def get(implicit r: RNG, n: Numeric[Real]): Seq[T] = 0.until(k).map { i =>
-      self.get
-    }
+    def get(implicit r: RNG, n: Numeric[Real]): Seq[T] =
+      0.until(n.toInt(k)).map { i =>
+        self.get
+      }
   }
 }
 

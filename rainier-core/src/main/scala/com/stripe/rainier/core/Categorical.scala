@@ -7,7 +7,8 @@ import com.stripe.rainier.compute.{If, Real}
   *
   * @param pmf A map with keys corresponding to the possible outcomes and values corresponding to the probabilities of those outcomes
   */
-final case class Categorical[T](pmf: Map[T, Real]) extends Distribution[T,Map[T,Real]] {
+final case class Categorical[T](pmf: Map[T, Real])
+    extends Distribution[T, Map[T, Real]] {
   def map[U](fn: T => U): Categorical[U] =
     flatMap { t =>
       Categorical(Map(fn(t) -> Real.one))
@@ -41,11 +42,11 @@ final case class Categorical[T](pmf: Map[T, Real]) extends Distribution[T,Map[T,
     }
   }
 
-  def toMixture[V](implicit ev: T <:< Distribution[V]): Mixture[V, T] =
-    Mixture[V, T](pmf)
-
-  def toMultinomial: Predictor[Int, Map[T, Int], Multinomial[T]] =
-    Predictor.from { k: Int =>
+  def toMixture[V, P](implicit ev: T <:< Distribution[V, P],
+                      placeholder: Placeholder[V, P]): Mixture[V, P, T] =
+    Mixture[V, P, T](pmf)
+  def toMultinomial: Predictor[Int, Real, Map[T, Int], Multinomial[T]] =
+    Predictor.from[Int] { k =>
       Multinomial(pmf, k)
     }
 }
@@ -54,10 +55,10 @@ object Categorical {
 
   def boolean(p: Real): Categorical[Boolean] =
     Categorical(Map(true -> p, false -> (Real.one - p)))
-  def binomial(p: Real): Predictor[Int, Int, Binomial] = Predictor.from {
-    k: Int =>
+  def binomial(p: Real): Predictor[Int, Real, Int, Binomial] =
+    Predictor.from[Int] { k =>
       Binomial(p, k)
-  }
+    }
 
   def normalize[T](pmf: Map[T, Real]): Categorical[T] = {
     val total = Real.sum(pmf.values.toList)
@@ -77,7 +78,7 @@ object Categorical {
   * @param k The number of multinomial trials
   */
 final case class Multinomial[T](pmf: Map[T, Real], k: Real)
-    extends Distribution[Map[T, Int],Map[T,Real]] {
+    extends Distribution[Map[T, Int], Map[T, Real]] {
   def generator: Generator[Map[T, Int]] =
     Categorical(pmf).generator.repeat(k).map { seq =>
       seq.groupBy(identity).map { case (t, ts) => (t, ts.size) }
@@ -103,7 +104,7 @@ final case class Multinomial[T](pmf: Map[T, Real], k: Real)
   * @param p The probability of success
   * @param k The number of trials
   */
-final case class Binomial(p: Real, k: Real) extends Distribution[Int,Real] {
+final case class Binomial(p: Real, k: Real) extends Distribution[Int, Real] {
   val multi: Multinomial[Boolean] =
     Categorical.boolean(p).toMultinomial(k)
 
@@ -136,10 +137,11 @@ final case class Binomial(p: Real, k: Real) extends Distribution[Int,Real] {
   *
   * @param pmf A Map with keys representing component distributions and values corresponding to the probabilities of those components
   */
-final case class Mixture[T, D](pmf: Map[D, Real])(
-    implicit ev: D <:< Distribution[T])
-    extends Distribution[T] {
-  def logDensity(t: T): Real =
+final case class Mixture[T, P, D](pmf: Map[D, Real])(
+    implicit ev: D <:< Distribution[T, P],
+    placeholder: Placeholder[T, P])
+    extends Distribution[T, P] {
+  def logDensity(t: P): Real =
     Real
       .sum(pmf.toList.map {
         case (dist, prob) =>
@@ -158,7 +160,7 @@ final case class Mixture[T, D](pmf: Map[D, Real])(
   *
   */
 final case class BetaBinomial(a: Real, b: Real, k: Real)
-    extends Distribution[Int] {
+    extends Distribution[Int, Real] {
   def logDensity(t: Real): Real =
     Combinatorics.choose(k, t) +
       Combinatorics.beta(a + t, k - t + b) -
