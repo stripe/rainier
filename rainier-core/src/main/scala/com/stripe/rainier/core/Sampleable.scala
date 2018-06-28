@@ -51,11 +51,11 @@ object Sampleable {
         value.get
     }
 
-  implicit val real: Sampleable[Real, Double] =
-    new Sampleable[Real, Double] {
-      def requirements(value: Real): Set[Real] = Set(value)
-      def get(value: Real)(implicit r: RNG, n: Numeric[Real]): Double =
-        n.toDouble(value)
+  implicit def placeholder[T,P](implicit p: Placeholder[T,P]): Sampleable[P, T] =
+    new Sampleable[P, T] {
+      def requirements(value: P): Set[Real] = p.requirements(value)
+      def get(value: P)(implicit r: RNG, n: Numeric[Real]): Double =
+        p.get(value)
     }
 
   implicit def map[K, S, T](

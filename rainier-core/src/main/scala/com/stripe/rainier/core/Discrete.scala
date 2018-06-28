@@ -7,7 +7,7 @@ import com.stripe.rainier.compute.Real
   *
   * @param lambda The mean of the Poisson distribution
   */
-final case class Poisson(lambda: Real) extends Distribution[Int] {
+final case class Poisson(lambda: Real) extends Distribution[Int, Real] {
   def logDensity(t: Int): Real = {
     lambda.log * t - lambda - Combinatorics.factorial(t)
   }

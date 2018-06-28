@@ -18,7 +18,7 @@ object Combinatorics {
   def beta(a: Real, b: Real): Real =
     gamma(a) + gamma(b) - gamma(a + b)
 
-  def factorial(k: Real): Real = gamma(k+1)
+  def factorial(k: Real): Real = gamma(k + 1)
 
   def choose(n: Real, k: Real): Real =
     factorial(n) - factorial(k) - factorial(n - k)
