@@ -7,7 +7,7 @@ import com.stripe.rainier.compute._
   * Specifies a function to transform a real-valued variable to this range,
   * and its log-jacobian.
   */
-trait Support { self =>
+trait Support {
   def transform(v: Variable): Real
 
   def logJacobian(v: Variable): Real
