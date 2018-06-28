@@ -18,7 +18,7 @@ trait Injection { self =>
    */
   def logJacobian(y: Real): Real
 
-  def transform(dist: BaseContinuous): BaseContinuous = new BaseContinuous {
+  def transform(dist: Continuous): Continuous = new Continuous {
     def realLogDensity(real: Real): Real =
       If(isDefinedAt(real),
          dist.realLogDensity(backwards(real)) +
