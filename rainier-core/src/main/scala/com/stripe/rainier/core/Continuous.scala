@@ -5,28 +5,35 @@ import com.stripe.rainier.sampler.RNG
 import scala.annotation.tailrec
 
 /**
-  * A Continuous Distribution, with method `param` allowing conversion to a RandomVariable
+  * A Continuous Distribution, with method `param` allowing conversion to a RandomVariable.
   */
-trait Continuous extends Distribution[Double] { self =>
+trait BaseContinuous extends Distribution[Double] {
   def logDensity(t: Double): Real =
     realLogDensity(Real(t))
 
-  private[rainier] val support: Support
-
-  def scale(a: Real): Continuous = Scale(a).transform(this)
-  def translate(b: Real): Continuous = Translate(b).transform(this)
-  def exp: Continuous = Exp.transform(this)
+  def scale(a: Real): BaseContinuous = Scale(a).transform(this)
+  def translate(b: Real): BaseContinuous = Translate(b).transform(this)
+  def exp: BaseContinuous = Exp.transform(this)
 
   private[rainier] def realLogDensity(real: Real): Real
+
+  def param: RandomVariable[Real]
+}
+
+/**
+  * A Continuous Distribution that inherits its transforms from a Support object.
+  */
+trait Continuous extends BaseContinuous {
+  private[rainier] val support: Support
 
   def param: RandomVariable[Real] = {
     val x = new Variable
 
-    val paramSupport = support.transform(x)
+    val transformed = support.transform(x)
 
-    val logDensity = support.logJacobian(x) + realLogDensity(paramSupport)
+    val logDensity = support.logJacobian(x) + realLogDensity(transformed)
 
-    RandomVariable(paramSupport, logDensity)
+    RandomVariable(transformed, logDensity)
   }
 }
 
@@ -48,7 +55,7 @@ trait LocationScaleFamily { self =>
       self.logDensity(real)
   }
 
-  def apply(location: Real, scale: Real): Continuous =
+  def apply(location: Real, scale: Real): BaseContinuous =
     standard.scale(scale).translate(location)
 }
 
@@ -87,7 +94,7 @@ object Laplace extends LocationScaleFamily {
   * A Gamma distribution with expectation `shape*scale` and variance `shape*scale*scale`. N.B. It is parameterised with *scale* rather than *rate*, as is more typical in statistics texts.
   */
 object Gamma {
-  def apply(shape: Real, scale: Real): Continuous =
+  def apply(shape: Real, scale: Real): BaseContinuous =
     standard(shape).scale(scale)
 
   def standard(shape: Real): Continuous = new Continuous {
@@ -137,7 +144,7 @@ object Gamma {
   */
 object Exponential {
   val standard: Continuous = Gamma.standard(1.0)
-  def apply(rate: Real): Continuous =
+  def apply(rate: Real): BaseContinuous =
     standard.scale(Real.one / rate)
 }
 
@@ -179,7 +186,7 @@ object Beta {
   * A LogNormal distribution representing the exponential of a Gaussian random variable with expectation `location` and standard deviation `scale`. It therefore has expectation `exp(location + scale*scale/2)`.
   */
 object LogNormal {
-  def apply(location: Real, scale: Real): Continuous =
+  def apply(location: Real, scale: Real): BaseContinuous =
     Normal(location, scale).exp
 }
 
@@ -199,6 +206,6 @@ object Uniform {
       }
   }
 
-  def apply(from: Real, to: Real): Continuous =
+  def apply(from: Real, to: Real): BaseContinuous =
     standard.scale(to - from).translate(from)
 }

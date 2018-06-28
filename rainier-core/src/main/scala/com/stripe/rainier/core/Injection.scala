@@ -18,9 +18,7 @@ trait Injection { self =>
    */
   def logJacobian(y: Real): Real
 
-  def transform(dist: Continuous): Continuous = new Continuous {
-    val support = dist.support
-
+  def transform(dist: BaseContinuous): BaseContinuous = new BaseContinuous {
     def realLogDensity(real: Real): Real =
       If(isDefinedAt(real),
          dist.realLogDensity(backwards(real)) +
@@ -32,7 +30,7 @@ trait Injection { self =>
         n.toDouble(forwards(dist.generator.get(r, n)))
       }
 
-    override def param: RandomVariable[Real] = dist.param.map(forwards)
+    def param: RandomVariable[Real] = dist.param.map(forwards)
   }
 }
 
