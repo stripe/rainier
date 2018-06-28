@@ -8,16 +8,26 @@ import scala.annotation.tailrec
   * A Continuous Distribution, with method `param` allowing conversion to a RandomVariable
   */
 trait Continuous extends Distribution[Double] { self =>
-  def param: RandomVariable[Real]
-
   def logDensity(t: Double): Real =
     realLogDensity(Real(t))
+
+  private[rainier] val support: Support
 
   def scale(a: Real): Continuous = Scale(a).transform(this)
   def translate(b: Real): Continuous = Translate(b).transform(this)
   def exp: Continuous = Exp.transform(this)
 
   private[rainier] def realLogDensity(real: Real): Real
+
+  def param: RandomVariable[Real] = {
+    val x = new Variable
+
+    val paramSupport = support.transform(x)
+
+    val logDensity = support.logJacobian(x) + realLogDensity(paramSupport)
+
+    RandomVariable(paramSupport, logDensity)
+  }
 }
 
 /**
@@ -28,16 +38,14 @@ trait LocationScaleFamily { self =>
   def generate(r: RNG): Double
 
   val standard: Continuous = new Continuous {
+    val support: Support = RealSupport
+
     val generator: Generator[Double] =
       Generator.from { (r, n) =>
         generate(r)
       }
     def realLogDensity(real: Real): Real =
       self.logDensity(real)
-    def param: RandomVariable[Variable] = {
-      val x = new Variable
-      RandomVariable(x, self.logDensity(x))
-    }
   }
 
   def apply(location: Real, scale: Real): Continuous =
@@ -83,21 +91,13 @@ object Gamma {
     standard(shape).scale(scale)
 
   def standard(shape: Real): Continuous = new Continuous {
+    val support = PositiveSupport
+
     def realLogDensity(real: Real): Real =
       If(real > 0,
          (shape - 1) * real.log -
            Combinatorics.gamma(shape) - real,
          Real.zero.log)
-
-    /*
-    Jacobian time: we need pdf(x) and we have pdf(f(x)) where f(x) = e^x.
-    This is pdf(f(x))f'(x) which is pdf(e^x)e^x.
-    If we take the logs we get logPDF(e^x) + x.
-     */
-    def param: RandomVariable[Real] = {
-      val x = new Variable
-      RandomVariable(x.exp, x + realLogDensity(x.exp))
-    }
 
     def generator: Generator[Double] = Generator.require(Set(shape)) { (r, n) =>
       val a = n.toDouble(shape)
@@ -145,18 +145,12 @@ object Exponential {
   * A Beta distribution with expectation `a/(a + b)` and variance `ab/((a + b)^2 (1 + a + b))`.
   */
 final case class Beta(a: Real, b: Real) extends Continuous {
+  val support = OpenUnitSupport
+
   def realLogDensity(real: Real): Real =
     If(real >= 0,
        If(real <= 1, betaDensity(real), Real.negInfinity),
        Real.negInfinity)
-
-  def param: RandomVariable[Real] = {
-    val x = new Variable
-    val logistic = Real.one / (Real.one + (x * -1).exp)
-    val logisticJacobian = logistic * (1 - logistic)
-    val density = betaDensity(logistic) + logisticJacobian.log
-    RandomVariable(logistic, density)
-  }
 
   val generator: Generator[Double] =
     Gamma(a, 1).generator.zip(Gamma(b, 1).generator).map {
@@ -195,8 +189,10 @@ object LogNormal {
 object Uniform {
   val beta11 = Beta(1, 1)
   val standard: Continuous = new Continuous {
+    val support = beta11.support
+
     def realLogDensity(real: Real): Real = beta11.realLogDensity(real)
-    def param: RandomVariable[Real] = beta11.param
+
     val generator: Generator[Double] =
       Generator.from { (r, n) =>
         r.standardUniform
