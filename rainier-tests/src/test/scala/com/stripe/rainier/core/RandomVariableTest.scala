@@ -5,7 +5,7 @@ import com.stripe.rainier.sampler.RNG
 import org.scalatest.FunSuite
 
 class RandomVariableTest extends FunSuite {
-
+  /*
   def assertEquiv[S, T](x: RandomVariable[S], y: RandomVariable[S])(
       implicit s: Sampleable[S, T]): Unit = {
     List(0.0, 1.0, -1.0).foreach { paramValue =>
@@ -71,4 +71,5 @@ class RandomVariableTest extends FunSuite {
                   (x: Real) => Uniform(0, x).param,
                   (x: Real) => Exponential(x).param)
   }
+ */
 }

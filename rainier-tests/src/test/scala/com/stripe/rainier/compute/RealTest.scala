@@ -8,7 +8,7 @@ class RealTest extends FunSuite {
     test(description) {
       val x = new Variable
       val result = fn(x)
-      val c = Context(result).compiler.compile(List(x), result)
+      val c = IRCompiler(200, 100).compile(List(x), result)
       List(1.0, 0.0, -1.0, 2.0, -2.0, 0.5, -0.5).foreach { n =>
         val constant = Try { fn(Constant(n)) } match {
           case Success(Infinity)                 => 1.0 / 0.0
