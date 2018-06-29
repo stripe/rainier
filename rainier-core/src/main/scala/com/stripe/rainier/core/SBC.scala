@@ -6,7 +6,7 @@ import com.stripe.rainier.compute._
 //implements Simulation-Based Calibration from https://arxiv.org/abs/1804.06788
 final case class SBC[T](priorGenerators: Seq[Generator[Double]],
                         priorParams: Seq[Real],
-                        posterior: RandomVariable[(Distribution[T], Real)]) {
+                        posterior: RandomVariable[(Distribution[T, _], Real)]) {
 
   import SBC._
 
@@ -205,14 +205,14 @@ object SBC {
   2) the parameter value or summary stat we're calibrating on
    */
   def apply[T](priors: Seq[Continuous])(
-      fn: Seq[Real] => (Distribution[T], Real)): SBC[T] = {
+      fn: Seq[Real] => (Distribution[T, _], Real)): SBC[T] = {
     val priorParams = priors.map(_.param)
     val priorGenerators = priors.map(_.generator)
     val posterior = RandomVariable.traverse(priorParams).map(fn)
     SBC(priorGenerators, priorParams.map(_.value), posterior)
   }
 
-  def apply[T](prior: Continuous)(fn: Real => Distribution[T]): SBC[T] =
+  def apply[T](prior: Continuous)(fn: Real => Distribution[T, _]): SBC[T] =
     apply(List(prior)) { l =>
       (fn(l.head), l.head)
     }
