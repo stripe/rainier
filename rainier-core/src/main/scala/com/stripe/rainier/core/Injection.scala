@@ -85,7 +85,7 @@ object Exp extends Injection {
   val requirements: Set[Real] = Set.empty
 
   def transformSupport(supp: Support): Support = supp match {
-    case UnboundedSupport         => UnboundedSupport
+    case UnboundedSupport         => BoundedBelowSupport(Real.zero)
     case BoundedBelowSupport(min) => BoundedBelowSupport(forwards(min))
     case BoundedAboveSupport(max) => BoundedSupport(Real.zero, forwards(max))
     case BoundedSupport(a, b)     => BoundedSupport(forwards(a), forwards(b))
