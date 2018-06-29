@@ -100,7 +100,7 @@ object Gamma {
     standard(shape).scale(scale)
 
   def standard(shape: Real): StandardContinuous = new StandardContinuous {
-    val support = new BoundedBelowSupport(Real.zero)
+    val support = BoundedBelowSupport(Real.zero)
 
     def realLogDensity(real: Real): Real =
       If(real > 0,

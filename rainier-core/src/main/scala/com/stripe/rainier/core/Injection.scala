@@ -11,7 +11,7 @@ private[rainier] trait Injection { self =>
   def backwards(y: Real): Real
   def isDefinedAt(@unused y: Real): Real = Real.one
   def requirements: Set[Real]
-  def supportTransform(supp: Support): Support
+  def transformSupport(supp: Support): Support
   /*
     See https://en.wikipedia.org/wiki/Probability_density_function#Dependent_variables_and_change_of_variables
     This function should be log(d/dy backwards(y)), where y = forwards(x).
@@ -19,7 +19,7 @@ private[rainier] trait Injection { self =>
   def logJacobian(y: Real): Real
 
   def transform(dist: Continuous): Continuous = new Continuous {
-    val support: Support = supportTransform(dist.support)
+    val support: Support = transformSupport(dist.support)
 
     def realLogDensity(real: Real): Real =
       If(isDefinedAt(real),
@@ -41,12 +41,13 @@ private[rainier] trait Injection { self =>
   * We assume that (a > 0).
   */
 final case class Scale(a: Real) extends Injection {
+  private val lj = a.log * -1
   def forwards(x: Real): Real = x * a
   def backwards(y: Real): Real = y / a
-  def logJacobian(y: Real): Real = a.log * -1
+  def logJacobian(y: Real): Real = lj
   val requirements: Set[Real] = Set(a)
 
-  def supportTransform(supp: Support): Support = supp match {
+  def transformSupport(supp: Support): Support = supp match {
     case UnboundedSupport         => UnboundedSupport
     case BoundedBelowSupport(min) => BoundedBelowSupport(forwards(min))
     case BoundedAboveSupport(max) => BoundedAboveSupport(forwards(max))
@@ -64,7 +65,7 @@ final case class Translate(b: Real) extends Injection {
   def logJacobian(y: Real): Real = Real.zero
   val requirements: Set[Real] = Set(b)
 
-  def supportTransform(supp: Support): Support = supp match {
+  def transformSupport(supp: Support): Support = supp match {
     case UnboundedSupport         => UnboundedSupport
     case BoundedBelowSupport(min) => BoundedBelowSupport(forwards(min))
     case BoundedAboveSupport(max) => BoundedAboveSupport(forwards(max))
@@ -83,7 +84,7 @@ object Exp extends Injection {
   override def isDefinedAt(y: Real): Real = y > 0
   val requirements: Set[Real] = Set.empty
 
-  def supportTransform(supp: Support): Support = supp match {
+  def transformSupport(supp: Support): Support = supp match {
     case UnboundedSupport         => UnboundedSupport
     case BoundedBelowSupport(min) => BoundedBelowSupport(forwards(min))
     case BoundedAboveSupport(max) => BoundedSupport(Real.zero, forwards(max))
