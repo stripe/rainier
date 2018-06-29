@@ -23,7 +23,7 @@ trait Continuous extends Distribution[Double] {
 /**
   * A Continuous Distribution that inherits its transforms from a Support object.
   */
-private trait StandardContinuous extends Continuous {
+private[rainier] trait StandardContinuous extends Continuous {
   private[rainier] val support: Support
 
   def param: RandomVariable[Real] = {
@@ -176,9 +176,9 @@ final case class Beta(a: Real, b: Real) extends StandardContinuous {
 }
 
 object Beta {
-  def meanAndPrecision(mean: Real, precision: Real) =
+  def meanAndPrecision(mean: Real, precision: Real): Beta =
     Beta(mean * precision, (Real.one - mean) * precision)
-  def meanAndVariance(mean: Real, variance: Real) =
+  def meanAndVariance(mean: Real, variance: Real): Beta =
     meanAndPrecision(mean, mean * (Real.one - mean) / variance - 1)
 }
 
