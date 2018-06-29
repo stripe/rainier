@@ -9,18 +9,20 @@ trait Placeholder[T, U] {
   def requirements(placeholder: U): Set[Real]
 }
 
-object Placeholder {
-  implicit val double = new Placeholder[Double, Real] {
-    def wrap(value: Double) = Real(value)
-    def get(placeholder: Real)(implicit n: Numeric[Real]) =
-      n.toDouble(placeholder)
-    def requirements(placeholder: Real) = Set(placeholder)
-  }
-
+trait LowPriPlaceholders {
   implicit val int = new Placeholder[Int, Real] {
     def wrap(value: Int) = Real(value)
     def get(placeholder: Real)(implicit n: Numeric[Real]) =
       n.toInt(placeholder)
+    def requirements(placeholder: Real) = Set(placeholder)
+  }
+}
+
+object Placeholder extends LowPriPlaceholders {
+  implicit val double = new Placeholder[Double, Real] {
+    def wrap(value: Double) = Real(value)
+    def get(placeholder: Real)(implicit n: Numeric[Real]) =
+      n.toDouble(placeholder)
     def requirements(placeholder: Real) = Set(placeholder)
   }
 
