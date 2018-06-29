@@ -8,7 +8,7 @@ import com.stripe.rainier.compute.{If, Real}
   * @param pmf A map with keys corresponding to the possible outcomes and values corresponding to the probabilities of those outcomes
   */
 final case class Categorical[T](pmf: Map[T, Real])
-    extends Distribution[T, Map[T, Real]] {
+    extends Distribution[T, Map[T, Real]]()(Placeholder.enum(pmf.keys)) {
   def map[U](fn: T => U): Categorical[U] =
     flatMap { t =>
       Categorical(Map(fn(t) -> Real.one))
@@ -25,8 +25,14 @@ final case class Categorical[T](pmf: Map[T, Real])
         .map { case (u, ups) => u -> Real.sum(ups.map(_._2)) }
         .toMap)
 
-  def logDensity(t: T): Real =
-    pmf.getOrElse(t, Real.zero).log
+  //there should be exactly one value set to 1.0
+  def logDensity(t: Map[T, Real]): Real =
+    Real
+      .sum(t.toList.map {
+        case (t, r) =>
+          (r * pmf.getOrElse(t, Real.zero))
+      })
+      .log
 
   def generator: Generator[T] = {
     val cdf =
