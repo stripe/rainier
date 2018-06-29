@@ -28,8 +28,6 @@ case class Context(targets: Set[Target]) {
     result
   }
 
-  def compileDensity2 = compiler.compile(variables, density)
-
   //not terribly efficient
   private def compileTarget(target: Target): Array[Double] => Double = {
     val placeholders = target.placeholders.keys.toList
