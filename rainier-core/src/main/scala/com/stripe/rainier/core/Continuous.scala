@@ -25,7 +25,9 @@ trait Continuous extends Distribution[Double] {
 /**
   * A Continuous Distribution that inherits its transforms from a Support object.
   */
-trait StandardContinuous extends Continuous {
+private[rainier] trait StandardContinuous extends Continuous {
+  private[rainier] val support: Support
+
   def param: RandomVariable[Real] = {
     val x = new Variable
 
@@ -143,7 +145,7 @@ object Gamma {
   * An Exponential distribution with expectation `1/rate`
   */
 object Exponential {
-  val standard: StandardContinuous = Gamma.standard(1.0)
+  val standard: Continuous = Gamma.standard(1.0)
   def apply(rate: Real): Continuous =
     standard.scale(Real.one / rate)
 }
@@ -176,9 +178,9 @@ final case class Beta(a: Real, b: Real) extends StandardContinuous {
 }
 
 object Beta {
-  def meanAndPrecision(mean: Real, precision: Real) =
+  def meanAndPrecision(mean: Real, precision: Real): Beta =
     Beta(mean * precision, (Real.one - mean) * precision)
-  def meanAndVariance(mean: Real, variance: Real) =
+  def meanAndVariance(mean: Real, variance: Real): Beta =
     meanAndPrecision(mean, mean * (Real.one - mean) / variance - 1)
 }
 
@@ -195,7 +197,7 @@ object LogNormal {
   */
 object Uniform {
   val beta11 = Beta(1, 1)
-  val standard: StandardContinuous = new StandardContinuous {
+  val standard: Continuous = new StandardContinuous {
     val support = beta11.support
 
     def realLogDensity(real: Real): Real = beta11.realLogDensity(real)
