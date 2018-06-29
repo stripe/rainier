@@ -67,15 +67,18 @@ class TrivialBenchmark extends RealBenchmark {
 class NormalBenchmark extends RealBenchmark {
   def expression: Real = {
     val x = new Variable
-    Normal(x, 1).logDensities(
-      Range.BigDecimal(0d, 2d, 0.001d).map(_.toDouble).toList)
+    Real.sum(Range.BigDecimal(0d, 2d, 0.001d).toList.map { y =>
+      Normal(x, 1).logDensity(Real(y))
+    })
   }
 }
 
 class PoissonBenchmark extends RealBenchmark {
   def expression: Real = {
     val x = new Variable
-    Poisson(x).logDensities(0.to(10).toList)
+    Real.sum(0.to(10).toList.map { y =>
+      Poisson(x).logDensity(y)
+    })
   }
 }
 
