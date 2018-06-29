@@ -7,20 +7,10 @@ import com.stripe.rainier.compute._
   * Specifies a function to transform a real-valued variable to this range,
   * and its log-jacobian.
   */
-trait Support {
+private[rainier] trait Support {
   def transform(v: Variable): Real
 
   def logJacobian(v: Variable): Real
-}
-
-object Support {
-  def apply(min: Real = Real.negInfinity, max: Real = Real.infinity): Support =
-    (min, max) match {
-      case (Real.negInfinity, Real.infinity) => UnboundedSupport
-      case (min, Real.infinity)              => BoundedBelowSupport(min)
-      case (Real.negInfinity, max)           => BoundedAboveSupport(max)
-      case (min, max)                        => BoundedSupport(min, max)
-    }
 }
 
 /**
@@ -35,10 +25,7 @@ object UnboundedSupport extends Support {
 /**
   * A support representing a bounded (min, max) interval.
   */
-case class BoundedSupport(a: Real, b: Real) extends Support {
-  val min = If(a < b, a, b)
-  val max = If(a < b, b, a)
-
+case class BoundedSupport(min: Real, max: Real) extends Support {
   def transform(v: Variable): Real =
     (Real.one / (Real.one + (v * -1).exp)) * (max - min) + min
 
@@ -47,15 +34,23 @@ case class BoundedSupport(a: Real, b: Real) extends Support {
 }
 
 /**
-  * A support representing an open-above {r > k} or open-below {r < k} interval.
-  * @param bound The bound (above or below) of the distribution
-  * @param arity The arity of the distribution: positive for a distribution unbounded above, negative for bounded below.
+  * A support representing an open-above {r > k} interval.
+  * @param min The lower bound of the distribution
   */
-case class HalfBoundedSupport(bound: Real = Real.zero, arity: Real = Real.one) extends Support {
-  val max = Real.infinity
-
+case class BoundedBelowSupport(min: Real = Real.zero) extends Support {
   def transform(v: Variable): Real =
-    v.exp * arity + bound
+    v.exp + min
 
-  def logJacobian(v: Variable): Real = v * arity
+  def logJacobian(v: Variable): Real = v
+}
+
+/**
+  * A support representing an open-below {r < k} interval.
+  * @param max The upper bound of the distribution
+  */
+case class BoundedAboveSupport(max: Real = Real.zero) extends Support {
+  def transform(v: Variable): Real =
+    max - (-1 * v).exp
+
+  def logJacobian(v: Variable): Real = v
 }
