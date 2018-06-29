@@ -55,28 +55,7 @@ object Sampleable {
       implicit p: Placeholder[T, P]): Sampleable[P, T] =
     new Sampleable[P, T] {
       def requirements(value: P): Set[Real] = p.requirements(value)
-      def get(value: P)(implicit r: RNG, n: Numeric[Real]): Double =
+      def get(value: P)(implicit r: RNG, n: Numeric[Real]): T =
         p.get(value)
-    }
-
-  implicit def map[K, S, T](
-      implicit s: Sampleable[S, T]): Sampleable[Map[K, S], Map[K, T]] =
-    new Sampleable[Map[K, S], Map[K, T]] {
-      def requirements(value: Map[K, S]): Set[Real] =
-        value.values.flatMap { v =>
-          s.requirements(v)
-        }.toSet
-      def get(value: Map[K, S])(implicit r: RNG, n: Numeric[Real]): Map[K, T] =
-        value.map { case (k, v) => k -> s.get(v) }.toMap
-    }
-
-  implicit def zip[A, B, X, Y](
-      implicit ab: Sampleable[A, B],
-      xy: Sampleable[X, Y]): Sampleable[(A, X), (B, Y)] =
-    new Sampleable[(A, X), (B, Y)] {
-      def requirements(value: (A, X)): Set[Real] =
-        ab.requirements(value._1) ++ xy.requirements(value._2)
-      def get(value: (A, X))(implicit r: RNG, n: Numeric[Real]): (B, Y) =
-        (ab.get(value._1), xy.get(value._2))
     }
 }

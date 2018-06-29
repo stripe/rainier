@@ -8,8 +8,7 @@ import com.stripe.rainier.compute.Real
 abstract class Distribution[T, P](implicit placeholder: Placeholder[T, P])
     extends Likelihood[T] {
   def logDensity(t: P): Real
-
-  def logDensity(t: T): Real = logDensity(placeholder.wrap(t))
+  def logValueDensity(t: T): Real = logDensity(placeholder.wrap(t))
 
   def generator: Generator[T]
 
