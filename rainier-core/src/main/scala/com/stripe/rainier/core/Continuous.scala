@@ -26,8 +26,6 @@ trait Continuous extends Distribution[Double] {
   * A Continuous Distribution that inherits its transforms from a Support object.
   */
 private[rainier] trait StandardContinuous extends Continuous {
-  private[rainier] val support: Support
-
   def param: RandomVariable[Real] = {
     val x = new Variable
 
@@ -212,19 +210,24 @@ object Uniform {
     standard.scale(to - from).translate(from)
 }
 
-class Mixture(components: Map[Continuous, Real]) extends StandardContinuous {
+class ContinuousMixture(components: Map[Continuous, Real])
+    extends StandardContinuous {
   def generator: Generator[Double] =
     Categorical(components).generator.flatMap { d =>
       d.generator
     }
 
-  val support = Support.union(components.keys.map{ _.support })
+  val support = Support.union(components.keys.map { _.support })
 
-  def realLogDensity(real: Real): Real = Real.sum(
-    components.map { case (dist, weight) =>
-        If(dist.support.isDefinedAt(real), dist.realLogDensity(real).exp * weight, Real.zero)
-      }
-      .toSeq
-    )
-    .log
+  def realLogDensity(real: Real): Real =
+    Real
+      .sum(
+        components.map {
+          case (dist, weight) =>
+            If(dist.support.isDefinedAt(real),
+               dist.realLogDensity(real).exp * weight,
+               Real.zero)
+        }.toSeq
+      )
+      .log
 }
