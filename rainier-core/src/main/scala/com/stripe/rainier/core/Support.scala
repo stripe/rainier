@@ -8,9 +8,39 @@ import com.stripe.rainier.compute._
   * and its log-jacobian.
   */
 private[rainier] trait Support {
+  import Support._
+
   def transform(v: Variable): Real
 
   def logJacobian(v: Variable): Real
+
+  def union(that: Support): Support = (this, that) match {
+    case (UnboundedSupport, _)                            => UnboundedSupport
+    case (_, UnboundedSupport)                            => UnboundedSupport
+    case (BoundedBelowSupport(_), BoundedAboveSupport(_)) => UnboundedSupport
+    case (BoundedAboveSupport(_), BoundedBelowSupport(_)) => UnboundedSupport
+    case (BoundedBelowSupport(thisMin), BoundedSupport(thatMin, thatMax)) =>
+      BoundedBelowSupport(realMin(thisMin, thatMin))
+    case (BoundedSupport(thisMin, thisMax), BoundedBelowSupport(thatMin)) =>
+      BoundedBelowSupport(realMin(thisMin, thatMin))
+    case (BoundedAboveSupport(thisMax), BoundedSupport(thatMin, thatMax)) =>
+      BoundedAboveSupport(realMax(thisMax, thatMax))
+    case (BoundedSupport(thisMin, thisMax), BoundedAboveSupport(thatMax)) =>
+      BoundedAboveSupport(realMax(thisMax, thatMax))
+    case (BoundedSupport(thisMin, thisMax), BoundedSupport(thatMin, thatMax)) =>
+      BoundedSupport(realMin(thisMin, thatMin), realMax(thisMax, thatMax))
+  }
+}
+
+object Support {
+  private def realMin(a: Real, b: Real): Real = ((a - b).abs - (b + a)) / 2.0
+
+  private def realMax(a: Real, b: Real): Real = ((a - b).abs + (b + a)) / 2.0
+
+  def union(supports: Iterable[Support]) = supports.reduce {
+    (a: Support, b: Support) =>
+      a.union(b)
+  }
 }
 
 /**
