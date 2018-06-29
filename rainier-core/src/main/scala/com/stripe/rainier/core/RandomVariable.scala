@@ -59,7 +59,7 @@ class RandomVariable[+T](val value: T,
               warmupIterations,
               iterations,
               keepEvery)
-    RecordedSample(posteriorParams.map(_.toList))
+    Recording(posteriorParams.map(_.toList))
   }
 
   def replay[V](recording: Recording)(implicit rng: RNG,

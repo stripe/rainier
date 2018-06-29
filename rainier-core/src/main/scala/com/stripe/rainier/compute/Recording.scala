@@ -2,12 +2,9 @@ package com.stripe.rainier.compute
 
 import java.io._
 
-trait Recording {
-  def save(path: String): Unit
-  def samples: List[Array[Double]]
-}
+case class Recording(params: List[List[Double]]) {
 
-case class RecordedSample(params: List[List[Double]]) extends Recording {
+  def serialize: Array[Byte] = Recording.serialize(this)
 
   def save(path: String): Unit = {
     val file = new File(path)
@@ -16,20 +13,41 @@ case class RecordedSample(params: List[List[Double]]) extends Recording {
     (new File(file.getCanonicalFile().getParentFile().toString)).mkdirs()
     file.createNewFile()
 
-    val outputStream = new ObjectOutputStream(new FileOutputStream(file))
-    outputStream.writeObject(params)
-    outputStream.close()
+    val fis = new FileOutputStream(file)
+    fis.write(this.serialize)
+    fis.close
   }
 
   def samples: List[Array[Double]] = params.map(_.toArray)
 }
 
-object RecordedSample {
+object Recording {
 
-  def load(path: String): RecordedSample = {
-    val inputStream = new ObjectInputStream(new FileInputStream(path))
-    val samples = inputStream.readObject.asInstanceOf[List[List[Double]]]
-    inputStream.close
-    RecordedSample(samples)
+  def serialize[A](value: A): Array[Byte] = {
+    val stream = new ByteArrayOutputStream()
+    val oos = new ObjectOutputStream(stream)
+    oos.writeObject(value)
+    oos.close
+    stream.toByteArray
+  }
+
+  def deserialize[A](bytes: Array[Byte]): A = {
+    val ois = new ObjectInputStream(new ByteArrayInputStream(bytes))
+    val value = ois.readObject.asInstanceOf[A]
+    ois.close
+    value
+  }
+
+  def loadBytes(path: String): Array[Byte] = {
+    val bis = new BufferedInputStream(new FileInputStream(path))
+    val bytes =
+      Stream.continually(bis.read).takeWhile(_ != -1).map(_.toByte).toArray
+    bis.close
+    bytes
+  }
+
+  def load(path: String): Recording = {
+    val bytes = loadBytes(path)
+    deserialize[Recording](bytes)
   }
 }
