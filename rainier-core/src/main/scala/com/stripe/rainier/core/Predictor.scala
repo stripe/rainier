@@ -5,16 +5,14 @@ import com.stripe.rainier.compute._
 /**
   * Predictor class, for fitting data with covariates
   */
-abstract class Predictor[X, P, Y, Z](implicit ev: Z <:< Distribution[Y, _],
-                                     placeholder: Placeholder[X, P])
+abstract class Predictor[X, Y, Z](implicit ev: Z <:< Distribution[Y, _])
     extends Likelihood[(X, Y)] {
-  def apply(x: P): Z
-  def apply(x: X): Z = apply(placeholder.wrap(x))
+  def apply(x: X): Z
 
-  def fit(pair: (X, Y)): RandomVariable[Predictor[X, P, Y, Z]] =
+  def fit(pair: (X, Y)): RandomVariable[Predictor[X, Y, Z]] =
     RandomVariable(this, ev(apply(pair._1)).logDensity(pair._2))
 
-  def fit(seq: Seq[(X, Y)]): RandomVariable[Predictor[X, P, Y, Z]] =
+  def fit(seq: Seq[(X, Y)]): RandomVariable[Predictor[X, Y, Z]] =
     RandomVariable(this, Real.sum(seq.map {
       case (x, y) => ev(apply(x)).logDensity(y)
     }))
@@ -33,14 +31,9 @@ abstract class Predictor[X, P, Y, Z](implicit ev: Z <:< Distribution[Y, _],
   * Predictor object, for fitting data with covariates
   */
 object Predictor {
-  def from[X] = new From[X]
-
-  class From[X] {
-    def apply[P, Y, Z](fn: P => Z)(
-        implicit placeholder: Placeholder[X, P],
-        ev: Z <:< Distribution[Y, _]): Predictor[X, P, Y, Z] =
-      new Predictor[X, P, Y, Z] {
-        def apply(x: P): Z = fn(x)
-      }
-  }
+  def from[X, Y, Z](fn: X => Z)(
+      implicit ev: Z <:< Distribution[Y, _]): Predictor[X, Y, Z] =
+    new Predictor[X, Y, Z] {
+      def apply(x: X): Z = fn(x)
+    }
 }

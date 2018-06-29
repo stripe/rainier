@@ -51,7 +51,8 @@ object Sampleable {
         value.get
     }
 
-  implicit def placeholder[T,P](implicit p: Placeholder[T,P]): Sampleable[P, T] =
+  implicit def placeholder[T, P](
+      implicit p: Placeholder[T, P]): Sampleable[P, T] =
     new Sampleable[P, T] {
       def requirements(value: P): Set[Real] = p.requirements(value)
       def get(value: P)(implicit r: RNG, n: Numeric[Real]): Double =
