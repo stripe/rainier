@@ -8,8 +8,6 @@ import com.stripe.rainier.compute._
   * and its log-jacobian.
   */
 trait Support {
-  val min: Real
-  val max: Real
   def transform(v: Variable): Real
 
   def logJacobian(v: Variable): Real
@@ -29,9 +27,6 @@ object Support {
   * A support representing the whole real line.
   */
 object UnboundedSupport extends Support {
-  val min = Real.negInfinity
-  val max = Real.infinity
-
   def transform(v: Variable): Real = v
 
   def logJacobian(v: Variable): Real = Real.zero
@@ -52,25 +47,15 @@ case class BoundedSupport(a: Real, b: Real) extends Support {
 }
 
 /**
-  * A support representing an open-above {r > k} interval.
+  * A support representing an open-above {r > k} or open-below {r < k} interval.
+  * @param bound The bound (above or below) of the distribution
+  * @param arity The arity of the distribution: positive for a distribution unbounded above, negative for bounded below.
   */
-case class BoundedBelowSupport(min: Real = Real.zero) extends Support {
+case class HalfBoundedSupport(bound: Real = Real.zero, arity: Real = Real.one) extends Support {
   val max = Real.infinity
 
   def transform(v: Variable): Real =
-    v.exp + min
+    v.exp * arity + bound
 
-  def logJacobian(v: Variable): Real = v
-}
-
-/**
-  * A support representing an open-below {r > k} interval.
-  */
-case class BoundedAboveSupport(max: Real = Real.zero) extends Support {
-  val min = Real.negInfinity
-
-  def transform(v: Variable): Real =
-    max - v.exp
-
-  def logJacobian(v: Variable): Real = -1 * v
+  def logJacobian(v: Variable): Real = v * arity
 }

@@ -11,7 +11,7 @@ trait Injection { self =>
   def backwards(y: Real): Real
   def isDefinedAt(@unused y: Real): Real = Real.one
   def requirements: Set[Real]
-
+  def support(supp: Support): Support
   /*
     See https://en.wikipedia.org/wiki/Probability_density_function#Dependent_variables_and_change_of_variables
     This function should be log(d/dy backwards(y)), where y = forwards(x).
@@ -19,8 +19,7 @@ trait Injection { self =>
   def logJacobian(y: Real): Real
 
   def transform(dist: Continuous): Continuous = new Continuous {
-    val support =
-      Support.apply(forwards(dist.support.min), forwards(dist.support.max))
+    val support = support(dist.support)
 
     def realLogDensity(real: Real): Real =
       If(isDefinedAt(real),
@@ -46,6 +45,12 @@ final case class Scale(a: Real) extends Injection {
   def backwards(y: Real): Real = y / a
   def logJacobian(y: Real): Real = lj
   val requirements: Set[Real] = Set(a)
+
+  def support(supp: Support): Support = supp match {
+    case UnboundedSupport => UnboundedSupport
+    case HalfBoundedSupport(bound, arity) => HalfBoundedSupport(forwards(bound), forwards(arity))
+    case BoundedSupport(a, b) => BoundedSupport(forwards(a), forwards(b))
+  }
 }
 
 /**
@@ -56,6 +61,12 @@ final case class Translate(b: Real) extends Injection {
   def backwards(y: Real): Real = y - b
   def logJacobian(y: Real): Real = Real.zero
   val requirements: Set[Real] = Set(b)
+
+  def support(supp: Support): Support = supp match {
+    case UnboundedSupport => UnboundedSupport
+    case HalfBoundedSupport(bound, arity) => HalfBoundedSupport(forwards(bound), arity)
+    case BoundedSupport(a, b) => BoundedSupport(forwards(a), forwards(b))
+  }
 }
 
 /**
@@ -71,4 +82,10 @@ object Exp extends Injection {
   override def isDefinedAt(y: Real): Real =
     y > 0
   val requirements: Set[Real] = Set.empty
+
+  def support(supp: Support): Support = supp match {
+    case UnboundedSupport => UnboundedSupport
+    case HalfBoundedSupport(bound, arity) => HalfBoundedSupport(forwards(bound), forwards(arity))
+    case BoundedSupport(a, b) => BoundedSupport(forwards(a), forwards(b))
+  }
 }
