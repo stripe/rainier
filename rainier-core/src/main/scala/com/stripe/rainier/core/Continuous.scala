@@ -211,3 +211,20 @@ object Uniform {
   def apply(from: Real, to: Real): Continuous =
     standard.scale(to - from).translate(from)
 }
+
+class Mixture(components: Map[Continuous, Real]) extends StandardContinuous {
+  def generator: Generator[Double] =
+    Categorical(components).generator.flatMap { d =>
+      d.generator
+    }
+
+  val support = Support.union(components.keys.map{ _.support })
+
+  def realLogDensity(real: Real): Real = Real.sum(
+    components.map { case (dist, weight) =>
+        If(dist.support.isDefinedAt(real), dist.realLogDensity(real).exp * weight, Real.zero)
+      }
+      .toSeq
+    )
+    .log
+}

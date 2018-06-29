@@ -30,6 +30,8 @@ private[rainier] trait Support {
     case (BoundedSupport(thisMin, thisMax), BoundedSupport(thatMin, thatMax)) =>
       BoundedSupport(realMin(thisMin, thatMin), realMax(thisMax, thatMax))
   }
+
+  def isDefinedAt(real: Real): Real
 }
 
 object Support {
@@ -37,7 +39,7 @@ object Support {
 
   private def realMax(a: Real, b: Real): Real = ((a - b).abs + (b + a)) / 2.0
 
-  def union(supports: Iterable[Support]) = supports.reduce {
+  def union(supports: Iterable[Support]): Support = supports.reduce {
     (a: Support, b: Support) =>
       a.union(b)
   }
@@ -50,6 +52,8 @@ object UnboundedSupport extends Support {
   def transform(v: Variable): Real = v
 
   def logJacobian(v: Variable): Real = Real.zero
+
+  def isDefinedAt(real: Real): Real = Real.one
 }
 
 /**
@@ -61,6 +65,8 @@ case class BoundedSupport(min: Real, max: Real) extends Support {
 
   def logJacobian(v: Variable): Real =
     transform(v).log + (1 - transform(v)).log + (max - min).log
+
+  def isDefinedAt(real: Real): Real = (real > min) * (real < max)
 }
 
 /**
@@ -72,6 +78,8 @@ case class BoundedBelowSupport(min: Real = Real.zero) extends Support {
     v.exp + min
 
   def logJacobian(v: Variable): Real = v
+
+  def isDefinedAt(real: Real): Real = (real > min)
 }
 
 /**
@@ -83,4 +91,6 @@ case class BoundedAboveSupport(max: Real = Real.zero) extends Support {
     max - (-1 * v).exp
 
   def logJacobian(v: Variable): Real = v
+
+  def isDefinedAt(real: Real): Real = (real < max)
 }
