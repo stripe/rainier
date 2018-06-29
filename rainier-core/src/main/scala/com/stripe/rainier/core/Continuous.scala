@@ -165,9 +165,8 @@ final case class Beta(a: Real, b: Real) extends StandardContinuous {
       u.log + (b - 1) *
       (1 - u).log - Combinatorics.beta(a, b)
 
-  def binomial: Predictor[Int, Real, Int, BetaBinomial] = Predictor.from[Int] {
-    k =>
-      BetaBinomial(a, b, k)
+  def binomial: Predictor[Int, Int, BetaBinomial] = Predictor.from { k: Int =>
+    BetaBinomial(a, b, k)
   }
 }
 

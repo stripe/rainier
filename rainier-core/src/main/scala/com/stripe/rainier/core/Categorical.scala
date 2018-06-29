@@ -55,8 +55,8 @@ object Categorical {
 
   def boolean(p: Real): Categorical[Boolean] =
     Categorical(Map(true -> p, false -> (Real.one - p)))
-  def binomial(p: Real): Predictor[Int, Real, Int, Binomial] =
-    Predictor.from[Int] { k =>
+  def binomial(p: Real): Predictor[Int, Int, Binomial] =
+    Predictor.from { k: Int =>
       Binomial(p, k)
     }
 
@@ -106,7 +106,7 @@ final case class Multinomial[T](pmf: Map[T, Real], k: Real)
   */
 final case class Binomial(p: Real, k: Real) extends Distribution[Int, Real] {
   val multi: Multinomial[Boolean] =
-    Categorical.boolean(p).toMultinomial(k)
+    Multinomial(Map(true -> p, false -> (1 - p)), k)
 
   def generator: Generator[Int] = {
     val poissonGenerator = Poisson(p * k).generator.map { _.min(k) }
