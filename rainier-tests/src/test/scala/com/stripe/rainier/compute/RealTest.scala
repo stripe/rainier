@@ -51,8 +51,9 @@ class RealTest extends FunSuite {
     t + t
   }
   run("normal") { x =>
-    Normal(x, 1).logDensities(
-      Range.BigDecimal(0d, 2d, 1d).map(_.toDouble).toList)
+    Real.sum(Range.BigDecimal(0d, 2d, 1d).toList.map { y =>
+      Normal(x, 1).logDensity(Real(y))
+    })
   }
 
   run("logistic") { x =>
@@ -72,7 +73,9 @@ class RealTest extends FunSuite {
     If(x, x * 2, x * 3) * 5
   }
   run("poisson") { x =>
-    Poisson(x.abs + 1).logDensities(0.to(10).toList)
+    Real.sum(0.to(10).toList.map { y =>
+      Poisson(x.abs + 1).logDensity(y)
+    })
   }
 
   run("4x^3") { x =>

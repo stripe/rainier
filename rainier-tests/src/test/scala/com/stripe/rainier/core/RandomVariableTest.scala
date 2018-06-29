@@ -38,11 +38,11 @@ class RandomVariableTest extends FunSuite {
       f: A => F,
       g: A => RandomVariable[G],
       h: G => RandomVariable[H])(
-      implicit a1: Sampleable[A, A1],
-      b1: Sampleable[B, B1],
-      f1: Sampleable[F, F1],
-      g1: Sampleable[G, G1],
-      h1: Sampleable[H, H1]
+      implicit a1: Placeholder[A1, A],
+      b1: Placeholder[B1, B],
+      f1: Placeholder[F1, F],
+      g1: Placeholder[G1, G],
+      h1: Placeholder[H1, H]
   ): Unit = {
 
     assertEquiv(a.map(f), a.flatMap { x =>
