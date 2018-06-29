@@ -23,7 +23,7 @@ trait Continuous extends Distribution[Double] {
 /**
   * A Continuous Distribution that inherits its transforms from a Support object.
   */
-trait StandardContinuous extends Continuous {
+private trait StandardContinuous extends Continuous {
   private[rainier] val support: Support
 
   def param: RandomVariable[Real] = {
@@ -44,7 +44,7 @@ trait LocationScaleFamily { self =>
   def logDensity(x: Real): Real
   def generate(r: RNG): Double
 
-  val standard: StandardContinuous = new StandardContinuous {
+  val standard: Continuous = new StandardContinuous {
     val support: Support = RealSupport
 
     val generator: Generator[Double] =
@@ -97,7 +97,7 @@ object Gamma {
   def apply(shape: Real, scale: Real): Continuous =
     standard(shape).scale(scale)
 
-  def standard(shape: Real): StandardContinuous = new StandardContinuous {
+  def standard(shape: Real): Continuous = new StandardContinuous {
     val support = PositiveSupport
 
     def realLogDensity(real: Real): Real =
@@ -143,7 +143,7 @@ object Gamma {
   * An Exponential distribution with expectation `1/rate`
   */
 object Exponential {
-  val standard: StandardContinuous = Gamma.standard(1.0)
+  val standard: Continuous = Gamma.standard(1.0)
   def apply(rate: Real): Continuous =
     standard.scale(Real.one / rate)
 }
@@ -195,7 +195,7 @@ object LogNormal {
   */
 object Uniform {
   val beta11 = Beta(1, 1)
-  val standard: StandardContinuous = new StandardContinuous {
+  val standard: Continuous = new StandardContinuous {
     val support = beta11.support
 
     def realLogDensity(real: Real): Real = beta11.realLogDensity(real)
