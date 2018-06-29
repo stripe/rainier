@@ -3,8 +3,11 @@ package com.stripe.rainier.example
 import com.stripe.rainier.compute.Real
 import com.stripe.rainier.core._
 import com.stripe.rainier.repl._
+import com.stripe.rainier.sampler._
 
 object FitNormal {
+  implicit val rng = ScalaRNG(123L)
+
   def model(k: Int): RandomVariable[(Real, Real)] = {
     val r = new scala.util.Random
     val trueMean = 3.0
@@ -21,6 +24,6 @@ object FitNormal {
   }
 
   def main(args: Array[String]): Unit = {
-    plot2D(model(1000).sample())
+    plot2D(model(1000).sample(Walkers(1000), 10000, 10000))
   }
 }
