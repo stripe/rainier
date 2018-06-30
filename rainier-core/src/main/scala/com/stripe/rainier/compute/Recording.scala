@@ -1,10 +1,20 @@
 package com.stripe.rainier.compute
 
 import java.io._
+import scala.util.Try
 
 case class Recording(params: List[List[Double]]) {
 
-  def serialize: Array[Byte] = Recording.serialize(this)
+  def serialize: Array[Byte] = {
+    val stream = new ByteArrayOutputStream()
+    val dos = new DataOutputStream(stream)
+
+    /** Assumption: all the lists are the same size **/
+    dos.writeInt(params.head.size)
+    params.flatten.foreach(dos.writeDouble(_))
+    dos.close
+    stream.toByteArray
+  }
 
   def save(path: String): Unit = {
     val file = new File(path)
@@ -23,19 +33,17 @@ case class Recording(params: List[List[Double]]) {
 
 object Recording {
 
-  def serialize[A](value: A): Array[Byte] = {
-    val stream = new ByteArrayOutputStream()
-    val oos = new ObjectOutputStream(stream)
-    oos.writeObject(value)
-    oos.close
-    stream.toByteArray
-  }
-
-  def deserialize[A](bytes: Array[Byte]): A = {
-    val ois = new ObjectInputStream(new ByteArrayInputStream(bytes))
-    val value = ois.readObject.asInstanceOf[A]
-    ois.close
-    value
+  def deserialize(bytes: Array[Byte]): Recording = {
+    val dis = new DataInputStream(new ByteArrayInputStream(bytes))
+    val size = dis.readInt()
+    val params = Stream
+      .continually(Try(dis.readDouble()))
+      .takeWhile(_.isSuccess)
+      .map(_.get)
+      .toList
+      .grouped(size)
+      .toList
+    Recording(params)
   }
 
   def loadBytes(path: String): Array[Byte] = {
@@ -48,6 +56,6 @@ object Recording {
 
   def load(path: String): Recording = {
     val bytes = loadBytes(path)
-    deserialize[Recording](bytes)
+    deserialize(bytes)
   }
 }
