@@ -54,8 +54,6 @@ object Recording {
     bytes
   }
 
-  def load(path: String): Recording = {
-    val bytes = loadBytes(path)
-    deserialize(bytes)
-  }
+  def load(path: String): Recording = deserialize(loadBytes(path))
+
 }
