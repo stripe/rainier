@@ -67,4 +67,23 @@ class ContinuousTest extends FunSuite {
   check("Laplace(x,x)") { x =>
     Laplace(x, x)
   }
+
+  check("ContinuousMixture({Normal(x,x) -> 0.5, Laplace(x,x) -> 0.5})") { x =>
+    ContinuousMixture(
+      Map(
+        Normal(x, x) -> 0.5,
+        Laplace(x, x) -> 0.5
+      )
+    )
+  }
+
+  check("ContinuousMixture({Exponential(x,x) -> 0.2, Normal(x,x) -> 0.8})") {
+    x =>
+      ContinuousMixture(
+        Map(
+          Exponential(x) -> 0.5,
+          Normal(x, x) -> 0.5
+        )
+      )
+  }
 }
