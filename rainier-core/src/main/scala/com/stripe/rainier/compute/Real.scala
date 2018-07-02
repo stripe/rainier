@@ -22,6 +22,9 @@ sealed trait Real {
   def -(other: Real): Real = this + (other * -1)
   def /(other: Real): Real = RealOps.divide(this, other)
 
+  def min(other: Real): Real = RealOps.min(this, other)
+  def max(other: Real): Real = RealOps.max(this, other)
+
   def pow(exponent: Real): Real = RealOps.pow(this, exponent)
 
   def exp: Real = RealOps.unary(this, ir.ExpOp)

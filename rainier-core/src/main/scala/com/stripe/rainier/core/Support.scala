@@ -20,25 +20,21 @@ private[rainier] trait Support {
     case (BoundedBelowSupport(_), BoundedAboveSupport(_)) => UnboundedSupport
     case (BoundedAboveSupport(_), BoundedBelowSupport(_)) => UnboundedSupport
     case (BoundedBelowSupport(thisMin), BoundedSupport(thatMin, thatMax)) =>
-      BoundedBelowSupport(realMin(thisMin, thatMin))
+      BoundedBelowSupport(thisMin.min(thatMin))
     case (BoundedSupport(thisMin, thisMax), BoundedBelowSupport(thatMin)) =>
-      BoundedBelowSupport(realMin(thisMin, thatMin))
+      BoundedBelowSupport(thisMin.min(thatMin))
     case (BoundedAboveSupport(thisMax), BoundedSupport(thatMin, thatMax)) =>
-      BoundedAboveSupport(realMax(thisMax, thatMax))
+      BoundedAboveSupport(thisMax.max(thatMax))
     case (BoundedSupport(thisMin, thisMax), BoundedAboveSupport(thatMax)) =>
-      BoundedAboveSupport(realMax(thisMax, thatMax))
+      BoundedAboveSupport(thisMax.max(thatMax))
     case (BoundedSupport(thisMin, thisMax), BoundedSupport(thatMin, thatMax)) =>
-      BoundedSupport(realMin(thisMin, thatMin), realMax(thisMax, thatMax))
+      BoundedSupport(thisMin.min(thatMin), thisMax.max(thatMax))
   }
 
   def isDefinedAt(real: Real): Real
 }
 
 object Support {
-  private def realMin(a: Real, b: Real): Real = ((a - b).abs - (b + a)) / 2.0
-
-  private def realMax(a: Real, b: Real): Real = ((a - b).abs + (b + a)) / 2.0
-
   def union(supports: Iterable[Support]): Support = supports.reduce {
     (a: Support, b: Support) =>
       a.union(b)

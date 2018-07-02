@@ -211,13 +211,15 @@ object Uniform {
 }
 
 case class ContinuousMixture(components: Map[Continuous, Real])
-    extends StandardContinuous {
+    extends Continuous {
   def generator: Generator[Double] =
     Categorical(components).generator.flatMap { d =>
       d.generator
     }
 
-  val support = Support.union(components.keys.map { _.support })
+  val support = Support.union(components.keys.map {
+    _.support
+  })
 
   def realLogDensity(real: Real): Real =
     Real
@@ -225,9 +227,19 @@ case class ContinuousMixture(components: Map[Continuous, Real])
         components.map {
           case (dist, weight) =>
             If(dist.support.isDefinedAt(real),
-               dist.realLogDensity(real).exp * weight,
-               Real.zero)
+              dist.realLogDensity(real).exp * weight,
+              Real.zero)
         }.toSeq
       )
       .log
+
+  def param: RandomVariable[Real] = {
+    val x = new Variable
+
+    val transformed = support.transform(x)
+
+    val logDensity = support.logJacobian(x) + realLogDensity(transformed)
+
+    RandomVariable(transformed, logDensity)
+  }
 }
