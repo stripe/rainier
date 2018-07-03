@@ -10,11 +10,11 @@ abstract class Predictor[X, Y, Z](implicit ev: Z <:< Distribution[Y, _])
   def apply(x: X): Z
 
   def fit(pair: (X, Y)): RandomVariable[Predictor[X, Y, Z]] =
-    RandomVariable(this, ev(apply(pair._1)).logValueDensity(pair._2))
+    RandomVariable(this, ev(apply(pair._1)).valueLogDensity(pair._2))
 
   def fit(seq: Seq[(X, Y)]): RandomVariable[Predictor[X, Y, Z]] =
     RandomVariable(this, Real.sum(seq.map {
-      case (x, y) => ev(apply(x)).logValueDensity(y)
+      case (x, y) => ev(apply(x)).valueLogDensity(y)
     }))
 
   def predict(x: X): Generator[Y] = ev(apply(x)).generator

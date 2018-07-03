@@ -26,9 +26,9 @@ final case class Categorical[T](pmf: Map[T, Real])
         .toMap)
 
   //there should be exactly one value set to 1.0
-  def logDensity(t: Map[T, Real]): Real =
+  def logDensity(v: Map[T, Real]): Real =
     Real
-      .sum(t.toList.map {
+      .sum(v.toList.map {
         case (t, r) =>
           (r * pmf.getOrElse(t, Real.zero))
       })
@@ -90,10 +90,10 @@ final case class Multinomial[T](pmf: Map[T, Real], k: Real)
       seq.groupBy(identity).map { case (t, ts) => (t, ts.size) }
     }
 
-  def logDensity(t: Map[T, Real]): Real =
-    Combinatorics.factorial(k) + Real.sum(t.toList.map {
-      case (v, i) =>
-        val p = pmf.getOrElse(v, Real.zero)
+  def logDensity(v: Map[T, Real]): Real =
+    Combinatorics.factorial(k) + Real.sum(v.toList.map {
+      case (t, i) =>
+        val p = pmf.getOrElse(t, Real.zero)
         val pTerm =
           If(i, i * p.log, If(p, whenNonZero = i * p.log, whenZero = Real.zero))
 
@@ -140,8 +140,8 @@ final case class Binomial(p: Real, k: Real) extends Distribution[Int, Real] {
 
   }
 
-  def logDensity(t: Real): Real =
-    multi.logDensity(Map(true -> t, false -> (k - t)))
+  def logDensity(v: Real): Real =
+    multi.logDensity(Map(true -> v, false -> (k - v)))
 }
 
 /**
@@ -153,11 +153,11 @@ final case class Mixture[T, P, D](pmf: Map[D, Real])(
     implicit ev: D <:< Distribution[T, P],
     placeholder: Placeholder[T, P])
     extends Distribution[T, P] {
-  def logDensity(t: P): Real =
+  def logDensity(v: P): Real =
     Real
       .sum(pmf.toList.map {
         case (dist, prob) =>
-          (ev(dist).logDensity(t) + prob.log).exp
+          (ev(dist).logDensity(v) + prob.log).exp
       })
       .log
 
@@ -173,9 +173,9 @@ final case class Mixture[T, P, D](pmf: Map[D, Real])(
   */
 final case class BetaBinomial(a: Real, b: Real, k: Real)
     extends Distribution[Int, Real] {
-  def logDensity(t: Real): Real =
-    Combinatorics.choose(k, t) +
-      Combinatorics.beta(a + t, k - t + b) -
+  def logDensity(v: Real): Real =
+    Combinatorics.choose(k, v) +
+      Combinatorics.beta(a + v, k - v + b) -
       Combinatorics.beta(a, b)
 
   val generator: Generator[Int] =
