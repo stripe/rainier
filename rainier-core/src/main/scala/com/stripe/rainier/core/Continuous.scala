@@ -235,7 +235,7 @@ case class ContinuousMixture(components: Map[Continuous, Real])
   def param: RandomVariable[Real] = {
     val x = new Variable
 
-    val transformed = support.transform(x)
+    val transformed: Real = support.transform(x)
 
     val logDensity = support.logJacobian(x) + realLogDensity(transformed)
 
