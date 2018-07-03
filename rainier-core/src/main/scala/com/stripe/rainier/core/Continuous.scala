@@ -26,9 +26,9 @@ private[rainier] trait StandardContinuous extends Continuous {
 
     val transformed = support.transform(x)
 
-    val logDensity = support.logJacobian(x) + realLogDensity(transformed)
+    val density = support.logJacobian(x) + logDensity(transformed)
 
-    RandomVariable(transformed, logDensity)
+    RandomVariable(transformed, density)
   }
 }
 
@@ -194,7 +194,6 @@ object Uniform {
     val support = beta11.support
 
     def logDensity(real: Real): Real = beta11.logDensity(real)
-    def param: RandomVariable[Real] = beta11.param
     val generator: Generator[Double] =
       Generator.from { (r, n) =>
         r.standardUniform
