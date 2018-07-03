@@ -7,17 +7,12 @@ import scala.annotation.tailrec
 /**
   * A Continuous Distribution, with method `param` allowing conversion to a RandomVariable.
   */
-trait Continuous extends Distribution[Double] {
-  def logDensity(t: Double): Real =
-    realLogDensity(Real(t))
+trait Continuous extends Distribution[Double, Real] {
+  def param: RandomVariable[Real]
 
   def scale(a: Real): Continuous = Scale(a).transform(this)
   def translate(b: Real): Continuous = Translate(b).transform(this)
   def exp: Continuous = Exp.transform(this)
-
-  private[rainier] def realLogDensity(real: Real): Real
-
-  def param: RandomVariable[Real]
 }
 
 /**
@@ -31,9 +26,9 @@ private[rainier] trait StandardContinuous extends Continuous {
 
     val transformed = support.transform(x)
 
-    val logDensity = support.logJacobian(x) + realLogDensity(transformed)
+    val density = support.logJacobian(x) + logDensity(transformed)
 
-    RandomVariable(transformed, logDensity)
+    RandomVariable(transformed, density)
   }
 }
 
@@ -51,7 +46,7 @@ trait LocationScaleFamily { self =>
       Generator.from { (r, n) =>
         generate(r)
       }
-    def realLogDensity(real: Real): Real =
+    def logDensity(real: Real): Real =
       self.logDensity(real)
   }
 
@@ -100,7 +95,7 @@ object Gamma {
   def standard(shape: Real): Continuous = new StandardContinuous {
     val support = PositiveSupport
 
-    def realLogDensity(real: Real): Real =
+    def logDensity(real: Real): Real =
       If(real > 0,
          (shape - 1) * real.log -
            Combinatorics.gamma(shape) - real,
@@ -154,7 +149,7 @@ object Exponential {
 final case class Beta(a: Real, b: Real) extends StandardContinuous {
   val support = OpenUnitSupport
 
-  def realLogDensity(real: Real): Real =
+  def logDensity(real: Real): Real =
     If(real >= 0,
        If(real <= 1, betaDensity(real), Real.negInfinity),
        Real.negInfinity)
@@ -198,8 +193,7 @@ object Uniform {
   val standard: Continuous = new StandardContinuous {
     val support = beta11.support
 
-    def realLogDensity(real: Real): Real = beta11.realLogDensity(real)
-
+    def logDensity(real: Real): Real = beta11.logDensity(real)
     val generator: Generator[Double] =
       Generator.from { (r, n) =>
         r.standardUniform
