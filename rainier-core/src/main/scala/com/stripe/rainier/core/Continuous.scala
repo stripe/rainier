@@ -210,8 +210,7 @@ object Uniform {
     standard.scale(to - from).translate(from)
 }
 
-case class ContinuousMixture(components: Map[Continuous, Real])
-    extends Continuous {
+case class Mixture(components: Map[Continuous, Real]) extends Continuous {
   def generator: Generator[Double] =
     Categorical(components).generator.flatMap { d =>
       d.generator

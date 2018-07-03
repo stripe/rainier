@@ -1,6 +1,5 @@
 package com.stripe.rainier.core
 
-import com.stripe.rainier.compute.Evaluator
 import com.stripe.rainier.sampler._
 import org.scalatest.FunSuite
 
@@ -8,23 +7,10 @@ class ContinuousMixtureTest extends FunSuite {
   implicit val rng: RNG = ScalaRNG(1528673302081L)
 
   def sbcCheck(description: String)(prior: Continuous): Unit = {
-    val emptyEvaluator = new Evaluator(Map.empty)
-
-    def binomialQuantile(q: Double, n: Int, p: Double): Int = {
-      var cmf = 0.0
-      var k = -1
-      while (cmf < q) {
-        k += 1
-        val logPmf = Binomial(p, n).logDensity(k)
-        cmf += emptyEvaluator.toDouble(logPmf.exp)
-      }
-      k
-    }
-
     println(s"Sampling: $description")
 
-    val lower = binomialQuantile(0.005, 320, 1.0 / 8)
-    val upper = binomialQuantile(0.995, 320, 1.0 / 8)
+    val lower = SBC.binomialQuantile(0.005, 320, 1.0 / 8)
+    val upper = SBC.binomialQuantile(0.995, 320, 1.0 / 8)
 
     val stream = SBC(prior) { x =>
       Normal(x, 1)
@@ -200,6 +186,7 @@ class ContinuousMixtureTest extends FunSuite {
  * These don't pass consistently, although learning seems to be occurring in the right direction.
    *******************************/
 
+  /*
   checkParamMean(
     "ContinuousMixture({Uniform(-3, 1) -> 0.5, Uniform(0, 4) -> 0.5})",
     Uniform(-3, 1),
@@ -237,5 +224,6 @@ class ContinuousMixtureTest extends FunSuite {
       )
     ),
     -1.0)
+ */
  */
 }

@@ -11,7 +11,6 @@ final case class SBC[T](priorGenerators: Seq[Generator[Double]],
   import SBC._
 
   val priorGenerator = Generator.traverse(priorGenerators)
-  val emptyEvaluator = new Evaluator(Map.empty)
 
   def animate(sampler: Sampler,
               warmupIterations: Int,
@@ -184,19 +183,11 @@ final case class SBC[T](priorGenerators: Seq[Generator[Double]],
     else
       "%.3f".format(rate)
 
-  private def binomialQuantile(q: Double, n: Int, p: Double): Int = {
-    var cmf = 0.0
-    var k = -1
-    while (cmf < q) {
-      k += 1
-      val logPmf = Binomial(p, n).logDensity(k)
-      cmf += emptyEvaluator.toDouble(logPmf.exp)
-    }
-    k
-  }
 }
 
 object SBC {
+  val emptyEvaluator = new Evaluator(Map.empty)
+
   /*
   fn is a function that takes a Seq[Real]
   specifying the values of all the parameters (one for each Continuous in the prior)
@@ -221,6 +212,17 @@ object SBC {
   val Chains = 4
   val RepsPerBin = 40
   val Trials = 5
+
+  def binomialQuantile(q: Double, n: Int, p: Double): Int = {
+    var cmf = 0.0
+    var k = -1
+    while (cmf < q) {
+      k += 1
+      val logPmf = Binomial(p, n).logDensity(k)
+      cmf += emptyEvaluator.toDouble(logPmf.exp)
+    }
+    k
+  }
 
   case class Rep(rank: Int,
                  rHat: Double,
