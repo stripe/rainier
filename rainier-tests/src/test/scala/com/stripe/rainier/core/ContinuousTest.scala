@@ -7,16 +7,13 @@ import org.scalatest.FunSuite
 class ContinuousTest extends FunSuite {
   implicit val rng: RNG = ScalaRNG(1528673302081L)
 
-  def check(description: String)(
-      fn: Real => Continuous,
-      fnMean: Double => Double = (mu => mu)): Unit = {
+  def check(description: String)(fn: Real => Continuous): Unit = {
     println(description)
     List((Walkers(100), 10000), (HMC(5), 1000)).foreach {
       case (sampler, iterations) =>
         println((sampler, iterations))
         List(0.1, 1.0, 2.0).foreach { trueValue =>
           val trueDist = fn(Real(trueValue))
-          val trueMean = fnMean(trueValue)
           val syntheticData =
             RandomVariable(trueDist.generator).sample().take(1000)
           val sampledData =
@@ -36,7 +33,7 @@ class ContinuousTest extends FunSuite {
           val yErr = (sampledMean - syntheticMean) / syntheticStdDev
 
           val fitMean = fitValues.sum / fitValues.size
-          val xErr = (fitMean - trueMean) / trueMean
+          val xErr = (fitMean - trueValue) / trueValue
 
           test(
             s"y ~ $description, x = $trueValue, sampler = $sampler, E(y) within 0.2 SD") {
@@ -44,14 +41,14 @@ class ContinuousTest extends FunSuite {
           }
 
           test(
-            s"y ~ $description, x = $trueValue, sampler = $sampler, mean = $trueMean, E(x) within 5%") {
+            s"y ~ $description, x = $trueValue, sampler = $sampler, E(x) within 5%") {
             assert(xErr.abs < 0.05)
           }
         }
     }
   }
 
-  /*check("Normal(x,x)") { x =>
+  check("Normal(x,x)") { x =>
     Normal(x, x)
   }
 
@@ -66,17 +63,8 @@ class ContinuousTest extends FunSuite {
   check("Uniform(x,x*2)") { x =>
     Uniform(x, x * 2)
   }
- */
+   */
   check("Laplace(x,x)") { x =>
     Laplace(x, x)
   }
-
-  check("ContinuousMixture({Normal(x,x) -> 0.5, Laplace(x,x) -> 0.5})") { x =>
-    ContinuousMixture(
-      Map(
-        Normal(x, x) -> 0.5,
-        Laplace(x, x) -> 0.5
-      )
-    )
-  }*/
 }
