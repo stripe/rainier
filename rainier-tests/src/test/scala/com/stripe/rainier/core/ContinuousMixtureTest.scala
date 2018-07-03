@@ -89,10 +89,11 @@ class ContinuousMixtureTest extends FunSuite {
 
   /********************************
     * SBC Tests
+    * These take a couple of minutes each to run, so are not included in automated tests.
+    * Uncomment to run them.
     *******************************/
-
   /*
-  // SBC is bugged for nonstandard uniform distributions...
+  // SBC is bugged for nonstandard uniform distributions, so blanking these tests for now.
   sbcCheck("Uniform(5,10)")(
     Uniform(5, 10)
   )
@@ -106,6 +107,7 @@ class ContinuousMixtureTest extends FunSuite {
     )
   )*/
 
+  /*
   sbcCheck("ContinuousMixture({Normal(-3, 1) -> 0.5,Normal(1, 4) -> 0.5})")(
     ContinuousMixture(
       Map(
@@ -150,6 +152,7 @@ class ContinuousMixtureTest extends FunSuite {
       )
     )
   )
+   */
 
   def normalPdf(mean: Double, sd: Double)(x: Double) =
     math.exp(-1.0 * (x - mean) * (x - mean) / (2 * sd * sd)) / math.sqrt(
@@ -158,8 +161,8 @@ class ContinuousMixtureTest extends FunSuite {
     if (x > 0) { lambda * math.exp(-lambda * x) } else { 0.0 }
 
   /********************************
-   * Generator Tests
-   * These don't pass consistently, although learning seems to be occurring in the right direction.
+    * Generator Tests
+    * These don't pass consistently, although learning seems to be occurring in the right direction.
    ********************************/
 
   /*checkGeneratedMean(
@@ -193,8 +196,8 @@ class ContinuousMixtureTest extends FunSuite {
     -1.0)
 
   /********************************
-   * Param Tests
-   * These don't pass consistently, although learning seems to be occurring in the right direction.
+ * Param Tests
+ * These don't pass consistently, although learning seems to be occurring in the right direction.
    *******************************/
 
   checkParamMean(
@@ -234,5 +237,5 @@ class ContinuousMixtureTest extends FunSuite {
       )
     ),
     -1.0)
-    */
+ */
 }

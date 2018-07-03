@@ -7,22 +7,35 @@ import com.stripe.rainier.compute._
   * Specifies a function to transform a real-valued variable to this range,
   * and its log-jacobian.
   */
-private[rainier] trait Support {
+private[rainier] sealed trait Support {
   def transform(v: Variable): Real
 
   def logJacobian(v: Variable): Real
 
+  /**
+    * Unions two supports together.
+    * We make the important assumption that the resulting support is contiguous.
+    * @param that The other support to be unioned. Order is not important.
+    * @return The support that is the union of the two arguments. 
+    */
   def union(that: Support): Support = (this, that) match {
-    case (UnboundedSupport, _)                            => UnboundedSupport
-    case (_, UnboundedSupport)                            => UnboundedSupport
+    case (UnboundedSupport, _) => UnboundedSupport
+    case (_, UnboundedSupport) => UnboundedSupport
+
+    case (BoundedBelowSupport(thisMin), BoundedBelowSupport(thatMin)) =>
+      BoundedBelowSupport(thisMin.min(thatMin))
     case (BoundedBelowSupport(_), BoundedAboveSupport(_)) => UnboundedSupport
-    case (BoundedAboveSupport(_), BoundedBelowSupport(_)) => UnboundedSupport
     case (BoundedBelowSupport(thisMin), BoundedSupport(thatMin, _)) =>
       BoundedBelowSupport(thisMin.min(thatMin))
-    case (BoundedSupport(thisMin, _), BoundedBelowSupport(thatMin)) =>
-      BoundedBelowSupport(thisMin.min(thatMin))
+
+    case (BoundedAboveSupport(_), BoundedBelowSupport(_)) => UnboundedSupport
+    case (BoundedAboveSupport(thisMax), BoundedAboveSupport(thatMax)) =>
+      BoundedAboveSupport(thisMax.max(thatMax))
     case (BoundedAboveSupport(thisMax), BoundedSupport(_, thatMax)) =>
       BoundedAboveSupport(thisMax.max(thatMax))
+
+    case (BoundedSupport(thisMin, _), BoundedBelowSupport(thatMin)) =>
+      BoundedBelowSupport(thisMin.min(thatMin))
     case (BoundedSupport(_, thisMax), BoundedAboveSupport(thatMax)) =>
       BoundedAboveSupport(thisMax.max(thatMax))
     case (BoundedSupport(thisMin, thisMax), BoundedSupport(thatMin, thatMax)) =>
