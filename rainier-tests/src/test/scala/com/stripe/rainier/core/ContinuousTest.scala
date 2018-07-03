@@ -9,7 +9,7 @@ class ContinuousTest extends FunSuite {
 
   def check(description: String)(fn: Real => Continuous): Unit = {
     println(description)
-    List((Walkers(100), 10000), (HMC(5), 4  000)).foreach {
+    List((Walkers(100), 10000), (HMC(5), 4000)).foreach {
       case (sampler, iterations) =>
         println((sampler, iterations))
         List(0.1, 1.0, 2.0).foreach { trueValue =>
