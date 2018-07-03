@@ -64,7 +64,7 @@ trait LocationScaleFamily { self =>
   */
 object Normal extends LocationScaleFamily {
   def logDensity(x: Real): Real =
-    (x * x) / -2.0
+    ((x * x) / -2.0) - 0.5 * Real(2 * math.Pi).log
   def generate(r: RNG): Double = r.standardNormal
 }
 
@@ -225,10 +225,9 @@ case class ContinuousMixture(components: Map[Continuous, Real])
     Real
       .sum(
         components.map {
-          case (dist, weight) =>
-            If(dist.support.isDefinedAt(real),
-              dist.realLogDensity(real).exp * weight,
-              Real.zero)
+          case (dist, weight) => {
+            dist.realLogDensity(real).exp * weight
+          }
         }.toSeq
       )
       .log

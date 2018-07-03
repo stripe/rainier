@@ -8,8 +8,6 @@ import com.stripe.rainier.compute._
   * and its log-jacobian.
   */
 private[rainier] trait Support {
-  import Support._
-
   def transform(v: Variable): Real
 
   def logJacobian(v: Variable): Real
@@ -19,13 +17,13 @@ private[rainier] trait Support {
     case (_, UnboundedSupport)                            => UnboundedSupport
     case (BoundedBelowSupport(_), BoundedAboveSupport(_)) => UnboundedSupport
     case (BoundedAboveSupport(_), BoundedBelowSupport(_)) => UnboundedSupport
-    case (BoundedBelowSupport(thisMin), BoundedSupport(thatMin, thatMax)) =>
+    case (BoundedBelowSupport(thisMin), BoundedSupport(thatMin, _)) =>
       BoundedBelowSupport(thisMin.min(thatMin))
-    case (BoundedSupport(thisMin, thisMax), BoundedBelowSupport(thatMin)) =>
+    case (BoundedSupport(thisMin, _), BoundedBelowSupport(thatMin)) =>
       BoundedBelowSupport(thisMin.min(thatMin))
-    case (BoundedAboveSupport(thisMax), BoundedSupport(thatMin, thatMax)) =>
+    case (BoundedAboveSupport(thisMax), BoundedSupport(_, thatMax)) =>
       BoundedAboveSupport(thisMax.max(thatMax))
-    case (BoundedSupport(thisMin, thisMax), BoundedAboveSupport(thatMax)) =>
+    case (BoundedSupport(_, thisMax), BoundedAboveSupport(thatMax)) =>
       BoundedAboveSupport(thisMax.max(thatMax))
     case (BoundedSupport(thisMin, thisMax), BoundedSupport(thatMin, thatMax)) =>
       BoundedSupport(thisMin.min(thatMin), thisMax.max(thatMax))
