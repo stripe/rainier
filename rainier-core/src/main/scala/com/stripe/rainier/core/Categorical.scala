@@ -94,11 +94,8 @@ final case class Multinomial[T](pmf: Map[T, Real], k: Real)
     Combinatorics.factorial(k) + Real.sum(t.toList.map {
       case (v, i) =>
         val p = pmf.getOrElse(v, Real.zero)
-        val pTerm = if (i == 0) {
-          If(p, whenNonZero = i * p.log, whenZero = Real.zero)
-        } else {
-          i * p.log
-        }
+        val pTerm =
+          If(i, i * p.log, If(p, whenNonZero = i * p.log, whenZero = Real.zero))
 
         pTerm - Combinatorics.factorial(i)
     })
@@ -115,19 +112,28 @@ final case class Binomial(p: Real, k: Real) extends Distribution[Int, Real] {
     Multinomial(Map(true -> p, false -> (1 - p)), k)
 
   def generator: Generator[Int] = {
-    val poissonGenerator = Poisson(p * k).generator.map { _.min(k) }
-    val normalGenerator = Normal(k * p, k * p * (1 - p)).generator.map {
-      _.toInt.max(0).min(k)
-    }
+    val kGenerator = Generator.real(k)
+    val poissonGenerator =
+      Poisson(p * k).generator
+        .zip(kGenerator)
+        .map { case (x, kd) => x.min(kd.toInt) }
+    val normalGenerator =
+      Normal(k * p, k * p * (1 - p)).generator
+        .zip(kGenerator)
+        .map {
+          case (x, kd) => x.toInt.max(0).min(kd.toInt)
+        }
     val binomialGenerator = multi.generator.map { m =>
       m.getOrElse(true, 0)
     }
+
     Generator.from {
       case (r, n) =>
         val pDouble = n.toDouble(p)
-        if (k >= 100 && k * pDouble <= 10) {
+        val kDouble = n.toDouble(k)
+        if (kDouble >= 100 && kDouble * pDouble <= 10) {
           poissonGenerator.get(r, n)
-        } else if (k >= 100 && k * pDouble >= 9 && k * (1.0 - pDouble) >= 9) {
+        } else if (kDouble >= 100 && kDouble * pDouble >= 9 && kDouble * (1.0 - pDouble) >= 9) {
           normalGenerator.get(r, n)
         } else { binomialGenerator.get(r, n) }
     }

@@ -50,6 +50,11 @@ object Generator {
       def get(implicit r: RNG, n: Numeric[Real]): T = fn(r, n)
     }
 
+  def real(x: Real): Generator[Double] = new Generator[Double] {
+    val requirements: Set[Real] = Set(x)
+    def get(implicit r: RNG, n: Numeric[Real]) = n.toDouble(x)
+  }
+
   def require[T](reqs: Set[Real])(fn: (RNG, Numeric[Real]) => T): Generator[T] =
     new Generator[T] {
       val requirements: Set[Real] = reqs
