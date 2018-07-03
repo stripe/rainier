@@ -16,7 +16,7 @@ private[rainier] sealed trait Support {
     * Unions two supports together.
     * We make the important assumption that the resulting support is contiguous.
     * @param that The other support to be unioned. Order is not important.
-    * @return The support that is the union of the two arguments. 
+    * @return The support that is the union of the two arguments.
     */
   def union(that: Support): Support = (this, that) match {
     case (UnboundedSupport, _) => UnboundedSupport
