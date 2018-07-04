@@ -221,12 +221,12 @@ case class Mixture(components: Map[Continuous, Real]) extends Continuous {
     _.support
   })
 
-  def realLogDensity(real: Real): Real =
+  def logDensity(real: Real): Real =
     Real
       .sum(
         components.map {
           case (dist, weight) => {
-            dist.realLogDensity(real).exp * weight
+            dist.logDensity(real).exp * weight
           }
         }.toSeq
       )
@@ -237,8 +237,8 @@ case class Mixture(components: Map[Continuous, Real]) extends Continuous {
 
     val transformed: Real = support.transform(x)
 
-    val logDensity = support.logJacobian(x) + realLogDensity(transformed)
+    val density = support.logJacobian(x) + logDensity(transformed)
 
-    RandomVariable(transformed, logDensity)
+    RandomVariable(transformed, density)
   }
 }

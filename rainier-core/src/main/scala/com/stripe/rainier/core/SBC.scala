@@ -4,9 +4,12 @@ import com.stripe.rainier.sampler._
 import com.stripe.rainier.compute._
 
 //implements Simulation-Based Calibration from https://arxiv.org/abs/1804.06788
-final case class SBC[T](priorGenerators: Seq[Generator[Double]],
-                        priorParams: Seq[Real],
-                        posterior: RandomVariable[(Distribution[T, _], Real)]) {
+final case class SBC[L, T](priorGenerators: Seq[Generator[Double]],
+                           priorParams: Seq[Real],
+                           posterior: RandomVariable[(L, Real)])(
+    implicit
+    f: Likelihood.Fn[L, T],
+    ev: L <:< Distribution[T]) {
 
   import SBC._
 
@@ -100,10 +103,10 @@ final case class SBC[T](priorGenerators: Seq[Generator[Double]],
     val trueOutput = posterior.map(_._2).get
 
     val syntheticValues =
-      posterior.map(_._1.generator.repeat(syntheticSamples)).get
+      posterior.map { case (l, _) => ev(l).generator.repeat(syntheticSamples) }.get
     val model = posterior.flatMap {
       case (d, r) =>
-        d.fit(syntheticValues).map { _ =>
+        Likelihood.ops(d).fit(syntheticValues).map { _ =>
           r
         }
     }
@@ -195,15 +198,20 @@ object SBC {
   1) a distribution describing the likelihood of the observed data, given the parameter values,
   2) the parameter value or summary stat we're calibrating on
    */
-  def apply[T](priors: Seq[Continuous])(
-      fn: Seq[Real] => (Distribution[T, _], Real)): SBC[T] = {
+  def apply[L, T](priors: Seq[Continuous])(fn: Seq[Real] => (L, Real))(
+      implicit
+      f: Likelihood.Fn[L, T],
+      ev: L <:< Distribution[T]): SBC[L, T] = {
     val priorParams = priors.map(_.param)
     val priorGenerators = priors.map(_.generator)
     val posterior = RandomVariable.traverse(priorParams).map(fn)
     SBC(priorGenerators, priorParams.map(_.value), posterior)
   }
 
-  def apply[T](prior: Continuous)(fn: Real => Distribution[T, _]): SBC[T] =
+  def apply[L, T](prior: Continuous)(fn: Real => L)(
+      implicit
+      f: Likelihood.Fn[L, T],
+      ev: L <:< Distribution[T]): SBC[L, T] =
     apply(List(prior)) { l =>
       (fn(l.head), l.head)
     }
