@@ -41,8 +41,8 @@ final case class Categorical[T](pmf: Map[T, Real]) extends Distribution[T] {
     }
   }
 
-  def toMixture[V](implicit ev: T <:< Distribution[V]): Mixture[V, T] =
-    Mixture[V, T](pmf)
+  def toMixture[V](implicit ev: T <:< Continuous): Mixture =
+    Mixture(pmf.map{ case (k, v) => (ev(k), v) })
 
   def toMultinomial: Predictor[Int, Map[T, Int], Multinomial[T]] =
     Predictor.from { k: Int =>
@@ -129,28 +129,6 @@ final case class Binomial(p: Real, k: Int) extends Distribution[Int] {
 
   def logDensity(t: Int): Real =
     multi.logDensity(Map(true -> t, false -> (k - t)))
-}
-
-/**
-  * A Mixture distribution
-  *
-  * @param pmf A Map with keys representing component distributions and values corresponding to the probabilities of those components
-  */
-final case class Mixture[T, D](pmf: Map[D, Real])(
-    implicit ev: D <:< Distribution[T])
-    extends Distribution[T] {
-  def logDensity(t: T): Real =
-    Real
-      .sum(pmf.toList.map {
-        case (dist, prob) =>
-          (ev(dist).logDensity(t) + prob.log).exp
-      })
-      .log
-
-  def generator: Generator[T] =
-    Categorical(pmf).generator.flatMap { d =>
-      d.generator
-    }
 }
 
 /**

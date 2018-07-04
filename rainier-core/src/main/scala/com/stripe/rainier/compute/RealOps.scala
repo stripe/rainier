@@ -99,6 +99,12 @@ private[compute] object RealOps {
       case _                           => left * right.pow(-1)
     }
 
+  def min(left: Real, right: Real): Real =
+    ((left - right).abs - (right + left)) / 2.0
+
+  def max(left: Real, right: Real): Real =
+    ((left - right).abs + (right + left)) / 2.0
+
   def pow(original: Real, exponent: Real): Real =
     exponent match {
       case Infinity       => Infinity

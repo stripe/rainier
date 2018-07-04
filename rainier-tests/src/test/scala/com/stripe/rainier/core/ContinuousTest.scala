@@ -9,7 +9,7 @@ class ContinuousTest extends FunSuite {
 
   def check(description: String)(fn: Real => Continuous): Unit = {
     println(description)
-    List((Walkers(100), 10000), (HMC(5), 1000)).foreach {
+    List((Walkers(100), 10000), (HMC(5), 4000)).foreach {
       case (sampler, iterations) =>
         println((sampler, iterations))
         List(0.1, 1.0, 2.0).foreach { trueValue =>
@@ -36,7 +36,7 @@ class ContinuousTest extends FunSuite {
           val xErr = (fitMean - trueValue) / trueValue
 
           test(
-            s"y ~ $description, x = $trueValue, sampler = $sampler, E(y) within 0.2 SD") {
+            s"y ~ $description, x = $trueValue, sampler = $sampler, sampledMean = $sampledMean, synthMean = $syntheticMean, synthSD = $syntheticStdDev, E(y) within 0.2 SD") {
             assert(yErr.abs < 0.2)
           }
 

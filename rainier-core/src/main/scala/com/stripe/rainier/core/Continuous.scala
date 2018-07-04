@@ -8,6 +8,8 @@ import scala.annotation.tailrec
   * A Continuous Distribution, with method `param` allowing conversion to a RandomVariable.
   */
 trait Continuous extends Distribution[Double] {
+  private[rainier] val support: Support
+
   def logDensity(t: Double): Real =
     realLogDensity(Real(t))
 
@@ -24,8 +26,6 @@ trait Continuous extends Distribution[Double] {
   * A Continuous Distribution that inherits its transforms from a Support object.
   */
 private[rainier] trait StandardContinuous extends Continuous {
-  private[rainier] val support: Support
-
   def param: RandomVariable[Real] = {
     val x = new Variable
 
@@ -44,8 +44,8 @@ trait LocationScaleFamily { self =>
   def logDensity(x: Real): Real
   def generate(r: RNG): Double
 
-  val standard: Continuous = new StandardContinuous {
-    val support: Support = RealSupport
+  val standard: StandardContinuous = new StandardContinuous {
+    val support: Support = UnboundedSupport
 
     val generator: Generator[Double] =
       Generator.from { (r, n) =>
@@ -64,7 +64,7 @@ trait LocationScaleFamily { self =>
   */
 object Normal extends LocationScaleFamily {
   def logDensity(x: Real): Real =
-    (x * x) / -2.0
+    ((x * x) / -2.0) - 0.5 * Real(2 * math.Pi).log
   def generate(r: RNG): Double = r.standardNormal
 }
 
@@ -97,8 +97,8 @@ object Gamma {
   def apply(shape: Real, scale: Real): Continuous =
     standard(shape).scale(scale)
 
-  def standard(shape: Real): Continuous = new StandardContinuous {
-    val support = PositiveSupport
+  def standard(shape: Real): StandardContinuous = new StandardContinuous {
+    val support = BoundedBelowSupport(Real.zero)
 
     def realLogDensity(real: Real): Real =
       If(real > 0,
@@ -152,7 +152,7 @@ object Exponential {
   * A Beta distribution with expectation `a/(a + b)` and variance `ab/((a + b)^2 (1 + a + b))`.
   */
 final case class Beta(a: Real, b: Real) extends StandardContinuous {
-  val support = OpenUnitSupport
+  val support = new BoundedSupport(Real.zero, Real.one)
 
   def realLogDensity(real: Real): Real =
     If(real >= 0,
@@ -208,4 +208,36 @@ object Uniform {
 
   def apply(from: Real, to: Real): Continuous =
     standard.scale(to - from).translate(from)
+}
+
+case class Mixture(components: Map[Continuous, Real]) extends Continuous {
+  def generator: Generator[Double] =
+    Categorical(components).generator.flatMap { d =>
+      d.generator
+    }
+
+  val support = Support.union(components.keys.map {
+    _.support
+  })
+
+  def realLogDensity(real: Real): Real =
+    Real
+      .sum(
+        components.map {
+          case (dist, weight) => {
+            dist.realLogDensity(real).exp * weight
+          }
+        }.toSeq
+      )
+      .log
+
+  def param: RandomVariable[Real] = {
+    val x = new Variable
+
+    val transformed: Real = support.transform(x)
+
+    val logDensity = support.logJacobian(x) + realLogDensity(transformed)
+
+    RandomVariable(transformed, logDensity)
+  }
 }
