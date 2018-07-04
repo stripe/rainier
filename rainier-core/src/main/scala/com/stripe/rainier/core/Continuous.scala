@@ -11,10 +11,17 @@ trait Continuous extends Distribution[Double] {
   private[rainier] val support: Support
 
   def param: RandomVariable[Real]
+  def logDensity(v: Real): Real
 
   def scale(a: Real): Continuous = Scale(a).transform(this)
   def translate(b: Real): Continuous = Translate(b).transform(this)
   def exp: Continuous = Exp.transform(this)
+}
+
+object Continuous {
+  implicit val likelihood = Likelihood.fn[Continuous, Real] { (c, v) =>
+    c.logDensity(v)
+  }
 }
 
 /**

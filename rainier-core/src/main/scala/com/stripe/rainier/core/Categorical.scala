@@ -149,14 +149,18 @@ final case class Binomial(p: Real, k: Real) extends Distribution[Int, Real] {
   *
   */
 final case class BetaBinomial(a: Real, b: Real, k: Real)
-    extends Distribution[Int, Real] {
-  def logDensity(v: Real): Real =
-    Combinatorics.choose(k, v) +
-      Combinatorics.beta(a + v, k - v + b) -
-      Combinatorics.beta(a, b)
-
+    extends Distribution[Int] {
   val generator: Generator[Int] =
     Beta(a, b).generator.flatMap { p =>
       Binomial(p, k).generator
     }
+}
+
+object BetaBinomial {
+  val likelihood = Likelihood.fn[BetaBinomial,Real] {
+    case (BetaBinomial(a, b, k), v) =>
+      Combinatorics.choose(k, v) +
+        Combinatorics.beta(a + v, k - v + b) -
+        Combinatorics.beta(a, b)
+  }
 }

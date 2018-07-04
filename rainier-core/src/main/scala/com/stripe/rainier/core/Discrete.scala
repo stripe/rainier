@@ -7,11 +7,7 @@ import com.stripe.rainier.compute.Real
   *
   * @param lambda The mean of the Poisson distribution
   */
-final case class Poisson(lambda: Real) extends Distribution[Int, Real] {
-  def logDensity(v: Real): Real = {
-    lambda.log * v - lambda - Combinatorics.factorial(v)
-  }
-
+final case class Poisson(lambda: Real) extends Distribution[Int] {
   val generator: Generator[Int] =
     Generator.require(Set(lambda)) { (r, n) =>
       val l = math.exp(-n.toDouble(lambda))
@@ -25,4 +21,11 @@ final case class Poisson(lambda: Real) extends Distribution[Int, Real] {
         k - 1
       }
     }
+}
+
+object Poisson {
+  implicit val likelihood = Likelihood.fn[Poisson, Real] {
+    case (Poisson(lambda), v) =>
+      lambda.log * v - lambda - Combinatorics.factorial(v)
+  }
 }
