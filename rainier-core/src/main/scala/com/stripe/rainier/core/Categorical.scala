@@ -41,6 +41,9 @@ final case class Categorical[T](pmf: Map[T, Real]) extends Distribution[T] {
     }
   }
 
+  def toMixture[V](implicit ev: T <:< Continuous): Mixture =
+    Mixture(pmf.map{ case (k, v) => (ev(k), v) })
+
   def toMultinomial: Predictor[Int, Map[T, Int], Multinomial[T]] =
     Predictor.from { k: Int =>
       Multinomial(pmf, k)
