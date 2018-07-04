@@ -1,7 +1,6 @@
 package com.stripe.rainier.core
 
 import com.stripe.rainier.compute.Real
-import com.stripe.rainier.unused
 
 trait Placeholder[T, U] {
   def wrap(value: T): U
@@ -16,6 +15,14 @@ trait LowPriPlaceholders {
       n.toInt(placeholder)
     def requirements(placeholder: Real) = Set(placeholder)
   }
+
+  implicit def item[T]: Placeholder[T, Map[T, Real]] =
+    new Placeholder[T, Map[T, Real]] {
+      def wrap(value: T): Map[T, Real] = Map(value -> Real.one)
+      def get(placeholder: Map[T, Real])(implicit n: Numeric[Real]): T =
+        placeholder.find { case (_, r) => n.toDouble(r) > 0 }.get._1
+      def requirements(placeholder: Map[T, Real]) = placeholder.values.toSet
+    }
 }
 
 object Placeholder extends LowPriPlaceholders {
@@ -49,13 +56,5 @@ object Placeholder extends LowPriPlaceholders {
         (ab.get(placeholder._1), xy.get(placeholder._2))
       def requirements(placeholder: (B, Y)): Set[Real] =
         ab.requirements(placeholder._1) ++ xy.requirements(placeholder._2)
-    }
-
-  def enum[T](@unused keys: Iterable[T]): Placeholder[T, Map[T, Real]] =
-    new Placeholder[T, Map[T, Real]] {
-      def wrap(value: T): Map[T, Real] = Map(value -> Real.one)
-      def get(placeholder: Map[T, Real])(implicit n: Numeric[Real]): T =
-        placeholder.find { case (_, r) => n.toDouble(r) > 0 }.get._1
-      def requirements(placeholder: Map[T, Real]) = placeholder.values.toSet
     }
 }
