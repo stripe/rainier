@@ -8,6 +8,8 @@ import scala.annotation.tailrec
   * A Continuous Distribution, with method `param` allowing conversion to a RandomVariable.
   */
 trait Continuous extends Distribution[Double] {
+  private[rainier] val support: Support
+
   def logDensity(t: Double): Real =
     realLogDensity(Real(t))
 
@@ -44,8 +46,8 @@ trait LocationScaleFamily { self =>
   def logDensity(x: Real): Real
   def generate(r: RNG): Double
 
-  val standard: Continuous = new StandardContinuous {
-    val support: Support = RealSupport
+  val standard: StandardContinuous = new StandardContinuous {
+    val support: Support = UnboundedSupport
 
     val generator: Generator[Double] =
       Generator.from { (r, n) =>
@@ -97,8 +99,8 @@ object Gamma {
   def apply(shape: Real, scale: Real): Continuous =
     standard(shape).scale(scale)
 
-  def standard(shape: Real): Continuous = new StandardContinuous {
-    val support = PositiveSupport
+  def standard(shape: Real): StandardContinuous = new StandardContinuous {
+    val support = BoundedBelowSupport(Real.zero)
 
     def realLogDensity(real: Real): Real =
       If(real > 0,
@@ -152,7 +154,7 @@ object Exponential {
   * A Beta distribution with expectation `a/(a + b)` and variance `ab/((a + b)^2 (1 + a + b))`.
   */
 final case class Beta(a: Real, b: Real) extends StandardContinuous {
-  val support = OpenUnitSupport
+  val support = new BoundedSupport(Real.zero, Real.one)
 
   def realLogDensity(real: Real): Real =
     If(real >= 0,

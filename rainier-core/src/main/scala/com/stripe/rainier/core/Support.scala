@@ -7,7 +7,7 @@ import com.stripe.rainier.compute._
   * Specifies a function to transform a real-valued variable to this range,
   * and its log-jacobian.
   */
-trait Support {
+private[rainier] trait Support {
   def transform(v: Variable): Real
 
   def logJacobian(v: Variable): Real
@@ -16,29 +16,41 @@ trait Support {
 /**
   * A support representing the whole real line.
   */
-object RealSupport extends Support {
+object UnboundedSupport extends Support {
   def transform(v: Variable): Real = v
 
   def logJacobian(v: Variable): Real = Real.zero
 }
 
 /**
-  * A support representing the open (0, 1) interval.
+  * A support representing a bounded (min, max) interval.
   */
-object OpenUnitSupport extends Support {
+case class BoundedSupport(min: Real, max: Real) extends Support {
   def transform(v: Variable): Real =
-    Real.one / (Real.one + (v * -1).exp)
+    (Real.one / (Real.one + (v * -1).exp)) * (max - min) + min
 
   def logJacobian(v: Variable): Real =
-    transform(v).log + (1 - transform(v)).log
+    transform(v).log + (1 - transform(v)).log + (max - min).log
 }
 
 /**
-  * A support representing the open {r > 0} interval.
+  * A support representing an open-above {r > k} interval.
+  * @param min The lower bound of the distribution
   */
-object PositiveSupport extends Support {
+case class BoundedBelowSupport(min: Real = Real.zero) extends Support {
   def transform(v: Variable): Real =
-    v.exp
+    v.exp + min
+
+  def logJacobian(v: Variable): Real = v
+}
+
+/**
+  * A support representing an open-below {r < k} interval.
+  * @param max The upper bound of the distribution
+  */
+case class BoundedAboveSupport(max: Real = Real.zero) extends Support {
+  def transform(v: Variable): Real =
+    max - (-1 * v).exp
 
   def logJacobian(v: Variable): Real = v
 }

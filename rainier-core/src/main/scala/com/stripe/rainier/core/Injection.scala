@@ -6,12 +6,12 @@ import com.stripe.rainier.unused
 /**
   * Injective transformations
   */
-trait Injection { self =>
+private[rainier] trait Injection { self =>
   def forwards(x: Real): Real
   def backwards(y: Real): Real
   def isDefinedAt(@unused y: Real): Real = Real.one
   def requirements: Set[Real]
-
+  def transformSupport(supp: Support): Support
   /*
     See https://en.wikipedia.org/wiki/Probability_density_function#Dependent_variables_and_change_of_variables
     This function should be log(d/dy backwards(y)), where y = forwards(x).
@@ -19,6 +19,8 @@ trait Injection { self =>
   def logJacobian(y: Real): Real
 
   def transform(dist: Continuous): Continuous = new Continuous {
+    val support: Support = transformSupport(dist.support)
+
     def realLogDensity(real: Real): Real =
       If(isDefinedAt(real),
          dist.realLogDensity(backwards(real)) +
@@ -35,7 +37,8 @@ trait Injection { self =>
 }
 
 /**
-  * Class to scale a distribution under multiplication by a scale factor
+  * Class to scale a distribution under multiplication by a positive scale factor.
+  * We assume that (a > 0).
   */
 final case class Scale(a: Real) extends Injection {
   private val lj = a.log * -1
@@ -43,29 +46,48 @@ final case class Scale(a: Real) extends Injection {
   def backwards(y: Real): Real = y / a
   def logJacobian(y: Real): Real = lj
   val requirements: Set[Real] = Set(a)
+
+  def transformSupport(supp: Support): Support = supp match {
+    case UnboundedSupport         => UnboundedSupport
+    case BoundedBelowSupport(min) => BoundedBelowSupport(forwards(min))
+    case BoundedAboveSupport(max) => BoundedAboveSupport(forwards(max))
+    case BoundedSupport(min, max) =>
+      BoundedSupport(forwards(min), forwards(max))
+  }
 }
 
 /**
-  * Class to translate a distribution by adding a constant
+  * Class to translate a distribution by adding a constant.
   */
 final case class Translate(b: Real) extends Injection {
   def forwards(x: Real): Real = x + b
   def backwards(y: Real): Real = y - b
   def logJacobian(y: Real): Real = Real.zero
   val requirements: Set[Real] = Set(b)
+
+  def transformSupport(supp: Support): Support = supp match {
+    case UnboundedSupport         => UnboundedSupport
+    case BoundedBelowSupport(min) => BoundedBelowSupport(forwards(min))
+    case BoundedAboveSupport(max) => BoundedAboveSupport(forwards(max))
+    case BoundedSupport(a, b)     => BoundedSupport(forwards(a), forwards(b))
+  }
 }
 
 /**
-  * Object to exponentiate a distribution
+  * Object to exponentiate a distribution.
   */
 object Exp extends Injection {
   def forwards(x: Real): Real = x.exp
   def backwards(y: Real): Real = y.log
-
-  //this is rarely important because it depends solely on y, which is usually data and not parameters
   def logJacobian(y: Real): Real = y.log * -1
 
-  override def isDefinedAt(y: Real): Real =
-    y > 0
+  override def isDefinedAt(y: Real): Real = y > 0
   val requirements: Set[Real] = Set.empty
+
+  def transformSupport(supp: Support): Support = supp match {
+    case UnboundedSupport         => BoundedBelowSupport(Real.zero)
+    case BoundedBelowSupport(min) => BoundedBelowSupport(forwards(min))
+    case BoundedAboveSupport(max) => BoundedSupport(Real.zero, forwards(max))
+    case BoundedSupport(a, b)     => BoundedSupport(forwards(a), forwards(b))
+  }
 }
