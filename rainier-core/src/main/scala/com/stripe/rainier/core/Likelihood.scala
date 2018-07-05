@@ -25,7 +25,7 @@ object Likelihood {
                                         fn: Fn[L, T]) =
     Ops(likelihood)
 
-  trait Fn[L, T] {
+  trait Fn[-L, -T] {
     def apply(likelihood: L, value: T): Real
   }
 
