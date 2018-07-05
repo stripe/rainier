@@ -7,9 +7,10 @@ trait Discrete extends Distribution[Int] {
 }
 
 object Discrete {
-  implicit val likelihood = Likelihood.fn[Discrete, Real] { (d, v) =>
-    d.logDensity(v)
-  }
+  implicit val likelihood =
+    Likelihood.placeholder[Discrete, Int, Real] {
+      case (d, v) => d.logDensity(v)
+    }
 }
 
 /**
@@ -45,8 +46,6 @@ final case class Poisson(lambda: Real) extends Discrete {
 final case class Binomial(p: Real, k: Real) extends Discrete {
   val multi: Multinomial[Boolean] =
     Multinomial(Map(true -> p, false -> (1 - p)), k)
-  val multiLikelihood =
-    implicitly[Likelihood.Fn[Multinomial[Boolean], Map[Boolean, Real]]]
 
   def generator: Generator[Int] = {
     val kGenerator = Generator.real(k)
@@ -78,7 +77,7 @@ final case class Binomial(p: Real, k: Real) extends Discrete {
   }
 
   def logDensity(v: Real): Real =
-    multiLikelihood(multi, Map(true -> v, false -> (k - v)))
+    Multinomial.logDensity(multi, Map(true -> v, false -> (k - v)))
 }
 
 /**

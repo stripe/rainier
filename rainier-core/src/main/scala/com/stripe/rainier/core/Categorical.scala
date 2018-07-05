@@ -66,15 +66,16 @@ object Categorical {
       Real(l.size)
     })
 
-  implicit def likelihood[T] = Likelihood.fn[Categorical[T], Map[T, Real]] {
-    case (Categorical(pmf), v) =>
-      Real
-        .sum(v.toList.map {
-          case (t, r) =>
-            (r * pmf.getOrElse(t, Real.zero))
-        })
-        .log
-  }
+  implicit def likelihood[T] =
+    Likelihood.placeholder[Categorical[T], T, Map[T, Real]] {
+      case (Categorical(pmf), v) =>
+        Real
+          .sum(v.toList.map {
+            case (t, r) =>
+              (r * pmf.getOrElse(t, Real.zero))
+          })
+          .log
+    }
 }
 
 /**
@@ -93,17 +94,19 @@ final case class Multinomial[T](pmf: Map[T, Real], k: Real)
 }
 
 object Multinomial {
-  implicit def likelihood[T] = Likelihood.fn[Multinomial[T], Map[T, Real]] {
-    case (Multinomial(pmf, k), v) =>
-      Combinatorics.factorial(k) + Real.sum(v.toList.map {
-        case (t, i) =>
-          val p = pmf.getOrElse(t, Real.zero)
-          val pTerm =
-            If(i,
-               i * p.log,
-               If(p, whenNonZero = i * p.log, whenZero = Real.zero))
+  implicit def likelihood[T] =
+    Likelihood.placeholder[Multinomial[T], Map[T, Int], Map[T, Real]] {
+      (m, v) =>
+        logDensity(m, v)
+    }
 
-          pTerm - Combinatorics.factorial(i)
-      })
-  }
+  def logDensity[T](multi: Multinomial[T], v: Map[T, Real]): Real =
+    Combinatorics.factorial(multi.k) + Real.sum(v.toList.map {
+      case (t, i) =>
+        val p = multi.pmf.getOrElse(t, Real.zero)
+        val pTerm =
+          If(i, i * p.log, If(p, whenNonZero = i * p.log, whenZero = Real.zero))
+
+        pTerm - Combinatorics.factorial(i)
+    })
 }

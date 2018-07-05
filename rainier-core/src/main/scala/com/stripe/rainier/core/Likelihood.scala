@@ -29,15 +29,14 @@ object Likelihood {
     def apply(likelihood: L, value: T): Real
   }
 
-  object Fn {
-    implicit def placeholder[L, T, U](implicit ph: Placeholder[T, U],
-                                      f: Fn[L, U]): Fn[L, T] =
-      new Fn[L, T] {
-        def apply(likelihood: L, value: T) = f(likelihood, ph.wrap(value))
-      }
-  }
+  def fn[L, T](f: (L, T) => Real): Fn[L, T] =
+    new Fn[L, T] {
+      def apply(likelihood: L, value: T) = f(likelihood, value)
+    }
 
-  def fn[L, T](f: (L, T) => Real): Fn[L, T] = new Fn[L, T] {
-    def apply(likelihood: L, value: T) = f(likelihood, value)
-  }
+  def placeholder[L, T, U](f: (L, U) => Real)(
+      implicit ph: Placeholder[T, U]): Fn[L, T] =
+    new Fn[L, T] {
+      def apply(likelihood: L, value: T) = f(likelihood, ph.wrap(value))
+    }
 }

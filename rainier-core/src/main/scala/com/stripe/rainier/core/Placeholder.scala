@@ -8,14 +8,7 @@ trait Placeholder[T, U] {
   def requirements(placeholder: U): Set[Real]
 }
 
-trait LowPriPlaceholders {
-  implicit val int = new Placeholder[Int, Real] {
-    def wrap(value: Int) = Real(value)
-    def get(placeholder: Real)(implicit n: Numeric[Real]) =
-      n.toInt(placeholder)
-    def requirements(placeholder: Real) = Set(placeholder)
-  }
-
+trait LowLowPriPlaceholders {
   implicit def item[T]: Placeholder[T, Map[T, Real]] =
     new Placeholder[T, Map[T, Real]] {
       def wrap(value: T): Map[T, Real] = Map(value -> Real.one)
@@ -23,6 +16,15 @@ trait LowPriPlaceholders {
         placeholder.find { case (_, r) => n.toDouble(r) > 0 }.get._1
       def requirements(placeholder: Map[T, Real]) = placeholder.values.toSet
     }
+}
+
+trait LowPriPlaceholders extends LowLowPriPlaceholders {
+  implicit val int = new Placeholder[Int, Real] {
+    def wrap(value: Int) = Real(value)
+    def get(placeholder: Real)(implicit n: Numeric[Real]) =
+      n.toInt(placeholder)
+    def requirements(placeholder: Real) = Set(placeholder)
+  }
 }
 
 object Placeholder extends LowPriPlaceholders {
