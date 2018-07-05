@@ -106,7 +106,7 @@ final case class SBC[L, T](priorGenerators: Seq[Generator[Double]],
       posterior.map { case (l, _) => ev(l).generator.repeat(syntheticSamples) }.get
     val model = posterior.flatMap {
       case (d, r) =>
-        Likelihood.ops(d).fit(syntheticValues).map { _ =>
+        Likelihood.fittable(d).fit(syntheticValues).map { _ =>
           r
         }
     }

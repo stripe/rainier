@@ -1,7 +1,6 @@
 package com.stripe.rainier.core
 
 import com.stripe.rainier.compute._
-import com.stripe.rainier.unused
 import scala.language.implicitConversions
 
 /**
@@ -11,19 +10,20 @@ import scala.language.implicitConversions
 trait Likelihood[T]
 
 object Likelihood {
-  case class Ops[T, L](likelihood: L)(implicit @unused ev: L <:< Likelihood[T],
-                                      fn: Fn[L, T]) {
+  case class Fittable[T, L](likelihood: L)(implicit ev: L <:< Likelihood[T],
+                                           fn: Fn[L, T]) {
     def fit(value: T): RandomVariable[L] =
       RandomVariable(likelihood, fn(likelihood, value))
     def fit(seq: Seq[T]): RandomVariable[L] =
       RandomVariable(likelihood, Real.sum(seq.map { t =>
         fn(likelihood, t)
       }))
+    def toLikelihood: Likelihood[T] = ev(likelihood)
   }
 
-  implicit def ops[T, L](likelihood: L)(implicit ev: L <:< Likelihood[T],
-                                        fn: Fn[L, T]) =
-    Ops(likelihood)
+  implicit def fittable[T, L](likelihood: L)(implicit ev: L <:< Likelihood[T],
+                                             fn: Fn[L, T]) =
+    Fittable(likelihood)
 
   trait Fn[-L, -T] {
     def apply(likelihood: L, value: T): Real
