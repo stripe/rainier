@@ -24,9 +24,6 @@ final case class Categorical[T](pmf: Map[T, Real]) extends Distribution[T] {
         .map { case (u, ups) => u -> Real.sum(ups.map(_._2)) }
         .toMap)
 
-  def logDensity(t: T): Real =
-    pmf.getOrElse(t, Real.zero).log
-
   def generator: Generator[T] = {
     val cdf =
       pmf.toList
@@ -42,7 +39,7 @@ final case class Categorical[T](pmf: Map[T, Real]) extends Distribution[T] {
   }
 
   def toMixture[V](implicit ev: T <:< Continuous): Mixture =
-    Mixture(pmf.map{ case (k, v) => (ev(k), v) })
+    Mixture(pmf.map { case (k, v) => (ev(k), v) })
 
   def toMultinomial: Predictor[Int, Map[T, Int], Multinomial[T]] =
     Predictor.from { k: Int =>
@@ -54,10 +51,10 @@ object Categorical {
 
   def boolean(p: Real): Categorical[Boolean] =
     Categorical(Map(true -> p, false -> (Real.one - p)))
-  def binomial(p: Real): Predictor[Int, Int, Binomial] = Predictor.from {
-    k: Int =>
+  def binomial(p: Real): Predictor[Int, Int, Binomial] =
+    Predictor.from { k: Int =>
       Binomial(p, k)
-  }
+    }
 
   def normalize[T](pmf: Map[T, Real]): Categorical[T] = {
     val total = Real.sum(pmf.values.toList)
@@ -68,6 +65,17 @@ object Categorical {
     normalize(seq.groupBy(identity).mapValues { l =>
       Real(l.size)
     })
+
+  implicit def likelihood[T] =
+    Likelihood.placeholder[Categorical[T], T, Map[T, Real]] {
+      case (Categorical(pmf), v) =>
+        Real
+          .sum(v.toList.map {
+            case (t, r) =>
+              (r * pmf.getOrElse(t, Real.zero))
+          })
+          .log
+    }
 }
 
 /**
@@ -76,74 +84,29 @@ object Categorical {
   * @param pmf A map with keys corresponding to the possible outcomes of a single multinomial trial and values corresponding to the probabilities of those outcomes
   * @param k The number of multinomial trials
   */
-final case class Multinomial[T](pmf: Map[T, Real], k: Int)
+final case class Multinomial[T](pmf: Map[T, Real], k: Real)
     extends Distribution[Map[T, Int]] {
   def generator: Generator[Map[T, Int]] =
     Categorical(pmf).generator.repeat(k).map { seq =>
       seq.groupBy(identity).map { case (t, ts) => (t, ts.size) }
     }
 
-  def logDensity(t: Map[T, Int]): Real =
-    Combinatorics.factorial(k) + Real.sum(t.toList.map {
-      case (v, i) =>
-        val p = pmf.getOrElse(v, Real.zero)
-        val pTerm = if (i == 0) {
-          If(p, whenNonZero = i * p.log, whenZero = Real.zero)
-        } else {
-          i * p.log
-        }
+}
+
+object Multinomial {
+  implicit def likelihood[T] =
+    Likelihood.placeholder[Multinomial[T], Map[T, Int], Map[T, Real]] {
+      (m, v) =>
+        logDensity(m, v)
+    }
+
+  def logDensity[T](multi: Multinomial[T], v: Map[T, Real]): Real =
+    Combinatorics.factorial(multi.k) + Real.sum(v.toList.map {
+      case (t, i) =>
+        val p = multi.pmf.getOrElse(t, Real.zero)
+        val pTerm =
+          If(i, i * p.log, If(p, whenNonZero = i * p.log, whenZero = Real.zero))
 
         pTerm - Combinatorics.factorial(i)
     })
-}
-
-/**
-  * A Binomial distribution with expectation `k*p`
-  *
-  * @param p The probability of success
-  * @param k The number of trials
-  */
-final case class Binomial(p: Real, k: Int) extends Distribution[Int] {
-  val multi: Multinomial[Boolean] =
-    Categorical.boolean(p).toMultinomial(k)
-
-  def generator: Generator[Int] = {
-    val poissonGenerator = Poisson(p * k).generator.map { _.min(k) }
-    val normalGenerator = Normal(k * p, k * p * (1 - p)).generator.map {
-      _.toInt.max(0).min(k)
-    }
-    val binomialGenerator = multi.generator.map { m =>
-      m.getOrElse(true, 0)
-    }
-    Generator.from {
-      case (r, n) =>
-        val pDouble = n.toDouble(p)
-        if (k >= 100 && k * pDouble <= 10) {
-          poissonGenerator.get(r, n)
-        } else if (k >= 100 && k * pDouble >= 9 && k * (1.0 - pDouble) >= 9) {
-          normalGenerator.get(r, n)
-        } else { binomialGenerator.get(r, n) }
-    }
-
-  }
-
-  def logDensity(t: Int): Real =
-    multi.logDensity(Map(true -> t, false -> (k - t)))
-}
-
-/**
-  * A Beta-binomial distribution with expectation `a/(a + b) * k`
-  *
-  */
-final case class BetaBinomial(a: Real, b: Real, k: Int)
-    extends Distribution[Int] {
-  def logDensity(t: Int): Real =
-    Combinatorics.choose(k, t) +
-      Combinatorics.beta(a + t, k - t + b) -
-      Combinatorics.beta(a, b)
-
-  val generator: Generator[Int] =
-    Beta(a, b).generator.flatMap { p =>
-      Binomial(p, k).generator
-    }
 }

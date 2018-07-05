@@ -21,9 +21,9 @@ private[rainier] trait Injection { self =>
   def transform(dist: Continuous): Continuous = new Continuous {
     val support: Support = transformSupport(dist.support)
 
-    def realLogDensity(real: Real): Real =
+    def logDensity(real: Real): Real =
       If(isDefinedAt(real),
-         dist.realLogDensity(backwards(real)) +
+         dist.logDensity(backwards(real)) +
            logJacobian(real),
          Real.zero.log)
 

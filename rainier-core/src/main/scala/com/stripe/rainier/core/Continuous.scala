@@ -10,16 +10,19 @@ import scala.annotation.tailrec
 trait Continuous extends Distribution[Double] {
   private[rainier] val support: Support
 
-  def logDensity(t: Double): Real =
-    realLogDensity(Real(t))
+  def param: RandomVariable[Real]
+  def logDensity(v: Real): Real
 
   def scale(a: Real): Continuous = Scale(a).transform(this)
   def translate(b: Real): Continuous = Translate(b).transform(this)
   def exp: Continuous = Exp.transform(this)
+}
 
-  private[rainier] def realLogDensity(real: Real): Real
-
-  def param: RandomVariable[Real]
+object Continuous {
+  implicit val likelihood =
+    Likelihood.placeholder[Continuous, Double, Real] { (c, v) =>
+      c.logDensity(v)
+    }
 }
 
 /**
@@ -31,9 +34,9 @@ private[rainier] trait StandardContinuous extends Continuous {
 
     val transformed = support.transform(x)
 
-    val logDensity = support.logJacobian(x) + realLogDensity(transformed)
+    val density = support.logJacobian(x) + logDensity(transformed)
 
-    RandomVariable(transformed, logDensity)
+    RandomVariable(transformed, density)
   }
 }
 
@@ -51,7 +54,7 @@ trait LocationScaleFamily { self =>
       Generator.from { (r, n) =>
         generate(r)
       }
-    def realLogDensity(real: Real): Real =
+    def logDensity(real: Real): Real =
       self.logDensity(real)
   }
 
@@ -100,7 +103,7 @@ object Gamma {
   def standard(shape: Real): StandardContinuous = new StandardContinuous {
     val support = BoundedBelowSupport(Real.zero)
 
-    def realLogDensity(real: Real): Real =
+    def logDensity(real: Real): Real =
       If(real > 0,
          (shape - 1) * real.log -
            Combinatorics.gamma(shape) - real,
@@ -154,7 +157,7 @@ object Exponential {
 final case class Beta(a: Real, b: Real) extends StandardContinuous {
   val support = new BoundedSupport(Real.zero, Real.one)
 
-  def realLogDensity(real: Real): Real =
+  def logDensity(real: Real): Real =
     If(real >= 0,
        If(real <= 1, betaDensity(real), Real.negInfinity),
        Real.negInfinity)
@@ -198,8 +201,7 @@ object Uniform {
   val standard: Continuous = new StandardContinuous {
     val support = beta11.support
 
-    def realLogDensity(real: Real): Real = beta11.realLogDensity(real)
-
+    def logDensity(real: Real): Real = beta11.logDensity(real)
     val generator: Generator[Double] =
       Generator.from { (r, n) =>
         r.standardUniform
@@ -220,12 +222,12 @@ case class Mixture(components: Map[Continuous, Real]) extends Continuous {
     _.support
   })
 
-  def realLogDensity(real: Real): Real =
+  def logDensity(real: Real): Real =
     Real
       .sum(
         components.map {
           case (dist, weight) => {
-            dist.realLogDensity(real).exp * weight
+            dist.logDensity(real).exp * weight
           }
         }.toSeq
       )
@@ -236,8 +238,8 @@ case class Mixture(components: Map[Continuous, Real]) extends Continuous {
 
     val transformed: Real = support.transform(x)
 
-    val logDensity = support.logJacobian(x) + realLogDensity(transformed)
+    val density = support.logJacobian(x) + logDensity(transformed)
 
-    RandomVariable(transformed, logDensity)
+    RandomVariable(transformed, density)
   }
 }

@@ -29,13 +29,6 @@ class RandomVariable[+T](val value: T,
       _ <- RandomVariable.fromDensity(fn(t))
     } yield t
 
-  def conditionOn[U](seq: Seq[U])(
-      implicit ev: T <:< Likelihood[U]): RandomVariable[T] =
-    for {
-      t <- this
-      _ <- ev(t).fit(seq)
-    } yield t
-
   def get[V](implicit rng: RNG,
              sampleable: Sampleable[T, V],
              num: Numeric[Real]): V =

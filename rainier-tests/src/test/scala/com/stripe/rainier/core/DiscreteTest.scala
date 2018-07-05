@@ -7,8 +7,8 @@ import org.scalatest.FunSuite
 class DiscreteTest extends FunSuite {
   implicit val rng: RNG = ScalaRNG(1527608515939L)
 
-  def check[N: Numeric](description: String)(fn: Real => Distribution[N],
-                                             probs: List[Double]): Unit = {
+  def check(description: String)(fn: Real => Discrete,
+                                 probs: List[Double]): Unit = {
     println(description)
     List((Walkers(100), 10000), (HMC(5), 1000)).foreach {
       case (sampler, iterations) =>
