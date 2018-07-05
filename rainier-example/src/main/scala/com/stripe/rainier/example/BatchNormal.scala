@@ -17,11 +17,11 @@ object BatchNormal {
     for {
       mean <- Uniform(0, 10).param
       stddev <- Uniform(0, 10).param
-      _ <- Normal(mean, stddev).fitBatches(data)
+      _ <- Normal(mean, stddev).fit(data)
     } yield (mean, stddev)
   }
 
   def main(args: Array[String]): Unit = {
-    plot2D(model(10000).sample(Walkers(100), 10000, 10000))
+    plot2D(model(10000).sample(Walkers(100), 10000, 10000, batches = 100))
   }
 }

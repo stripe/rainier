@@ -17,6 +17,9 @@ import com.stripe.rainier.sampler._
 abstract class RealBenchmark {
   implicit val rng: RNG = RNG.default
 
+  def density(model: RandomVariable[_]): Real =
+    model.density
+
   protected def expression: Real
 
   val expr = expression
@@ -97,7 +100,7 @@ class FullNormalBenchmark extends RealBenchmark {
       _ <- Normal(mean, stddev).fit(data)
     } yield (mean, stddev)
 
-    model.density
+    density(model)
   }
 }
 
@@ -111,7 +114,7 @@ class BernoulliBenchmark extends RealBenchmark {
       _ <- Categorical.boolean(theta).fit(data)
     } yield theta
 
-    model.density
+    density(model)
   }
 }
 
@@ -125,7 +128,7 @@ class FunnelBenchmark extends RealBenchmark {
         })
       } yield (x(0), y)
 
-    model.density
+    density(model)
   }
 }
 
@@ -168,6 +171,6 @@ class DLMBenchmark extends RealBenchmark {
 
     val fullModel = (0 until n).foldLeft(prior)(addTimePoint(_, _))
 
-    fullModel.density
+    density(fullModel)
   }
 }
