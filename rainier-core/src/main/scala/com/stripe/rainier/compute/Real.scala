@@ -45,7 +45,7 @@ object Real {
   def seq[A](as: Seq[A])(implicit toReal: ToReal[A]): Seq[Real] =
     as.map(toReal(_))
 
-  def sum(seq: Seq[Real]): Real =
+  def sum(seq: Iterable[Real]): Real =
     seq.foldLeft(Real.zero)(_ + _)
 
   private[compute] val BigZero = BigDecimal(0.0)
