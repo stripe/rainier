@@ -4,12 +4,49 @@ import com.stripe.rainier.compute._
 
 trait Placeholder[T, U] {
   def wrap(value: T): U
-  def get(placeholder: U)(implicit n: Numeric[Real]): T
-  def requirements(placeholder: U): Set[Real]
   def create(): (U, Seq[Variable])
-  def mapping(value: T, placeholder: U): Map[Real, Double]
+  def extract(value: T, acc: List[Double]): List[Double]
 }
 
+trait LowPriPlaceholders {
+  implicit val int = new Placeholder[Int, Real] {
+    def wrap(value: Int) = Real(value)
+    def create() = {
+      val x = new Variable
+      (x, List(x))
+    }
+    def extract(value: Int, acc: List[Double]) =
+      value.toDouble :: acc
+  }
+}
+
+object Placeholder extends LowPriPlaceholders {
+  implicit val double = new Placeholder[Double, Real] {
+    def wrap(value: Double) = Real(value)
+    def create() = {
+      val x = new Variable
+      (x, List(x))
+    }
+    def extract(value: Double, acc: List[Double]) =
+      value :: acc
+  }
+
+  implicit def zip[A, B, X, Y](
+      implicit ab: Placeholder[A, B],
+      xy: Placeholder[X, Y]): Placeholder[(A, X), (B, Y)] =
+    new Placeholder[(A, X), (B, Y)] {
+      def wrap(value: (A, X)): (B, Y) =
+        (ab.wrap(value._1), xy.wrap(value._2))
+      def create() = {
+        val (b, bv) = ab.create()
+        val (y, yv) = xy.create()
+        ((b, y), bv ++ yv)
+      }
+      def extract(value: (A, X), acc: List[Double]) =
+        ab.extract(value._1, xy.extract(value._2, acc))
+    }
+}
+/*
 trait LowLowPriPlaceholders {
   implicit def item[T]: Placeholder[T, Map[T, Real]] =
     new Placeholder[T, Map[T, Real]] {
@@ -17,31 +54,14 @@ trait LowLowPriPlaceholders {
       def get(placeholder: Map[T, Real])(implicit n: Numeric[Real]): T =
         placeholder.find { case (_, r) => n.toDouble(r) > 0 }.get._1
       def requirements(placeholder: Map[T, Real]) = placeholder.values.toSet
-    }
-}
-
-trait LowPriPlaceholders extends LowLowPriPlaceholders {
-  implicit val int = new Placeholder[Int, Real] {
-    def wrap(value: Int) = Real(value)
-    def get(placeholder: Real)(implicit n: Numeric[Real]) =
-      n.toInt(placeholder)
-    def requirements(placeholder: Real) = Set(placeholder)
+      def create() = {
+        val x = new Variable
+        (x, List(x))
+      }
+      def mapping(value: Int, placeholder: Real) =
+        Map(placeholder -> value.toDouble)
   }
-}
 
-object Placeholder extends LowPriPlaceholders {
-  implicit val double = new Placeholder[Double, Real] {
-    def wrap(value: Double) = Real(value)
-    def get(placeholder: Real)(implicit n: Numeric[Real]) =
-      n.toDouble(placeholder)
-    def requirements(placeholder: Real) = Set(placeholder)
-    def create() = {
-      val x = new Variable
-      (x, List(x))
-    }
-    def mapping(value: Double, placeholder: Real) =
-      Map(placeholder -> value)
-  }
 
   implicit def map[K, T, U](
       implicit p: Placeholder[T, U]): Placeholder[Map[K, T], Map[K, U]] =
@@ -54,17 +74,14 @@ object Placeholder extends LowPriPlaceholders {
         placeholder.values.flatMap { u =>
           p.requirements(u)
         }.toSet
-    }
-
-  implicit def zip[A, B, X, Y](
-      implicit ab: Placeholder[A, B],
-      xy: Placeholder[X, Y]): Placeholder[(A, X), (B, Y)] =
-    new Placeholder[(A, X), (B, Y)] {
-      def wrap(value: (A, X)): (B, Y) =
-        (ab.wrap(value._1), xy.wrap(value._2))
-      def get(placeholder: (B, Y))(implicit n: Numeric[Real]): (A, X) =
-        (ab.get(placeholder._1), xy.get(placeholder._2))
-      def requirements(placeholder: (B, Y)): Set[Real] =
-        ab.requirements(placeholder._1) ++ xy.requirements(placeholder._2)
+      def create() = {
+        val (b, bv) = ab.create()
+        val (y, yv) = xy.create()
+        ((b, y), bv ++ yv)
+      }
+      def mapping(value: (A, X), placeholder: (B, Y)) =
+        ab.mapping(value._1, placeholder._1) ++
+          xy.mapping(value._2, placeholder._2)
     }
 }
+ */

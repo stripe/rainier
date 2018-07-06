@@ -66,16 +66,23 @@ object Categorical {
       Real(l.size)
     })
 
-  implicit def likelihood[T] =
-    Likelihood.placeholder[Categorical[T], T, Map[T, Real]] {
-      case (Categorical(pmf), v) =>
-        Real
-          .sum(v.toList.map {
-            case (t, r) =>
-              (r * pmf.getOrElse(t, Real.zero))
-          })
-          .log
-    }
+  implicit def fittable[T](
+      cat: Categorical[T]): Likelihood.Fittable[T, Categorical[T]] = {
+    val ph = Placeholder.enum(cat.pmf.keys.toList)
+    implicit val fn =
+      Likelihood.placeholder[Categorical[T], T, Map[T, Real]](ph) {
+        case (_, v) => logDensity(cat, v)
+      }
+    Fittable(cat)
+  }
+
+  def logDensity[T](cat: Categorical[T], v: Map[T, Real]): Real =
+    Real
+      .sum(v.toList.map {
+        case (t, r) =>
+          (r * cat.pmf.getOrElse(t, Real.zero))
+      })
+      .log
 }
 
 /**
