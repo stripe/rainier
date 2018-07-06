@@ -1,11 +1,13 @@
 package com.stripe.rainier.core
 
-import com.stripe.rainier.compute.Real
+import com.stripe.rainier.compute._
 
 trait Placeholder[T, U] {
   def wrap(value: T): U
   def get(placeholder: U)(implicit n: Numeric[Real]): T
   def requirements(placeholder: U): Set[Real]
+  def create(): (U, Seq[Variable])
+  def mapping(value: T, placeholder: U): Map[Real, Double]
 }
 
 trait LowLowPriPlaceholders {
@@ -33,6 +35,12 @@ object Placeholder extends LowPriPlaceholders {
     def get(placeholder: Real)(implicit n: Numeric[Real]) =
       n.toDouble(placeholder)
     def requirements(placeholder: Real) = Set(placeholder)
+    def create() = {
+      val x = new Variable
+      (x, List(x))
+    }
+    def mapping(value: Double, placeholder: Real) =
+      Map(placeholder -> value)
   }
 
   implicit def map[K, T, U](
