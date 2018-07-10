@@ -13,13 +13,15 @@ private[compute] object RealOps {
           case LogOp =>
             throw new ArithmeticException(
               "Cannot take the log of a negative number")
-          case AbsOp => Infinity
+          case AbsOp       => Infinity
+          case RectifierOp => Real.zero
         }
       case Constant(Real.BigZero) =>
         op match {
-          case ExpOp => Real.one
-          case LogOp => NegInfinity
-          case AbsOp => Real.zero
+          case ExpOp       => Real.one
+          case LogOp       => NegInfinity
+          case AbsOp       => Real.zero
+          case RectifierOp => Real.zero
         }
       case Constant(value) =>
         op match {
@@ -31,6 +33,11 @@ private[compute] object RealOps {
             else
               Real(Math.log(value.toDouble))
           case AbsOp => Real(value.abs)
+          case RectifierOp =>
+            if (value.toDouble < 0)
+              Real.zero
+            else
+              original
         }
       case nc: NonConstant =>
         val opt = (op, nc) match {
@@ -100,10 +107,10 @@ private[compute] object RealOps {
     }
 
   def min(left: Real, right: Real): Real =
-    ((left - right).abs - (right + left)) / 2.0
+    If(left < right, left, right)
 
   def max(left: Real, right: Real): Real =
-    ((left - right).abs + (right + left)) / 2.0
+    If(left > right, left, right)
 
   def pow(original: Real, exponent: Real): Real =
     exponent match {
@@ -153,7 +160,7 @@ private[compute] object RealOps {
     If(real, Real.one - nonZeroIsPositive(real), Real.zero)
 
   private def nonZeroIsPositive(real: Real): Real =
-    ((real.abs / real) + 1) / 2
+    unary(real, RectifierOp)
 
   def variables(real: Real): List[Variable] = {
     var seen = Set.empty[Real]

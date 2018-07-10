@@ -171,9 +171,6 @@ object If {
 private final case class Pow private (base: Real, exponent: NonConstant)
     extends NonConstant
 
-private final case class Extremum(left: Real, right: Real, isMax: Boolean)
-  extends NonConstant
-
 /*
 [0] For example, of the following four ways of computing the same result, only the first two will have the most efficient
 representation:
