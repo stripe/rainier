@@ -48,8 +48,17 @@ object Real {
   def seq[A](as: Seq[A])(implicit toReal: ToReal[A]): Seq[Real] =
     as.map(toReal(_))
 
-  def sum(seq: Seq[Real]): Real =
+  def sum(seq: Iterable[Real]): Real =
     seq.foldLeft(Real.zero)(_ + _)
+
+  def logSumExp(seq: Iterable[Real]): Real = {
+    val max = seq.reduce(_ max _)
+    val shifted = seq.map { x =>
+      x - max
+    }
+    val summed = Real.sum(shifted.map(_.exp))
+    summed.log + max
+  }
 
   //print out Scala code that is equivalent to what the Compiler
   //would produce as JVM bytecode
@@ -161,6 +170,9 @@ object If {
 
 private final case class Pow private (base: Real, exponent: NonConstant)
     extends NonConstant
+
+private final case class Extremum(left: Real, right: Real, isMax: Boolean)
+  extends NonConstant
 
 /*
 [0] For example, of the following four ways of computing the same result, only the first two will have the most efficient
