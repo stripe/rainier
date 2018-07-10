@@ -153,15 +153,6 @@ private[compute] object RealOps {
     else
       BigDecimal(Math.pow(a.toDouble, b.toDouble))
 
-  def isPositive(real: Real): Real =
-    If(real, nonZeroIsPositive(real), Real.zero)
-
-  def isNegative(real: Real): Real =
-    If(real, Real.one - nonZeroIsPositive(real), Real.zero)
-
-  private def nonZeroIsPositive(real: Real): Real =
-    unary(real, RectifierOp)
-
   def variables(real: Real): List[Variable] = {
     var seen = Set.empty[Real]
     var vars = List.empty[Variable]
