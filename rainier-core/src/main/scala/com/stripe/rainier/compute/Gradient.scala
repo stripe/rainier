@@ -99,7 +99,7 @@ private object Gradient {
       case AbsOp =>
         If(child.original, gradient.toReal * child.original / child, Real.zero)
       case RectifierOp =>
-        If(child.original < 0, Real.zero, Real.one)
+        If(child.original < 0, Real.zero, gradient.toReal)
     }
   }
 
