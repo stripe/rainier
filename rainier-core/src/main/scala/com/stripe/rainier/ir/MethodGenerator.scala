@@ -4,6 +4,14 @@ import com.stripe.rainier.internal.asm.Opcodes._
 import com.stripe.rainier.internal.asm.tree.MethodNode
 import com.stripe.rainier.internal.asm.Label
 
+object MathOps {
+  def rectifier(x: Double): Double =
+    if (x < 0.0)
+      0.0
+    else
+      x
+}
+
 private trait MethodGenerator {
   def access = {
     if (isStatic)
@@ -76,13 +84,14 @@ private trait MethodGenerator {
     }
 
   def unaryOp(op: UnaryOp): Unit = {
-    val methodName = op match {
-      case LogOp => "log"
-      case ExpOp => "exp"
-      case AbsOp => "abs"
+    val (className, methodName) = op match {
+      case LogOp       => ("java/lang/Math", "log")
+      case ExpOp       => ("java/lang/Math", "exp")
+      case AbsOp       => ("java/lang/Math", "abs")
+      case RectifierOp => ("com/stripe/rainier/ir/MathOps", "rectifier")
     }
     methodNode.visitMethodInsn(INVOKESTATIC,
-                               "java/lang/Math",
+                               className,
                                methodName,
                                "(D)D",
                                false)

@@ -67,11 +67,14 @@ object UnboundedSupport extends Support {
   * A support representing a bounded (min, max) interval.
   */
 case class BoundedSupport(min: Real, max: Real) extends Support {
+  private def logistic(v: Variable): Real =
+    (Real.one / (Real.one + (v * -1).exp))
+
   def transform(v: Variable): Real =
-    (Real.one / (Real.one + (v * -1).exp)) * (max - min) + min
+    logistic(v) * (max - min) + min
 
   def logJacobian(v: Variable): Real =
-    transform(v).log + (1 - transform(v)).log + (max - min).log
+    logistic(v).log + (1 - logistic(v)).log + (max - min).log
 
   def isDefinedAt(real: Real): Real = (real > min) * (real < max)
 }
@@ -97,7 +100,7 @@ case class BoundedAboveSupport(max: Real = Real.zero) extends Support {
   def transform(v: Variable): Real =
     max - (-1 * v).exp
 
-  def logJacobian(v: Variable): Real = v
+  def logJacobian(v: Variable): Real = v * -1
 
   def isDefinedAt(real: Real): Real = (real < max)
 }

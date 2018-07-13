@@ -98,6 +98,8 @@ private object Gradient {
       case ExpOp => gradient.toReal * child
       case AbsOp =>
         If(child.original, gradient.toReal * child.original / child, Real.zero)
+      case RectifierOp =>
+        If(child.original < 0, Real.zero, gradient.toReal)
     }
   }
 

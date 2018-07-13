@@ -113,8 +113,9 @@ object Tracer {
 
   private def name(u: UnaryOp): String =
     u match {
-      case LogOp => "Math.log"
-      case ExpOp => "Math.exp"
-      case AbsOp => "Math.abs"
+      case LogOp       => "Math.log"
+      case ExpOp       => "Math.exp"
+      case AbsOp       => "Math.abs"
+      case RectifierOp => "MathOps.rectifier"
     }
 }

@@ -224,14 +224,11 @@ case class Mixture(components: Map[Continuous, Real]) extends Continuous {
 
   def logDensity(real: Real): Real =
     Real
-      .sum(
-        components.map {
-          case (dist, weight) => {
-            dist.logDensity(real).exp * weight
-          }
-        }.toSeq
-      )
-      .log
+      .logSumExp(components.map {
+        case (dist, weight) => {
+          dist.logDensity(real) + weight.log
+        }
+      })
 
   def param: RandomVariable[Real] = {
     val x = new Variable

@@ -30,13 +30,14 @@ sealed trait Real {
   def exp: Real = RealOps.unary(this, ir.ExpOp)
   def log: Real = RealOps.unary(this, ir.LogOp)
 
-  //because abs does not have a smooth derivative, try to avoid using it
+  //because abs a does not have a smooth derivative, try to avoid using it
   def abs: Real = RealOps.unary(this, ir.AbsOp)
+  def rectifier: Real = RealOps.unary(this, ir.RectifierOp)
 
-  def >(other: Real): Real = RealOps.isPositive(this - other)
-  def <(other: Real): Real = RealOps.isNegative(this - other)
-  def >=(other: Real): Real = Real.one - (this < other)
-  def <=(other: Real): Real = Real.one - (this > other)
+  def >(other: Real): Real = (this - other).rectifier
+  def <(other: Real): Real = (other - this).rectifier
+  def >=(other: Real): Real = If(this - other, this > other, Real.one)
+  def <=(other: Real): Real = If(this - other, this < other, Real.one)
 
   lazy val variables: List[Variable] = RealOps.variables(this)
   lazy val gradient: List[Real] = Gradient.derive(variables, this)
@@ -48,8 +49,17 @@ object Real {
   def seq[A](as: Seq[A])(implicit toReal: ToReal[A]): Seq[Real] =
     as.map(toReal(_))
 
-  def sum(seq: Seq[Real]): Real =
+  def sum(seq: Iterable[Real]): Real =
     seq.foldLeft(Real.zero)(_ + _)
+
+  def logSumExp(seq: Iterable[Real]): Real = {
+    val max = seq.reduce(_ max _)
+    val shifted = seq.map { x =>
+      x - max
+    }
+    val summed = Real.sum(shifted.map(_.exp))
+    summed.log + max
+  }
 
   //print out Scala code that is equivalent to what the Compiler
   //would produce as JVM bytecode
