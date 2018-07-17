@@ -8,7 +8,7 @@ trait Discrete extends Distribution[Int] {
 
 object Discrete {
   implicit val likelihood =
-    Likelihood.placeholder[Discrete, Int, Real] {
+    Likelihood.fn[Discrete, Real] {
       case (d, v) => d.logDensity(v)
     }
 }

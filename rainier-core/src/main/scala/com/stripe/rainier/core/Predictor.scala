@@ -26,10 +26,20 @@ object Predictor {
     new Predictor[X, Y, Z] {
       def apply(x: X): Z = fn(x)
     }
+}
 
-  implicit def likelihood[X, Y, Z](implicit f: Likelihood.Fn[Z, Y]) =
+/*
+  implicit def likelihood[L, X, Y, Z](implicit
+    f: Likelihood.ToFittable[Z, Y],
+    ev: L <:< Predictor[X,Y,Z]) =
+    new Likelihood.ToFittable[L,(X,Y)] {
+      def target(likelihood: L, value: (X,Y)) =
+        f.target(value._2, ev(likelihood).apply(value._1))
+      def targets(likelihood: L, seq: Seq[(X,Y)]) =
+
+    }
     Likelihood.fn[Predictor[X, Y, Z], (X, Y)] {
       case (predictor, (x, y)) =>
         f(predictor(x), y)
     }
-}
+ */

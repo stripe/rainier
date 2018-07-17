@@ -8,7 +8,7 @@ final case class SBC[L, T](priorGenerators: Seq[Generator[Double]],
                            priorParams: Seq[Real],
                            posterior: RandomVariable[(L, Real)])(
     implicit
-    f: Likelihood.Fn[L, T],
+    f: Likelihood.Fittable[L, T],
     ev: L <:< Distribution[T]) {
 
   import SBC._
@@ -106,7 +106,7 @@ final case class SBC[L, T](priorGenerators: Seq[Generator[Double]],
       posterior.map { case (l, _) => ev(l).generator.repeat(syntheticSamples) }.get
     val model = posterior.flatMap {
       case (d, r) =>
-        Likelihood.fittable(d).fit(syntheticValues).map { _ =>
+        Likelihood.fitOps(d).fit(syntheticValues).map { _ =>
           r
         }
     }
@@ -200,7 +200,7 @@ object SBC {
    */
   def apply[L, T](priors: Seq[Continuous])(fn: Seq[Real] => (L, Real))(
       implicit
-      f: Likelihood.Fn[L, T],
+      f: Likelihood.Fittable[L, T],
       ev: L <:< Distribution[T]): SBC[L, T] = {
     val priorParams = priors.map(_.param)
     val priorGenerators = priors.map(_.generator)
@@ -210,7 +210,7 @@ object SBC {
 
   def apply[L, T](prior: Continuous)(fn: Real => L)(
       implicit
-      f: Likelihood.Fn[L, T],
+      f: Likelihood.Fittable[L, T],
       ev: L <:< Distribution[T]): SBC[L, T] =
     apply(List(prior)) { l =>
       (fn(l.head), l.head)

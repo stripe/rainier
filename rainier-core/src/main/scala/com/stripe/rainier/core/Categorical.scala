@@ -65,7 +65,7 @@ object Categorical {
     normalize(seq.groupBy(identity).mapValues { l =>
       Real(l.size)
     })
-
+  /*
   implicit def fittable[T](
       cat: Categorical[T]): Likelihood.Fittable[T, Categorical[T]] = {
     val ph = Placeholder.enum(cat.pmf.keys.toList)
@@ -75,7 +75,7 @@ object Categorical {
       }
     Fittable(cat)
   }
-
+   */
   def logDensity[T](cat: Categorical[T], v: Map[T, Real]): Real =
     Real
       .sum(v.toList.map {
@@ -101,12 +101,13 @@ final case class Multinomial[T](pmf: Map[T, Real], k: Real)
 }
 
 object Multinomial {
+  /*
   implicit def likelihood[T] =
     Likelihood.placeholder[Multinomial[T], Map[T, Int], Map[T, Real]] {
       (m, v) =>
         logDensity(m, v)
     }
-
+   */
   def logDensity[T](multi: Multinomial[T], v: Map[T, Real]): Real =
     Combinatorics.factorial(multi.k) + Real.sum(v.toList.map {
       case (t, i) =>

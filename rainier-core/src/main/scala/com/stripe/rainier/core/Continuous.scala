@@ -20,7 +20,7 @@ trait Continuous extends Distribution[Double] {
 
 object Continuous {
   implicit val likelihood =
-    Likelihood.placeholder[Continuous, Double, Real] { (c, v) =>
+    Likelihood.fn[Continuous, Real] { (c, v) =>
       c.logDensity(v)
     }
 }
