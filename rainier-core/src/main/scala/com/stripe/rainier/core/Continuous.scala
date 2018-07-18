@@ -19,9 +19,9 @@ trait Continuous extends Distribution[Double] {
 }
 
 object Continuous {
-  implicit val likelihood =
-    Likelihood.fn[Continuous, Real] { (c, v) =>
-      c.logDensity(v)
+  implicit def likelihood[L, N: Numeric](implicit ev: L <:< Continuous) =
+    Likelihood.from[L, N, Real] { (pdf, value) =>
+      ev(pdf).logDensity(value)
     }
 }
 
@@ -173,9 +173,10 @@ final case class Beta(a: Real, b: Real) extends StandardContinuous {
       u.log + (b - 1) *
       (1 - u).log - Combinatorics.beta(a, b)
 
-  def binomial: Predictor[Int, Int, BetaBinomial] = Predictor.from { k: Int =>
-    BetaBinomial(a, b, k)
-  }
+  def binomial =
+    Predictor.from[Int] { k: Real =>
+      BetaBinomial(a, b, k)
+    }
 }
 
 object Beta {

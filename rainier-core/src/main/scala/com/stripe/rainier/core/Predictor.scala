@@ -1,4 +1,5 @@
 package com.stripe.rainier.core
+
 /*
 Predictor fn: X-placeholder => Z
 vs Dispatcher: Map[K,Z], fn: X => K
@@ -7,7 +8,7 @@ vs Dispatcher: Map[K,Z], fn: X => K
   * Predictor class, for fitting data with covariates
   */
 abstract class Predictor[X, Y, Z, A](implicit ev: Z <:< Distribution[Y],
-                                     ph: Placeholder[X, A]) {
+                                     val ph: Placeholder[X, A]) {
   def apply(x: X): Z = create(ph.wrap(x))
   def create(a: A): Z
 
@@ -25,20 +26,29 @@ abstract class Predictor[X, Y, Z, A](implicit ev: Z <:< Distribution[Y],
   * Predictor object, for fitting data with covariates
   */
 object Predictor {
-  def from[X, Y, Z, A](fn: A => Z)(
-      implicit ev: Z <:< Distribution[Y],
-      ph: Placeholder[X, A]): Predictor[X, Y, Z, A] =
-    new Predictor[X, Y, Z, A] {
-      def create(a: A): Z = fn(a)
-    }
+  class PredictorFactory[X] {
+    def apply[Y, Z, A](fn: A => Z)(implicit ev: Z <:< Distribution[Y],
+                                   ph: Placeholder[X, A]) =
+      new Predictor[X, Y, Z, A] {
+        def create(a: A): Z = fn(a)
+      }
+  }
 
-  implicit def likelihood[L, X, Y, Z, A, B](implicit
-                                            lh: PlaceholderLikelihood[Z, Y, B],
-                                            ph: Placeholder[X, A],
-                                            ev: L <:< Predictor[X, Y, Z, A]) = {
-    implicit val ph2 = lh.ph
-    new PlaceholderLikelihood[L, (X, Y), (A, B)] {
-      def logDensity(pdf: L, value: (A, B)) =
+  def from[X] = new PredictorFactory[X]
+
+  implicit def likelihood[L, X, Y, Z, A](implicit
+                                         lh: Likelihood[Z, Y],
+                                         ev: L <:< Predictor[X, Y, Z, A]) = {
+    new Likelihood[L, (X, Y)] {
+      type V = (A, lh.V)
+      def placeholder(pdf: L) = {
+        val predictor = ev(pdf)
+        val a = predictor.ph.placeholder
+        val z = predictor.create(a)
+        val ph2 = lh.placeholder(z)
+        Placeholder.zip(predictor.ph, ph2)
+      }
+      def logDensity(pdf: L, value: V) =
         lh.logDensity(ev(pdf).create(value._1), value._2)
     }
   }

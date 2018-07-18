@@ -4,44 +4,34 @@ import com.stripe.rainier.compute._
 
 trait Placeholder[T, U] {
   def wrap(value: T): U
-  def create(): (U, Seq[Variable])
+  def placeholder: U
+  def variables: Seq[Variable]
   def extract(value: T, acc: List[Double]): List[Double]
 }
 
-trait LowPriPlaceholders {
-  implicit val int = new Placeholder[Int, Real] {
-    def wrap(value: Int) = Real(value)
-    def create() = {
-      val x = new Variable
-      (x, List(x))
-    }
-    def extract(value: Int, acc: List[Double]) =
-      value.toDouble :: acc
-  }
-}
+trait LowPriPlaceholders {}
 
 object Placeholder extends LowPriPlaceholders {
-  implicit val double = new Placeholder[Double, Real] {
-    def wrap(value: Double) = Real(value)
-    def create() = {
+  implicit def numeric[N](implicit num: Numeric[N]) =
+    new Placeholder[N, Real] {
       val x = new Variable
-      (x, List(x))
+      def placeholder = x
+      def variables = List(x)
+
+      def wrap(value: N) = Real(value)
+      def extract(value: N, acc: List[Double]) =
+        num.toDouble(value) :: acc
     }
-    def extract(value: Double, acc: List[Double]) =
-      value :: acc
-  }
 
   implicit def zip[A, B, X, Y](
       implicit ab: Placeholder[A, B],
       xy: Placeholder[X, Y]): Placeholder[(A, X), (B, Y)] =
     new Placeholder[(A, X), (B, Y)] {
+      def placeholder = (ab.placeholder, xy.placeholder)
+      def variables = ab.variables ++ xy.variables
+
       def wrap(value: (A, X)): (B, Y) =
         (ab.wrap(value._1), xy.wrap(value._2))
-      def create() = {
-        val (b, bv) = ab.create()
-        val (y, yv) = xy.create()
-        ((b, y), bv ++ yv)
-      }
       def extract(value: (A, X), acc: List[Double]) =
         ab.extract(value._1, xy.extract(value._2, acc))
     }
