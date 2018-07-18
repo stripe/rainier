@@ -1,11 +1,15 @@
 package com.stripe.rainier.core
-
+/*
+Predictor fn: X-placeholder => Z
+vs Dispatcher: Map[K,Z], fn: X => K
+ */
 /**
   * Predictor class, for fitting data with covariates
   */
-abstract class Predictor[X, Y, Z](implicit ev: Z <:< Distribution[Y])
-    extends Likelihood[(X, Y)] {
-  def apply(x: X): Z
+abstract class Predictor[X, Y, Z, A](implicit ev: Z <:< Distribution[Y],
+                                     ph: Placeholder[X, A]) {
+  def apply(x: X): Z = create(ph.wrap(x))
+  def create(a: A): Z
 
   def predict(x: X): Generator[Y] = ev(apply(x)).generator
 
@@ -21,25 +25,21 @@ abstract class Predictor[X, Y, Z](implicit ev: Z <:< Distribution[Y])
   * Predictor object, for fitting data with covariates
   */
 object Predictor {
-  def from[X, Y, Z](fn: X => Z)(
-      implicit ev: Z <:< Distribution[Y]): Predictor[X, Y, Z] =
-    new Predictor[X, Y, Z] {
-      def apply(x: X): Z = fn(x)
+  def from[X, Y, Z, A](fn: A => Z)(
+      implicit ev: Z <:< Distribution[Y],
+      ph: Placeholder[X, A]): Predictor[X, Y, Z, A] =
+    new Predictor[X, Y, Z, A] {
+      def create(a: A): Z = fn(a)
     }
+
+  implicit def likelihood[L, X, Y, Z, A, B](implicit
+                                            lh: PlaceholderLikelihood[Z, Y, B],
+                                            ph: Placeholder[X, A],
+                                            ev: L <:< Predictor[X, Y, Z, A]) = {
+    implicit val ph2 = lh.ph
+    new PlaceholderLikelihood[L, (X, Y), (A, B)] {
+      def logDensity(pdf: L, value: (A, B)) =
+        lh.logDensity(ev(pdf).create(value._1), value._2)
+    }
+  }
 }
-
-/*
-  implicit def likelihood[L, X, Y, Z](implicit
-    f: Likelihood.ToFittable[Z, Y],
-    ev: L <:< Predictor[X,Y,Z]) =
-    new Likelihood.ToFittable[L,(X,Y)] {
-      def target(likelihood: L, value: (X,Y)) =
-        f.target(value._2, ev(likelihood).apply(value._1))
-      def targets(likelihood: L, seq: Seq[(X,Y)]) =
-
-    }
-    Likelihood.fn[Predictor[X, Y, Z], (X, Y)] {
-      case (predictor, (x, y)) =>
-        f(predictor(x), y)
-    }
- */
