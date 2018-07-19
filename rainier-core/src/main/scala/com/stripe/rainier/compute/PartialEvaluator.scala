@@ -25,6 +25,6 @@ class PartialEvaluator(var cache: Map[Real, Real]) {
       If(apply(test), apply(nz), apply(z))
     case Pow(base, exponent) =>
       apply(base).pow(apply(exponent))
-    case v: Variable => sys.error(s"No value provided for $v")
+    case v: Variable => v
   }
 }
