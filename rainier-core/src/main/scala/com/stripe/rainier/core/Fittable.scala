@@ -1,33 +1,16 @@
-/*package com.stripe.rainier.core
+package com.stripe.rainier.core
 
-import com.stripe.rainier.compute._
-import scala.collection.mutable.ArrayBuffer
+import com.stripe.rainier.unused
 
-sealed trait Fittable[L, T] {
-  def single(pdf: L, value: T): Target
-  def sequence(pdf: L, value: Seq[T]): Target
-}
+trait Fittable[T]
 
 object Fittable {
-  implicit def placeholder[L, T, U](
-      implicit lh: PlaceholderLikelihood[L, T, U]
-  ): Fittable[L, T] =
-    PlaceholderFittable(lh)
-}
+  case class Ops[L, T](pdf: L)(implicit lh: Likelihood[L, T]) {
+    def fit(value: T): RandomVariable[L] = RandomVariable.fit(pdf, value)(lh)
+    def fit(seq: Seq[T]): RandomVariable[L] = RandomVariable.fit(pdf, seq)(lh)
+  }
 
-private final case class SimpleFittable[L, T] private (lh: Likelihood[L, T])
-    extends Fittable[L, T] {
-  def single(pdf: L, value: T) =
-    Target(lh.logDensity(pdf, value))
-  def sequence(pdf: L, seq: Seq[T]) =
-    Target(Real.sum(seq.map { t =>
-      lh.logDensity(pdf, t)
-    }))
+  implicit def ops[L, T](pdf: L)(implicit lh: Likelihood[L, T],
+                                 @unused ev: L <:< Fittable[T]) =
+    Ops(pdf)
 }
-
-private final case class PlaceholderFittable[L, T, U] private (
-    lh: PlaceholderLikelihood[L, T, U]
-) extends Fittable[L, T] {
-
-}
- */

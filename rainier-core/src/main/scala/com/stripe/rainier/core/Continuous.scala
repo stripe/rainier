@@ -19,8 +19,8 @@ trait Continuous extends Distribution[Double] {
 }
 
 object Continuous {
-  implicit def likelihood[L, N: Numeric](implicit ev: L <:< Continuous) =
-    Likelihood.from[L, N, Real] { (pdf, value) =>
+  implicit def likelihood[L](implicit ev: L <:< Continuous) =
+    Likelihood.from[L, Double, Real] { (pdf, value) =>
       ev(pdf).logDensity(value)
     }
 }

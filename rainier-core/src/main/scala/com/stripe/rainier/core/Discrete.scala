@@ -7,9 +7,9 @@ trait Discrete extends Distribution[Int] {
 }
 
 object Discrete {
-  implicit def likelihood[L](implicit ev: L <:< Discrete) =
-    Likelihood.from[L, Int, Real] { (pdf, value) =>
-      ev(pdf).logDensity(value)
+  implicit def likelihood =
+    Likelihood.from[Discrete, Int, Real] { (pdf, value) =>
+      pdf.logDensity(value)
     }
 }
 
