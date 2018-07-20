@@ -24,22 +24,26 @@ case class Context(base: Real, batched: Target) {
 
   //not terribly efficient
   private def compileBatched: Array[Double] => Double = {
-    val placeholders = batched.placeholders.keys.toList
-    val cf = compiler.compile(variables ++ placeholders, batched.real)
+    if (batched.placeholders.isEmpty) {
+      compiler.compile(variables, base)
+    } else {
+      val placeholders = batched.placeholders.keys.toList
+      val cf = compiler.compile(variables ++ placeholders, batched.real)
 
-    val nBatches = batched.placeholders.head._2.size
-    val result = { input: Array[Double] =>
-      0.until(nBatches)
-        .map { i =>
-          val extraInputs =
-            placeholders.toArray.map { v =>
-              batched.placeholders(v)(i)
-            }
-          cf(input ++ extraInputs)
-        }
-        .sum
+      val nBatches = batched.placeholders.head._2.size
+      val result = { input: Array[Double] =>
+        0.until(nBatches)
+          .map { i =>
+            val extraInputs =
+              placeholders.toArray.map { v =>
+                batched.placeholders(v)(i)
+              }
+            cf(input ++ extraInputs)
+          }
+          .sum
+      }
+      result
     }
-    result
   }
 
   //these are for backwards compatibility to allow HMC to keep working
