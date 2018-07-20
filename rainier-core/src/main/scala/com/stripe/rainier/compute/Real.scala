@@ -48,6 +48,15 @@ object Real {
   def sum(seq: Iterable[Real]): Real =
     seq.foldLeft(Real.zero)(_ + _)
 
+  //print out Scala code that is equivalent to what the Compiler
+  //would produce as JVM bytecode
+  def trace(real: Real): Unit = {
+    val translator = new Translator
+    val irs = List(translator.toIR(real))
+    val params = RealOps.variables(real).toList.map(_.param)
+    ir.Tracer.trace(params, irs)
+  }
+
   private[compute] val BigZero = BigDecimal(0.0)
   private[compute] val BigOne = BigDecimal(1.0)
   private[compute] val BigTwo = BigDecimal(2.0)

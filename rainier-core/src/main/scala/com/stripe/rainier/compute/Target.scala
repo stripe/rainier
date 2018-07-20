@@ -17,8 +17,10 @@ class Target(val real: Real, val placeholders: Map[Variable, Array[Double]]) {
     else {
       val nRows = data.head._2.size
       val inlined = 0.until(nRows).map { i =>
-        val row: Map[Real, Real] = data.map { case (v, a) => v -> Real(a(i)) }
-        new PartialEvaluator(row).apply(real)
+        val row: Map[Variable, Real] = data.map {
+          case (v, a) => v -> Real(a(i))
+        }
+        PartialEvaluator.inline(real, row)
       }
       Real.sum(inlined.toList)
     }
