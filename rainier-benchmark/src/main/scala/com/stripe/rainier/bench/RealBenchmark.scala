@@ -133,7 +133,7 @@ class ElOneErrorBenchmark extends RealBenchmark {
   def expression: Real = {
     val r = new scala.util.Random
     val x = new Variable
-    val data = 1.to(1000).map(_ * r.nextGaussian)
+    val data = 1.to(10).map(_ * r.nextGaussian)
     data
       .map { i =>
         (x - i).abs
@@ -146,7 +146,7 @@ class ElTwoErrorBenchmark extends RealBenchmark {
   def expression: Real = {
     val r = new scala.util.Random
     val x = new Variable
-    val data = 1.to(1000).map(_ * r.nextGaussian)
+    val data = 1.to(10).map(_ * r.nextGaussian)
     data
       .map { i =>
         (x - i).pow(2)
