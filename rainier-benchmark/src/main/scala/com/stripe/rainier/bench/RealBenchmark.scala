@@ -129,6 +129,15 @@ class FunnelBenchmark extends RealBenchmark {
   }
 }
 
+class ElOneErrorBenchmark extends RealBenchmark {
+  def expression: Real {
+    val x = new Variable
+    val r = new scala.util.random
+    val data = 1.to(1000).map(r.nextGaussian)
+    data.map{ i => (x - i).abs }.reduce(_+_) / data.size
+  }
+}
+
 class DLMBenchmark extends RealBenchmark {
   def expression: Real = {
     implicit val rng = ScalaRNG(4)
