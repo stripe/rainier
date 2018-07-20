@@ -130,11 +130,15 @@ class FunnelBenchmark extends RealBenchmark {
 }
 
 class ElOneErrorBenchmark extends RealBenchmark {
-  def expression: Real {
+  def expression: Real = {
+    val r = new scala.util.Random
     val x = new Variable
-    val r = new scala.util.random
-    val data = 1.to(1000).map(r.nextGaussian)
-    data.map{ i => (x - i).abs }.reduce(_+_) / data.size
+    val data = 1.to(1000).map(_ * r.nextGaussian)
+    data
+      .map { i =>
+        (x - i).abs
+      }
+      .reduce(_ + _) / data.size
   }
 }
 
