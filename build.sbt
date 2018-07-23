@@ -164,6 +164,7 @@ lazy val shadedAsm = project.
     autoScalaLibrary := false,
     exportJars := true,
     packageBin in Compile := (assembly in asmDeps).value,
+    releaseVersion := { ver => ver }
   )
 
 /* phantom project to bundle deps for shading */
