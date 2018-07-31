@@ -46,7 +46,7 @@ final private case class WalkersChain(cf: Array[Double] => Double,
 private object WalkersChain {
   def apply(context: Context, nWalkers: Int)(
       implicit rng: RNG): WalkersChain = {
-    val cf = context.compiler.compile(context.variables, context.density)
+    val cf = context.compileDensity
     val walkers = 1
       .to(nWalkers)
       .map { _ =>
