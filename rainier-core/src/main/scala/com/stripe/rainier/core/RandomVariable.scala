@@ -45,6 +45,7 @@ class RandomVariable[+T](val value: T,
   def record(sampler: Sampler,
              warmupIterations: Int,
              iterations: Int,
+             batches: Int = 1,
              keepEvery: Int = 1)(implicit rng: RNG): Recording = {
     val posteriorParams = Sampler
       .sample(Context(density),
@@ -84,6 +85,7 @@ class RandomVariable[+T](val value: T,
   def sample[V](sampler: Sampler,
                 warmupIterations: Int,
                 iterations: Int,
+                batches: Int = 1,
                 keepEvery: Int = 1)(implicit rng: RNG,
                                     sampleable: Sampleable[T, V]): List[V] = {
     val context = Context(density)
@@ -100,6 +102,7 @@ class RandomVariable[+T](val value: T,
                                warmupIterations: Int,
                                iterations: Int,
                                parallel: Boolean = true,
+                               batches: Int = 1,
                                keepEvery: Int = 1)(
       implicit rng: RNG,
       sampleable: Sampleable[T, V]): (List[V], List[Diagnostics]) = {
