@@ -30,6 +30,6 @@ object Predictor {
   implicit def likelihood[X, Y, Z](implicit lh: Likelihood[Z, Y]) =
     new Likelihood[Predictor[X, Y, Z], (X, Y)] {
       def target(predictor: Predictor[X, Y, Z], value: (X, Y)) =
-        lh.target(predictor(x), y)
+        lh.target(predictor(value._1), value._2)
     }
 }
