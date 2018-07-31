@@ -67,7 +67,7 @@ object Real {
     val context = Context(real)
     val translator = new Translator
     val irs = List(translator.toIR(real))
-    val params = context.variables.map(_.param)
+    val params = RealOps.variables(real).toList.map(_.param)
     ir.Tracer.trace(params, irs)
   }
 

@@ -153,7 +153,7 @@ private[compute] object RealOps {
     else
       BigDecimal(Math.pow(a.toDouble, b.toDouble))
 
-  def variables(real: Real): List[Variable] = {
+  def variables(real: Real): Set[Variable] = {
     var seen = Set.empty[Real]
     var vars = List.empty[Variable]
     def loop(r: Real): Unit =
@@ -177,6 +177,6 @@ private[compute] object RealOps {
 
     loop(real)
 
-    vars.sortBy(_.param.sym.id)
+    vars.toSet
   }
 }
