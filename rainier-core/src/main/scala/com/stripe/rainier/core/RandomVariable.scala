@@ -162,4 +162,12 @@ object RandomVariable {
       }
       .map(_.reverse)
   }
+
+  def fit[L, T](pdf: L, value: T)(
+      implicit lh: Likelihood[L, T]): RandomVariable[L] =
+    new RandomVariable(pdf, Set(lh.target(pdf, value)))
+
+  def fit[L, T](pdf: L, seq: Seq[T])(
+      implicit lh: Likelihood[L, T]): RandomVariable[L] =
+    new RandomVariable(pdf, Set(lh.sequence(pdf, seq)))
 }
