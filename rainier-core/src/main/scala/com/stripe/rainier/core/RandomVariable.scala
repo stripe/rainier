@@ -7,15 +7,15 @@ import com.stripe.rainier.sampler._
   * The main probability monad used in Rainier for constructing probabilistic programs which can be sampled
   */
 class RandomVariable[+T](val value: T,
-                         private val densities: Set[RandomVariable.BoxedReal]) {
+                         private val targets: Set[Target]) {
 
   def flatMap[U](fn: T => RandomVariable[U]): RandomVariable[U] = {
     val rv = fn(value)
-    new RandomVariable(rv.value, densities ++ rv.densities)
+    new RandomVariable(rv.value, targets ++ rv.targets)
   }
 
   def map[U](fn: T => U): RandomVariable[U] =
-    new RandomVariable(fn(value), densities)
+    new RandomVariable(fn(value), targets)
 
   def zip[U](other: RandomVariable[U]): RandomVariable[(T, U)] =
     for {
@@ -124,7 +124,7 @@ class RandomVariable[+T](val value: T,
   }
 
   lazy val density: Real =
-    Real.sum(densities.toList.map(_.toReal))
+    Real.sum(targets.toList.map(_.toReal))
 
   //this is really just here to allow destructuring in for{}
   def withFilter(fn: T => Boolean): RandomVariable[T] =
@@ -138,13 +138,8 @@ class RandomVariable[+T](val value: T,
   * The main probability monad used in Rainier for constructing probabilistic programs which can be sampled
   */
 object RandomVariable {
-
-  //this exists to provide a reference-equality wrapper
-  //for use in the `densities` set
-  private class BoxedReal(val toReal: Real)
-
   def apply[A](a: A, density: Real): RandomVariable[A] =
-    new RandomVariable(a, Set(new BoxedReal(density)))
+    new RandomVariable(a, Set(new Target(density)))
 
   def apply[A](a: A): RandomVariable[A] =
     apply(a, Real.zero)
