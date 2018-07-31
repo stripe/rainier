@@ -64,7 +64,6 @@ object Real {
   //print out Scala code that is equivalent to what the Compiler
   //would produce as JVM bytecode
   def trace(real: Real): Unit = {
-    val context = Context(real)
     val translator = new Translator
     val irs = List(translator.toIR(real))
     val params = RealOps.variables(real).toList.map(_.param)
