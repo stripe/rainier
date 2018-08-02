@@ -2,6 +2,7 @@ package com.stripe.rainier.core
 
 import com.stripe.rainier.compute._
 import com.stripe.rainier.sampler._
+import com.stripe.rainier.unused
 
 /**
   * The main probability monad used in Rainier for constructing probabilistic programs which can be sampled
@@ -44,6 +45,7 @@ class RandomVariable[+T](val value: T, private val targets: Set[Target]) {
   def record(sampler: Sampler,
              warmupIterations: Int,
              iterations: Int,
+             @unused batches: Int = 1,
              keepEvery: Int = 1)(implicit rng: RNG): Recording = {
     val posteriorParams = Sampler
       .sample(Context(density),
@@ -83,6 +85,7 @@ class RandomVariable[+T](val value: T, private val targets: Set[Target]) {
   def sample[V](sampler: Sampler,
                 warmupIterations: Int,
                 iterations: Int,
+                @unused batches: Int = 1,
                 keepEvery: Int = 1)(implicit rng: RNG,
                                     sampleable: Sampleable[T, V]): List[V] = {
     val context = Context(density)
@@ -99,6 +102,7 @@ class RandomVariable[+T](val value: T, private val targets: Set[Target]) {
                                warmupIterations: Int,
                                iterations: Int,
                                parallel: Boolean = true,
+                               @unused batches: Int = 1,
                                keepEvery: Int = 1)(
       implicit rng: RNG,
       sampleable: Sampleable[T, V]): (List[V], List[Diagnostics]) = {
