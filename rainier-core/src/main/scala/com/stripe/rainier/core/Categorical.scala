@@ -67,7 +67,7 @@ object Categorical {
     })
 
   implicit def likelihood[T] =
-    Likelihood.placeholder[Categorical[T], T, Map[T, Real]] {
+    Likelihood.from[Categorical[T], T, Map[T, Real]] {
       case (Categorical(pmf), v) =>
         Real
           .sum(v.toList.map {
@@ -95,9 +95,8 @@ final case class Multinomial[T](pmf: Map[T, Real], k: Real)
 
 object Multinomial {
   implicit def likelihood[T] =
-    Likelihood.placeholder[Multinomial[T], Map[T, Int], Map[T, Real]] {
-      (m, v) =>
-        logDensity(m, v)
+    Likelihood.from[Multinomial[T], Map[T, Int], Map[T, Real]] { (m, v) =>
+      logDensity(m, v)
     }
 
   def logDensity[T](multi: Multinomial[T], v: Map[T, Real]): Real =
