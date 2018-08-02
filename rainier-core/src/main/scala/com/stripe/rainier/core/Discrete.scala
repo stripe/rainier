@@ -1,6 +1,6 @@
 package com.stripe.rainier.core
 
-import com.stripe.rainier.compute.Real
+import com.stripe.rainier.compute.{If, Real}
 
 trait Discrete extends Distribution[Int] {
   def logDensity(v: Real): Real
@@ -11,6 +11,78 @@ object Discrete {
     Likelihood.from[Discrete, Int, Real] {
       case (d, v) => d.logDensity(v)
     }
+}
+
+/**
+  * Discrete Constant (point mass) with expecation `constant`
+  *
+  * @param constant The integer value of the point mass
+  */
+final case class DiscreteConstant(constant: Real) extends Discrete {
+  val generator: Generator[Int] =
+    Generator.require(Set(constant)) { (c, n) =>
+      n.toInt(constant)
+    }
+
+  def logDensity(v: Real): Real = {
+    If(v - constant, Real.negInfinity, 0)
+  }
+}
+
+/**
+  * Bernoulli distribution with expectation `p`
+  *
+  * @param p The probability of success
+  */
+final case class Bernoulli(p: Real) extends Discrete {
+  val generator: Generator[Int] =
+    Generator.require(Set(p)) { (r, n) =>
+      val u = r.standardUniform
+      val l = n.toDouble(p)
+      if (u <= l) 1 else 0
+    }
+
+  def logDensity(v: Real) =
+    If(v, p.log, (1 - p).log)
+}
+
+/**
+  * Geometric distribution with expectation `1/p`
+  *
+  * @param p The probability of success
+  */
+final case class Geometric(p: Real) extends Discrete {
+  val generator: Generator[Int] =
+    Generator.require(Set(p)) { (r, n) =>
+      val u = r.standardUniform
+      val q = n.toDouble(p)
+      Math.floor(Math.log(u) / Math.log(1 - q)).toInt
+    }
+
+  def logDensity(v: Real) =
+    p.log + v * (1 - p).log
+}
+
+/**
+  * Negative Binomial distribution with expectation `n(1-p)/p`
+  *
+  * @param n Total number of failures
+  * @param p Probability of success
+  */
+final case class NegativeBinomial(n: Real, p: Real) extends Discrete {
+  val generator: Generator[Int] =
+    Generator.require(Set(n, p)) { (r, m) =>
+      (1 to m.toInt(n))
+        .map({ x =>
+          Geometric(p).generator.get(r, m)
+        })
+        .sum
+    }
+
+  def logDensity(v: Real) =
+    Combinatorics.factorial(n + v - 1) - Combinatorics.factorial(v) -
+      Combinatorics.factorial(n - 1) +
+      n * p.log + v * (1 - p).log
 }
 
 /**
@@ -94,4 +166,55 @@ final case class BetaBinomial(a: Real, b: Real, k: Real) extends Discrete {
     Combinatorics.choose(k, v) +
       Combinatorics.beta(a + v, k - v + b) -
       Combinatorics.beta(a, b)
+}
+
+/**
+  * Discrete Mixture Distribution
+  *
+  * @param components Map of Discrete distribution and probabilities
+  */
+final case class DiscreteMixture(components: Map[Discrete, Real])
+    extends Discrete {
+  val generator: Generator[Int] =
+    Categorical(components).generator.flatMap { d =>
+      d.generator
+    }
+
+  def logDensity(v: Real): Real =
+    Real
+      .logSumExp(components.map {
+        case (dist, weight) => {
+          dist.logDensity(v) + weight.log
+        }
+      })
+}
+
+/**
+  * Zero Inflated Poisson with expecation `psi*lambda`
+  *
+  * @param psi    The probability of non-zero count
+  * @param lambda The expected (possibly non-zero) count value
+  */
+final case class ZeroInflatedPoisson(psi: Real, lambda: Real) extends Discrete {
+  val support = DiscreteMixture(
+    Map(DiscreteConstant(0) -> (1 - psi), Poisson(lambda) -> psi))
+  val generator = support.generator
+
+  def logDensity(v: Real) = support.logDensity(v)
+}
+
+/**
+  * Zero Inflated Negative Binomial
+  *
+  * @param psi The probsbility of non-zero count
+  * @param n   The number of failures
+  * @param p   The probability of success
+  */
+final case class ZeroInflatedNegativeBinomial(psi: Real, n: Real, p: Real)
+    extends Discrete {
+  val support = DiscreteMixture(
+    Map(DiscreteConstant(0) -> (1 - psi), NegativeBinomial(n, p) -> psi))
+  val generator = support.generator
+
+  def logDensity(v: Real) = support.logDensity(v)
 }

@@ -16,7 +16,7 @@ class DiscreteTest extends FunSuite {
         probs.foreach { trueValue =>
           val trueDist = fn(Real(trueValue))
           val syntheticData =
-            RandomVariable(trueDist.generator).sample(1000)
+            RandomVariable(trueDist.generator).sample(10000)
           val model =
             for {
               x <- Uniform(0, 1).param
@@ -56,4 +56,34 @@ class DiscreteTest extends FunSuite {
   checkLogDensity("Binomial(0.0, 10)")(0.0, 10, 1, 0)
   checkLogDensity("Binomial(1.0, 10)")(1.0, 10, 10, 1)
   checkLogDensity("Binomial(1.0, 10)")(1.0, 10, 9, 0)
+
+  /** Bernoulli test **/
+  check("Bernoulli(x), x = 0.1, 0.2, 0.5, 0.8, 0.9, 1.0")(
+    x => Bernoulli(x),
+    List(0.1, 0.2, 0.5, 0.8, 0.9, 1.0))
+
+  /** Geometric test **/
+  check("Geometric(x), x = 0.01, 0.1, 0.5, 0.99, 1.0")(
+    x => Geometric(x),
+    List(0.01, 0.1, 0.5, 0.99, 1.0))
+
+  /** Negative Binomial test **/
+  check("NegativeBinomial(10, x), x = 0.1, 0.5, 0.8")(
+    x => NegativeBinomial(10, x),
+    List(0.1, 0.5, 0.8))
+
+  /** Zero Inflated Poisson test **/
+  check("ZeroInflatedPoisson(psi, 10), psi = 0.1, 0.5, 0.9, 1.0")(
+    psi => ZeroInflatedPoisson(psi, 10),
+    List(0.1, 0.5, 0.9, 1.0))
+
+  /** Zero Inflated Negative Binomial test **/
+  check("ZeroInflatedNegativeBinomial(psi, 10, .3), psi = 0.1, 0.5, 0.9, 1.0")(
+    psi => ZeroInflatedNegativeBinomial(psi, 10, .3),
+    List(0.1, 0.5, 0.9, 1.0))
+
+  /** Zero Inflated Negative Binomial test **/
+  check("ZeroInflatedNegativeBinomial(.3, 10, p), p = 0.1, 0.5, 0.9, 1.0")(
+    p => ZeroInflatedNegativeBinomial(.3, 10, p),
+    List(0.1, 0.5, 0.9, 1.0))
 }
