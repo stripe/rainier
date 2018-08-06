@@ -16,7 +16,7 @@ class DiscreteTest extends FunSuite {
         probs.foreach { trueValue =>
           val trueDist = fn(Real(trueValue))
           val syntheticData =
-            RandomVariable(trueDist.generator).sample(10000)
+            RandomVariable(trueDist.generator).sample(1000)
           val model =
             for {
               x <- Uniform(0, 1).param
@@ -27,8 +27,8 @@ class DiscreteTest extends FunSuite {
           val xErr = (fitMean - trueValue) / trueValue
 
           test(
-            s"y ~ $description, x = $trueValue, sampler = $sampler, E(x) within 5%") {
-            assert(xErr.abs < 0.05)
+            s"y ~ $description, x = $trueValue, sampler = $sampler, E(x) within 10%") {
+            assert(xErr.abs < 0.1)
           }
         }
     }
@@ -72,18 +72,44 @@ class DiscreteTest extends FunSuite {
     x => NegativeBinomial(10, x),
     List(0.1, 0.5, 0.8))
 
+  /** Negative Binomial test, Normal Approximation **/
+  check("NegativeBinomial(300, x), x = 0.2, 0.4, 0.6")(
+    x => NegativeBinomial(300, x),
+    List(0.2, 0.4, 0.6))
+
+  /** Zero Inflated Geometric test **/
+  check("Geometric(.3).constantInflated(0, psi), psi = 0.3, 0.5, 0.9, 1.0")(
+    psi => Geometric(.3).constantInflated(0, psi),
+    List(0.3, 0.5, 0.9, 1.0))
+
+  /** Zero Inflated Poisson test, convience method check **/
+  check("Poisson(5).zeroInflated(psi), psi = 0.2, 0.5, 0.9, 1.0")(
+    psi => Poisson(5).constantInflated(0, psi),
+    List(0.2, 0.5, 0.9, 1.0))
+
   /** Zero Inflated Poisson test **/
-  check("ZeroInflatedPoisson(psi, 10), psi = 0.1, 0.5, 0.9, 1.0")(
-    psi => ZeroInflatedPoisson(psi, 10),
-    List(0.1, 0.5, 0.9, 1.0))
+  check("Poisson(5).constantInflated(0, psi), psi = 0.2, 0.5, 0.9, 1.0")(
+    psi => Poisson(5).constantInflated(0, psi),
+    List(0.2, 0.5, 0.9, 1.0))
 
   /** Zero Inflated Negative Binomial test **/
-  check("ZeroInflatedNegativeBinomial(psi, 10, .3), psi = 0.1, 0.5, 0.9, 1.0")(
-    psi => ZeroInflatedNegativeBinomial(psi, 10, .3),
-    List(0.1, 0.5, 0.9, 1.0))
+  check(
+    "NegativeBinomial(20, .3).constantInflated(0, psi), psi = 0.2, 0.5, 0.9")(
+    psi => NegativeBinomial(20, .3).constantInflated(0, psi),
+    List(0.2, 0.5, 0.9))
 
   /** Zero Inflated Negative Binomial test **/
-  check("ZeroInflatedNegativeBinomial(.3, 10, p), p = 0.1, 0.5, 0.9, 1.0")(
-    p => ZeroInflatedNegativeBinomial(.3, 10, p),
-    List(0.1, 0.5, 0.9, 1.0))
+  check("NegativeBinomial(20, p).constantInflated(0, .3), p = 0.2, 0.5, 0.9")(
+    p => NegativeBinomial(20, p).constantInflated(0, .3),
+    List(0.2, 0.5, 0.9))
+
+  /** Zero Inflated Binomial test **/
+  check("Binomial(.3, 20).constantInflated(0, psi), psi = 0.2, 0.5, 0.9, 1.0")(
+    psi => Binomial(.3, 20).constantInflated(0, psi),
+    List(0.2, 0.5, 0.9, 1.0))
+
+  /** Zero Inflated Binomial test **/
+  check("Binomial(p, 20).constantInflated(0, .3), p = 0.2, 0.5, 0.9, 1.0")(
+    p => Binomial(p, 20).constantInflated(0, .3),
+    List(0.2, 0.5, 0.9, 1.0))
 }
