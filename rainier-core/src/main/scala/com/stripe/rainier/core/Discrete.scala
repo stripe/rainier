@@ -6,10 +6,10 @@ trait Discrete extends Distribution[Int] { self: Discrete =>
   def logDensity(v: Real): Real
 
   def zeroInflated(psi: Real) =
-    DiscreteMixture(Map(DiscreteConstant(0.0) -> (1 - psi), self -> psi))
+    constantInflated(0.0, psi)
 
   def constantInflated(constant: Real, psi: Real) =
-    DiscreteMixture(Map(DiscreteConstant(constant) -> (1 - psi), self -> psi))
+    DiscreteMixture(Map(DiscreteConstant(constant) -> psi, self -> (1 - psi)))
 }
 
 object Discrete {

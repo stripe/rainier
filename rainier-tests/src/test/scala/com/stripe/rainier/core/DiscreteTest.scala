@@ -94,9 +94,9 @@ class DiscreteTest extends FunSuite {
 
   /** Zero Inflated Negative Binomial test **/
   check(
-    "NegativeBinomial(20, .3).constantInflated(0, psi), psi = 0.2, 0.5, 0.9")(
+    "NegativeBinomial(20, .3).constantInflated(0, psi), psi = 0.3, 0.5, 0.9")(
     psi => NegativeBinomial(20, .3).constantInflated(0, psi),
-    List(0.2, 0.5, 0.9))
+    List(0.3, 0.5, 0.9))
 
   /** Zero Inflated Negative Binomial test **/
   check("NegativeBinomial(20, p).constantInflated(0, .3), p = 0.2, 0.5, 0.9")(
@@ -104,9 +104,9 @@ class DiscreteTest extends FunSuite {
     List(0.2, 0.5, 0.9))
 
   /** Zero Inflated Binomial test **/
-  check("Binomial(.3, 20).constantInflated(0, psi), psi = 0.2, 0.5, 0.9, 1.0")(
+  check("Binomial(.3, 20).constantInflated(0, psi), psi = 0.3, 0.5, 0.9, 1.0")(
     psi => Binomial(.3, 20).constantInflated(0, psi),
-    List(0.2, 0.5, 0.9, 1.0))
+    List(0.3, 0.5, 0.9, 1.0))
 
   /** Zero Inflated Binomial test **/
   check("Binomial(p, 20).constantInflated(0, .3), p = 0.2, 0.5, 0.9, 1.0")(
