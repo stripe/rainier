@@ -1,19 +1,24 @@
 package com.stripe.rainier.core
 
+import com.stripe.rainier.compute._
+
 /**
   * Predictor class, for fitting data with covariates
   */
-abstract class Predictor[X, Y, Z, A](implicit ev: Z <:< Distribution[Y],
-                                     placeholder: Placeholder[X, A])
-    extends Fittable[(X, Y)] {
-  def apply(x: X): Z = create(placeholder.wrap(x))
-  def create(a: A): Z
+trait Predictor[X, Y] extends Fittable[(X, Y)] {
+  protected type P
+  protected def placeholder: Placeholder[X, P]
 
-  def predict(x: X): Generator[Y] = ev(apply(x)).generator
+  protected type Z
+  protected def create(p: P): Z
+  protected def toDistribution(z: Z): Distribution[Y]
+
+  def predict(x: X): Generator[Y] =
+    toDistribution(create(placeholder.wrap(x))).generator
 
   def predict(seq: Seq[X]): Generator[Seq[(X, Y)]] =
     Generator.traverse(seq.map { x =>
-      ev(apply(x)).generator.map { y =>
+      predict(x).map { y =>
         (x, y)
       }
     })
@@ -23,20 +28,28 @@ abstract class Predictor[X, Y, Z, A](implicit ev: Z <:< Distribution[Y],
   * Predictor object, for fitting data with covariates
   */
 object Predictor {
-  class PredictorFactory[X] {
-    def apply[Y, Z, A](fn: A => Z)(
-        implicit ev: Z <:< Distribution[Y],
-        placeholder: Placeholder[X, A]): Predictor[X, Y, Z, A] =
-      new Predictor[X, Y, Z, A] {
-        def create(a: A): Z = fn(a)
-      }
-  }
+  def from[X, Y, A, B](fn: A => B)(implicit ev: B <:< Distribution[Y],
+                                   ph: Placeholder[X, A]): Predictor[X, Y] =
+    new Predictor[X, Y] {
+      type P = A
+      type Z = B
+      val placeholder = ph
+      def toDistribution(z: Z) = ev(z)
+      def create(p: P): Z = fn(p)
+    }
 
-  def from[X] = new PredictorFactory[X]
+  def fromInt[Y, Z](fn: Real => Z)(
+      implicit ev: Z <:< Distribution[Y]): Predictor[Int, Y] =
+    from[Int, Y, Real, Z](fn)
 
-  implicit def likelihood[X, Y, Z, A](implicit lh: Likelihood[Z, Y]) =
-    new Likelihood[Predictor[X, Y, Z, A], (X, Y)] {
-      def target(predictor: Predictor[X, Y, Z, A], value: (X, Y)) =
-        lh.target(predictor(value._1), value._2)
+  def fromDouble[Y, Z](fn: Real => Z)(
+      implicit ev: Z <:< Distribution[Y]): Predictor[Double, Y] =
+    from[Double, Y, Real, Z](fn)
+
+  implicit def likelihood[X, Y, B](implicit lh: Likelihood[B, Y]) =
+    new Likelihood[Predictor[X, Y] { type Z = B }, (X, Y)] {
+      def target(predictor: Predictor[X, Y] { type Z = B }, value: (X, Y)) =
+        lh.target(predictor.create(predictor.placeholder.wrap(value._1)),
+                  value._2)
     }
 }

@@ -18,7 +18,7 @@ object FitSparse {
       w3 <- Normal(0, 0.01).param
       w4 <- Normal(0, 0.01).param
       _ <- Predictor
-        .from[Int] { i: Real =>
+        .fromInt { i =>
           Normal(i * w1 + i * w2 + i * w3 + i * w4, noiseStddev)
         }
         .fit(data)
@@ -32,7 +32,7 @@ object FitSparse {
       w3 <- Laplace(0, 0.01).param
       w4 <- Laplace(0, 0.01).param
       _ <- Predictor
-        .from[Int] { i: Real =>
+        .fromInt { i =>
           Normal(i * w1 + i * w2 + i * w3 + i * w4, noiseStddev)
         }
         .fit(data)

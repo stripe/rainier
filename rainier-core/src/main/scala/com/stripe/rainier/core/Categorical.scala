@@ -41,20 +41,15 @@ final case class Categorical[T](pmf: Map[T, Real]) extends Distribution[T] {
   def toMixture[V](implicit ev: T <:< Continuous): Mixture =
     Mixture(pmf.map { case (k, v) => (ev(k), v) })
 
-  def toMultinomial =
-    Predictor.from[Int] { k: Real =>
-      Multinomial(pmf, k)
-    }
+  def toMultinomial = Predictor.fromInt(Multinomial(pmf, _))
 }
 
 object Categorical {
 
   def boolean(p: Real): Categorical[Boolean] =
     Categorical(Map(true -> p, false -> (Real.one - p)))
-  def binomial(p: Real) =
-    Predictor.from[Int] { k: Real =>
-      Binomial(p, k)
-    }
+
+  def binomial(p: Real) = Predictor.fromInt(Binomial(p, _))
 
   def normalize[T](pmf: Map[T, Real]): Categorical[T] = {
     val total = Real.sum(pmf.values.toList)
