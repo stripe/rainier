@@ -3,18 +3,20 @@ package com.stripe.rainier.core
 import com.stripe.rainier.compute._
 import scala.collection.mutable.ArrayBuffer
 
-trait Likelihood[-L, T] {
-  type V
-  def wrap(pdf: L, value: T): V
-  def placeholder(pdf: L): Placeholder[T, V]
-  def logDensity(pdf: L, value: V): Real
+trait Likelihood[T] {
+  type F
 
-  def target(pdf: L, value: T): Target =
-    Target(logDensity(pdf, wrap(pdf, value)))
+  private[core] type P
+  private[core] def wrap(value: T): P
+  private[core] def placeholder(): Placeholder[T, P]
+  private[core] def logDensity(value: P): Real
 
-  def sequence(pdf: L, seq: Seq[T]): Target = {
-    val ph = placeholder(pdf)
-    val real = logDensity(pdf, ph.value)
+  def target(value: T): Target =
+    Target(logDensity(wrap(value)))
+
+  def sequence(seq: Seq[T]): Target = {
+    val ph = placeholder()
+    val real = logDensity(ph.value)
     val variables = ph.variables
     val arrayBufs =
       variables.map { _ =>
@@ -33,12 +35,11 @@ trait Likelihood[-L, T] {
 }
 
 object Likelihood {
-  def from[L, T, U](fn: (L, U) => Real)(
-      implicit m: Mapping[T, U]): Likelihood[L, T] =
-    new Likelihood[L, T] {
-      type V = U
-      def wrap(pdf: L, value: T) = m.wrap(value)
-      def placeholder(pdf: L) = m.placeholder
-      def logDensity(pdf: L, value: V) = fn(pdf, value)
-    }
+  case class Ops[T, L](pdf: L)(implicit ev: L <:< Likelihood[T]) {
+    def fit(value: T): RandomVariable[L] = RandomVariable.fit(pdf, value)
+    def fit(seq: Seq[T]): RandomVariable[L] = RandomVariable.fit(pdf, seq)
+  }
+
+  implicit def ops[T, L](pdf: L)(implicit ev: L <:< Likelihood[T]) =
+    Ops(pdf)
 }

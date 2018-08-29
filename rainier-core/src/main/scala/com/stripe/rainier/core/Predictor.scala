@@ -1,23 +1,39 @@
 package com.stripe.rainier.core
 
-/*
-Predictor fn: X-placeholder => Z
-vs Dispatcher: Map[K,Z], fn: X => K
- */
+import com.stripe.rainier.compute._
+
 /**
   * Predictor class, for fitting data with covariates
   */
-abstract class Predictor[X, Y, Z, A](implicit ev: Z <:< Distribution[Y],
-                                     val mapping: Mapping[X, A])
-    extends Fittable[(X, Y)] {
-  def apply(x: X): Z = create(mapping.wrap(x))
-  def create(a: A): Z
+trait Predictor[X, Y] extends Likelihood[(X, Y)] {
+  private[core] type Q
+  private[core] type R
+  type P = (Q, R)
+  private[core] def create(q: Q): Distribution.Aux[Y, R]
+  private[core] def mapping: Mapping[X, Q]
 
-  def predict(x: X): Generator[Y] = ev(apply(x)).generator
+  def wrap(value: (X, Y)) = {
+    val q = mapping.wrap(value._1)
+    val z = create(q)
+    (q, z.wrap(value._2))
+  }
+
+  def placeholder() = {
+    val ph1 = mapping.placeholder
+    val z = create(ph1.value)
+    val ph2 = z.placeholder()
+    ph1.zip(ph2)
+  }
+
+  def logDensity(value: P) =
+    create(value._1).logDensity(value._2)
+
+  def predict(x: X): Generator[Y] =
+    create(mapping.wrap(x)).generator
 
   def predict(seq: Seq[X]): Generator[Seq[(X, Y)]] =
     Generator.traverse(seq.map { x =>
-      ev(apply(x)).generator.map { y =>
+      predict(x).map { y =>
         (x, y)
       }
     })
@@ -27,32 +43,20 @@ abstract class Predictor[X, Y, Z, A](implicit ev: Z <:< Distribution[Y],
   * Predictor object, for fitting data with covariates
   */
 object Predictor {
-  class PredictorFactory[X] {
-    def apply[Y, Z, A](fn: A => Z)(implicit ev: Z <:< Distribution[Y],
-                                   m: Mapping[X, A]) =
-      new Predictor[X, Y, Z, A] {
-        def create(a: A): Z = fn(a)
-      }
-  }
+  def from[X, Y, A, B](fn: A => Distribution.Aux[Y, B])(
+      implicit m: Mapping[X, A]): Predictor[X, Y] =
+    new Predictor[X, Y] {
+      type Q = A
+      type R = B
 
-  def from[X] = new PredictorFactory[X]
-
-  implicit def likelihood[X, Y, Z, A](implicit lh: Likelihood[Z, Y]) = {
-    new Likelihood[Predictor[X, Y, Z, A], (X, Y)] {
-      type V = (A, lh.V)
-      def wrap(pdf: Predictor[X, Y, Z, A], value: (X, Y)) = {
-        val a = pdf.mapping.wrap(value._1)
-        val z = pdf.create(a)
-        (a, lh.wrap(z, value._2))
-      }
-      def placeholder(pdf: Predictor[X, Y, Z, A]) = {
-        val ph1 = pdf.mapping.placeholder
-        val z = pdf.create(ph1.value)
-        val ph2 = lh.placeholder(z)
-        ph1.zip(ph2)
-      }
-      def logDensity(pdf: Predictor[X, Y, Z, A], value: V) =
-        lh.logDensity(pdf.create(value._1), value._2)
+      val mapping = m
+      def create(q: Q) = fn(q)
     }
-  }
+
+  def fromInt[Y, B](fn: Real => Distribution.Aux[Y, B]): Predictor[Int, Y] =
+    from[Int, Y, Real, B](fn)
+
+  def fromDouble[Y, B](
+      fn: Real => Distribution.Aux[Y, B]): Predictor[Double, Y] =
+    from[Double, Y, Real, B](fn)
 }

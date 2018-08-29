@@ -42,9 +42,16 @@ final case class Categorical[T](pmf: Map[T, Real]) extends Distribution[T] {
     Mixture(pmf.map { case (k, v) => (ev(k), v) })
 
   def toMultinomial =
-    Predictor.from[Int] { k: Real =>
+    Predictor.fromInt { k =>
       Multinomial(pmf, k)
     }
+
+  type P = Map[T, Real]
+  val mapping = Mapping.enum(pmf.keys.toList)
+  def wrap(value: T) = mapping.wrap(value)
+  def placeholder() = mapping.placeholder()
+  def logDensity(value: Map[T, Real]) =
+    Categorical.logDensity(this, value)
 }
 
 object Categorical {
@@ -52,7 +59,7 @@ object Categorical {
   def boolean(p: Real): Categorical[Boolean] =
     Categorical(Map(true -> p, false -> (Real.one - p)))
   def binomial(p: Real) =
-    Predictor.from[Int] { k: Real =>
+    Predictor.fromInt { k =>
       Binomial(p, k)
     }
 
@@ -73,17 +80,6 @@ object Categorical {
           (r * cat.pmf.getOrElse(t, Real.zero))
       })
       .log
-
-  implicit def likelihood[T] =
-    new Likelihood[Categorical[T], T] {
-      type V = Map[T, Real]
-      def wrap(pdf: Categorical[T], value: T) =
-        Mapping.enum(pdf.pmf.keys.toList).wrap(value)
-      def placeholder(pdf: Categorical[T]) =
-        Mapping.enum(pdf.pmf.keys.toList).placeholder()
-      def logDensity(pdf: Categorical[T], value: Map[T, Real]) =
-        Categorical.logDensity(pdf, value)
-    }
 }
 
 /**
@@ -94,25 +90,23 @@ object Categorical {
   */
 final case class Multinomial[T](pmf: Map[T, Real], k: Real)
     extends Distribution[Map[T, Int]] {
+  type P = Map[T, Real]
+
   def generator: Generator[Map[T, Int]] =
     Categorical(pmf).generator.repeat(k).map { seq =>
       seq.groupBy(identity).map { case (t, ts) => (t, ts.size) }
     }
 
+  private[this] val mapping = Mapping.map[T, Int, Real](pmf.keys.toList)
+  def wrap(value: Map[T, Int]) = mapping.wrap(value)
+
+  def placeholder() = mapping.placeholder()
+
+  def logDensity(value: Map[T, Real]) =
+    Multinomial.logDensity(this, value)
 }
 
 object Multinomial {
-  implicit def likelihood[T] =
-    new Likelihood[Multinomial[T], Map[T, Int]] {
-      type V = Map[T, Real]
-      def wrap(pdf: Multinomial[T], value: Map[T, Int]) =
-        Mapping.map[T, Int, Real](pdf.pmf.keys.toList).wrap(value)
-      def placeholder(pdf: Multinomial[T]) =
-        Mapping.map[T, Int, Real](pdf.pmf.keys.toList).placeholder()
-      def logDensity(pdf: Multinomial[T], value: Map[T, Real]) =
-        Multinomial.logDensity(pdf, value)
-    }
-
   def logDensity[T](multi: Multinomial[T], v: Map[T, Real]): Real =
     Combinatorics.factorial(multi.k) + Real.sum(v.toList.map {
       case (t, i) =>

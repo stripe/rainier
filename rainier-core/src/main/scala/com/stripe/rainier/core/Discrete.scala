@@ -2,15 +2,8 @@ package com.stripe.rainier.core
 
 import com.stripe.rainier.compute.Real
 
-trait Discrete extends Distribution[Int] {
+trait Discrete extends NumericDistribution[Int] {
   def logDensity(v: Real): Real
-}
-
-object Discrete {
-  implicit def likelihood =
-    Likelihood.from[Discrete, Int, Real] { (pdf, value) =>
-      pdf.logDensity(value)
-    }
 }
 
 /**
