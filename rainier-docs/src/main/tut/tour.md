@@ -18,7 +18,7 @@ val data =  List((0,8), (1,12), (2,16), (3,20), (4,21), (5,31), (6,23), (7,33), 
 val model = for {
     slope <- LogNormal(0,1).param
     intercept <- LogNormal(0,1).param
-    regression <- Predictor.from[Int]{x: Real => Poisson(x*slope + intercept)}.fit(data)
+    regression <- Predictor.fromInt{x => Poisson(x*slope + intercept)}.fit(data)
 } yield regression.predict(21)
 ```
 
@@ -242,7 +242,7 @@ Like `Distribution`, `Predictor` implements `fit` (in fact, they both extend the
 ```tut
 val regr = for {
     (slope, intercept) <- prior
-    predictor <- Predictor.from[Int]{i: Real =>
+    predictor <- Predictor.fromInt{i =>
                     Poisson(intercept + slope*i)
                 }.fit(data) 
 } yield (slope, intercept)
@@ -259,7 +259,7 @@ Alternatively, as in the earlier example, we could try to predict what will happ
 val regr2 = for {
     slope <- LogNormal(0,1).param
     intercept <- LogNormal(0,1).param
-    predictor <- Predictor.from[Int]{i: Real => 
+    predictor <- Predictor.fromInt{i => 
                     Poisson(intercept + slope*i)
                 }.fit(data)
 } yield predictor.predict(21)
@@ -284,8 +284,8 @@ val regr3 = for {
     slope1 <- LogNormal(0,1).param
     slope2 <- LogNormal(0,1).param
     intercept <- LogNormal(0,1).param
-    pred1 <- Predictor.from[Int]{i: Real => Poisson(intercept + slope1*i)}.fit(data)
-    pred2 <- Predictor.from[Int]{i: Real => Poisson(intercept + slope2*i)}.fit(data2)
+    pred1 <- Predictor.fromInt{i => Poisson(intercept + slope1*i)}.fit(data)
+    pred2 <- Predictor.fromInt{i => Poisson(intercept + slope2*i)}.fit(data2)
 } yield (slope1, intercept)
 ```
 

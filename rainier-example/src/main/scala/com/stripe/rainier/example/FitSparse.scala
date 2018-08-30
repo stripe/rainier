@@ -1,6 +1,5 @@
 package com.stripe.rainier.example
 
-import com.stripe.rainier.compute._
 import com.stripe.rainier.core._
 import com.stripe.rainier.repl._
 

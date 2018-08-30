@@ -12,7 +12,7 @@ class ContinuousMixtureTest extends FunSuite {
     val lower = SBC.binomialQuantile(0.005, 320, 1.0 / 8)
     val upper = SBC.binomialQuantile(0.995, 320, 1.0 / 8)
 
-    val stream = SBC(prior) { x =>
+    val stream = SBC[Double, Continuous](prior) { x =>
       Normal(x, 1)
     }.simulate(HMC(1), 10000, 1000)
 

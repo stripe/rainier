@@ -7,7 +7,7 @@ import scala.annotation.tailrec
 /**
   * A Continuous Distribution, with method `param` allowing conversion to a RandomVariable.
   */
-trait Continuous extends Distribution[Double] {
+trait Continuous extends NumericDistribution[Double] {
   private[rainier] val support: Support
 
   def param: RandomVariable[Real]
@@ -16,13 +16,6 @@ trait Continuous extends Distribution[Double] {
   def scale(a: Real): Continuous = Scale(a).transform(this)
   def translate(b: Real): Continuous = Translate(b).transform(this)
   def exp: Continuous = Exp.transform(this)
-}
-
-object Continuous {
-  implicit val likelihood =
-    Likelihood.from[Continuous, Double, Real] { (c, v) =>
-      c.logDensity(v)
-    }
 }
 
 /**

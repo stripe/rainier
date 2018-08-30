@@ -8,6 +8,17 @@ import com.stripe.rainier.compute.{If, Real}
   * @param pmf A map with keys corresponding to the possible outcomes and values corresponding to the probabilities of those outcomes
   */
 final case class Categorical[T](pmf: Map[T, Real]) extends Distribution[T] {
+  type P = Map[T, Real]
+  def logDensity(value: Map[T, Real]) =
+    Real
+      .sum(value.toList.map {
+        case (t, r) =>
+          (r * pmf.getOrElse(t, Real.zero))
+      })
+      .log
+
+  def wrap(value: T) = Map(value -> Real.one)
+
   def map[U](fn: T => U): Categorical[U] =
     flatMap { t =>
       Categorical(Map(fn(t) -> Real.one))
@@ -60,17 +71,6 @@ object Categorical {
     normalize(seq.groupBy(identity).mapValues { l =>
       Real(l.size)
     })
-
-  implicit def likelihood[T] =
-    Likelihood.from[Categorical[T], T, Map[T, Real]] {
-      case (Categorical(pmf), v) =>
-        Real
-          .sum(v.toList.map {
-            case (t, r) =>
-              (r * pmf.getOrElse(t, Real.zero))
-          })
-          .log
-    }
 }
 
 /**
@@ -81,6 +81,14 @@ object Categorical {
   */
 final case class Multinomial[T](pmf: Map[T, Real], k: Real)
     extends Distribution[Map[T, Int]] {
+  type P = Map[T, Real]
+
+  def logDensity(value: Map[T, Real]) =
+    Multinomial.logDensity(this, value)
+
+  def wrap(value: Map[T, Int]) =
+    value.map { case (k, v) => k -> Real(v) }
+
   def generator: Generator[Map[T, Int]] =
     Categorical(pmf).generator.repeat(k).map { seq =>
       seq.groupBy(identity).map { case (t, ts) => (t, ts.size) }
@@ -89,11 +97,6 @@ final case class Multinomial[T](pmf: Map[T, Real], k: Real)
 }
 
 object Multinomial {
-  implicit def likelihood[T] =
-    Likelihood.from[Multinomial[T], Map[T, Int], Map[T, Real]] { (m, v) =>
-      logDensity(m, v)
-    }
-
   def logDensity[T](multi: Multinomial[T], v: Map[T, Real]): Real =
     Combinatorics.factorial(multi.k) + Real.sum(v.toList.map {
       case (t, i) =>
