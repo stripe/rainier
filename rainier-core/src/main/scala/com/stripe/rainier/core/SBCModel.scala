@@ -1,5 +1,6 @@
 package com.stripe.rainier.core
 
+import com.stripe.rainier.compute._
 // in the tests module, type run and it it will run sbc
 // if run test, runs the test.
 // So: q can I set up a situation where it does one thing for run
@@ -8,7 +9,6 @@ package com.stripe.rainier.core
 // and if object implements whatever FunSuite wants
 
 trait SBCModel[L, T] {
-
   def priors: Continuous
   def fn: Real => L
 }
