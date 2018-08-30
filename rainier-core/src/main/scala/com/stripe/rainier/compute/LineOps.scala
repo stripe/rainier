@@ -116,6 +116,18 @@ private[compute] object LineOps {
     }
   }
 
+  def substituteKeys(line: Line, f: Map[Variable, NonConstant]): Line = {
+    val ax: Map[NonConstant, BigDecimal] = line.ax
+      .map {
+        case (a, v) => RealOps.substituteVariable(a, f) -> v
+      }
+      .groupBy(_._1)
+      .mapValues {
+        case vs => vs.map(_._2).sum
+      }
+    Line(ax, line.b)
+  }
+
   private def simplify(ax: Map[NonConstant, BigDecimal],
                        b: BigDecimal): NonConstant = {
     if (b == Real.BigZero && ax.size == 1 && ax.head._2 == Real.BigOne)
