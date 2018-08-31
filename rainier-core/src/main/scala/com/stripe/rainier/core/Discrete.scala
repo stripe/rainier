@@ -2,8 +2,9 @@ package com.stripe.rainier.core
 
 import com.stripe.rainier.compute.{If, Real}
 
-trait Discrete extends NumericDistribution[Int] { self: Discrete =>
-  def logDensity(v: Real): Real
+trait Discrete extends Distribution[Int] { self: Discrete =>
+  type P = Real
+  val mapping = Mapping.int
 
   def zeroInflated(psi: Real) =
     constantInflated(0.0, psi)

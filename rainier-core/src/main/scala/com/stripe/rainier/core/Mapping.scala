@@ -2,8 +2,11 @@ package com.stripe.rainier.core
 
 import com.stripe.rainier.compute._
 
-trait Mapping[T, U] {
+trait Wrapping[T,U] {
   def wrap(t: T): U
+}
+
+trait Mapping[T, U] extends Wrapping[T,U] {
   def get(u: U)(implicit n: Numeric[Real]): T
   def requirements(u: U): Set[Real]
 }
@@ -14,7 +17,7 @@ trait LowPriMappings {
       def wrap(t: Int) = Real(t)
       def get(u: Real)(implicit n: Numeric[Real]) =
         n.toDouble(u).toInt
-      def requirements(u: Real): Set[Real] = Set(value)
+      def requirements(u: Real): Set[Real] = Set(u)
     }
 }
 
@@ -24,7 +27,7 @@ object Mapping extends LowPriMappings {
       def wrap(t: Double) = Real(t)
       def get(u: Real)(implicit n: Numeric[Real]) =
         n.toDouble(u)
-      def requirements(u: Real): Set[Real] = Set(value)
+      def requirements(u: Real): Set[Real] = Set(u)
     }
 
   implicit def zip[A, B, X, Y](implicit ab: Mapping[A, B],
@@ -32,7 +35,7 @@ object Mapping extends LowPriMappings {
     new Mapping[(A, X), (B, Y)] {
       def wrap(t: (A, X)) =
         (ab.wrap(t._1), xy.wrap(t._2))
-      def get(u: (B, Y)(n: Numeric[Real]) =
+      def get(u: (B, Y))(implicit n: Numeric[Real]) =
         (ab.get(u._1), xy.get(u._2))
       def requirements(u: (B, Y)) =
         ab.requirements(u._1) ++ xy.requirements(u._2)
@@ -53,9 +56,9 @@ object Mapping extends LowPriMappings {
   def item[T]: Mapping[T, Map[T, Real]] =
     new Mapping[T, Map[T, Real]] {
       def wrap(t: T): Map[T, Real] = Map(t -> Real.one)
-      def get(u: Map[T,Real]): T = 
+      def get(u: Map[T, Real])(implicit n: Numeric[Real]): T =
         u.find { case (_, r) => n.toDouble(r) > 0 }.get._1
-      def requirements(u: Map[T,Real]): Set[Real] =
-        u.values.toSet 
+      def requirements(u: Map[T, Real]): Set[Real] =
+        u.values.toSet
     }
 }
