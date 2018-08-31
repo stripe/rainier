@@ -100,7 +100,7 @@ object Generator {
     }
 }
 
-trait ToGenerator[+T, U] {
+trait ToGenerator[-T, U] {
   def apply(t: T): Generator[U]
 }
 

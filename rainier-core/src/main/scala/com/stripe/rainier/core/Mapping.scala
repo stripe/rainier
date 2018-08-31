@@ -46,7 +46,8 @@ object Mapping extends LowPriMappings {
         ab.requirements(u._1) ++ xy.requirements(u._2)
     }
 
-  def map[K, T, U](implicit tu: Mapping[T, U]): Mapping[Map[K, T], Map[K, U]] =
+  implicit def map[K, T, U](
+      implicit tu: Mapping[T, U]): Mapping[Map[K, T], Map[K, U]] =
     new Mapping[Map[K, T], Map[K, U]] {
       def wrap(t: Map[K, T]): Map[K, U] =
         t.map { case (k, v) => k -> tu.wrap(v) }
