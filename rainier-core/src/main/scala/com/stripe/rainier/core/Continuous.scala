@@ -11,8 +11,8 @@ trait Continuous extends Distribution[Double] {
   private[rainier] val support: Support
 
   type P = Real
-  val mapping = Mapping.double
-  
+  val wrapping = Mapping.double
+
   def param: RandomVariable[Real]
   def logDensity(v: Real): Real
 

@@ -98,10 +98,13 @@ final case class SBC[T, L <: Distribution[T]](
                      thin: Int)(implicit rng: RNG): (Int, Double, Double) = {
     val trueValues = priorGenerator.get(rng, emptyEvaluator)
     implicit val trueEval = new Evaluator(priorParams.zip(trueValues).toMap)
-    val trueOutput = posterior.map(_._2).get
-
+    val trueOutput = posterior.map(_._2).toGenerator.value.get
     val syntheticValues =
-      posterior.map { case (l, _) => l.generator.repeat(syntheticSamples) }.get
+      posterior
+        .map { case (l, _) => l.generator.repeat(syntheticSamples) }
+        .toGenerator
+        .value
+        .get
     val model = posterior.flatMap {
       case (d, r) =>
         RandomVariable.fit(d, syntheticValues).map { _ =>

@@ -2,11 +2,16 @@ package com.stripe.rainier.core
 
 import com.stripe.rainier.compute._
 
-trait Wrapping[T,U] {
+trait Wrapping[T, U] {
   def wrap(t: T): U
 }
 
-trait Mapping[T, U] extends Wrapping[T,U] {
+object Wrapping {
+  implicit def mapping[T, U](implicit m: Mapping[T, U]): Wrapping[T, U] =
+    m
+}
+
+trait Mapping[T, U] extends Wrapping[T, U] {
   def get(u: U)(implicit n: Numeric[Real]): T
   def requirements(u: U): Set[Real]
 }

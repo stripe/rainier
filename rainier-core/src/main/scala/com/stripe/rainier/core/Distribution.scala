@@ -1,7 +1,5 @@
 package com.stripe.rainier.core
 
-import com.stripe.rainier.compute._
-
 /**
   * Basic probability distribution trait
   */

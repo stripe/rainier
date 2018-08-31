@@ -12,10 +12,10 @@ trait Predictor[X, Y] extends Likelihood[(X, Y)] {
   private[core] def create(q: Q): Distribution.Aux[Y, R]
   private[core] def xq: Wrapping[X, Q]
 
-  lazy val wrapping = new Wrapping[(X,Y),(Q,R)] {
+  lazy val wrapping = new Wrapping[(X, Y), (Q, R)] {
     def wrap(value: (X, Y)) = {
       val q = xq.wrap(value._1)
-      val qr = create(q).mapping
+      val qr = create(q).wrapping
       (q, qr.wrap(value._2))
     }
   }
@@ -24,7 +24,7 @@ trait Predictor[X, Y] extends Likelihood[(X, Y)] {
     create(value._1).logDensity(value._2)
 
   def predict(x: X): Generator[Y] =
-    create(placeholder.wrap(x)).generator
+    create(xq.wrap(x)).generator
 
   def predict(seq: Seq[X]): Generator[Seq[(X, Y)]] =
     Generator.traverse(seq.map { x =>

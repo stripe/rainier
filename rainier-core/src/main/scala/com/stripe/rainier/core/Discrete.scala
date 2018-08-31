@@ -4,7 +4,7 @@ import com.stripe.rainier.compute.{If, Real}
 
 trait Discrete extends Distribution[Int] { self: Discrete =>
   type P = Real
-  val mapping = Mapping.int
+  val wrapping = Mapping.int
 
   def zeroInflated(psi: Real) =
     constantInflated(0.0, psi)

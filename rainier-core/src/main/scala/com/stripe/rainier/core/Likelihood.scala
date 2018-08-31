@@ -4,7 +4,7 @@ import com.stripe.rainier.compute._
 
 trait Likelihood[T] {
   private[core] type P
-  private[core] def wrapping: Wrapping[T,P]
+  private[core] def wrapping: Wrapping[T, P]
   private[core] def logDensity(value: P): Real
 
   def target(value: T): Target =
