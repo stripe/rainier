@@ -17,11 +17,14 @@ trait Likelihood[T] {
 }
 
 object Likelihood {
-  case class Ops[T, L](lh: L)(implicit ev: L <:< Likelihood[T]) {
+  /*
+    We define `fit` in the indirect way below so that the return value of, for example,
+    `Normal(1).fit(...)` is `RandomVariable[Normal]` instead of
+    `RandomVariable[Likelihood[Double]]`. This solves a similar problem to f-bounded
+    polymorphism but without introducing an ugly extra type param.
+  */
+  implicit class Ops[T, L](lh: L)(implicit ev: L <:< Likelihood[T]) {
     def fit(value: T): RandomVariable[L] = RandomVariable.fit(lh, value)
     def fit(seq: Seq[T]): RandomVariable[L] = RandomVariable.fit(lh, seq)
   }
-
-  implicit def ops[T, L](lh: L)(implicit ev: L <:< Likelihood[T]) =
-    Ops(lh)
 }
