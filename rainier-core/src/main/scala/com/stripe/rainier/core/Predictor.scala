@@ -18,6 +18,7 @@ trait Predictor[X, Y] extends Likelihood[(X, Y)] {
       val qr = create(q).wrapping
       (q, qr.wrap(value._2))
     }
+    def placeholder(seq: Seq[(X, Y)]) = ???
   }
 
   def logDensity(value: P) =

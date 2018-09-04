@@ -1,9 +1,11 @@
 package com.stripe.rainier.core
 
 import com.stripe.rainier.compute._
+import com.stripe.rainier.unused
 
 trait Wrapping[T, U] {
   def wrap(t: T): U
+  def placeholder(seq: Seq[T]): Placeholder[T, U]
 }
 
 object Wrapping {
@@ -23,6 +25,15 @@ trait LowPriMappings {
       def get(u: Real)(implicit n: Numeric[Real]) =
         n.toDouble(u).toInt
       def requirements(u: Real): Set[Real] = Set(u)
+      def placeholder(@unused seq: Seq[Int]) = {
+        val x = new Variable
+        new Placeholder[Int, Real] {
+          val value = x
+          val variables = List(x)
+          def extract(value: Int, acc: List[Double]) =
+            value.toDouble :: acc
+        }
+      }
     }
 }
 
@@ -33,6 +44,15 @@ object Mapping extends LowPriMappings {
       def get(u: Real)(implicit n: Numeric[Real]) =
         n.toDouble(u)
       def requirements(u: Real): Set[Real] = Set(u)
+      def placeholder(@unused seq: Seq[Double]) = {
+        val x = new Variable
+        new Placeholder[Double, Real] {
+          val value = x
+          val variables = List(x)
+          def extract(value: Double, acc: List[Double]) =
+            value :: acc
+        }
+      }
     }
 
   implicit def zip[A, B, X, Y](implicit ab: Mapping[A, B],
@@ -44,6 +64,8 @@ object Mapping extends LowPriMappings {
         (ab.get(u._1), xy.get(u._2))
       def requirements(u: (B, Y)) =
         ab.requirements(u._1) ++ xy.requirements(u._2)
+      def placeholder(seq: Seq[(A, X)]) =
+        ab.placeholder(seq.map(_._1)).zip(xy.placeholder(seq.map(_._2)))
     }
 
   implicit def map[K, T, U](
@@ -57,6 +79,16 @@ object Mapping extends LowPriMappings {
         u.values.flatMap { x =>
           tu.requirements(x)
         }.toSet
+      def placeholder(seq: Seq[Map[K, T]]) = ???
+      /*new Placeholder[Map[K, T], Map[K, U]] {
+          val tuPlaceholders = keys.map { k =>
+            k -> tu.placeholder()
+          }
+          val value = tuPlaceholders.map { case (k, p) => k -> p.value }.toMap
+          val variables = tuPlaceholders.map(_._2.variables).reduce(_ ++ _)
+          def extract(value: Map[K, T], acc: List[Double]) =
+            ???
+        }*/
     }
 
   def item[T]: Mapping[T, Map[T, Real]] =
@@ -66,5 +98,6 @@ object Mapping extends LowPriMappings {
         u.find { case (_, r) => n.toDouble(r) > 0 }.get._1
       def requirements(u: Map[T, Real]): Set[Real] =
         u.values.toSet
+      def placeholder(seq: Seq[T]) = ???
     }
 }
