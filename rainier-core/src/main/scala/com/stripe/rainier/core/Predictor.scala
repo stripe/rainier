@@ -1,17 +1,32 @@
 package com.stripe.rainier.core
 
+import com.stripe.rainier.compute._
+
 /**
   * Predictor class, for fitting data with covariates
   */
-abstract class Predictor[X, Y, Z](implicit ev: Z <:< Distribution[Y])
-    extends Fittable[(X, Y)] {
-  def apply(x: X): Z
+trait Predictor[X, Y] extends Likelihood[(X, Y)] {
+  private[core] type Q
+  private[core] type R
+  type P = (Q, R)
+  private[core] def create(q: Q): Distribution.Aux[Y, R]
+  private[core] def placeholder: Placeholder[X, Q]
 
-  def predict(x: X): Generator[Y] = ev(apply(x)).generator
+  def wrap(value: (X, Y)) = {
+    val q = placeholder.wrap(value._1)
+    val z = create(q)
+    (q, z.wrap(value._2))
+  }
+
+  def logDensity(value: P) =
+    create(value._1).logDensity(value._2)
+
+  def predict(x: X): Generator[Y] =
+    create(placeholder.wrap(x)).generator
 
   def predict(seq: Seq[X]): Generator[Seq[(X, Y)]] =
     Generator.traverse(seq.map { x =>
-      ev(apply(x)).generator.map { y =>
+      predict(x).map { y =>
         (x, y)
       }
     })
@@ -21,15 +36,20 @@ abstract class Predictor[X, Y, Z](implicit ev: Z <:< Distribution[Y])
   * Predictor object, for fitting data with covariates
   */
 object Predictor {
-  def from[X, Y, Z](fn: X => Z)(
-      implicit ev: Z <:< Distribution[Y]): Predictor[X, Y, Z] =
-    new Predictor[X, Y, Z] {
-      def apply(x: X): Z = fn(x)
+  def from[X, Y, A, B](fn: A => Distribution.Aux[Y, B])(
+      implicit ph: Placeholder[X, A]): Predictor[X, Y] =
+    new Predictor[X, Y] {
+      type Q = A
+      type R = B
+
+      val placeholder = ph
+      def create(q: Q) = fn(q)
     }
 
-  implicit def likelihood[X, Y, Z](implicit lh: Likelihood[Z, Y]) =
-    new Likelihood[Predictor[X, Y, Z], (X, Y)] {
-      def target(predictor: Predictor[X, Y, Z], value: (X, Y)) =
-        lh.target(predictor(value._1), value._2)
-    }
+  def fromInt[Y, B](fn: Real => Distribution.Aux[Y, B]): Predictor[Int, Y] =
+    from[Int, Y, Real, B](fn)
+
+  def fromDouble[Y, B](
+      fn: Real => Distribution.Aux[Y, B]): Predictor[Double, Y] =
+    from[Double, Y, Real, B](fn)
 }

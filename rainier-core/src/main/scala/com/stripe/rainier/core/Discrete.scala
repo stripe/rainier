@@ -1,16 +1,101 @@
 package com.stripe.rainier.core
 
-import com.stripe.rainier.compute.Real
+import com.stripe.rainier.compute.{If, Real}
 
-trait Discrete extends Distribution[Int] {
+trait Discrete extends NumericDistribution[Int] { self: Discrete =>
   def logDensity(v: Real): Real
+
+  def zeroInflated(psi: Real) =
+    constantInflated(0.0, psi)
+
+  def constantInflated(constant: Real, psi: Real) =
+    DiscreteMixture(Map(DiscreteConstant(constant) -> psi, self -> (1 - psi)))
 }
 
-object Discrete {
-  implicit val likelihood =
-    Likelihood.from[Discrete, Int, Real] {
-      case (d, v) => d.logDensity(v)
+/**
+  * Discrete Constant (point mass) with expecation `constant`
+  *
+  * @param constant The integer value of the point mass
+  */
+final case class DiscreteConstant(constant: Real) extends Discrete {
+  val generator: Generator[Int] =
+    Generator.require(Set(constant)) { (c, n) =>
+      n.toInt(constant)
     }
+
+  def logDensity(v: Real): Real =
+    If(v - constant, Real.negInfinity, 0)
+}
+
+/**
+  * Bernoulli distribution with expectation `p`
+  *
+  * @param p The probability of success
+  */
+final case class Bernoulli(p: Real) extends Discrete {
+  val generator: Generator[Int] =
+    Generator.require(Set(p)) { (r, n) =>
+      val u = r.standardUniform
+      val l = n.toDouble(p)
+      if (u <= l) 1 else 0
+    }
+
+  def logDensity(v: Real) =
+    If(v, p.log, (1 - p).log)
+}
+
+/**
+  * Geometric distribution with expectation `1/p`
+  *
+  * @param p The probability of success
+  */
+final case class Geometric(p: Real) extends Discrete {
+  val generator: Generator[Int] =
+    Generator.require(Set(p)) { (r, n) =>
+      val u = r.standardUniform
+      val q = n.toDouble(p)
+      Math.floor(Math.log(u) / Math.log(1 - q)).toInt
+    }
+
+  def logDensity(v: Real) =
+    p.log + v * (1 - p).log
+}
+
+/**
+  * Negative Binomial distribution with expectation `n*p/(1-p)`
+  *
+  * @param n Total number of failures
+  * @param p Probability of success
+  */
+final case class NegativeBinomial(n: Real, p: Real) extends Discrete {
+  val generator: Generator[Int] = {
+    val nbGenerator = Generator.require(Set(n, p)) { (r, m) =>
+      (1 to m.toInt(n))
+        .map({ x =>
+          Geometric(1 - p).generator.get(r, m)
+        })
+        .sum
+    }
+    val normalGenerator =
+      Normal(n * p / (1 - p), (n * p).pow(1.0 / 2.0) / (1 - p)).generator
+        .map(_.toInt.max(0))
+
+    Generator.from {
+      case (r, m) =>
+        val pDouble = m.toDouble(p)
+        val nDouble = m.toDouble(n)
+        if (pDouble < -100 / nDouble + 1 && pDouble > 100 / nDouble - .25) {
+          normalGenerator.get(r, m)
+        } else {
+          nbGenerator.get(r, m)
+        }
+    }
+  }
+
+  def logDensity(v: Real) =
+    Combinatorics.factorial(n + v - 1) - Combinatorics.factorial(v) -
+      Combinatorics.factorial(n - 1) +
+      n * (1 - p).log + v * p.log
 }
 
 /**
@@ -94,4 +179,25 @@ final case class BetaBinomial(a: Real, b: Real, k: Real) extends Discrete {
     Combinatorics.choose(k, v) +
       Combinatorics.beta(a + v, k - v + b) -
       Combinatorics.beta(a, b)
+}
+
+/**
+  * Discrete Mixture Distribution
+  *
+  * @param components Map of Discrete distribution and probabilities
+  */
+final case class DiscreteMixture(components: Map[Discrete, Real])
+    extends Discrete {
+  val generator: Generator[Int] =
+    Categorical(components).generator.flatMap { d =>
+      d.generator
+    }
+
+  def logDensity(v: Real): Real =
+    Real
+      .logSumExp(components.map {
+        case (dist, weight) => {
+          dist.logDensity(v) + weight.log
+        }
+      })
 }
