@@ -2,7 +2,7 @@ package com.stripe.rainier.core
 
 import com.stripe.rainier.compute.{If, Real}
 
-trait Discrete extends Distribution[Int] { self: Discrete =>
+trait Discrete extends NumericDistribution[Int] { self: Discrete =>
   def logDensity(v: Real): Real
 
   def zeroInflated(psi: Real) =
@@ -10,13 +10,6 @@ trait Discrete extends Distribution[Int] { self: Discrete =>
 
   def constantInflated(constant: Real, psi: Real) =
     DiscreteMixture(Map(DiscreteConstant(constant) -> psi, self -> (1 - psi)))
-}
-
-object Discrete {
-  implicit val likelihood =
-    Likelihood.from[Discrete, Int, Real] {
-      case (d, v) => d.logDensity(v)
-    }
 }
 
 /**
