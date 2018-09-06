@@ -2,6 +2,7 @@ package com.stripe.rainier.compute
 
 import com.stripe.rainier.ir
 import scala.collection.immutable.ListMap
+
 /*
 A Real is a DAG which represents a mathematical function
 from 0 or more real-valued input parameters to a single real-valued output.
@@ -39,7 +40,7 @@ sealed trait Real {
   def >=(other: Real): Real = If(this - other, this > other, Real.one)
   def <=(other: Real): Real = If(this - other, this < other, Real.one)
 
-  lazy val variables: List[Variable] = RealOps.variables(this)
+  lazy val variables: List[Variable] = RealOps.variables(this).toList
   lazy val gradient: List[Real] = Gradient.derive(variables, this)
 }
 
@@ -64,10 +65,9 @@ object Real {
   //print out Scala code that is equivalent to what the Compiler
   //would produce as JVM bytecode
   def trace(real: Real): Unit = {
-    val context = Context(real)
     val translator = new Translator
     val irs = List(translator.toIR(real))
-    val params = context.variables.map(_.param)
+    val params = RealOps.variables(real).toList.map(_.param)
     ir.Tracer.trace(params, irs)
   }
 
