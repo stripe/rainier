@@ -3,9 +3,11 @@ package com.stripe.rainier.core
 /**
   * Predictor class, for fitting data with covariates
   */
-abstract class Predictor[X, Y, Z](implicit ev: Z <:< Distribution[Y])
-    extends Likelihood[(X, Y)] {
-  def apply(x: X): Z
+abstract class Predictor[X, Y, Z, A](implicit ev: Z <:< Distribution[Y],
+                                     placeholder: Placeholder[X, A])
+    extends Fittable[(X, Y)] {
+  def apply(x: X): Z = create(placeholder.wrap(x))
+  def create(a: A): Z
 
   def predict(x: X): Generator[Y] = ev(apply(x)).generator
 
@@ -21,15 +23,20 @@ abstract class Predictor[X, Y, Z](implicit ev: Z <:< Distribution[Y])
   * Predictor object, for fitting data with covariates
   */
 object Predictor {
-  def from[X, Y, Z](fn: X => Z)(
-      implicit ev: Z <:< Distribution[Y]): Predictor[X, Y, Z] =
-    new Predictor[X, Y, Z] {
-      def apply(x: X): Z = fn(x)
-    }
+  class PredictorFactory[X] {
+    def apply[Y, Z, A](fn: A => Z)(
+        implicit ev: Z <:< Distribution[Y],
+        placeholder: Placeholder[X, A]): Predictor[X, Y, Z, A] =
+      new Predictor[X, Y, Z, A] {
+        def create(a: A): Z = fn(a)
+      }
+  }
 
-  implicit def likelihood[X, Y, Z](implicit f: Likelihood.Fn[Z, Y]) =
-    Likelihood.fn[Predictor[X, Y, Z], (X, Y)] {
-      case (predictor, (x, y)) =>
-        f(predictor(x), y)
+  def from[X] = new PredictorFactory[X]
+
+  implicit def likelihood[X, Y, Z, A](implicit lh: Likelihood[Z, Y]) =
+    new Likelihood[Predictor[X, Y, Z, A], (X, Y)] {
+      def target(predictor: Predictor[X, Y, Z, A], value: (X, Y)) =
+        lh.target(predictor(value._1), value._2)
     }
 }
