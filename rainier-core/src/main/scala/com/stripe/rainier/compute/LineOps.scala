@@ -1,5 +1,7 @@
 package com.stripe.rainier.compute
 
+import scala.collection.immutable.ListMap
+
 private[compute] object LineOps {
 
   def sum(left: Line, right: Line): Real = {
@@ -30,9 +32,9 @@ private[compute] object LineOps {
         }
     }
     val (newAx, newB) =
-      terms.foldLeft((Map.empty[NonConstant, BigDecimal], Real.BigZero)) {
+      terms.foldLeft((ListMap.empty[NonConstant, BigDecimal], Real.BigZero)) {
         case ((nAx, nB), (x: NonConstant, a)) =>
-          (merge(nAx, Map(x -> a)), nB)
+          (merge(nAx, ListMap(x -> a)), nB)
         case ((nAx, nB), (Constant(x), a)) =>
           (nAx, nB + x * a)
       }
@@ -91,9 +93,9 @@ private[compute] object LineOps {
       (line, Real.BigOne)
   }
 
-  def merge(
-      left: Map[NonConstant, BigDecimal],
-      right: Map[NonConstant, BigDecimal]): Map[NonConstant, BigDecimal] = {
+  def merge(left: ListMap[NonConstant, BigDecimal],
+            right: ListMap[NonConstant, BigDecimal])
+    : ListMap[NonConstant, BigDecimal] = {
     val (big, small) =
       if (left.size > right.size)
         (left, right)
@@ -116,7 +118,7 @@ private[compute] object LineOps {
     }
   }
 
-  private def simplify(ax: Map[NonConstant, BigDecimal],
+  private def simplify(ax: ListMap[NonConstant, BigDecimal],
                        b: BigDecimal): NonConstant = {
     if (b == Real.BigZero && ax.size == 1 && ax.head._2 == Real.BigOne)
       ax.head._1
