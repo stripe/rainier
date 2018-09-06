@@ -3,16 +3,16 @@ package com.stripe.rainier.core
 import com.stripe.rainier.compute._
 import com.stripe.rainier.sampler._
 
-trait SBCModel[L, T] {
+abstract class SBCModel[T, L <: Distribution[T]] {
   implicit val rng: RNG = ScalaRNG(1528673302081L)
-  def sbc: SBC[L, T]
+  def sbc: SBC[T, L]
   def main(args: Array[String]): Unit = sbc.animate(HMC(1), 10000, 1000)
   def samples: List[T] = sbc.posteriorSamples(goldset.size)
   def goldset: List[T]
   def description: String
 }
 
-object SBCUniformNormal extends SBCModel[Continuous, Double] {
+object SBCUniformNormal extends SBCModel[Double, Continuous] {
   def sbc = SBC(Uniform(0, 1))((x: Real) => Normal(x, 1))
   def goldset =
     List(0.770217434378013, 1.2877991075049935, 1.0761575302777342,
@@ -22,7 +22,7 @@ object SBCUniformNormal extends SBCModel[Continuous, Double] {
   def description = "Normal(x,1) with Uniform(0,1) prior"
 }
 
-object SBCLogNormal extends SBCModel[Continuous, Double] {
+object SBCLogNormal extends SBCModel[Double, Continuous] {
   def sbc = SBC(LogNormal(0, 1))((x: Real) => LogNormal(x, x))
   def goldset: List[Double] =
     List(1.9444409266417129, 4.884477223783541, 3.166384786757497,
@@ -35,13 +35,13 @@ object SBCLogNormal extends SBCModel[Continuous, Double] {
 /**
   * Note: this are made-up goldsets. SBC on these is wildly slow.
   */
-object SBCExponential extends SBCModel[Continuous, Double] {
+object SBCExponential extends SBCModel[Double, Continuous] {
   def sbc = SBC(LogNormal(0, 1))((x: Real) => Exponential(x))
   def goldset: List[Double] = List(0.1, 0.33, 1.12)
   def description = "Exponential(x) with LogNormal(0,1) prior"
 }
 
-object SBCLaplace extends SBCModel[Continuous, Double] {
+object SBCLaplace extends SBCModel[Double, Continuous] {
   def sbc = SBC(LogNormal(0, 1))((x: Real) => Laplace(x, x))
   def goldset: List[Double] = List(0.1, 0.33, 1.12)
   def description = "Laplace(x,x) with LogNormal(0,1) prior"

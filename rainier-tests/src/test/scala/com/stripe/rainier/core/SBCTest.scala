@@ -4,7 +4,7 @@ import org.scalatest.FunSuite
 
 class SBCTest extends FunSuite {
 
-  def check[L, T](sbcModel: SBCModel[L, T]): Unit = {
+  def check[T, L <: Distribution[T]](sbcModel: SBCModel[T, L]): Unit = {
     test(sbcModel.description) {
       assert(sbcModel.samples == sbcModel.goldset)
     }

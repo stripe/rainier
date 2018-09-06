@@ -22,7 +22,7 @@ object Likelihood {
     `Normal(1).fit(...)` is `RandomVariable[Normal]` instead of
     `RandomVariable[Likelihood[Double]]`. This solves a similar problem to f-bounded
     polymorphism but without introducing an ugly extra type param.
-  */
+   */
   implicit class Ops[T, L](lh: L)(implicit ev: L <:< Likelihood[T]) {
     def fit(value: T): RandomVariable[L] = RandomVariable.fit(lh, value)
     def fit(seq: Seq[T]): RandomVariable[L] = RandomVariable.fit(lh, seq)
