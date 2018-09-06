@@ -23,6 +23,7 @@ final case class SBC[L, T](priorGenerators: Seq[Generator[Double]],
               syntheticSamples: Int,
               logBins: Int = 3,
               nSamples: Int = 10)(implicit rng: RNG): Unit = {
+    val newGoldset = posteriorSamples(nSamples)
     val t0 = System.currentTimeMillis
     val stream = simulate(sampler, warmupIterations, syntheticSamples, logBins)
     val bins = 1 << logBins
@@ -40,8 +41,9 @@ final case class SBC[L, T](priorGenerators: Seq[Generator[Double]],
       plot(list, bins, i, reps, lower, upper, timeRemaining)
     }
     println(s"\nnew goldset:")
-    println(s"${posteriorSamples(nSamples)}")
-    println(s"Please update the goldset in your SBCModel")
+    println(s"$newGoldset")
+    println(
+      s"If this run looks good, please update the goldset in your SBCModel")
   }
 
   def simulate(sampler: Sampler,
