@@ -11,15 +11,14 @@ abstract class SBCModel[T, L <: Distribution[T]] {
   val syntheticSamples: Int = 1000
   val nSamples: Int = 10
   def main(args: Array[String]): Unit = {
-    val newGoldset = samples
     sbc.animate(sampler, warmupIterations, syntheticSamples)
     println(s"\nnew goldset:")
-    println(s"$newGoldset")
+    println(s"$samples")
     println(
       s"If this run looks good, please update the goldset in your SBCModel")
   }
-  val samples: List[T] = sbc.posteriorSamples(goldset.size)
-  def goldset: List[T]
+  val samples: List[Double] = sbc.posteriorSamples(goldset.size)
+  def goldset: List[Double]
   val description: String
 }
 
@@ -36,7 +35,7 @@ object SBCUniformNormal extends SBCModel[Double, Continuous] {
 
 object SBCLogNormal extends SBCModel[Double, Continuous] {
   def sbc = SBC(LogNormal(0, 1))((x: Real) => LogNormal(x, x))
-  def goldset: List[Double] =
+  def goldset =
     List(1.9444409266417129, 4.884477223783541, 3.166384786757497,
       1.340419862750101, 62.45333008770111, 21.260796478808622,
       2.145416458600115, 0.5978183569453146, 2.745814563529916,
@@ -45,16 +44,16 @@ object SBCLogNormal extends SBCModel[Double, Continuous] {
 }
 
 /**
-  * Note: this are made-up goldsets. SBC on these is wildly slow.
+  * Note: these are made-up goldsets. SBC on these is wildly slow.
   */
 object SBCExponential extends SBCModel[Double, Continuous] {
   def sbc = SBC(LogNormal(0, 1))((x: Real) => Exponential(x))
-  def goldset: List[Double] = List(0.1, 0.33, 1.12)
+  def goldset = List(0.1, 0.33, 1.12)
   val description = "Exponential(x) with LogNormal(0,1) prior"
 }
 
 object SBCLaplace extends SBCModel[Double, Continuous] {
   def sbc = SBC(LogNormal(0, 1))((x: Real) => Laplace(x, x))
-  def goldset: List[Double] = List(0.1, 0.33, 1.12)
+  def goldset = List(0.1, 0.33, 1.12)
   val description = "Laplace(x,x) with LogNormal(0,1) prior"
 }

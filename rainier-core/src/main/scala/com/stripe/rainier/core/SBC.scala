@@ -13,8 +13,8 @@ final case class SBC[T, L <: Distribution[T]](
 
   val priorGenerator = Generator.traverse(priorGenerators)
 
-  def posteriorSamples(nSamples: Int)(implicit rng: RNG) =
-    posterior.map { case (l, _) => l.generator }.sample(nSamples)
+  def posteriorSamples(nSamples: Int)(implicit rng: RNG): List[Double] =
+    posterior.map { case (_, r) => r }.record(nSamples).params.flatten
 
   def animate(sampler: Sampler,
               warmupIterations: Int,
