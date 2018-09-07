@@ -6,7 +6,18 @@ import com.stripe.rainier.sampler._
 abstract class SBCModel[T, L <: Distribution[T]] {
   implicit val rng: RNG = ScalaRNG(1528673302081L)
   def sbc: SBC[T, L]
-  def main(args: Array[String]): Unit = sbc.animate(HMC(1), 10000, 1000)
+  def sampler: Sampler = HMC(1)
+  def warmupIterations: Int = 10000
+  def syntheticSamples: Int = 1000
+  def nSamples: Int = 10
+  def main(args: Array[String]): Unit = {
+    val newGoldset = samples
+    sbc.animate(sampler, warmupIterations, syntheticSamples)
+    println(s"\nnew goldset:")
+    println(s"$newGoldset")
+    println(
+      s"If this run looks good, please update the goldset in your SBCModel")
+  }
   def samples: List[T] = sbc.posteriorSamples(goldset.size)
   def goldset: List[T]
   def description: String
@@ -14,6 +25,7 @@ abstract class SBCModel[T, L <: Distribution[T]] {
 
 object SBCUniformNormal extends SBCModel[Double, Continuous] {
   def sbc = SBC(Uniform(0, 1))((x: Real) => Normal(x, 1))
+  override def sampler = HMC(2)
   def goldset =
     List(0.770217434378013, 1.2877991075049935, 1.0761575302777342,
       0.06063426627950119, 2.235772959187611, 1.5916139704386643,

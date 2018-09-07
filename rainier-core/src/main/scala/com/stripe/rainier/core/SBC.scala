@@ -19,9 +19,7 @@ final case class SBC[T, L <: Distribution[T]](
   def animate(sampler: Sampler,
               warmupIterations: Int,
               syntheticSamples: Int,
-              logBins: Int = 3,
-              nSamples: Int = 10)(implicit rng: RNG): Unit = {
-    val newGoldset = posteriorSamples(nSamples)
+              logBins: Int = 3)(implicit rng: RNG): Unit = {
     val t0 = System.currentTimeMillis
     val stream = simulate(sampler, warmupIterations, syntheticSamples, logBins)
     val bins = 1 << logBins
@@ -38,10 +36,6 @@ final case class SBC[T, L <: Distribution[T]](
       val timeRemaining = timeTaken * (reps - i) / i
       plot(list, bins, i, reps, lower, upper, timeRemaining)
     }
-    println(s"\nnew goldset:")
-    println(s"$newGoldset")
-    println(
-      s"If this run looks good, please update the goldset in your SBCModel")
   }
 
   def simulate(sampler: Sampler,
