@@ -2,13 +2,17 @@ package com.stripe.rainier.compute
 
 class Evaluator(var cache: Map[Real, Double]) extends Numeric[Real] {
 
-  def toDouble(x: Real): Double = cache.get(x) match {
-    case Some(v) => v
-    case None => {
-      val v = eval(x)
-      cache += x -> v
-      v
-    }
+  def toDouble(x: Real): Double = x match {
+    case Constant(v) => v.toDouble
+    case _ =>
+      cache.get(x) match {
+        case Some(v) => v
+        case None => {
+          val v = eval(x)
+          cache += x -> v
+          v
+        }
+      }
   }
 
   private def eval(real: Real): Double = real match {

@@ -8,6 +8,8 @@ import com.stripe.rainier.unused
   */
 private[rainier] trait Injection { self =>
   def forwards(x: Real): Real
+  def fastForwards(x: Double)(implicit n: Numeric[Real]): Double =
+    n.toDouble(forwards(Real(x)))
   def backwards(y: Real): Real
   def isDefinedAt(@unused y: Real): Real = Real.one
   def requirements: Set[Real]
@@ -29,7 +31,7 @@ private[rainier] trait Injection { self =>
 
     val generator: Generator[Double] =
       Generator.require(self.requirements) { (r, n) =>
-        n.toDouble(forwards(dist.generator.get(r, n)))
+        fastForwards(dist.generator.get(r, n))(n)
       }
 
     def param: RandomVariable[Real] = dist.param.map(forwards)
@@ -43,6 +45,8 @@ private[rainier] trait Injection { self =>
 final case class Scale(a: Real) extends Injection {
   private val lj = a.log * -1
   def forwards(x: Real): Real = x * a
+  override def fastForwards(x: Double)(implicit n: Numeric[Real]) =
+    x * n.toDouble(a)
   def backwards(y: Real): Real = y / a
   def logJacobian(y: Real): Real = lj
   val requirements: Set[Real] = Set(a)
@@ -61,6 +65,8 @@ final case class Scale(a: Real) extends Injection {
   */
 final case class Translate(b: Real) extends Injection {
   def forwards(x: Real): Real = x + b
+  override def fastForwards(x: Double)(implicit n: Numeric[Real]) =
+    x + n.toDouble(b)
   def backwards(y: Real): Real = y - b
   def logJacobian(y: Real): Real = Real.zero
   val requirements: Set[Real] = Set(b)
