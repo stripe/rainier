@@ -48,15 +48,15 @@ object SBCLogNormal extends SBCModel {
 /**
   * Note: these are made-up goldsets. SBC on these is wildly slow.
   */
-//object SBCExponential extends SBCModel {
-//  def sbc =
-//    SBC[Double, Continuous](LogNormal(0, 1))((x: Real) => Exponential(x))
-//  def goldset = List(0.1, 0.33, 1.12)
-//  val description = "Exponential(x) with LogNormal(0,1) prior"
-//}
-//
-//object SBCLaplace extends SBCModel {
-//  def sbc = SBC[Double, Continuous](LogNormal(0, 1))((x: Real) => Laplace(x, x))
-//  def goldset = List(0.1, 0.33, 1.12)
-//  val description = "Laplace(x,x) with LogNormal(0,1) prior"
-//}
+object SBCExponential extends SBCModel {
+  def sbc =
+    SBC[Double, Continuous](LogNormal(0, 1))((x: Real) => Exponential(x))
+  def goldset = List(0.1, 0.33, 1.12)
+  val description = "Exponential(x) with LogNormal(0,1) prior"
+}
+
+object SBCLaplace extends SBCModel {
+  def sbc = SBC[Double, Continuous](LogNormal(0, 1))((x: Real) => Laplace(x, x))
+  def goldset = List(0.1, 0.33, 1.12)
+  val description = "Laplace(x,x) with LogNormal(0,1) prior"
+}
