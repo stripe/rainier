@@ -84,6 +84,8 @@ final case class Translate(b: Real) extends Injection {
   */
 object Exp extends Injection {
   def forwards(x: Real): Real = x.exp
+  override def fastForwards(x: Double)(implicit n: Numeric[Real]) =
+    Math.exp(n)
   def backwards(y: Real): Real = y.log
   def logJacobian(y: Real): Real = y.log * -1
 
