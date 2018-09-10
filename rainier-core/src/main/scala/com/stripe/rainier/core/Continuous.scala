@@ -7,8 +7,11 @@ import scala.annotation.tailrec
 /**
   * A Continuous Distribution, with method `param` allowing conversion to a RandomVariable.
   */
-trait Continuous extends NumericDistribution[Double] {
+trait Continuous extends Distribution[Double] {
   private[rainier] val support: Support
+
+  type P = Real
+  val wrapping = Mapping.double
 
   def param: RandomVariable[Real]
   def logDensity(v: Real): Real

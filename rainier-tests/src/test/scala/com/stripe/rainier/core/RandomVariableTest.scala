@@ -7,7 +7,7 @@ import org.scalatest.FunSuite
 class RandomVariableTest extends FunSuite {
 
   def assertEquiv[S, T](x: RandomVariable[S], y: RandomVariable[S])(
-      implicit s: Sampleable[S, T]): Unit = {
+      implicit s: ToGenerator[S, T]): Unit = {
     List(0.0, 1.0, -1.0).foreach { paramValue =>
       val (xValue, xDensity) = sampleOnce(x, paramValue)
       val (yValue, yDensity) = sampleOnce(y, paramValue)
@@ -18,7 +18,7 @@ class RandomVariableTest extends FunSuite {
   }
 
   def sampleOnce[S, T](x: RandomVariable[S], paramValue: Double)(
-      implicit s: Sampleable[S, T]): (T, Double) = {
+      implicit s: ToGenerator[S, T]): (T, Double) = {
     val variables = Context(x.density).variables
     implicit val num: Evaluator =
       new Evaluator(variables.map { v =>
@@ -27,7 +27,7 @@ class RandomVariableTest extends FunSuite {
     implicit val rng: RNG = RNG.default
 
     val density = num.toDouble(x.density)
-    val value = x.get(rng, s, num)
+    val value = x.toGenerator.value.get
     (value, density)
   }
 
@@ -38,11 +38,11 @@ class RandomVariableTest extends FunSuite {
       f: A => F,
       g: A => RandomVariable[G],
       h: G => RandomVariable[H])(
-      implicit a1: Sampleable[A, A1],
-      b1: Sampleable[B, B1],
-      f1: Sampleable[F, F1],
-      g1: Sampleable[G, G1],
-      h1: Sampleable[H, H1]
+      implicit a1: Mapping[A1, A],
+      b1: Mapping[B1, B],
+      f1: Mapping[F1, F],
+      g1: Mapping[G1, G],
+      h1: Mapping[H1, H]
   ): Unit = {
 
     assertEquiv(a.map(f), a.flatMap { x =>
