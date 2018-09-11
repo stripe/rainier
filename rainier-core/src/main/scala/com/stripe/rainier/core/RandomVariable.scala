@@ -121,8 +121,7 @@ class RandomVariable[+T](val value: T, private val targets: Set[Target]) {
     (allSamples, diagnostics)
   }
 
-  lazy val density: Real =
-    Real.sum(targets.toList.map(_.toReal))
+  lazy val density: Real = Real.sum(targets.map(_.inlined))
 
   //this is really just here to allow destructuring in for{}
   def withFilter(fn: T => Boolean): RandomVariable[T] =
@@ -141,7 +140,7 @@ class RandomVariable[+T](val value: T, private val targets: Set[Target]) {
   */
 object RandomVariable {
   def apply[A](a: A, density: Real): RandomVariable[A] =
-    new RandomVariable(a, Set(new Target(density)))
+    new RandomVariable(a, Set(Target(density)))
 
   def apply[A](a: A): RandomVariable[A] =
     apply(a, Real.zero)
