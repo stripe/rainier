@@ -30,8 +30,8 @@ trait LowPriMappings {
         new Placeholder[Int, Real] {
           val value = x
           val variables = List(x)
-          def extract(value: Int, acc: List[Double]) =
-            value.toDouble :: acc
+          def extract(t: Int, acc: List[Double]) =
+            t.toDouble :: acc
         }
       }
     }
@@ -49,8 +49,8 @@ object Mapping extends LowPriMappings {
         new Placeholder[Double, Real] {
           val value = x
           val variables = List(x)
-          def extract(value: Double, acc: List[Double]) =
-            value :: acc
+          def extract(t: Double, acc: List[Double]) =
+            t :: acc
         }
       }
     }
@@ -79,16 +79,35 @@ object Mapping extends LowPriMappings {
         u.values.flatMap { x =>
           tu.requirements(x)
         }.toSet
-      def placeholder(seq: Seq[Map[K, T]]) = ???
-      /*new Placeholder[Map[K, T], Map[K, U]] {
+      def placeholder(seq: Seq[Map[K, T]]) = {
+        val keys = seq.foldLeft(Set.empty[K]) {
+          case (a, m) => a ++ m.keys.toSet
+        }
+        new Placeholder[Map[K, T], Map[K, U]] {
           val tuPlaceholders = keys.map { k =>
-            k -> tu.placeholder()
+            k -> tu.placeholder(seq.collect { m =>
+              m.get(k) match {
+                case Some(t) => t
+              }
+            })
           }
           val value = tuPlaceholders.map { case (k, p) => k -> p.value }.toMap
           val variables = tuPlaceholders.map(_._2.variables).reduce(_ ++ _)
-          def extract(value: Map[K, T], acc: List[Double]) =
-            ???
-        }*/
+          def extract(t: Map[K, T], acc: List[Double]) =
+            tuPlaceholders.foldLeft(acc) {
+              case (a, (k, p)) =>
+                t.get(k)
+                  .map { v =>
+                    p.extract(v, a)
+                  }
+                  .getOrElse {
+                    p.variables.map { _ =>
+                      0.0
+                    }.toList ++ a
+                  }
+            }
+        }
+      }
     }
 
   def item[T]: Mapping[T, Map[T, Real]] =
@@ -98,6 +117,23 @@ object Mapping extends LowPriMappings {
         u.find { case (_, r) => n.toDouble(r) > 0 }.get._1
       def requirements(u: Map[T, Real]): Set[Real] =
         u.values.toSet
-      def placeholder(seq: Seq[T]) = ???
+      def placeholder(seq: Seq[T]) = {
+        val keys = seq.toSet.toList
+        new Placeholder[T, Map[T, Real]] {
+          val tPlaceholders = keys.map { k =>
+            k -> new Variable
+          }
+          val value = tPlaceholders.toMap
+          val variables = tPlaceholders.map(_._2)
+          def extract(t: T, acc: List[Double]) =
+            tPlaceholders.foldLeft(acc) {
+              case (a, (k, _)) =>
+                if (t == k)
+                  1.0 :: a
+                else
+                  0.0 :: a
+            }
+        }
+      }
     }
 }
