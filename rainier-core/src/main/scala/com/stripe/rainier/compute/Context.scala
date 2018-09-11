@@ -1,10 +1,71 @@
 package com.stripe.rainier.compute
 
-case class Context(density: Real) {
+case class Context(base: Real, batched: Target) {
   val compiler: Compiler = IRCompiler(200, 100)
-  val variables: List[Variable] = RealOps.variables(density).toList
-  lazy val gradient: List[Real] = Gradient.derive(variables, density).toList
 
-  def compileDensity: Array[Double] => Double =
-    compiler.compile(variables, density)
+  val variables: List[Variable] = {
+    val allVariables =
+      RealOps.variables(base) ++
+        RealOps.variables(batched.real) --
+        batched.placeholders.keySet
+    allVariables.toList.sortBy(_.param.sym.id)
+  }
+
+  //convenience method for simple cases like Walkers
+  def compileDensity: Array[Double] => Double = {
+    val baseCF = compiler.compile(variables, base)
+    val batchCF = compileBatched
+
+    val result = { input: Array[Double] =>
+      baseCF(input) + batchCF(input)
+    }
+    result
+  }
+
+  //not terribly efficient
+  private def compileBatched: Array[Double] => Double = {
+    if (batched.placeholders.isEmpty) {
+      compiler.compile(variables, base)
+    } else {
+      val placeholders = batched.placeholders.keys.toList
+      val cf = compiler.compile(variables ++ placeholders, batched.real)
+
+      val nBatches = batched.placeholders.head._2.size
+      val result = { input: Array[Double] =>
+        0.until(nBatches)
+          .map { i =>
+            val extraInputs =
+              placeholders.toArray.map { v =>
+                batched.placeholders(v)(i)
+              }
+            cf(input ++ extraInputs)
+          }
+          .sum
+      }
+      result
+    }
+  }
+
+  //these are for backwards compatibility to allow HMC to keep working
+  //they will not make sense in the general case going forward
+  lazy val density: Real = base + batched.inlined
+
+  lazy val gradient: List[Real] =
+    Gradient.derive(variables, density)
+}
+
+object Context {
+  def apply(real: Real): Context = Context(real, Target.empty)
+  def apply(nBatches: Int, targets: Iterable[Target]): Context = {
+    val (base, batched, batches) =
+      targets
+        .foldLeft((Real.zero, Real.zero, Map.empty[Variable, Array[Double]])) {
+          case ((oldBase, oldBatched, oldBatches), target) =>
+            val (batchedTarget, remainder) = target.batched(nBatches)
+            (oldBase + remainder,
+             oldBatched + batchedTarget.real,
+             oldBatches ++ batchedTarget.placeholders)
+        }
+    Context(base, new Target(batched, batches))
+  }
 }

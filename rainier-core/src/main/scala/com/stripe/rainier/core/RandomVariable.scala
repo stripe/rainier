@@ -2,7 +2,6 @@ package com.stripe.rainier.core
 
 import com.stripe.rainier.compute._
 import com.stripe.rainier.sampler._
-import com.stripe.rainier.unused
 
 /**
   * The main probability monad used in Rainier for constructing probabilistic programs which can be sampled
@@ -40,10 +39,10 @@ class RandomVariable[+T](val value: T, private val targets: Set[Target]) {
   def record(sampler: Sampler,
              warmupIterations: Int,
              iterations: Int,
-             @unused batches: Int = 1,
+             batches: Int = 1,
              keepEvery: Int = 1)(implicit rng: RNG): Recording = {
     val posteriorParams = Sampler
-      .sample(Context(density),
+      .sample(Context(batches, targets),
               sampler,
               warmupIterations,
               iterations,
@@ -81,9 +80,9 @@ class RandomVariable[+T](val value: T, private val targets: Set[Target]) {
       sampler: Sampler,
       warmupIterations: Int,
       iterations: Int,
-      @unused batches: Int = 1,
+      batches: Int = 1,
       keepEvery: Int = 1)(implicit rng: RNG, tg: ToGenerator[T, V]): List[V] = {
-    val context = Context(density)
+    val context = Context(batches, targets)
     val fn = tg(value).prepare(context)
     Sampler
       .sample(context, sampler, warmupIterations, iterations, keepEvery)
@@ -97,11 +96,11 @@ class RandomVariable[+T](val value: T, private val targets: Set[Target]) {
                                warmupIterations: Int,
                                iterations: Int,
                                parallel: Boolean = true,
-                               @unused batches: Int = 1,
+                               batches: Int = 1,
                                keepEvery: Int = 1)(
       implicit rng: RNG,
       tg: ToGenerator[T, V]): (List[V], List[Diagnostics]) = {
-    val context = Context(density)
+    val context = Context(batches, targets)
     val fn = tg(value).prepare(context)
     val range = if (parallel) 1.to(chains).par else 1.to(chains)
     val samples =
