@@ -11,8 +11,6 @@ class KahanTest extends FunSuite {
       assert(fn(input) == expected)
     }
 
-  def contiguousSum(start: Int, end: Int): Double =
-    (end * (end + 1) * 1.0 / 2) - start.toDouble
   val smallArray = 0.to(10000).toArray.map(_.toDouble)
   val smallExpected = smallArray.sum
 

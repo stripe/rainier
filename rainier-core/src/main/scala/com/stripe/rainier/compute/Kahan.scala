@@ -1,9 +1,9 @@
 package com.stripe.rainier.compute
 
 /**
- * Kahan summation and the Neumaier modification
- * https://en.wikipedia.org/wiki/Kahan_summation_algorithm
- */
+  * Kahan summation and the Neumaier modification
+  * https://en.wikipedia.org/wiki/Kahan_summation_algorithm
+  */
 object Kahan {
 
   def sum(array: Array[Double]): Double = {
