@@ -1,5 +1,9 @@
 package com.stripe.rainier.compute
 
+/**
+ * Kahan summation and the Neumaier modification
+ * https://en.wikipedia.org/wiki/Kahan_summation_algorithm
+ */
 object Kahan {
 
   def sum(array: Array[Double]): Double = {
@@ -14,9 +18,6 @@ object Kahan {
     partialSum
   }
 
-  /**
-    * Neumaier sum
-    */
   def nSum(array: Array[Double]): Double = {
     var partialSum = array(0)
     var compensation = 0.0
