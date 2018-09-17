@@ -25,7 +25,7 @@ case class Context(base: Real, batched: Target) {
   //not terribly efficient
   private def compileBatched: Array[Double] => Double = {
     if (batched.placeholders.isEmpty) {
-      compiler.compile(variables, base)
+      compiler.compile(variables, base + batched.real)
     } else {
       val placeholders = batched.placeholders.keys.toList
       val cf = compiler.compile(variables ++ placeholders, batched.real)
