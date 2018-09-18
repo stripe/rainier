@@ -67,7 +67,7 @@ final case class Geometric(p: Real) extends Discrete {
   * @param n Total number of failures
   * @param p Probability of success
   */
-final case class NegativeBinomial(n: Real, p: Real) extends Discrete {
+final case class NegativeBinomial(p: Real, n: Real) extends Discrete {
   val generator: Generator[Int] = {
     val nbGenerator = Generator.require(Set(n, p)) { (r, m) =>
       (1 to m.toInt(n))
