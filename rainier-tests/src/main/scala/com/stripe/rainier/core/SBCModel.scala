@@ -104,6 +104,10 @@ object SBCNegativeBinomial extends SBCModel {
   val description = "NegativeBinomial(x, 10) with Uniform(0,1) prior"
 }
 
+/**
+ * sbc.animate throws an error for both of these approximations.
+ * Generating the posterior samples works fine.
+ */
 object SBBinomialPoissonApproximation extends SBCModel {
   def sbc =
     SBC[Int, Discrete](Uniform(0, 0.04))((x: Real) => Binomial(x, 200))
