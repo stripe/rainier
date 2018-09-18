@@ -7,7 +7,7 @@ case class Context(base: Real, batched: Target) {
     val allVariables =
       RealOps.variables(base) ++
         RealOps.variables(batched.real) --
-        batched.placeholders.keySet
+        batched.placeholderVariables
     allVariables.toList.sortBy(_.param.sym.id)
   }
 
@@ -24,20 +24,19 @@ case class Context(base: Real, batched: Target) {
 
   //not terribly efficient
   private def compileBatched: Array[Double] => Double = {
-    if (batched.placeholders.isEmpty) {
+    if (batched.nRows == 0) {
       compiler.compile(variables, base + batched.real)
     } else {
-      val placeholders = batched.placeholders.keys.toList
-      val cf = compiler.compile(variables ++ placeholders, batched.real)
+      val cf = compiler.compile(variables ++ batched.placeholderVariables,
+                                batched.real)
 
-      val nBatches = batched.placeholders.head._2.size
       val result = { input: Array[Double] =>
-        0.until(nBatches)
+        0.until(batched.nRows)
           .map { i =>
             val extraInputs =
-              placeholders.toArray.map { v =>
+              batched.placeholderVariables.map { v =>
                 batched.placeholders(v)(i)
-              }
+              }.toArray
             cf(input ++ extraInputs)
           }
           .sum
