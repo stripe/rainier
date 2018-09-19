@@ -105,6 +105,7 @@ final case class SBC[T, L <: Distribution[T]](
 
     val syntheticValues =
       posterior.map { case (l, _) => l.generator.repeat(syntheticSamples) }.get
+
     val model = posterior.flatMap {
       case (d, r) =>
         RandomVariable.fit(d, syntheticValues).map { _ =>

@@ -32,7 +32,7 @@ object SBCUniformNormal extends SBCModel {
       0.4680530806057483, -1.3360844052727425, 0.6558428534558145,
       0.4233930395976211)
 
-  val description = "Normal(x,1) with Uniform(0,1) prior"
+  val description = "Normal(x, 1) with Uniform(0, 1) prior"
 }
 
 object SBCLogNormal extends SBCModel {
@@ -43,7 +43,7 @@ object SBCLogNormal extends SBCModel {
       1.340419862750101, 62.45333008770111, 21.260796478808622,
       2.145416458600115, 0.5978183569453146, 2.745814563529916,
       2.326159027201714)
-  val description = "LogNormal(x,x) with LogNormal(0,1) prior"
+  val description = "LogNormal(x, x) with LogNormal(0, 1) prior"
 }
 
 /**
@@ -53,13 +53,13 @@ object SBCExponential extends SBCModel {
   def sbc =
     SBC[Double, Continuous](LogNormal(0, 1))((x: Real) => Exponential(x))
   def goldset = List(0.1, 0.33, 1.12)
-  val description = "Exponential(x) with LogNormal(0,1) prior"
+  val description = "Exponential(x) with LogNormal(0, 1) prior"
 }
 
 object SBCLaplace extends SBCModel {
   def sbc = SBC[Double, Continuous](LogNormal(0, 1))((x: Real) => Laplace(x, x))
   def goldset = List(0.1, 0.33, 1.12)
-  val description = "Laplace(x,x) with LogNormal(0,1) prior"
+  val description = "Laplace(x, x) with LogNormal(0, 1) prior"
 }
 
 /** Discrete **/
@@ -68,7 +68,7 @@ object SBCBernoulli extends SBCModel {
     SBC[Int, Discrete](Uniform(0, 1))((x: Real) => Bernoulli(x))
   def goldset =
     List(1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0, 1, 1)
-  val description = "Bernoulli(x) with Uniform(0,1) prior"
+  val description = "Bernoulli(x) with Uniform(0, 1) prior"
 }
 
 object SBCBinomial extends SBCModel {
@@ -76,7 +76,7 @@ object SBCBinomial extends SBCModel {
     SBC[Int, Discrete](Uniform(0, 1))((x: Real) => Binomial(x, 10))
   def goldset =
     List(8, 5, 6, 5, 8, 2, 4, 6, 3, 4, 3, 4, 9, 5, 2, 3, 7, 4, 4, 4, 5)
-  val description = "Binomial(x,10) with Uniform(0,1) prior"
+  val description = "Binomial(x, 10) with Uniform(0, 1) prior"
 }
 
 object SBCGeometric extends SBCModel {
@@ -84,7 +84,7 @@ object SBCGeometric extends SBCModel {
     SBC[Int, Discrete](Uniform(0, 1))((x: Real) => Geometric(x))
   def goldset =
     List(0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 4, 0, 2, 0, 15, 1, 0, 2, 0, 2, 2)
-  val description = "Geometric(x) with Uniform(0,1) prior"
+  val description = "Geometric(x) with Uniform(0, 1) prior"
 }
 
 object SBCGeometricZeroInflated extends SBCModel {
@@ -93,7 +93,7 @@ object SBCGeometricZeroInflated extends SBCModel {
       Geometric(.3).zeroInflated(x))
   def goldset =
     List(0, 1, 0, 1, 0, 0, 0, 0, 10, 11, 1, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
-  val description = "Geometric(.3).zeroInflated(x) with Uniform(0,1) prior"
+  val description = "Geometric(.3).zeroInflated(x) with Uniform(0, 1) prior"
 }
 
 object SBCNegativeBinomial extends SBCModel {
@@ -101,20 +101,20 @@ object SBCNegativeBinomial extends SBCModel {
     SBC[Int, Discrete](Uniform(0, 1))((x: Real) => NegativeBinomial(x, 10))
   def goldset =
     List(22, 12, 28, 21, 19, 5, 14, 7, 3, 4, 7, 8, 26, 8, 2, 3, 9, 6, 5, 11, 9)
-  val description = "NegativeBinomial(x, 10) with Uniform(0,1) prior"
+  val description = "NegativeBinomial(x, 10) with Uniform(0, 1) prior"
 }
 
 /**
- * sbc.animate throws an error for both of these approximations.
- * Generating the posterior samples works fine.
- */
+  * sbc.animate throws an error for both of these approximations.
+  * Generating the posterior samples works fine.
+  */
 object SBBinomialPoissonApproximation extends SBCModel {
   def sbc =
     SBC[Int, Discrete](Uniform(0, 0.04))((x: Real) => Binomial(x, 200))
   def goldset =
     List(1, 6, 10, 234, 10, 3, 4, 9, 8, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3)
   val description =
-    "Poisson approximation to Binomial: Binomial(x, 200) with Uniform(0,0.04) prior"
+    "Poisson approximation to Binomial: Binomial(x, 200) with Uniform(0, 0.04) prior"
 }
 
 object SBBinomialNormalApproximation extends SBCModel {
