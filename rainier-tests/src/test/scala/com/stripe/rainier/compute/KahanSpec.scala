@@ -30,29 +30,27 @@ class KahanSpec extends PropSpec with Matchers with PropertyChecks {
     Gen.listOfN(numSmalls, smallGen(numDigits)).map(_.toArray)
 
   /**
-   * Adding smalls to bigs in this range will truncate
-   * some bits of the smalls but not all of them.
-   */
-  def oneBigManySmallsGen(numSmalls: Int = 10,
-                          numDigits: Int = 15): Gen[Array[Double]] =
+    * Adding smalls to bigs in this range will truncate
+    * some bits of the smalls but not all of them.
+    */
+  def oneBigManySmallsGen(numSmalls: Int, numDigits: Int): Gen[Array[Double]] =
     for {
       big <- Gen.choose(1E10, 1E11)
       smalls <- arrayOfSmallsGen(numSmalls, numDigits)
     } yield big +: smalls
 
   /**
-   * Naively adding smalls to bigs in this range will truncate
-   * all bits of the smalls so big + small = big.
-   */
-  def bigSmallsMinusBigGen(numSmalls: Int = 10,
-                           numDigits: Int = 5): Gen[Array[Double]] =
+    * Naively adding smalls to bigs in this range will truncate
+    * all bits of the smalls so big + small = big.
+    */
+  def bigSmallsMinusBigGen(numSmalls: Int, numDigits: Int): Gen[Array[Double]] =
     for {
       big <- Gen.choose(1E20, 1E200)
       smalls <- arrayOfSmallsGen(numSmalls, numDigits)
     } yield big +: smalls :+ (-big)
 
   property("Kahan summation agrees with naive sum for (sum of smalls)") {
-    forAll(arrayOfSmallsGen(100, 5)) { array =>
+    forAll(arrayOfSmallsGen(1000, 5)) { array =>
       val kahanSum = Kahan.sum(array)
       val neumaierSum = Kahan.nSum(array)
       val naiveSum = array.sum
@@ -65,7 +63,7 @@ class KahanSpec extends PropSpec with Matchers with PropertyChecks {
 
   property(
     "Kahan summation computes big + (sum of smalls) for an Array(big, small,...,small)") {
-    forAll(oneBigManySmallsGen()) { array =>
+    forAll(oneBigManySmallsGen(10, 15)) { array =>
       val expected = array(0) + (array.drop(1).sum)
       val kahanSum = Kahan.sum(array)
       val neumaierSum = Kahan.nSum(array)
@@ -83,7 +81,7 @@ class KahanSpec extends PropSpec with Matchers with PropertyChecks {
 
   property(
     "Kahan summation computes (sum of smalls) for an Array(big, small, ..., small, -big)") {
-    forAll(bigSmallsMinusBigGen()) { array =>
+    forAll(bigSmallsMinusBigGen(10, 5)) { array =>
       val expected = array.slice(1, array.size - 1).sum
       val kahanSum = Kahan.sum(array)
       val neumaierSum = Kahan.nSum(array)
