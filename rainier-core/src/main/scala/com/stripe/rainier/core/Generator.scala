@@ -1,6 +1,6 @@
 package com.stripe.rainier.core
 
-import com.stripe.rainier.compute.Real
+import com.stripe.rainier.compute._
 import com.stripe.rainier.sampler.RNG
 
 /**
@@ -32,6 +32,35 @@ trait Generator[T] { self =>
       0.until(n.toInt(k)).map { i =>
         self.get
       }
+  }
+
+  private[core] def prepare(context: Context)(
+      implicit r: RNG): Array[Double] => T = {
+    val reqs = requirements.toList
+    if (reqs.isEmpty) { array =>
+      {
+        implicit val evaluator: Evaluator =
+          new Evaluator(
+            context.variables
+              .zip(array)
+              .toMap)
+        get
+      }
+    } else {
+      val cf = context.compiler.compile(context.variables, reqs)
+      array =>
+        {
+          val reqValues = cf(array)
+          implicit val evaluator: Evaluator =
+            new Evaluator(
+              context.variables
+                .zip(array)
+                .toMap ++
+                reqs.zip(reqValues).toMap
+            )
+          get
+        }
+    }
   }
 }
 
@@ -68,5 +97,24 @@ object Generator {
         seq.map { g =>
           g.get
         }
+    }
+}
+
+trait ToGenerator[-T, U] {
+  def apply(t: T): Generator[U]
+}
+
+object ToGenerator {
+  implicit def generator[T]: ToGenerator[Generator[T], T] =
+    new ToGenerator[Generator[T], T] {
+      def apply(t: Generator[T]) = t
+    }
+
+  implicit def mapping[T, U](implicit m: Mapping[U, T]): ToGenerator[T, U] =
+    new ToGenerator[T, U] {
+      def apply(t: T) = new Generator[U] {
+        val requirements = m.requirements(t)
+        def get(implicit r: RNG, n: Numeric[Real]) = m.get(t)
+      }
     }
 }
