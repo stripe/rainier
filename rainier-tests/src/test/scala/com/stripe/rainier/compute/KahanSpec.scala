@@ -7,8 +7,8 @@ import org.scalatest.{Matchers, PropSpec}
 class KahanSpec extends PropSpec with Matchers with PropertyChecks {
 
   /**
-    *  Make a list of digits ds into a Double with ds.size significant digits
-    *  e.g. List(1,2,3) becomes 1.23
+    *  Make a list of digits ds into a Double strictly between 0 and 10
+    *  with ds.size significant digits e.g. List(1,2,3) becomes 1.23
     */
   def digitsToDouble(digits: List[Int]): Double =
     digits.zipWithIndex
@@ -18,7 +18,7 @@ class KahanSpec extends PropSpec with Matchers with PropertyChecks {
       }
 
   /**
-    * Generator for numbers strictly between 0 and 10
+    * Generator for doubles strictly between 0 and 10
     * with numDigits significant digits.
     */
   def smallGen(numDigits: Int): Gen[Double] =
@@ -29,6 +29,10 @@ class KahanSpec extends PropSpec with Matchers with PropertyChecks {
   def arrayOfSmallsGen(numSmalls: Int, numDigits: Int): Gen[Array[Double]] =
     Gen.listOfN(numSmalls, smallGen(numDigits)).map(_.toArray)
 
+  /**
+   * Adding smalls to bigs in this range will truncate
+   * some bits of the smalls but not all of them.
+   */
   def oneBigManySmallsGen(numSmalls: Int = 10,
                           numDigits: Int = 15): Gen[Array[Double]] =
     for {
@@ -36,6 +40,10 @@ class KahanSpec extends PropSpec with Matchers with PropertyChecks {
       smalls <- arrayOfSmallsGen(numSmalls, numDigits)
     } yield big +: smalls
 
+  /**
+   * Naively adding smalls to bigs in this range will truncate
+   * all bits of the smalls so big + small = big.
+   */
   def bigSmallsMinusBigGen(numSmalls: Int = 10,
                            numDigits: Int = 5): Gen[Array[Double]] =
     for {
