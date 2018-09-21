@@ -108,7 +108,7 @@ object SBCNegativeBinomial extends SBCModel {
   * sbc.animate throws an error for both of these approximations.
   * Generating the posterior samples works fine.
   */
-object SBBinomialPoissonApproximation extends SBCModel {
+object SBCBinomialPoissonApproximation extends SBCModel {
   def sbc =
     SBC[Int, Discrete](Uniform(0, 0.04))((x: Real) => Binomial(x, 200))
   def goldset =
@@ -117,11 +117,11 @@ object SBBinomialPoissonApproximation extends SBCModel {
     "Poisson approximation to Binomial: Binomial(x, 200) with Uniform(0, 0.04) prior"
 }
 
-object SBBinomialNormalApproximation extends SBCModel {
+object SBCBinomialNormalApproximation extends SBCModel {
   def sbc =
     SBC[Int, Discrete](Uniform(0.4, 0.6))((x: Real) => Binomial(x, 300))
   def goldset =
     List(1, 6, 10, 234, 10, 3, 4, 9, 8, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3)
   val description =
-    "Normal approximation to Binomail: Binomial(x, 200) with Uniform(0.4, 0.6) prior"
+    "Normal approximation to Binomial: Binomial(x, 200) with Uniform(0.4, 0.6) prior"
 }

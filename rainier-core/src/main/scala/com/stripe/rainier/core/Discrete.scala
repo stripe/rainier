@@ -149,7 +149,7 @@ final case class Binomial(p: Real, k: Real) extends Discrete {
       m.getOrElse(true, 0)
     }
 
-    Generator.from {
+    Generator.require(Set(p, k)) {
       case (r, n) =>
         val pDouble = n.toDouble(p)
         val kDouble = n.toDouble(k)
