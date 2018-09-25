@@ -1,3 +1,5 @@
+ThisBuild / bazelScalaRulesVersion := "8359fc6781cf3102e918c84cb1638a1b1e050ce0"
+
 lazy val root = project.
   in(file(".")).
   aggregate(rainierCore, rainierPlot, rainierCats, rainierScalacheck).
@@ -5,7 +7,28 @@ lazy val root = project.
   aggregate(rainierBenchmark, rainierTests).
   aggregate(shadedAsm).
   settings(commonSettings).
-  settings(unpublished)
+  settings(unpublished).
+  settings(
+    bazelWorkspaceGenerate := true,
+    bazelBuildGenerate := false,
+    bazelCustomWorkspace :=
+      WorkspacePrelude +:
+        MavenBindings +:
+        BazelString(
+          """
+          |git_repository(
+          |    name = "com_github_johnynek_bazel_jar_jar",
+          |    commit = "258c7288db8a034e087b4d65a52546830633a4f1",
+          |    remote = "git://github.com/johnynek/bazel_jar_jar.git",
+          |)
+          |load(
+          |    "@com_github_johnynek_bazel_jar_jar//:jar_jar.bzl",
+          |    "jar_jar_repositories",
+          |)
+          |jar_jar_repositories()
+          |""".stripMargin
+        )
+  )
 
 scalafmtOnCompile in ThisBuild := true
 
@@ -62,7 +85,13 @@ lazy val rainierCore = project.
   in(file("rainier-core")).
   settings(name := "rainier-core").
   dependsOn(shadedAsm).
-  settings(commonSettings)
+  settings(commonSettings).
+  settings(
+    bazelRuleDeps := (Deps(Compile) - ScalaLib(Compile)) +
+      BazelDep("//.rainier-shaded-asm", "asmTreeShaded") +
+      BazelDep("//.rainier-shaded-asm", "asmShaded") -
+      BazelDep("//.rainier-shaded-asm", "shadedAsm"),
+  )
 
 lazy val rainierPlot = project.
   in(file("rainier-plot")).
@@ -118,7 +147,21 @@ lazy val rainierExample = project.
   ).
   settings(commonSettings).
   settings(evilPlotCrossSettings).
-  settings(unpublished)
+  settings(unpublished).
+  settings(bazelCustomBuild := BuildPrelude +: BuildTargets +: BazelString(
+    """
+      |scala_binary(
+      |    name = 'logNormal',
+      |    deps = [
+      |        ':rainierExample',
+      |    ],
+      |    visibility = [
+      |        '//visibility:public',
+      |    ],
+      |    main_class = 'com.stripe.rainier.example.FitNormal'
+      |)
+    """.stripMargin
+  ))
 
 // test modules
 
@@ -164,7 +207,39 @@ lazy val shadedAsm = project.
     autoScalaLibrary := false,
     exportJars := true,
     packageBin in Compile := (assembly in asmDeps).value,
-    releaseVersion := { ver => ver }
+    releaseVersion := { ver => ver },
+    bazelCustomBuild := BazelString(
+      """
+        |load(
+        |  '@io_bazel_rules_scala//scala:scala.bzl',
+        |  'scala_binary',
+        |  'scala_library',
+        |  'scala_test'
+        |)
+        |
+        |load(
+        |    "@com_github_johnynek_bazel_jar_jar//:jar_jar.bzl",
+        |    "jar_jar"
+        |)
+        |
+        |jar_jar(
+        |    name = "asmShaded",
+        |    input_jar = "@org_ow2_asm_asm//jar",
+        |    rules = "shade_rule",
+        |    visibility = [
+        |      '//visibility:public',
+        |    ]
+        |)
+        |
+        |jar_jar(
+        |    name = "asmTreeShaded",
+        |    input_jar = "@org_ow2_asm_asm_tree//jar",
+        |    rules = "shade_rule",
+        |    visibility = [
+        |      '//visibility:public',
+        |    ],
+        |)
+      """.stripMargin)
   )
 
 /* phantom project to bundle deps for shading */
