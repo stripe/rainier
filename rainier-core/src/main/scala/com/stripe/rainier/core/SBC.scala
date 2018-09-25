@@ -22,9 +22,11 @@ final case class SBC[T, L <: Distribution[T]](priors: Seq[Continuous],
   def posteriorSamples(nSamples: Int)(implicit rng: RNG): List[T] =
     RandomVariable
       .traverse(priors.map(_.param))
-      .map { priorParams =>
+      .flatMap { priorParams =>
         val (d, _) = fn(priorParams)
-        d.generator
+        RandomVariable
+          .fit(d, synthesize(1000)._1)
+          .map(_.generator)
       }
       .sample(nSamples)
 

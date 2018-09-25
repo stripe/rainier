@@ -27,11 +27,10 @@ object SBCUniformNormal extends SBCModel {
   def sbc = SBC[Double, Continuous](Uniform(0, 1))((x: Real) => Normal(x, 1))
   override val sampler = HMC(2)
   def goldset =
-    List(0.770217434378013, 1.2877991075049935, 1.0761575302777342,
-      0.06063426627950119, 2.235772959187611, 1.5916139704386643,
-      0.4680530806057483, -1.3360844052727425, 0.6558428534558145,
-      0.4233930395976211)
-
+    List(0.2596938696936393, -0.3273257829805834, 0.2729311343019017,
+      0.8521704131171517, 0.21151911646461785, -0.7426658572204402,
+      2.271325788529349, 0.7786849217450826, 1.2366655909705182,
+      0.6982133598813528)
   val description = "Normal(x, 1) with Uniform(0, 1) prior"
 }
 
@@ -39,10 +38,10 @@ object SBCLogNormal extends SBCModel {
   def sbc =
     SBC[Double, Continuous](LogNormal(0, 1))((x: Real) => LogNormal(x, x))
   def goldset =
-    List(1.9444409266417129, 4.884477223783541, 3.166384786757497,
-      1.340419862750101, 62.45333008770111, 21.260796478808622,
-      2.145416458600115, 0.5978183569453146, 2.745814563529916,
-      2.326159027201714)
+    List(2.349654997391342, 2.8211248182321045, 2.1866557470228996,
+      3.1286576255954666, 2.09952942112396, 1.4714940077680554,
+      1.9592682404572923, 1.8977626258273104, 3.151026592970336,
+      5.754280164073072)
   val description = "LogNormal(x, x) with LogNormal(0, 1) prior"
 }
 
@@ -52,13 +51,21 @@ object SBCLogNormal extends SBCModel {
 object SBCExponential extends SBCModel {
   def sbc =
     SBC[Double, Continuous](LogNormal(0, 1))((x: Real) => Exponential(x))
-  def goldset = List(0.1, 0.33, 1.12)
+  def goldset =
+    List(1.9444409266417129, 4.884477223783541, 3.166384786757497,
+      1.340419862750101, 62.45333008770111, 21.260796478808622,
+      2.145416458600115, 0.5978183569453146, 2.745814563529916,
+      2.326159027201714)
   val description = "Exponential(x) with LogNormal(0, 1) prior"
 }
 
 object SBCLaplace extends SBCModel {
   def sbc = SBC[Double, Continuous](LogNormal(0, 1))((x: Real) => Laplace(x, x))
-  def goldset = List(0.1, 0.33, 1.12)
+  def goldset =
+    List(1.9444409266417129, 4.884477223783541, 3.166384786757497,
+      1.340419862750101, 62.45333008770111, 21.260796478808622,
+      2.145416458600115, 0.5978183569453146, 2.745814563529916,
+      2.326159027201714)
   val description = "Laplace(x, x) with LogNormal(0, 1) prior"
 }
 
@@ -67,7 +74,7 @@ object SBCBernoulli extends SBCModel {
   def sbc =
     SBC[Int, Discrete](Uniform(0, 1))((x: Real) => Bernoulli(x))
   def goldset =
-    List(1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0, 1, 1)
+    List(0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 1)
   val description = "Bernoulli(x) with Uniform(0, 1) prior"
 }
 
@@ -75,7 +82,7 @@ object SBCBinomial extends SBCModel {
   def sbc =
     SBC[Int, Discrete](Uniform(0, 1))((x: Real) => Binomial(x, 10))
   def goldset =
-    List(8, 5, 6, 5, 8, 2, 4, 6, 3, 4, 3, 4, 9, 5, 2, 3, 7, 4, 4, 4, 5)
+    List(1, 3, 3, 5, 4, 4, 5, 6, 4, 2, 4, 7, 4, 6, 3, 6, 4, 5, 8, 6, 3)
   val description = "Binomial(x, 10) with Uniform(0, 1) prior"
 }
 
@@ -83,7 +90,7 @@ object SBCGeometric extends SBCModel {
   def sbc =
     SBC[Int, Discrete](Uniform(0, 1))((x: Real) => Geometric(x))
   def goldset =
-    List(0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 4, 0, 2, 0, 15, 1, 0, 2, 0, 2, 2)
+    List(0, 1, 4, 0, 0, 2, 2, 2, 2, 1, 1, 1, 0, 1, 1, 0, 0, 0, 2, 0, 2)
   val description = "Geometric(x) with Uniform(0, 1) prior"
 }
 
@@ -100,19 +107,15 @@ object SBCNegativeBinomial extends SBCModel {
   def sbc =
     SBC[Int, Discrete](Uniform(0, 1))((x: Real) => NegativeBinomial(x, 10))
   def goldset =
-    List(22, 12, 28, 21, 19, 5, 14, 7, 3, 4, 7, 8, 26, 8, 2, 3, 9, 6, 5, 11, 9)
+    List(1, 3, 6, 11, 7, 10, 8, 19, 7, 4, 14, 19, 6, 14, 6, 8, 12, 8, 14, 13, 4)
   val description = "NegativeBinomial(x, 10) with Uniform(0, 1) prior"
 }
 
-/**
-  * sbc.animate throws an error for both of these approximations.
-  * Generating the posterior samples works fine.
-  */
 object SBCBinomialPoissonApproximation extends SBCModel {
   def sbc =
     SBC[Int, Discrete](Uniform(0, 0.04))((x: Real) => Binomial(x, 200))
   def goldset =
-    List(1, 6, 10, 234, 10, 3, 4, 9, 8, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3)
+    List(2, 5, 4, 5, 1, 6, 1, 5, 6, 3, 1, 3, 7, 3, 3, 4, 2, 5, 5, 4, 3)
   val description =
     "Poisson approximation to Binomial: Binomial(x, 200) with Uniform(0, 0.04) prior"
 }
