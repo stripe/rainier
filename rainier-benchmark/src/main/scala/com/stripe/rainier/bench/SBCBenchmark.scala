@@ -17,12 +17,13 @@ abstract class SBCBenchmark {
   implicit val rng: RNG = RNG.default
 
   protected def sbc: SBC[_, _]
-  protected def syntheticSamples: Int = 1000
+  @Param(Array("1000", "10000", "100000"))
+  protected def syntheticSamples: Int = _
 
-  val s = sbc
-  val model = build
-  val vars = model.variables
-  val df = model.density
+  lazy val s = sbc
+  lazy val model = build
+  lazy val vars = model.variables
+  lazy val df = model.density
 
   @Benchmark
   def synthesize() = s.synthesize(syntheticSamples)
@@ -48,16 +49,8 @@ class SBCNormalBenchmark extends SBCBenchmark {
     }
 }
 
-class SBCNormalBenchmark100k extends SBCNormalBenchmark {
-  override def syntheticSamples = 100000
-}
-
 class SBCLaplaceBenchmark extends SBCBenchmark {
   def sbc = SBC[Double, Continuous](LogNormal(0, 1)) { x =>
     Laplace(x, x)
   }
-}
-
-class SBCLaplaceBenchmark100k extends SBCLaplaceBenchmark {
-  override def syntheticSamples = 100000
 }
