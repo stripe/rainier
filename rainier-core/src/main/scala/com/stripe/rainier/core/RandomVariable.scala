@@ -52,8 +52,8 @@ class RandomVariable[+T](val value: T, private val targets: Set[Target]) {
 
   def replay[V](recording: Recording)(implicit rng: RNG,
                                       tg: ToGenerator[T, V]): List[V] = {
-    val context = Context(density)
-    val fn = tg(value).prepare(context)
+    val ctx = Context(density)
+    val fn = tg(value).prepare(ctx)
     recording.samples.map(fn)
   }
 
@@ -82,10 +82,10 @@ class RandomVariable[+T](val value: T, private val targets: Set[Target]) {
       iterations: Int,
       batches: Int = 1,
       keepEvery: Int = 1)(implicit rng: RNG, tg: ToGenerator[T, V]): List[V] = {
-    val context = Context(batches, targets)
-    val fn = tg(value).prepare(context)
+    val ctx = context(batches)
+    val fn = tg(value).prepare(ctx)
     Sampler
-      .sample(context, sampler, warmupIterations, iterations, keepEvery)
+      .sample(ctx, sampler, warmupIterations, iterations, keepEvery)
       .map { array =>
         fn(array)
       }
@@ -100,13 +100,13 @@ class RandomVariable[+T](val value: T, private val targets: Set[Target]) {
                                keepEvery: Int = 1)(
       implicit rng: RNG,
       tg: ToGenerator[T, V]): (List[V], List[Diagnostics]) = {
-    val context = Context(batches, targets)
-    val fn = tg(value).prepare(context)
+    val ctx = context(batches)
+    val fn = tg(value).prepare(ctx)
     val range = if (parallel) 1.to(chains).par else 1.to(chains)
     val samples =
       range.map { _ =>
         Sampler
-          .sample(context, sampler, warmupIterations, iterations, keepEvery)
+          .sample(ctx, sampler, warmupIterations, iterations, keepEvery)
           .map { array =>
             (array, fn(array))
           }
@@ -132,6 +132,8 @@ class RandomVariable[+T](val value: T, private val targets: Set[Target]) {
   def toGenerator[U](
       implicit tg: ToGenerator[T, U]): RandomVariable[Generator[U]] =
     new RandomVariable(tg(value), targets)
+
+  def context(batches: Int) = Context(batches, targets)
 }
 
 /**
