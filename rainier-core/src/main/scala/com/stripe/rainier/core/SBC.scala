@@ -3,15 +3,21 @@ package com.stripe.rainier.core
 import com.stripe.rainier.sampler._
 import com.stripe.rainier.compute._
 
-//implements Simulation-Based Calibration from https://arxiv.org/abs/1804.06788
-final case class SBC[T, L <: Distribution[T]](
-    priorGenerators: Seq[Generator[Double]],
-    priorParams: Seq[Real],
-    posterior: RandomVariable[(L, Real)]) {
+/*
+implements Simulation-Based Calibration from https://arxiv.org/abs/1804.06788
+
+fn is a function that takes a Seq[Real]
+specifying the values of all the parameters (one for each Continuous in the prior)
+and returns a (Distribution[T], Real) which is a pair of values:
+1) a distribution describing the likelihood of the observed data, given the parameter values,
+2) the parameter value or summary stat we're calibrating on
+ */
+final case class SBC[T, L <: Distribution[T]](priors: Seq[Continuous],
+                                              fn: Seq[Real] => (L, Real)) {
 
   import SBC._
 
-  val priorGenerator = Generator.traverse(priorGenerators)
+  val priorGenerator = Generator.traverse(priors.map(_.generator))
 
   def posteriorSamples(nSamples: Int)(implicit rng: RNG): List[Double] =
     posterior.map { case (_, r) => r }.record(nSamples).params.flatten
@@ -49,6 +55,31 @@ final case class SBC[T, L <: Distribution[T]](
     val reps = bins * RepsPerBin
     repStream(sampler, warmupIterations, syntheticSamples, bins, reps)
   }
+
+  def synthesize(samples: Int)(implicit rng: RNG): (Seq[T], Double) =
+    priorGenerator
+      .flatMap { priorParams =>
+        val (d, r) = fn(Real.seq(priorParams))
+        d.generator
+          .repeat(samples)
+          .zip(Generator.real(r))
+      }
+      .get(rng, emptyEvaluator)
+
+  def fit(values: Seq[T]): RandomVariable[Real] =
+    RandomVariable
+      .traverse(priors.map(_.param))
+      .flatMap { priorParams =>
+        val (d, r) = fn(priorParams)
+        RandomVariable
+          .fit(d, values)
+          .map { _ =>
+            r
+          }
+      }
+
+  def model(syntheticSamples: Int)(implicit rng: RNG): RandomVariable[Real] =
+    fit(synthesize(syntheticSamples)._1)
 
   private def repStream(sampler: Sampler,
                         warmupIterations: Int,
@@ -99,24 +130,17 @@ final case class SBC[T, L <: Distribution[T]](
                      warmupIterations: Int,
                      syntheticSamples: Int,
                      thin: Int)(implicit rng: RNG): (Int, Double, Double) = {
-    val trueValues = priorGenerator.get(rng, emptyEvaluator)
-    implicit val trueEval = new Evaluator(priorParams.zip(trueValues).toMap)
-    val trueOutput = posterior.map(_._2).get
+    val (syntheticValues, trueOutput) = synthesize(syntheticSamples)
+    val model = fit(syntheticValues)
 
-    val syntheticValues =
-      posterior.map { case (l, _) => l.generator.repeat(syntheticSamples) }.get
-    val model = posterior.flatMap {
-      case (d, r) =>
-        RandomVariable.fit(d, syntheticValues).map { _ =>
-          r
-        }
-    }
-    val (samples, diag) = model.sampleWithDiagnostics(sampler,
-                                                      Chains,
-                                                      warmupIterations,
-                                                      (Samples / Chains) * thin,
-                                                      true,
-                                                      thin)
+    val (samples, diag) =
+      model.sampleWithDiagnostics(sampler,
+                                  Chains,
+                                  warmupIterations,
+                                  (Samples / Chains) * thin,
+                                  true,
+                                  1,
+                                  thin)
 
     val maxRHat = diag.map(_.rHat).max
     val minEffectiveSampleSize = diag.map(_.effectiveSampleSize).min
@@ -192,26 +216,11 @@ final case class SBC[T, L <: Distribution[T]](
 object SBC {
   val emptyEvaluator = new Evaluator(Map.empty)
 
-  /*
-  fn is a function that takes a Seq[Real]
-  specifying the values of all the parameters (one for each Continuous in the prior)
-  and returns a (Distribution[T], Real) which is a pair of values:
-  1) a distribution describing the likelihood of the observed data, given the parameter values,
-  2) the parameter value or summary stat we're calibrating on
-   */
-  def apply[T, L <: Distribution[T]](priors: Seq[Continuous])(
-      fn: Seq[Real] => (L, Real)): SBC[T, L] = {
-    val priorParams = priors.map(_.param)
-    val priorGenerators = priors.map(_.generator)
-    val posterior = RandomVariable.traverse(priorParams).map(fn)
-    SBC(priorGenerators, priorParams.map(_.value), posterior)
-  }
-
   def apply[T, L <: Distribution[T]](prior: Continuous)(
       fn: Real => L): SBC[T, L] =
-    apply(List(prior)) { l =>
+    apply(List(prior), { l =>
       (fn(l.head), l.head)
-    }
+    })
 
   val Samples = 1024
   val Chains = 4

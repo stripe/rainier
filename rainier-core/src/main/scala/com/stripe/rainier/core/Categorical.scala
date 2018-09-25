@@ -9,6 +9,8 @@ import com.stripe.rainier.compute.{If, Real}
   */
 final case class Categorical[T](pmf: Map[T, Real]) extends Distribution[T] {
   type P = Map[T, Real]
+  val wrapping = Mapping.item[T]
+
   def logDensity(value: Map[T, Real]) =
     Real
       .sum(value.toList.map {
@@ -16,8 +18,6 @@ final case class Categorical[T](pmf: Map[T, Real]) extends Distribution[T] {
           (r * pmf.getOrElse(t, Real.zero))
       })
       .log
-
-  def wrap(value: T) = Map(value -> Real.one)
 
   def map[U](fn: T => U): Categorical[U] =
     flatMap { t =>
@@ -82,12 +82,10 @@ object Categorical {
 final case class Multinomial[T](pmf: Map[T, Real], k: Real)
     extends Distribution[Map[T, Int]] {
   type P = Map[T, Real]
+  val wrapping = Mapping.map[T, Int, Real]
 
   def logDensity(value: Map[T, Real]) =
     Multinomial.logDensity(this, value)
-
-  def wrap(value: Map[T, Int]) =
-    value.map { case (k, v) => k -> Real(v) }
 
   def generator: Generator[Map[T, Int]] =
     Categorical(pmf).generator.repeat(k).map { seq =>
