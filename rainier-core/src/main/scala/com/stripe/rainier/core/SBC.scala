@@ -19,8 +19,14 @@ final case class SBC[T, L <: Distribution[T]](priors: Seq[Continuous],
 
   val priorGenerator = Generator.traverse(priors.map(_.generator))
 
-  def posteriorSamples(nSamples: Int)(implicit rng: RNG): List[Double] =
-    posterior.map { case (_, r) => r }.record(nSamples).params.flatten
+  def posteriorSamples(nSamples: Int)(implicit rng: RNG): List[T] =
+    RandomVariable
+      .traverse(priors.map(_.param))
+      .map { priorParams =>
+        val (d, _) = fn(priorParams)
+        d.generator
+      }
+      .sample(nSamples)
 
   def animate(sampler: Sampler,
               warmupIterations: Int,
@@ -55,31 +61,6 @@ final case class SBC[T, L <: Distribution[T]](priors: Seq[Continuous],
     val reps = bins * RepsPerBin
     repStream(sampler, warmupIterations, syntheticSamples, bins, reps)
   }
-
-  def synthesize(samples: Int)(implicit rng: RNG): (Seq[T], Double) =
-    priorGenerator
-      .flatMap { priorParams =>
-        val (d, r) = fn(Real.seq(priorParams))
-        d.generator
-          .repeat(samples)
-          .zip(Generator.real(r))
-      }
-      .get(rng, emptyEvaluator)
-
-  def fit(values: Seq[T]): RandomVariable[Real] =
-    RandomVariable
-      .traverse(priors.map(_.param))
-      .flatMap { priorParams =>
-        val (d, r) = fn(priorParams)
-        RandomVariable
-          .fit(d, values)
-          .map { _ =>
-            r
-          }
-      }
-
-  def model(syntheticSamples: Int)(implicit rng: RNG): RandomVariable[Real] =
-    fit(synthesize(syntheticSamples)._1)
 
   private def repStream(sampler: Sampler,
                         warmupIterations: Int,
@@ -130,17 +111,34 @@ final case class SBC[T, L <: Distribution[T]](priors: Seq[Continuous],
                      warmupIterations: Int,
                      syntheticSamples: Int,
                      thin: Int)(implicit rng: RNG): (Int, Double, Double) = {
-    val (syntheticValues, trueOutput) = synthesize(syntheticSamples)
-    val model = fit(syntheticValues)
+    val (syntheticValues, trueOutput) =
+      priorGenerator
+        .flatMap { priorParams =>
+          val (d, r) = fn(Real.seq(priorParams))
+          d.generator
+            .repeat(syntheticSamples)
+            .zip(Generator.real(r))
+        }
+        .get(rng, emptyEvaluator)
 
-    val (samples, diag) =
-      model.sampleWithDiagnostics(sampler,
-                                  Chains,
-                                  warmupIterations,
-                                  (Samples / Chains) * thin,
-                                  true,
-                                  1,
-                                  thin)
+    val model =
+      RandomVariable
+        .traverse(priors.map(_.param))
+        .flatMap { priorParams =>
+          val (d, r) = fn(priorParams)
+          RandomVariable
+            .fit(d, syntheticValues)
+            .map { _ =>
+              r
+            }
+        }
+    val (samples, diag) = model.sampleWithDiagnostics(sampler,
+                                                      Chains,
+                                                      warmupIterations,
+                                                      (Samples / Chains) * thin,
+                                                      true,
+                                                      1,
+                                                      thin)
 
     val maxRHat = diag.map(_.rHat).max
     val minEffectiveSampleSize = diag.map(_.effectiveSampleSize).min
