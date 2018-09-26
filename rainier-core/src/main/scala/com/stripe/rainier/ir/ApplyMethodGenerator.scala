@@ -5,12 +5,13 @@ final private case class ApplyMethodGenerator(classPrefix: String,
                                               outputMethods: Seq[Int])
     extends MethodGenerator {
   val isStatic: Boolean = false
-  val methodName: String = "apply"
-  val methodDesc: String = "([D[D[D)V"
+  val methodName: String = "output"
+  val methodDesc: String = "([D[DI)D"
 
-  outputMethods.zipWithIndex.foreach {
-    case (m, i) =>
-      storeOutput(i) { callExprMethod(m) }
+  loadOutputIndex()
+  tableSwitch(outputMethods) {
+    case Some(m) => callExprMethod(m)
+    case None    => constant(0.0)
   }
-  returnVoid()
+  returnDouble()
 }

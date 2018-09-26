@@ -24,34 +24,6 @@ trait Compiler {
                     outputs: Seq[Real]): ir.CompiledFunction
 }
 
-final case class InstrumentingCompiler(orig: Compiler, printEvery: Int)
-    extends Compiler {
-  var count: Long = 0L
-  var nanos: Long = 0L
-  def compileUnsafe(inputs: Seq[Variable],
-                    outputs: Seq[Real]): ir.CompiledFunction = {
-    val cf = orig.compileUnsafe(inputs, outputs)
-    new ir.CompiledFunction {
-      val numInputs = cf.numInputs
-      val numGlobals = cf.numGlobals
-      val numOutputs = cf.numOutputs
-      def apply(inputs: Array[Double],
-                globals: Array[Double],
-                outputs: Array[Double]): Unit = {
-        count += 1
-        val t1 = System.nanoTime
-        cf(inputs, globals, outputs)
-        val t2 = System.nanoTime
-        nanos += (t2 - t1)
-        if (count % printEvery == 0) {
-          println(
-            s"[InstrumentingCompiler] $count runs, ${nanos / count} ns/run")
-        }
-      }
-    }
-  }
-}
-
 final case class IRCompiler(methodSizeLimit: Int, classSizeLimit: Int)
     extends Compiler {
   def compileUnsafe(inputs: Seq[Variable],
