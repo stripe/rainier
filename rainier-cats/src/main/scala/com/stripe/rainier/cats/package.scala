@@ -51,6 +51,9 @@ private[cats] class MonadRandomVariable extends Monad[RandomVariable] {
       f: A => RandomVariable[B]): RandomVariable[B] =
     fa.flatMap(f)
 
+  override def product[A, B](fa: RandomVariable[A], fb: RandomVariable[B]): RandomVariable[(A, B)] =
+    fa.zip(fb)
+
   @tailrec final def tailRecM[A, B](a: A)(
       f: A => RandomVariable[Either[A, B]]): RandomVariable[B] =
     f(a).value match {
