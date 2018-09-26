@@ -154,7 +154,7 @@ private class Translator {
   private def ref(ir: IR): Ref =
     ir match {
       case r: Ref         => r
-      case VarDef(sym, _) => VarRef(sym)
+      case VarDef(sym, _) => VarRef(sym, ir.level)
       case _              => sys.error("Should only see refs and vardefs")
     }
 
@@ -174,24 +174,27 @@ private class Translator {
   and its ref equally well.
    */
   private class SymCache[K] {
-    var cache: Map[(List[Ref], K), Sym] = Map.empty
+    var cache: Map[(List[Ref], K), (Sym, Int)] = Map.empty
     def memoize(irKeys: Seq[List[IR]], opKey: K, ir: => IR): IR = {
       val refKeys = irKeys.map { l =>
         l.map(ref)
       }
-      val hit = refKeys.foldLeft(Option.empty[Sym]) {
+      val hit = refKeys.foldLeft(Option.empty[(Sym, Int)]) {
         case (opt, k) =>
           opt.orElse { cache.get((k, opKey)) }
       }
       hit match {
-        case Some(sym) =>
+        case Some((sym, level)) =>
           if (!irKeys.head.collect { case d: VarDef => d }.isEmpty)
             sys.error("VarRef was used before its VarDef")
-          VarRef(sym)
+          VarRef(sym, level)
         case None =>
           val sym = Sym.freshSym()
-          cache += (refKeys.head, opKey) -> sym
-          new VarDef(sym, ir)
+          val rhs = ir
+          val k = (refKeys.head, opKey)
+          val v = (sym, rhs.level)
+          cache += k -> v
+          VarDef(sym, rhs)
       }
     }
   }

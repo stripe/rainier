@@ -79,7 +79,7 @@ private object VarTypes {
         case v: VarDef =>
           map(v.sym) += 1
           traverse(v.rhs)
-        case VarRef(sym) =>
+        case VarRef(sym, _) =>
           map(sym) += 1
         case b: BinaryIR =>
           traverse(b.left)

@@ -47,7 +47,7 @@ final private case class ExprMethodGenerator(method: MethodDef,
               traverse(v.rhs)
             }
         }
-      case VarRef(sym) =>
+      case VarRef(sym, _) =>
         varTypes(sym) match {
           case Inline =>
             sys.error("Should not have references to inlined vars")
@@ -56,7 +56,7 @@ final private case class ExprMethodGenerator(method: MethodDef,
           case Global(i) =>
             loadGlobalVar(i)
         }
-      case MethodRef(sym) =>
+      case MethodRef(sym, _) =>
         callExprMethod(sym.id)
       case _: MethodDef =>
         sys.error("Should not have nested method defs")

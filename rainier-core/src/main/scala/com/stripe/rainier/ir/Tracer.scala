@@ -84,7 +84,7 @@ object Tracer {
               println(s"  val $n = $r")
               n
           }
-        case VarRef(sym) =>
+        case VarRef(sym, _) =>
           varTypes(sym) match {
             case Inline =>
               sys.error("Should not have references to inlined vars")
@@ -93,7 +93,7 @@ object Tracer {
             case Global(i) =>
               s"globals($i)"
           }
-        case MethodRef(sym) =>
+        case MethodRef(sym, _) =>
           val i = sym.id
           s"f$i(params, globals)"
         case _: MethodDef =>

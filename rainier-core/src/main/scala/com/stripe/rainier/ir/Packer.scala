@@ -41,6 +41,6 @@ private class Packer(methodSizeLimit: Int) {
     val s = Sym.freshSym()
     val md = new MethodDef(s, rhs)
     methodDefs(s) = md
-    MethodRef(s)
+    MethodRef(s, md.level)
   }
 }

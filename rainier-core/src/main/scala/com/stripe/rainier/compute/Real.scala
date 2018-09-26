@@ -87,7 +87,7 @@ final private object NegInfinity extends Real
 sealed trait NonConstant extends Real
 
 final class Variable extends NonConstant {
-  private[compute] val param = new ir.Parameter
+  private[compute] val param = new ir.Parameter(0)
 }
 
 final private case class Unary(original: NonConstant, op: ir.UnaryOp)
