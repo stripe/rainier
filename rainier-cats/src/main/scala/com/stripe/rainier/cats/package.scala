@@ -21,6 +21,10 @@ private[cats] class MonadGenerator extends Monad[Generator] {
   override def map[A, B](fa: Generator[A])(f: A => B): Generator[B] =
     fa.map(f)
 
+  override def product[A, B](fa: Generator[A],
+                             fb: Generator[B]): Generator[(A, B)] =
+    fa.zip(fb)
+
   def flatMap[A, B](fa: Generator[A])(f: A => Generator[B]): Generator[B] =
     fa.flatMap(f)
 
