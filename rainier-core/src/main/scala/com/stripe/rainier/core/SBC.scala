@@ -19,16 +19,17 @@ final case class SBC[T, L <: Distribution[T]](priors: Seq[Continuous],
 
   val priorGenerator = Generator.traverse(priors.map(_.generator))
 
-  def posteriorSamples(nSamples: Int)(implicit rng: RNG): List[T] =
-    RandomVariable
-      .traverse(priors.map(_.param))
-      .flatMap { priorParams =>
-        val (d, _) = fn(priorParams)
-        RandomVariable
-          .fit(d, synthesize(1000)._1)
-          .map(_.generator)
-      }
-      .sample(nSamples)
+  def posteriorSamples(nSamples: Int)(implicit rng: RNG) /**: List[T]**/ =
+    model(1000).sample(nSamples)
+//    RandomVariable
+//      .traverse(priors.map(_.param))
+//      .flatMap { priorParams =>
+//        val (d, _) = fn(priorParams)
+//        RandomVariable
+//          .fit(d, synthesize(1000)._1)
+//          .map(_.generator)
+//      }
+//      .sample(nSamples)
 
   def animate(sampler: Sampler,
               warmupIterations: Int,
