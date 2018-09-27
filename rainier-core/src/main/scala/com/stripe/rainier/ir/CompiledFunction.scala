@@ -43,12 +43,12 @@ object CompiledFunction {
     val numGlobals = varTypes.globals.size
     val numOutputs = outputMeths.size
 
-    val acg = new ApplyClassGenerator(classPrefix,
-                                      classSizeLimit,
-                                      outputMeths.map(_.sym.id),
-                                      numInputs,
-                                      numGlobals,
-                                      numOutputs)
+    val ocg = new OutputClassGenerator(classPrefix,
+                                       classSizeLimit,
+                                       outputMeths.map(_.sym.id),
+                                       numInputs,
+                                       numGlobals,
+                                       numOutputs)
 
     val ecgs = methodNodes
       .groupBy(_._1)
@@ -60,7 +60,7 @@ object CompiledFunction {
 
     val parentClassLoader = this.getClass.getClassLoader
     val classLoader =
-      new GeneratedClassLoader(acg, ecgs, parentClassLoader)
+      new GeneratedClassLoader(ocg, ecgs, parentClassLoader)
 
     classLoader.newInstance
   }

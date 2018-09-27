@@ -141,6 +141,11 @@ private trait MethodGenerator {
     methodNode.visitLabel(endLabel)
   }
 
+  def throwNPE(): Unit = {
+    methodNode.visitInsn(ACONST_NULL)
+    methodNode.visitInsn(ATHROW)
+  }
+
   /**
   The local var layout is assumed to be:
   For static methods:
