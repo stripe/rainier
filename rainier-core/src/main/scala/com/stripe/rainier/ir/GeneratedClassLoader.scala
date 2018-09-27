@@ -1,6 +1,6 @@
 package com.stripe.rainier.ir
 
-private[ir] class GeneratedClassLoader(cf: ApplyClassGenerator,
+private[ir] class GeneratedClassLoader(cf: OutputClassGenerator,
                                        helpers: Seq[ExprClassGenerator],
                                        parent: ClassLoader)
     extends ClassLoader(parent) {
