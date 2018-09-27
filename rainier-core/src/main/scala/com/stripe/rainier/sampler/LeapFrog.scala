@@ -31,8 +31,8 @@ private[sampler] case class LeapFrog(nVars: Int,
   def tryStepping(params: Array[Double], stepSize: Double): Double = {
     System.arraycopy(params, 0, buf1, 0, inputOutputSize)
     buf1(stepSizeIndex) = stepSize
-    initialHalfThenFullStep(buf1, globals, buf2)
-    finalHalfStep(buf2, globals, buf1)
+    CompiledFunction.run(initialHalfThenFullStep, buf1, globals, buf2)
+    CompiledFunction.run(finalHalfStep, buf2, globals, buf1)
     logAcceptanceProb(params, buf1)
   }
 
@@ -43,16 +43,16 @@ private[sampler] case class LeapFrog(nVars: Int,
       implicit rng: RNG): Double = {
     initializePs(params)
     params(stepSizeIndex) = stepSize
-    initialHalfThenFullStep(params, globals, buf2)
+    CompiledFunction.run(initialHalfThenFullStep, params, globals, buf2)
     var i = 1
     var in = buf2
     var out = buf1
     while (i < n) {
-      twoFullSteps(in, globals, out)
+      CompiledFunction.run(twoFullSteps, in, globals, out)
       val tmp = in; in = out; out = tmp
       i += 1
     }
-    finalHalfStep(in, globals, out)
+    CompiledFunction.run(finalHalfStep, in, globals, out)
     val p = logAcceptanceProb(params, out)
     if (p > Math.log(rng.standardUniform))
       System.arraycopy(out, 0, params, 0, inputOutputSize)
@@ -82,7 +82,7 @@ private[sampler] case class LeapFrog(nVars: Int,
       i += 1
     }
     val array = new Array[Double](inputOutputSize)
-    initialHalfThenFullStep(buf1, globals, array)
+    CompiledFunction.run(initialHalfThenFullStep, buf1, globals, array)
     initializePs(array)
     array
   }

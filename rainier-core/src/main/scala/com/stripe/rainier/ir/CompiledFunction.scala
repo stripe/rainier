@@ -5,16 +5,6 @@ trait CompiledFunction {
   def numGlobals: Int
   def numOutputs: Int
   def output(inputs: Array[Double], globals: Array[Double], output: Int): Double
-
-  def apply(inputs: Array[Double],
-            globals: Array[Double],
-            outputs: Array[Double]): Unit = {
-    var i = 0
-    while (i < numOutputs) {
-      outputs(i) = output(inputs, globals, i)
-      i += 1
-    }
-  }
 }
 
 object CompiledFunction {
@@ -63,5 +53,17 @@ object CompiledFunction {
       new GeneratedClassLoader(ocg, ecgs, parentClassLoader)
 
     classLoader.newInstance
+  }
+
+  def run(cf: CompiledFunction,
+          inputs: Array[Double],
+          globals: Array[Double],
+          outputs: Array[Double]): Unit = {
+    var i = 0
+    val n = cf.numOutputs
+    while (i < n) {
+      outputs(i) = cf.output(inputs, globals, i)
+      i += 1
+    }
   }
 }

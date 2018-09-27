@@ -1,6 +1,6 @@
 package com.stripe.rainier.compute
 
-import com.stripe.rainier.ir
+import com.stripe.rainier.ir.CompiledFunction
 
 trait Compiler {
   def compile(inputs: Seq[Variable], output: Real): Array[Double] => Double =
@@ -14,20 +14,19 @@ trait Compiler {
     val fn = { in: Array[Double] =>
       val globals = new Array[Double](cf.numGlobals)
       val out = new Array[Double](cf.numOutputs)
-      cf(in, globals, out)
+      CompiledFunction.run(cf, in, globals, out)
       out
     }
     fn
   }
 
-  def compileUnsafe(inputs: Seq[Variable],
-                    outputs: Seq[Real]): ir.CompiledFunction
+  def compileUnsafe(inputs: Seq[Variable], outputs: Seq[Real]): CompiledFunction
 }
 
 final case class IRCompiler(methodSizeLimit: Int, classSizeLimit: Int)
     extends Compiler {
   def compileUnsafe(inputs: Seq[Variable],
-                    outputs: Seq[Real]): ir.CompiledFunction = {
+                    outputs: Seq[Real]): CompiledFunction = {
     val translator = new Translator
     val params = inputs.map { v =>
       v.param
@@ -35,6 +34,6 @@ final case class IRCompiler(methodSizeLimit: Int, classSizeLimit: Int)
     val irs = outputs.map { r =>
       translator.toIR(r)
     }
-    ir.CompiledFunction(params, irs, methodSizeLimit, classSizeLimit)
+    CompiledFunction(params, irs, methodSizeLimit, classSizeLimit)
   }
 }
