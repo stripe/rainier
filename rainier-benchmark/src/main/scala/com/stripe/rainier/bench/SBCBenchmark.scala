@@ -18,7 +18,6 @@ abstract class SBCBenchmark {
 
   protected def sbc: SBC[_, _]
   protected def syntheticSamples: Int = 1000
-  protected def batches: Int = 1
 
   val s = sbc
   val model = build
@@ -67,7 +66,6 @@ class SBCNormalBenchmark extends SBCBenchmark {
 
 class SBCNormalBenchmark100k extends SBCNormalBenchmark {
   override def syntheticSamples = 100000
-  override def batches = 100
 }
 
 class SBCLaplaceBenchmark extends SBCBenchmark {
@@ -78,5 +76,4 @@ class SBCLaplaceBenchmark extends SBCBenchmark {
 
 class SBCLaplaceBenchmark100k extends SBCLaplaceBenchmark {
   override def syntheticSamples = 100000
-  override def batches = 100
 }

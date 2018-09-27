@@ -39,7 +39,6 @@ class RandomVariable[+T](val value: T, private val targets: Set[Target]) {
   def record(sampler: Sampler,
              warmupIterations: Int,
              iterations: Int,
-             batches: Int = 1,
              keepEvery: Int = 1)(implicit rng: RNG): Recording = {
     val posteriorParams = Sampler
       .sample(Context(targets),
@@ -80,7 +79,6 @@ class RandomVariable[+T](val value: T, private val targets: Set[Target]) {
       sampler: Sampler,
       warmupIterations: Int,
       iterations: Int,
-      batches: Int = 1,
       keepEvery: Int = 1)(implicit rng: RNG, tg: ToGenerator[T, V]): List[V] = {
     val ctx = Context(targets)
     val fn = tg(value).prepare(ctx)
@@ -96,7 +94,6 @@ class RandomVariable[+T](val value: T, private val targets: Set[Target]) {
                                warmupIterations: Int,
                                iterations: Int,
                                parallel: Boolean = true,
-                               batches: Int = 1,
                                keepEvery: Int = 1)(
       implicit rng: RNG,
       tg: ToGenerator[T, V]): (List[V], List[Diagnostics]) = {
