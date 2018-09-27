@@ -42,7 +42,7 @@ class RandomVariable[+T](val value: T, private val targets: Set[Target]) {
              batches: Int = 1,
              keepEvery: Int = 1)(implicit rng: RNG): Recording = {
     val posteriorParams = Sampler
-      .sample(Context(batches, targets),
+      .sample(Context(targets),
               sampler,
               warmupIterations,
               iterations,
@@ -82,7 +82,7 @@ class RandomVariable[+T](val value: T, private val targets: Set[Target]) {
       iterations: Int,
       batches: Int = 1,
       keepEvery: Int = 1)(implicit rng: RNG, tg: ToGenerator[T, V]): List[V] = {
-    val ctx = context(batches)
+    val ctx = Context(targets)
     val fn = tg(value).prepare(ctx)
     Sampler
       .sample(ctx, sampler, warmupIterations, iterations, keepEvery)
@@ -100,7 +100,7 @@ class RandomVariable[+T](val value: T, private val targets: Set[Target]) {
                                keepEvery: Int = 1)(
       implicit rng: RNG,
       tg: ToGenerator[T, V]): (List[V], List[Diagnostics]) = {
-    val ctx = context(batches)
+    val ctx = Context(targets)
     val fn = tg(value).prepare(ctx)
     val range = if (parallel) 1.to(chains).par else 1.to(chains)
     val samples =
@@ -133,7 +133,7 @@ class RandomVariable[+T](val value: T, private val targets: Set[Target]) {
       implicit tg: ToGenerator[T, U]): RandomVariable[Generator[U]] =
     new RandomVariable(tg(value), targets)
 
-  def context(batches: Int) = Context(batches, targets)
+  def context = Context(targets)
 }
 
 /**

@@ -7,7 +7,7 @@ class Target(val real: Real, val placeholders: Map[Variable, Array[Double]]) {
     else
       placeholders.head._2.size
 
-  val placeholderVariables = placeholders.keys.toList
+  val placeholderVariables: List[Variable] = placeholders.keys.toList
   val variables: Set[Variable] = RealOps.variables(real) -- placeholderVariables
 
   def inlined: Real =
@@ -22,6 +22,15 @@ class Target(val real: Real, val placeholders: Map[Variable, Array[Double]]) {
       }
       Real.sum(inlinedRows.toList)
     }
+
+  def updater: (Real, List[Variable]) = {
+    val newVars = placeholderVariables.map { _ =>
+      new Variable
+    }
+    val newReal =
+      PartialEvaluator.inline(real, placeholderVariables.zip(newVars).toMap)
+    (newReal, newVars)
+  }
 }
 
 object Target {
