@@ -71,9 +71,14 @@ case class Context(base: Real, batched: Seq[Target]) {
 object Context {
   def apply(real: Real): Context = Context(real, Nil)
   def apply(targets: Iterable[Target]): Context = {
-    val (noPlaceholders, hasPlaceholders) =
-      targets.partition(_.placeholders.isEmpty)
-    val base = Real.sum(noPlaceholders.map(_.real))
-    Context(base, hasPlaceholders.toList)
+    val (base, batched) =
+      targets.foldLeft((Real.zero, List.empty[Target])) {
+        case ((b, l), t) =>
+          t.maybeInlined match {
+            case Some(r) => ((b + r), l)
+            case None    => (b, t :: l)
+          }
+      }
+    Context(base, batched)
   }
 }
