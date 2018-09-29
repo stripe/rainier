@@ -40,7 +40,6 @@ class Target(val real: Real, val placeholders: Map[Variable, Array[Double]]) {
         i += 1
         result match {
           case l: Line if (l.ax.size > MAX_INLINE_TERMS) =>
-            println("!" + l.ax.size)
             return None
           case _ => ()
         }
