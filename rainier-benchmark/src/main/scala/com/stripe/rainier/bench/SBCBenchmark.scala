@@ -18,28 +18,27 @@ abstract class SBCBenchmark {
 
   protected def sbc: SBC[_, _]
   protected def syntheticSamples: Int = 1000
-  protected def batches: Int = 1
 
   val s = sbc
-  val context = build
+  val model = build
+  val context = model.context
   val vars = context.variables
   val cf = compile
-  val inlined = inline
+  val inlined = context.density
   val inlinecf = compileInlined
 
   @Benchmark
   def synthesize = s.synthesize(syntheticSamples)
 
   @Benchmark
-  def build = s.model(syntheticSamples).context(batches)
+  def build = s.model(syntheticSamples)
 
   @Benchmark
   def compile =
     context.compileDensity
 
   @Benchmark
-  def inline =
-    context.base + context.batched.inlined
+  def inline = model.context.density
 
   @Benchmark
   def compileInlined =
@@ -67,7 +66,6 @@ class SBCNormalBenchmark extends SBCBenchmark {
 
 class SBCNormalBenchmark100k extends SBCNormalBenchmark {
   override def syntheticSamples = 100000
-  override def batches = 100
 }
 
 class SBCLaplaceBenchmark extends SBCBenchmark {
@@ -78,5 +76,4 @@ class SBCLaplaceBenchmark extends SBCBenchmark {
 
 class SBCLaplaceBenchmark100k extends SBCLaplaceBenchmark {
   override def syntheticSamples = 100000
-  override def batches = 100
 }
