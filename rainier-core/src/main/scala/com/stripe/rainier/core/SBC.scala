@@ -19,17 +19,19 @@ final case class SBC[T, L <: Distribution[T]](priors: Seq[Continuous],
 
   val priorGenerator = Generator.traverse(priors.map(_.generator))
 
-  def posteriorSamples(nSamples: Int)(implicit rng: RNG) /**: List[T]**/ =
-    model(1000).sample(nSamples)
-//    RandomVariable
-//      .traverse(priors.map(_.param))
-//      .flatMap { priorParams =>
-//        val (d, _) = fn(priorParams)
-//        RandomVariable
-//          .fit(d, synthesize(1000)._1)
-//          .map(_.generator)
-//      }
-//      .sample(nSamples)
+  def posteriorSamples(nSamples: Int): List[Double] = {
+    implicit val rng: RNG = ScalaRNG(1528666602081L)
+    val values = synthesize(1000)._1
+    RandomVariable
+      .traverse(priors.map(_.param))
+      .flatMap { priorParams =>
+        val (d, r) = fn(priorParams)
+        RandomVariable
+          .fit(d, values)
+          .map(_ => r)
+      }
+      .sample(nSamples)
+  }
 
   def animate(sampler: Sampler,
               warmupIterations: Int,
@@ -78,6 +80,18 @@ final case class SBC[T, L <: Distribution[T]](priors: Seq[Continuous],
   def fit(values: Seq[T]): RandomVariable[Real] =
     RandomVariable
       .traverse(priors.map(_.param))
+      .flatMap { priorParams =>
+        val (d, r) = fn(priorParams)
+        RandomVariable
+          .fit(d, values)
+          .map { _ =>
+            r
+          }
+      }
+
+  def fit2(values: Seq[T],
+           paramsRV: RandomVariable[Seq[Real]]): RandomVariable[Real] =
+    paramsRV
       .flatMap { priorParams =>
         val (d, r) = fn(priorParams)
         RandomVariable
