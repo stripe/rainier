@@ -1,12 +1,11 @@
 package com.stripe.rainier.sampler
 
-import com.stripe.rainier.compute._
-import com.stripe.rainier.ir.CompiledFunction
-
-private[sampler] case class LeapFrog(nVars: Int,
-                                     initialHalfThenFullStep: CompiledFunction,
-                                     twoFullSteps: CompiledFunction,
-                                     finalHalfStep: CompiledFunction) {
+private[sampler] case class LeapFrog(
+  nVars: Int,
+  initialHalfThenFullStep: Array[Double] => Array[Double] ,
+  twoFullSteps: Array[Double] => Array[Double],
+  finalHalfStep: Array[Double] => Array[Double]
+) {
   /*
   Params layout:
   array(0..(n-1)) == ps
@@ -20,19 +19,13 @@ private[sampler] case class LeapFrog(nVars: Int,
   private val buf1 = new Array[Double](inputOutputSize)
   private val buf2 = new Array[Double](inputOutputSize)
 
-  private val globalsSize =
-    List(initialHalfThenFullStep, twoFullSteps, finalHalfStep)
-      .map(_.numGlobals)
-      .max
-  private val globals = new Array[Double](globalsSize)
-
   //Compute the acceptance probability for a single step at this stepSize without
   //re-initializing the ps, or modifying params
   def tryStepping(params: Array[Double], stepSize: Double): Double = {
     System.arraycopy(params, 0, buf1, 0, inputOutputSize)
     buf1(stepSizeIndex) = stepSize
-    CompiledFunction.run(initialHalfThenFullStep, buf1, globals, buf2)
-    CompiledFunction.run(finalHalfStep, buf2, globals, buf1)
+    buf2 = initialHalfThenFullStep(buf1) //CompiledFunction.run(initialHalfThenFullStep, buf1, globals, buf2)
+    buf1 = finalHalfStep(buf2) // CompiledFunction.run(finalHalfStep, buf2, globals, buf1)
     logAcceptanceProb(params, buf1)
   }
 
@@ -43,16 +36,16 @@ private[sampler] case class LeapFrog(nVars: Int,
       implicit rng: RNG): Double = {
     initializePs(params)
     params(stepSizeIndex) = stepSize
-    CompiledFunction.run(initialHalfThenFullStep, params, globals, buf2)
+    buf2 = initialHalfThenFullStep(params) //CompiledFunction.run(initialHalfThenFullStep, params, globals, buf2)
     var i = 1
     var in = buf2
     var out = buf1
     while (i < n) {
-      CompiledFunction.run(twoFullSteps, in, globals, out)
+      out = twoFullSteps(in) //CompiledFunction.run(twoFullSteps, in, globals, out)
       val tmp = in; in = out; out = tmp
       i += 1
     }
-    CompiledFunction.run(finalHalfStep, in, globals, out)
+    out = finalHalfStep(in)//CompiledFunction.run(finalHalfStep, in, globals, out)
     val p = logAcceptanceProb(params, out)
     if (p > Math.log(rng.standardUniform))
       System.arraycopy(out, 0, params, 0, inputOutputSize)
@@ -82,7 +75,7 @@ private[sampler] case class LeapFrog(nVars: Int,
       i += 1
     }
     val array = new Array[Double](inputOutputSize)
-    CompiledFunction.run(initialHalfThenFullStep, buf1, globals, array)
+    array = initialHalfThenFullStep(buf1) //CompiledFunction.run(initialHalfThenFullStep, buf1, globals, array)
     initializePs(array)
     array
   }
@@ -122,47 +115,88 @@ private[sampler] case class LeapFrog(nVars: Int,
 }
 
 private[sampler] object LeapFrog {
-  def apply(context: Context): LeapFrog = {
-    val qs = context.variables
-    val ps = qs.map { _ =>
-      new Variable
-    }
-    val potential = new Variable
-    val stepSize = new Variable
-    val inputs: List[Variable] = (ps ++ qs) :+ potential :+ stepSize
+  def apply(df: DensityFunction): LeapFrog = {
+//    val qs = context.variables
+//    val ps = qs.map { _ =>
+//      new Variable
+//    }
+//    val potential = new Variable
+//    val stepSize = new Variable
+//    val inputs: List[Variable] = (ps ++ qs) :+ potential :+ stepSize
+//
+//    val newPotential = context.density * -1
+//    val grad = context.gradient.map { g =>
+//      g * -1
+//    }
 
-    val newPotential = context.density * -1
-    val grad = context.gradient.map { g =>
-      g * -1
+//    val halfPs =
+//      ps.zip(grad).map {
+//        case (p, g) => p - (stepSize / 2) * g
+//      }
+//    val halfPsNewQs =
+//      qs.zip(halfPs).map { case (q, p) => q + (stepSize * p) }
+//
+//    val initialHalfThenFullStep =
+//      (halfPs ++ halfPsNewQs) :+ newPotential :+ stepSize
+
+//    val fullPs =
+//      ps.zip(grad).map { case (p, g) => p - stepSize * g }
+//
+//    val fullPsNewQs =
+//      qs.zip(fullPs).map { case (q, p) => q + (stepSize * p) }
+
+//    val twoFullSteps =
+//      (fullPs ++ fullPsNewQs) :+ newPotential :+ stepSize
+
+//    val finalHalfStep =
+//      (halfPs ++ qs) :+ newPotential :+ stepSize
+
+    def split(inputs: Array[Double]): (Array[Double], Array[Double], Double, Double) = {
+      (require (inputs.size = densityFun.nVars * 2 + 2))
+      val nVars = densityFun.nVars
+      (inputs.slice(0, nVars), inputs.slice(nVars, nVars * 2), inputs(nVars * 2), inputs(nVars * 2 + 1))
     }
 
-    val halfPs =
-      ps.zip(grad).map {
+    def grad(params: Array[Double]) = densityFun.gradient(params).map{ g => g * -1 }
+
+    def newPotential(params: Array[Double]) = densityFun.density(params) * -1
+
+    def halfPs(qs: Array[Double], ps: Array[Double]): Array[Double] =
+      ps.zip(grad(qs)).map{
         case (p, g) => p - (stepSize / 2) * g
       }
-    val halfPsNewQs =
-      qs.zip(halfPs).map { case (q, p) => q + (stepSize * p) }
 
-    val initialHalfThenFullStep =
-      (halfPs ++ halfPsNewQs) :+ newPotential :+ stepSize
+    def halfPsNewQs(qs: Array[Double], ps: Array[Double]): Array[Double] = {
+      val halfNewPs = halfPs(qs, ps)
+      qs.zip(halfNewPs).map{ case (q, p) => q + (stepSize * q)
+    }
 
-    val fullPs =
-      ps.zip(grad).map { case (p, g) => p - stepSize * g }
+    def initialHalfThenFullStep(inputs: Array[Double]): Array[Double] = {
+      val (ps, qs, _, stepSize) = split(inputs)
+      (halfPs(qs, ps) ++ halfPsNewQs(qs, ps)) :+ newPotential(qs) :+ stepSize
+    }
 
-    val fullPsNewQs =
-      qs.zip(fullPs).map { case (q, p) => q + (stepSize * p) }
+    def fullPs(qs: Array[Double], ps: Array[Double]): Array[Double] =
+      ps.zip(grad(qs)).map{ case (p, g) => p - stepSize * g }
 
-    val twoFullSteps =
-      (fullPs ++ fullPsNewQs) :+ newPotential :+ stepSize
+    def fullPsNewQs(qs: Array[Double], ps: Array[Double]): Array[Double] =
+      qs.zip(fullPs(qs, ps)).map{ case (q, p) = > q + (stepSize * p) }
 
-    val finalHalfStep =
-      (halfPs ++ qs) :+ newPotential :+ stepSize
+    def twoFullSteps(inputs: Array[Double]): Array[Double] = {
+      val (ps, qs, potential, stepSize) = split(inputs)
+      (fullPs(qs, ps) ++ fullPsNewQs(ps, qs)) :+ newPotential(qs) :+ stepSize
+    }
 
-    new LeapFrog(
-      qs.size,
-      context.compiler.compileUnsafe(inputs, initialHalfThenFullStep),
-      context.compiler.compileUnsafe(inputs, twoFullSteps),
-      context.compiler.compileUnsafe(inputs, finalHalfStep)
+    def finalHalfStep(inputs: Array[Double]): Array[Double] = {
+      val (ps, qs, _, stepSize) = split(inputs)
+      (halfPs(qs, ps) ++ qs) :+ newPotential(qs) :+ stepSize
+    }
+
+    LeapFrog(
+      densityFun.nVars,
+      initialHalfThenFullStep _,
+      twoFullSteps _,
+      finalHalfStep _
     )
   }
 }
