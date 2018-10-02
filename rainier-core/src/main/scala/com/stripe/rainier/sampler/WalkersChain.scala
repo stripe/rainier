@@ -30,7 +30,8 @@ final private case class WalkersChain(density: DensityFunction,
           to + (z * (from - to))
       }
 
-    val newScore = density.density(newVariables)
+    density.update(newVariables)
+    val newScore = density.density
     val diff = (Math.log(z) * (variables.size - 1)) + newScore - score
 
     val accepted = Math.log(rng.standardUniform) < diff
@@ -54,7 +55,10 @@ private object WalkersChain {
           .toArray
       }
       .toVector
-    val scores = walkers.map(density.density)
+    val scores = walkers.map { array =>
+      density.update(array)
+      density.density
+    }
     WalkersChain(density, walkers, scores, true, 0)
   }
 }

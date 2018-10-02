@@ -2,9 +2,9 @@ package com.stripe.rainier.sampler
 
 private[sampler] case class LeapFrog(
     nVars: Int,
-    initialHalfThenFullStep: Array[Double] => Array[Double],
-    twoFullSteps: Array[Double] => Array[Double],
-    finalHalfStep: Array[Double] => Array[Double]
+    initialHalfThenFullStep: Array[Double] => Unit,
+    twoFullSteps: Array[Double] => Unit,
+    finalHalfStep: Array[Double] => Unit
 ) {
   /*
   Params layout:
@@ -17,7 +17,6 @@ private[sampler] case class LeapFrog(
   private val stepSizeIndex = potentialIndex + 1
   private val inputOutputSize = stepSizeIndex + 1
   private val buf1 = new Array[Double](inputOutputSize)
-  private val buf2 = new Array[Double](inputOutputSize)
 
   private def update(sourceArray: Array[Double],
                      targetArray: Array[Double]): Unit =
@@ -28,8 +27,8 @@ private[sampler] case class LeapFrog(
   def tryStepping(params: Array[Double], stepSize: Double): Double = {
     update(params, buf1)
     buf1(stepSizeIndex) = stepSize
-    update(initialHalfThenFullStep(buf1), buf2)
-    update(finalHalfStep(buf2), buf1)
+    initialHalfThenFullStep(buf1)
+    finalHalfStep(buf1)
     logAcceptanceProb(params, buf1)
   }
 
@@ -40,19 +39,17 @@ private[sampler] case class LeapFrog(
       implicit rng: RNG): Double = {
     initializePs(params)
     params(stepSizeIndex) = stepSize
-    update(initialHalfThenFullStep(params), buf2)
+    update(params, buf1)
+    initialHalfThenFullStep(buf1)
     var i = 1
-    var in = buf2
-    var out = buf1
     while (i < n) {
-      update(twoFullSteps(in), out)
-      val tmp = in; in = out; out = tmp
+      twoFullSteps(buf1)
       i += 1
     }
-    update(finalHalfStep(in), out)
-    val p = logAcceptanceProb(params, out)
+    finalHalfStep(buf1)
+    val p = logAcceptanceProb(params, buf1)
     if (p > Math.log(rng.standardUniform))
-      update(out, params)
+      update(buf1, params)
     p
   }
 
@@ -79,7 +76,8 @@ private[sampler] case class LeapFrog(
       i += 1
     }
     val array = new Array[Double](inputOutputSize)
-    update(initialHalfThenFullStep(buf1), array)
+    initialHalfThenFullStep(buf1)
+    update(buf1, array)
     initializePs(array)
     array
   }
@@ -121,18 +119,17 @@ private[sampler] case class LeapFrog(
 private[sampler] object LeapFrog {
   def apply(density: DensityFunction): LeapFrog = {
 
-    private val nVars = density.nVars
-    private val potentialIndex = nVars * 2
-    private val stepSizeIndex = potentialIndex + 1
-//    private val inputOutputSize = stepSizeIndex + 1
-//    private val buf1 = new Array[Double](inputOutputSize)
-//    private val buf2 = new Array[Double](inputOutputSize)
+    val nVars = density.nVars
+    val potentialIndex = nVars * 2
+    val stepSizeIndex = potentialIndex + 1
 
     def halfPs(inputs: Array[Double]): Unit = {
       density.update(inputs)
       var i = 0
-      while (i < nVars) {
-        inputs(i) = inputs(i) - (inputs(stepSizeIndex) / 2) * density.gradient(i)
+      val j = nVars
+      while (i < j) {
+        inputs(i) = inputs(i) - (inputs(stepSizeIndex) / 2) * density.gradient(
+          i)
         i += i
       }
     }
@@ -140,13 +137,15 @@ private[sampler] object LeapFrog {
     def halfPsNewQs(inputs: Array[Double]): Unit = {
       halfPs(inputs)
       var i = nVars
-      while (i < 2 * nVars) {
+      val j = nVars * 2
+      while (i < j) {
         inputs(i) = inputs(i) + (inputs(stepSizeIndex) * inputs(i - nVars))
+        i += 1
       }
     }
 
     def initialHalfThenFullStep(inputs: Array[Double]): Unit = {
-      halfPsNewQs(inputs, outputs)
+      halfPsNewQs(inputs)
       density.update(inputs)
       inputs(potentialIndex) = density.density
     }
@@ -154,16 +153,20 @@ private[sampler] object LeapFrog {
     def fullPs(inputs: Array[Double]) = {
       density.update(inputs) // may not need this
       var i = 0
-      while (i < nVars) {
+      val j = nVars
+      while (i < j) {
         inputs(i) = inputs(i) - inputs(stepSizeIndex) * density.gradient(i)
+        i += 1
       }
     }
 
     def fullPsNewQs(inputs: Array[Double]): Unit = {
       fullPs(inputs)
       var i = nVars
-      while (i < nVars * 2) {
+      val j = nVars * 2
+      while (i < j) {
         inputs(i) = inputs(i) + inputs(stepSizeIndex) * inputs(i - nVars)
+        i += 1
       }
     }
 
@@ -173,7 +176,7 @@ private[sampler] object LeapFrog {
       inputs(potentialIndex) = density.density
     }
 
-    def finalHalfStep(inputs: Array[Double]): Array[Double] = {
+    def finalHalfStep(inputs: Array[Double]): Unit = {
       halfPs(inputs)
       density.update(inputs)
       inputs(potentialIndex) = density.density

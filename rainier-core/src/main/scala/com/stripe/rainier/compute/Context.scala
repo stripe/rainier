@@ -31,17 +31,10 @@ case class Context(base: Real, batched: Seq[Target]) {
 
   def densityFunction: DensityFunction = new DensityFunction {
     def nVars = variables.size
-    def density(params: Array[Double]) = compileDensity(params)
-    def gradient(params: Array[Double]) = compileGradient(params)
+    def update(vars: Array[Double]): Unit = ???
+    def density: Double = ???
+    def gradient(index: Int): Double = ???
   }
-
-  //these are for backwards compatibility to allow HMC to keep working
-  //they will not make sense in the general case going forward
-  lazy val density: Real =
-    batched.foldLeft(base) { case (r, t) => r + t.inlined }
-
-  lazy val gradient: List[Real] =
-    Gradient.derive(variables, density)
 }
 
 object Context {
