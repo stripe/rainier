@@ -129,7 +129,7 @@ private[sampler] object LeapFrog {
       val j = nVars
       while (i < j) {
         inputs(i) = inputs(i) - (inputs(stepSizeIndex) / 2) * density.gradient(
-          i)
+          i) * -1
         i += i
       }
     }
@@ -147,7 +147,7 @@ private[sampler] object LeapFrog {
     def initialHalfThenFullStep(inputs: Array[Double]): Unit = {
       halfPsNewQs(inputs)
       density.update(inputs)
-      inputs(potentialIndex) = density.density
+      inputs(potentialIndex) = density.density * -1
     }
 
     def fullPs(inputs: Array[Double]) = {
@@ -155,7 +155,7 @@ private[sampler] object LeapFrog {
       var i = 0
       val j = nVars
       while (i < j) {
-        inputs(i) = inputs(i) - inputs(stepSizeIndex) * density.gradient(i)
+        inputs(i) = inputs(i) - inputs(stepSizeIndex) * density.gradient(i) * -1
         i += 1
       }
     }
@@ -173,13 +173,13 @@ private[sampler] object LeapFrog {
     def twoFullSteps(inputs: Array[Double]): Unit = {
       fullPsNewQs(inputs)
       density.update(inputs)
-      inputs(potentialIndex) = density.density
+      inputs(potentialIndex) = density.density * -1
     }
 
     def finalHalfStep(inputs: Array[Double]): Unit = {
       halfPs(inputs)
       density.update(inputs)
-      inputs(potentialIndex) = density.density
+      inputs(potentialIndex) = density.density * -1
     }
 
     LeapFrog(
