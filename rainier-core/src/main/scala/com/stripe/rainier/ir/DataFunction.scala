@@ -2,6 +2,22 @@ package com.stripe.rainier.ir
 
 import scala.annotation.tailrec
 
+/*
+Input layout:
+- numParamInputs param inputs
+- for 0 <= i < data.size:
+   - data[i].size first-run inputs
+   - for 0 <= j <= batchBits:
+     - for 0 <= k < data[i].size:
+        - 2^j batch inputs
+
+Output layout:
+- numOutputs data-less outputs
+- for 0 <= i < data.size:
+   - numOutputs first-run outputs
+   - for 0 <= j <= batchBits:
+      - numOutputs batch outputs
+*/
 case class DataFunction(cf: CompiledFunction,
                         batchBits: Int,
                         numParamInputs: Int,
