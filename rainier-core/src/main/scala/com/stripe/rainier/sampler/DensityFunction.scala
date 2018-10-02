@@ -2,6 +2,7 @@ package com.stripe.rainier.sampler
 
 trait DensityFunction {
   def nVars: Int
-  def density(params: Array[Double]): Double
-  def gradient(params: Array[Double]): Array[Double]
+  def update(vars: Array[Double]): Unit
+  def density: Double
+  def gradient(index: Int): Double
 }

@@ -1,6 +1,6 @@
 package com.stripe.rainier.sampler
 
-final private case class WalkersChain(densityFunction: DensityFunction,
+final private case class WalkersChain(density: DensityFunction,
                                       walkers: Vector[Array[Double]],
                                       scores: Vector[Double],
                                       accepted: Boolean,
@@ -30,7 +30,7 @@ final private case class WalkersChain(densityFunction: DensityFunction,
           to + (z * (from - to))
       }
 
-    val newScore = densityFunction.density(newVariables)
+    val newScore = density.density(newVariables)
     val diff = (Math.log(z) * (variables.size - 1)) + newScore - score
 
     val accepted = Math.log(rng.standardUniform) < diff
@@ -42,19 +42,19 @@ final private case class WalkersChain(densityFunction: DensityFunction,
 }
 
 private object WalkersChain {
-  def apply(densityFunction: DensityFunction, nWalkers: Int)(
+  def apply(density: DensityFunction, nWalkers: Int)(
       implicit rng: RNG): WalkersChain = {
     val walkers = 1
       .to(nWalkers)
       .map { _ =>
-        1.to(densityFunction.nVars)
+        1.to(density.nVars)
           .map { _ =>
             rng.standardNormal
           }
           .toArray
       }
       .toVector
-    val scores = walkers.map(densityFunction.density)
-    WalkersChain(densityFunction, walkers, scores, true, 0)
+    val scores = walkers.map(density.density)
+    WalkersChain(density, walkers, scores, true, 0)
   }
 }

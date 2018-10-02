@@ -3,7 +3,7 @@ package com.stripe.rainier.sampler
 import scala.annotation.tailrec
 
 trait Sampler {
-  def sample(densityFunction: DensityFunction,
+  def sample(density: DensityFunction,
              warmupIterations: Int,
              iterations: Int,
              keepEvery: Int)(implicit rng: RNG): List[Array[Double]]
@@ -109,16 +109,16 @@ object Sampler {
     }
   }
 
-  def sample(densityFunction: DensityFunction,
+  def sample(density: DensityFunction,
              sampler: Sampler,
              warmupIterations: Int,
              iterations: Int,
              keepEvery: Int)(implicit rng: RNG): List[Array[Double]] =
-    if (densityFunction.nVars == 0)
+    if (density.nVars == 0)
       1.to(iterations / keepEvery).toList.map { _ =>
         Array.empty[Double]
       } else
       sampler
-        .sample(densityFunction, warmupIterations, iterations, keepEvery)
+        .sample(density, warmupIterations, iterations, keepEvery)
 
 }
