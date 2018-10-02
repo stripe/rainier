@@ -35,6 +35,13 @@ case class Context(base: Real, batched: Seq[Target]) {
     def density: Double = ???
     def gradient(index: Int): Double = ???
   }
+
+  //these are for backwards compatibility to allow HMC to keep working
+  lazy val density: Real =
+    batched.foldLeft(base) { case (r, t) => r + t.inlined }
+
+  lazy val gradient: List[Real] =
+    Gradient.derive(variables, density)
 }
 
 object Context {
