@@ -19,13 +19,17 @@ private[sampler] case class LeapFrog(
   private val buf1 = new Array[Double](inputOutputSize)
   private val buf2 = new Array[Double](inputOutputSize)
 
+  private def update(sourceArray: Array[Double],
+                     targetArray: Array[Double]): Unit =
+    System.arraycopy(sourceArray, 0, targetArray, 0, inputOutputSize)
+
   //Compute the acceptance probability for a single step at this stepSize without
   //re-initializing the ps, or modifying params
   def tryStepping(params: Array[Double], stepSize: Double): Double = {
-    System.arraycopy(params, 0, buf1, 0, inputOutputSize)
+    update(params, buf1)
     buf1(stepSizeIndex) = stepSize
-    System.arraycopy(initialHalfThenFullStep(buf1), 0, buf2, 0, inputOutputSize) //CompiledFunction.run(initialHalfThenFullStep, buf1, globals, buf2)
-    System.arraycopy(finalHalfStep(buf2), 0, buf1, 0, inputOutputSize) // CompiledFunction.run(finalHalfStep, buf2, globals, buf1)
+    update(initialHalfThenFullStep(buf1), buf2)
+    update(finalHalfStep(buf2), buf1)
     logAcceptanceProb(params, buf1)
   }
 
@@ -36,24 +40,19 @@ private[sampler] case class LeapFrog(
       implicit rng: RNG): Double = {
     initializePs(params)
     params(stepSizeIndex) = stepSize
-    System.arraycopy(
-      initialHalfThenFullStep(params),
-      0,
-      buf2,
-      0,
-      inputOutputSize) //CompiledFunction.run(initialHalfThenFullStep, params, globals, buf2)
+    update(initialHalfThenFullStep(params), buf2)
     var i = 1
     var in = buf2
     var out = buf1
     while (i < n) {
-      System.arraycopy(twoFullSteps(in), 0, out, 0, inputOutputSize) //CompiledFunction.run(twoFullSteps, in, globals, out)
+      update(twoFullSteps(in), out)
       val tmp = in; in = out; out = tmp
       i += 1
     }
-    System.arraycopy(finalHalfStep(in), 0, out, 0, inputOutputSize) //CompiledFunction.run(finalHalfStep, in, globals, out)
+    update(finalHalfStep(in), out)
     val p = logAcceptanceProb(params, out)
     if (p > Math.log(rng.standardUniform))
-      System.arraycopy(out, 0, params, 0, inputOutputSize)
+      update(out, params)
     p
   }
 
@@ -80,12 +79,7 @@ private[sampler] case class LeapFrog(
       i += 1
     }
     val array = new Array[Double](inputOutputSize)
-    System.arraycopy(
-      initialHalfThenFullStep(buf1),
-      0,
-      array,
-      0,
-      inputOutputSize) //CompiledFunction.run(initialHalfThenFullStep, buf1, globals, array)
+    update(initialHalfThenFullStep(buf1), array)
     initializePs(array)
     array
   }
@@ -126,40 +120,6 @@ private[sampler] case class LeapFrog(
 
 private[sampler] object LeapFrog {
   def apply(densityFun: DensityFunction): LeapFrog = {
-//    val qs = context.variables
-//    val ps = qs.map { _ =>
-//      new Variable
-//    }
-//    val potential = new Variable
-//    val stepSize = new Variable
-//    val inputs: List[Variable] = (ps ++ qs) :+ potential :+ stepSize
-//
-//    val newPotential = context.density * -1
-//    val grad = context.gradient.map { g =>
-//      g * -1
-//    }
-
-//    val halfPs =
-//      ps.zip(grad).map {
-//        case (p, g) => p - (stepSize / 2) * g
-//      }
-//    val halfPsNewQs =
-//      qs.zip(halfPs).map { case (q, p) => q + (stepSize * p) }
-//
-//    val initialHalfThenFullStep =
-//      (halfPs ++ halfPsNewQs) :+ newPotential :+ stepSize
-
-//    val fullPs =
-//      ps.zip(grad).map { case (p, g) => p - stepSize * g }
-//
-//    val fullPsNewQs =
-//      qs.zip(fullPs).map { case (q, p) => q + (stepSize * p) }
-
-//    val twoFullSteps =
-//      (fullPs ++ fullPsNewQs) :+ newPotential :+ stepSize
-
-//    val finalHalfStep =
-//      (halfPs ++ qs) :+ newPotential :+ stepSize
 
     def split(inputs: Array[Double])
       : (Array[Double], Array[Double], Double, Double) = {
