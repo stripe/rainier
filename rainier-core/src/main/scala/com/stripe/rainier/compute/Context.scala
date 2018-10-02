@@ -37,6 +37,7 @@ case class Context(base: Real, batched: Seq[Target]) {
   }
 
   //these are for backwards compatibility to allow HMC to keep working
+  //they will not make sense in the general case going forward
   lazy val density: Real =
     batched.foldLeft(base) { case (r, t) => r + t.inlined }
 
