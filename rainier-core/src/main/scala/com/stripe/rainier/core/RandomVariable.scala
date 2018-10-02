@@ -41,7 +41,7 @@ class RandomVariable[+T](val value: T, private val targets: Set[Target]) {
              iterations: Int,
              keepEvery: Int = 1)(implicit rng: RNG): Recording = {
     val posteriorParams = Sampler
-      .sample(Context(targets),
+      .sample(Context(targets).densityFunction,
               sampler,
               warmupIterations,
               iterations,
@@ -83,7 +83,11 @@ class RandomVariable[+T](val value: T, private val targets: Set[Target]) {
     val ctx = Context(targets)
     val fn = tg(value).prepare(ctx)
     Sampler
-      .sample(ctx, sampler, warmupIterations, iterations, keepEvery)
+      .sample(ctx.densityFunction,
+              sampler,
+              warmupIterations,
+              iterations,
+              keepEvery)
       .map { array =>
         fn(array)
       }
@@ -103,7 +107,11 @@ class RandomVariable[+T](val value: T, private val targets: Set[Target]) {
     val samples =
       range.map { _ =>
         Sampler
-          .sample(ctx, sampler, warmupIterations, iterations, keepEvery)
+          .sample(ctx.densityFunction,
+                  sampler,
+                  warmupIterations,
+                  iterations,
+                  keepEvery)
           .map { array =>
             (array, fn(array))
           }

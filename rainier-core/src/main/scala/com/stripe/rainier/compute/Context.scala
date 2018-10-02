@@ -1,5 +1,7 @@
 package com.stripe.rainier.compute
 
+import com.stripe.rainier.sampler.DensityFunction
+
 case class Context(base: Real, batched: Seq[Target]) {
   val compiler: Compiler = IRCompiler(200, 100)
 
@@ -23,6 +25,14 @@ case class Context(base: Real, batched: Seq[Target]) {
       df(fullInputs, globals, outputs)
       outputs(0)
     }
+  }
+
+  def compileGradient: Array[Double] => Array[Double] = ???
+
+  def densityFunction: DensityFunction = new DensityFunction {
+    def nVars = variables.size
+    def density(params: Array[Double]) = compileDensity(params)
+    def gradient(params: Array[Double]) = compileGradient(params)
   }
 
   //these are for backwards compatibility to allow HMC to keep working
