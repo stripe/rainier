@@ -47,6 +47,29 @@ class Target(val real: Real, val placeholders: Map[Variable, Array[Double]]) {
       Some(result)
     }
 
+  def batched(batchBits: Int): (List[Variable], List[Real]) = {
+    val (variables, outputs) =
+      0.to(batchBits)
+        .toList
+        .map { i =>
+          batch(i)
+        }
+        .unzip
+
+    (variables.flatten, outputs)
+  }
+
+  private def batch(bit: Int): (List[Variable], Real) =
+    0.until(1 << bit).foldLeft((List.empty[Variable], Real.zero)) {
+      case ((v, r), _) =>
+        val newVars = placeholderVariables.map { _ =>
+          new Variable
+        }
+        val newReal =
+          PartialEvaluator.inline(real, placeholderVariables.zip(newVars).toMap)
+        (v ++ newVars, r + newReal)
+    }
+
   def updater: (Real, List[Variable]) = {
     val newVars = placeholderVariables.map { _ =>
       new Variable

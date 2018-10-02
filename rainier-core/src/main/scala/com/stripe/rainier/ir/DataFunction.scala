@@ -17,7 +17,7 @@ Output layout:
    - numOutputs first-run outputs
    - for 0 <= j <= batchBits:
       - numOutputs batch outputs
-*/
+ */
 case class DataFunction(cf: CompiledFunction,
                         batchBits: Int,
                         numParamInputs: Int,
