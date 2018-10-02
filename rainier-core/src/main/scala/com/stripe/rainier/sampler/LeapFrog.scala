@@ -151,7 +151,7 @@ private[sampler] object LeapFrog {
     }
 
     def fullPs(inputs: Array[Double]) = {
-      density.update(inputs) // may not need this
+      density.update(inputs)
       var i = 0
       val j = nVars
       while (i < j) {
