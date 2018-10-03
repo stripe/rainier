@@ -14,10 +14,6 @@ object MAP {
   def optimize(density: DensityFunction,
                iterations: Int,
                stepSize: Double): Array[Double] = {
-    val cf = (params: Array[Double]) => {
-      density.update(params)
-      density.gradientVector
-    }
 
     val initialValues = 1
       .to(density.nVars)
@@ -27,10 +23,10 @@ object MAP {
       .toArray
     1.to(iterations).foldLeft(initialValues) {
       case (values, _) =>
-        val gradient = cf(values).toList
-        values.zip(gradient).map {
-          case (v, g) =>
-            v + (stepSize * g)
+        density.update(values)
+        values.zipWithIndex.map {
+          case (v, i) =>
+            v + (stepSize * density.gradient(i))
         }
     }
   }
