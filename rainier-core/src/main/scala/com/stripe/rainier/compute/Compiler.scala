@@ -89,3 +89,32 @@ final case class IRCompiler(methodSizeLimit: Int, classSizeLimit: Int)
     CompiledFunction(params, irs, methodSizeLimit, classSizeLimit)
   }
 }
+
+final case class InstrumentingCompiler(orig: Compiler, printEvery: Int)
+    extends Compiler {
+  var count: Long = 0L
+  var nanos: Long = 0L
+  def compileUnsafe(inputs: Seq[Variable],
+                    outputs: Seq[Real]): CompiledFunction = {
+    val cf = orig.compileUnsafe(inputs, outputs)
+    new CompiledFunction {
+      val numInputs = cf.numInputs
+      val numGlobals = cf.numGlobals
+      val numOutputs = cf.numOutputs
+      def output(inputs: Array[Double],
+                 globals: Array[Double],
+                 output: Int): Double = {
+        count += 1
+        val t1 = System.nanoTime
+        val result = cf.output(inputs, globals, output)
+        val t2 = System.nanoTime
+        nanos += (t2 - t1)
+        if (count % printEvery == 0) {
+          println(
+            s"[InstrumentingCompiler] $count runs, ${nanos / count} ns/run")
+        }
+        result
+      }
+    }
+  }
+}

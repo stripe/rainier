@@ -28,7 +28,7 @@ class Target(val real: Real, val placeholders: Map[Variable, Array[Double]]) {
       Real.sum(inlinedRows.toList)
     }
 
-  val MAX_INLINE_TERMS = 100
+  val MAX_INLINE_TERMS = 1000
   def maybeInlined: Option[Real] =
     if (placeholders.isEmpty)
       Some(real)
