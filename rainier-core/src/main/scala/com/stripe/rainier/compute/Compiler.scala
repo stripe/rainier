@@ -21,6 +21,7 @@ trait Compiler {
   }
 
   def compileTargets(targets: Iterable[Target],
+                     gradient: Boolean,
                      batchBits: Int): DataFunction = {
     val (base, batched) =
       targets.foldLeft((Real.zero, List.empty[Target])) {
@@ -30,12 +31,14 @@ trait Compiler {
             case None    => (b, t :: l)
           }
       }
-    compileTargets(base, batched, batchBits)
+    compileTargets(base, batched, gradient, batchBits)
   }
 
   def compileTargets(base: Real,
                      batched: List[Target],
+                     gradient: Boolean,
                      batchBits: Int): DataFunction = {
+
     val variables =
       batched
         .foldLeft(RealOps.variables(base)) {
@@ -45,11 +48,17 @@ trait Compiler {
         .toList
         .sortBy(_.param.sym.id)
 
+    def withGradient(real: Real): List[Real] =
+      if (gradient)
+        real :: Gradient.derive(variables, real)
+      else
+        List(real)
+
     val (batchVariables, batchOutputs) =
       batched.foldLeft((List.empty[Variable], List.empty[Real])) {
         case ((ins, outs), target) =>
           val (newIns, newOuts) = target.batched(batchBits)
-          (ins ++ newIns, outs ++ newOuts)
+          (ins ++ newIns, outs ++ newOuts.flatMap(withGradient))
       }
 
     val data = batched.map { target =>
@@ -58,7 +67,8 @@ trait Compiler {
       }.toArray
     }.toArray
 
-    val cf = compileUnsafe(variables ++ batchVariables, base :: batchOutputs)
+    val cf = compileUnsafe(variables ++ batchVariables,
+                           withGradient(base) ++ batchOutputs)
     DataFunction(cf, batchBits, variables.size, 1, data)
   }
 

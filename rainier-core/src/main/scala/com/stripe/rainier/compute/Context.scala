@@ -14,48 +14,14 @@ case class Context(base: Real, batched: Seq[Target]) {
 
   //convenience method for simple cases like Walkers
   def compileDensity: Array[Double] => Double = {
-    val batchedVariables = batched.flatMap(_.placeholderVariables)
-    val updaters = batched.map(_.updater)
-    val updaterVariables = updaters.flatMap(_._2)
-    val inputVars = variables ++ batchedVariables ++ updaterVariables
-    val outputs = base :: batched.map(_.real).toList ++ updaters
-      .map(_._1)
-      .toList
-    val cf = compiler.compileUnsafe(inputVars, outputs)
-
-    { inputs: Array[Double] =>
-      val globals = new Array[Double](cf.numGlobals)
-      //collect the log-prior from the `base` output
-      var output = cf.output(inputs, globals, 0)
-      val fullInputs = new Array[Double](inputVars.size)
-      System.arraycopy(inputs, 0, fullInputs, 0, inputs.size)
-      //for each of the targets, in order, collect the log-likelihood from the
-      //first observation, thereby also inializing any needed global state
-      batched.zipWithIndex.foreach {
-        case (target, j) =>
-          var i = inputs.size
-          target.placeholderVariables.foreach { v =>
-            fullInputs(i) = target.placeholders(v)(0)
-            i += 1
-          }
-          output += cf.output(fullInputs, globals, j + 1)
-      }
-      //for each of the targets, in turn, collect the log-likelihood from each of
-      //their remaining observations
-      batched.zipWithIndex.foreach {
-        case (target, j) =>
-          var k = 1
-          while (k < target.nRows) {
-            var i = inputs.size + batchedVariables.size
-            target.placeholderVariables.foreach { v =>
-              fullInputs(i) = target.placeholders(v)(k)
-              i += 1
-            }
-            output += cf.output(fullInputs, globals, j + batched.size + 1)
-            k += 1
-          }
-      }
-      output
+    val df = compiler.compileTargets(base, batched.toList, false, 4)
+    return { inputs: Array[Double] =>
+      val globals = new Array[Double](df.numGlobals)
+      val fullInputs = new Array[Double](df.numInputs)
+      val outputs = new Array[Double](1)
+      System.arraycopy(inputs, 0, fullInputs, 0, df.numParamInputs)
+      df(fullInputs, globals, outputs)
+      outputs(0)
     }
   }
 

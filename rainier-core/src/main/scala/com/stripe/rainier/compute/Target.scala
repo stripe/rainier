@@ -28,7 +28,7 @@ class Target(val real: Real, val placeholders: Map[Variable, Array[Double]]) {
       Real.sum(inlinedRows.toList)
     }
 
-  val MAX_INLINE_TERMS = 5000
+  val MAX_INLINE_TERMS = 100
   def maybeInlined: Option[Real] =
     if (placeholders.isEmpty)
       Some(real)
@@ -56,7 +56,7 @@ class Target(val real: Real, val placeholders: Map[Variable, Array[Double]]) {
         }
         .unzip
 
-    (variables.flatten, outputs)
+    (placeholderVariables ++ variables.flatten, real :: outputs)
   }
 
   private def batch(bit: Int): (List[Variable], Real) =

@@ -130,10 +130,10 @@ case class DataFunction(cf: CompiledFunction,
     var j = 0
     while (j < d.size) {
       val dj = d(j)
-      var k = 1
-      while (k <= batchSize) {
+      var k = 0
+      while (k < batchSize) {
         val inputIndex = batchStartIndex + (j * batchSize) + k
-        inputs(inputIndex) = dj(nextN + k)
+        inputs(inputIndex) = dj(nextN + k + 1)
         k += 1
       }
       j += 1
