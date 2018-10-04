@@ -13,18 +13,8 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
   private val buf1 = new Array[Double](inputOutputSize)
   private val buf2 = new Array[Double](nVars)
 
-  def halfPs(stepSize: Double): Unit = {
-    copyQsAndUpdateDensity()
-    var i = 0
-    val j = nVars
-    while (i < j) {
-      buf1(i) += (stepSize / 2) * density.gradient(i)
-      i += i
-    }
-  }
-
   def halfPsNewQs(stepSize: Double): Unit = {
-    halfPs(stepSize)
+    fullPs(stepSize / 2)
     var i = nVars
     val j = nVars * 2
     while (i < j) {
@@ -66,7 +56,7 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
   }
 
   def finalHalfStep(stepSize: Double): Unit = {
-    halfPs(stepSize)
+    fullPs(stepSize / 2)
     copyQsAndUpdateDensity()
     buf1(potentialIndex) = density.density * -1
   }
