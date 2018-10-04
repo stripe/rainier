@@ -10,14 +10,14 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
   private val nVars = density.nVars
   private val potentialIndex = nVars * 2
   private val inputOutputSize = potentialIndex + 1
-  private val buf1 = new Array[Double](inputOutputSize)
-  private val buf2 = new Array[Double](nVars)
+  private val pqBuf = new Array[Double](inputOutputSize)
+  private val qBuf = new Array[Double](nVars)
 
   def newQs(stepSize: Double): Unit = {
     var i = nVars
     val j = nVars * 2
     while (i < j) {
-      buf1(i) += (stepSize * buf1(i - nVars))
+      pqBuf(i) += (stepSize * pqBuf(i - nVars))
       i += 1
     }
   }
@@ -30,7 +30,7 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
   def initialHalfThenFullStep(stepSize: Double): Unit = {
     halfPsNewQs(stepSize)
     copyQsAndUpdateDensity()
-    buf1(potentialIndex) = density.density * -1
+    pqBuf(potentialIndex) = density.density * -1
   }
 
   def fullPs(stepSize: Double): Unit = {
@@ -38,7 +38,7 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
     var i = 0
     val j = nVars
     while (i < j) {
-      buf1(i) += stepSize * density.gradient(i)
+      pqBuf(i) += stepSize * density.gradient(i)
       i += 1
     }
   }
@@ -51,13 +51,13 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
   def twoFullSteps(stepSize: Double): Unit = {
     fullPsNewQs(stepSize: Double)
     copyQsAndUpdateDensity()
-    buf1(potentialIndex) = density.density * -1
+    pqBuf(potentialIndex) = density.density * -1
   }
 
   def finalHalfStep(stepSize: Double): Unit = {
     fullPs(stepSize / 2.0)
     copyQsAndUpdateDensity()
-    buf1(potentialIndex) = density.density * -1
+    pqBuf(potentialIndex) = density.density * -1
   }
 
   private def copy(sourceArray: Array[Double],
@@ -65,16 +65,16 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
     System.arraycopy(sourceArray, 0, targetArray, 0, inputOutputSize)
 
   private def copyQsAndUpdateDensity(): Unit = {
-    System.arraycopy(buf1, nVars, buf2, 0, nVars)
-    density.update(buf2)
+    System.arraycopy(pqBuf, nVars, qBuf, 0, nVars)
+    density.update(qBuf)
   }
   //Compute the acceptance probability for a single step at this stepSize without
   //re-initializing the ps, or modifying params
   def tryStepping(params: Array[Double], stepSize: Double): Double = {
-    copy(params, buf1)
+    copy(params, pqBuf)
     initialHalfThenFullStep(stepSize)
     finalHalfStep(stepSize)
-    logAcceptanceProb(params, buf1)
+    logAcceptanceProb(params, pqBuf)
   }
 
   //attempt to take N steps
@@ -83,7 +83,7 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
   def step(params: Array[Double], n: Int, stepSize: Double)(
       implicit rng: RNG): Double = {
     initializePs(params)
-    copy(params, buf1)
+    copy(params, pqBuf)
     initialHalfThenFullStep(stepSize)
     var i = 1
     while (i < n) {
@@ -91,9 +91,9 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
       i += 1
     }
     finalHalfStep(stepSize)
-    val p = logAcceptanceProb(params, buf1)
+    val p = logAcceptanceProb(params, pqBuf)
     if (p > Math.log(rng.standardUniform))
-      copy(buf1, params)
+      copy(pqBuf, params)
     p
   }
 
@@ -111,17 +111,17 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
   //matches the qs. That means when we initialize a new one
   //we need to compute the potential.
   def initialize(implicit rng: RNG): Array[Double] = {
-    java.util.Arrays.fill(buf1, 0.0)
+    java.util.Arrays.fill(pqBuf, 0.0)
     var i = nVars
     val j = nVars * 2
     while (i < j) {
-      buf1(i) = rng.standardNormal
+      pqBuf(i) = rng.standardNormal
       i += 1
     }
     val array = new Array[Double](inputOutputSize)
     copyQsAndUpdateDensity()
-    buf1(potentialIndex) = density.density
-    copy(buf1, array)
+    pqBuf(potentialIndex) = density.density
+    copy(pqBuf, array)
     initializePs(array)
     array
   }
