@@ -44,11 +44,6 @@ class Target(val real: Real, val placeholders: Map[Variable, Array[Double]]) {
           case _ => ()
         }
       }
-      result match {
-        case l: Line =>
-          println("**" + l.ax.size)
-        case _ => println("***")
-      }
       Some(result)
     }
 
