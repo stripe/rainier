@@ -14,11 +14,11 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
   private val buf2 = new Array[Double](nVars)
 
   def halfPs(stepSize: Double): Unit = {
-    copyQs()
+    copyQsAndUpdateDensity()
     var i = 0
     val j = nVars
     while (i < j) {
-      buf1(i) -= (stepSize / 2) * density.gradient(i) * -1
+      buf1(i) += (stepSize / 2) * density.gradient(i)
       i += i
     }
   }
@@ -35,16 +35,16 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
 
   def initialHalfThenFullStep(stepSize: Double): Unit = {
     halfPsNewQs(stepSize)
-    copyQs()
+    copyQsAndUpdateDensity()
     buf1(potentialIndex) = density.density * -1
   }
 
   def fullPs(stepSize: Double): Unit = {
-    copyQs()
+    copyQsAndUpdateDensity()
     var i = 0
     val j = nVars
     while (i < j) {
-      buf1(i) -= stepSize * density.gradient(i) * -1
+      buf1(i) += stepSize * density.gradient(i)
       i += 1
     }
   }
@@ -61,13 +61,13 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
 
   def twoFullSteps(stepSize: Double): Unit = {
     fullPsNewQs(stepSize: Double)
-    copyQs()
+    copyQsAndUpdateDensity()
     buf1(potentialIndex) = density.density * -1
   }
 
   def finalHalfStep(stepSize: Double): Unit = {
     halfPs(stepSize)
-    copyQs()
+    copyQsAndUpdateDensity()
     buf1(potentialIndex) = density.density * -1
   }
 
@@ -75,7 +75,7 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
                    targetArray: Array[Double]): Unit =
     System.arraycopy(sourceArray, 0, targetArray, 0, inputOutputSize)
 
-  private def copyQs(): Unit = {
+  private def copyQsAndUpdateDensity(): Unit = {
     System.arraycopy(buf1, nVars, buf2, 0, nVars)
     density.update(buf2)
   }
@@ -130,7 +130,7 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
       i += 1
     }
     val array = new Array[Double](inputOutputSize)
-    copyQs()
+    copyQsAndUpdateDensity()
     buf1(potentialIndex) = density.density
     copy(buf1, array)
     initializePs(array)
