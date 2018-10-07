@@ -78,14 +78,11 @@ private object DualAvg {
                                      params: Array[Double]): Double = {
     var stepSize = 1.0
     var logAcceptanceProb = lf.tryStepping(params, stepSize)
-    println(s"logAcceptanceProb: $logAcceptanceProb")
     val exponent = computeExponent(logAcceptanceProb)
     val doubleOrHalf = Math.pow(2, exponent)
     while (continueTuningStepSize(logAcceptanceProb, exponent)) {
       stepSize *= doubleOrHalf
-      println(s"stepSize: $stepSize")
       logAcceptanceProb = lf.tryStepping(params, stepSize)
-      println(s"logAcceptanceProb: $logAcceptanceProb")
     }
     stepSize
   }

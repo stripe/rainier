@@ -23,9 +23,6 @@ case class DataFunction(cf: CompiledFunction,
                         numParamInputs: Int,
                         numOutputs: Int,
                         data: Array[Array[Array[Double]]]) {
-  println(
-    s"DataFunction with $numParamInputs param inputs and $numOutputs outputs")
-
   val numInputs = cf.numInputs
   val numGlobals = cf.numGlobals
 

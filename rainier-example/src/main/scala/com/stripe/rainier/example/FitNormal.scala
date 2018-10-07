@@ -7,7 +7,7 @@ import com.stripe.rainier.repl._
 
 object FitNormal {
   def model(k: Int): RandomVariable[(Real, Real)] = {
-    val r = new scala.util.Random(123L)
+    val r = new scala.util.Random
     val trueMean = 3.0
     val trueStddev = 2.0
     val data = 1.to(k).map { i =>
@@ -22,7 +22,6 @@ object FitNormal {
   }
 
   def main(args: Array[String]): Unit = {
-    implicit val rng: RNG = ScalaRNG(123L)
     plot2D(model(1000).sample())
   }
 }

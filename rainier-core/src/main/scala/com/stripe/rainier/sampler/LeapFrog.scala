@@ -74,7 +74,6 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
     copy(params, pqBuf)
     initialHalfThenFullStep(stepSize)
     finalHalfStep(stepSize)
-    println(pqBuf.toList)
     logAcceptanceProb(params, pqBuf)
   }
 
@@ -147,11 +146,8 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
 
   private def logAcceptanceProb(from: Array[Double],
                                 to: Array[Double]): Double = {
-    println(
-      (kinetic(to), to(potentialIndex), kinetic(from), from(potentialIndex)))
     val deltaH = kinetic(to) + to(potentialIndex) - kinetic(from) - from(
       potentialIndex)
-    println(deltaH)
     if (deltaH.isNaN) { Math.log(0.0) } else { (-deltaH).min(0.0) }
   }
 
