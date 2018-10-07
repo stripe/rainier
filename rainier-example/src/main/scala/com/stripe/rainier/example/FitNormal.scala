@@ -2,12 +2,12 @@ package com.stripe.rainier.example
 
 import com.stripe.rainier.compute.Real
 import com.stripe.rainier.core._
-import com.stripe.rainier.repl._
 import com.stripe.rainier.sampler._
+import com.stripe.rainier.repl.plot2D
 
 object FitNormal {
   def model(k: Int): RandomVariable[(Real, Real)] = {
-    val r = new scala.util.Random
+    val r = new scala.util.Random(123L)
     val trueMean = 3.0
     val trueStddev = 2.0
     val data = 1.to(k).map { i =>
@@ -22,6 +22,7 @@ object FitNormal {
   }
 
   def main(args: Array[String]): Unit = {
-    plot2D(model(1000).sample(Walkers(100), 1000, 1000))
+    implicit val rng: RNG = ScalaRNG(123L)
+    plot2D(model(1000).sample(Walkers(10), 10, 10))
   }
 }
