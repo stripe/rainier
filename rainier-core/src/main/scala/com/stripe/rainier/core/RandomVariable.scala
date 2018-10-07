@@ -120,8 +120,6 @@ class RandomVariable[+T](val value: T, private val targets: Set[Target]) {
       def update(vars: Array[Double]): Unit = {
         System.arraycopy(vars, 0, inputs, 0, nVars)
         dataFn(inputs, globals, outputs)
-        val v = vars.toList
-        println(s"$v density: $density")
       }
       def density = outputs(0)
       def gradient(index: Int) = outputs(index + 1)
