@@ -83,7 +83,9 @@ private object DualAvg {
     val doubleOrHalf = Math.pow(2, exponent)
     while (continueTuningStepSize(logAcceptanceProb, exponent)) {
       stepSize *= doubleOrHalf
+      println(s"stepSize: $stepSize")
       logAcceptanceProb = lf.tryStepping(params, stepSize)
+      println(s"logAcceptanceProb: $logAcceptanceProb")
     }
     stepSize
   }

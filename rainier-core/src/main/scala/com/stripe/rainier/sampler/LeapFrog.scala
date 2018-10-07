@@ -74,6 +74,7 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
     copy(params, pqBuf)
     initialHalfThenFullStep(stepSize)
     finalHalfStep(stepSize)
+    println(pqBuf.toList)
     logAcceptanceProb(params, pqBuf)
   }
 
