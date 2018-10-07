@@ -3,6 +3,7 @@ package com.stripe.rainier.example
 import com.stripe.rainier.compute.Real
 import com.stripe.rainier.core._
 import com.stripe.rainier.repl._
+import com.stripe.rainier.sampler._
 
 object FitNormal {
   def model(k: Int): RandomVariable[(Real, Real)] = {
@@ -21,6 +22,6 @@ object FitNormal {
   }
 
   def main(args: Array[String]): Unit = {
-    plot2D(model(1000).sample())
+    plot2D(model(1000).sample(Walkers(100), 1000, 1000))
   }
 }
