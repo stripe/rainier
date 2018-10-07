@@ -7,24 +7,6 @@ import com.stripe.rainier.core._
 import com.stripe.rainier.sampler._
 import com.stripe.rainier.repl._
 
-/*
-model {
-  alpha ~ normal(0, 10);
-  beta ~ normal(0, 10);
-  sigma ~ cauchy(0, 2.5);
-
-  for (t in (K+1):T) {
-    real mu;
-    mu = alpha;
-
-    for (k in 1:K)
-      mu = mu + beta[k] * y[t - k];
-
-    y[t] ~ normal(mu, sigma);
-  }
-}
- */
-
 object ARK {
   def model(ys: Seq[Double]): RandomVariable[Map[String, Real]] =
     for {
