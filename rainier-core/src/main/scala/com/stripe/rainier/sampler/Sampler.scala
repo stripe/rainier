@@ -94,7 +94,7 @@ object Sampler {
   object Default {
     val sampler: Sampler = HMC(5)
     val iterations: Int = 10000
-    val warmupIterations: Int = 100000
+    val warmupIterations: Int = 1000
   }
 
   def diagnostics(chains: List[List[Array[Double]]]): List[Diagnostics] = {
