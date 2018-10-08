@@ -2,7 +2,6 @@ package com.stripe.rainier.example
 
 import com.stripe.rainier.compute.Real
 import com.stripe.rainier.core._
-import com.stripe.rainier.sampler._
 import com.stripe.rainier.repl._
 
 object FitNormal {
