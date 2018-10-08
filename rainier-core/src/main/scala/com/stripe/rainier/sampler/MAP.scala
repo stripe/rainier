@@ -1,33 +1,32 @@
 package com.stripe.rainier.sampler
 
-import com.stripe.rainier.compute._
-
 final case class MAP(stepSize: Double) extends Sampler {
-  def sample(context: Context,
+  def sample(density: DensityFunction,
              warmupIterations: Int,
              iterations: Int,
              keepEvery: Int)(implicit rng: RNG): List[Array[Double]] = {
-    val values = MAP.optimize(context, warmupIterations, stepSize)
+    val values = MAP.optimize(density, warmupIterations, stepSize)
     List(values)
   }
 }
 
 object MAP {
-  def optimize(context: Context,
+  def optimize(density: DensityFunction,
                iterations: Int,
                stepSize: Double): Array[Double] = {
-    val cf =
-      context.compiler
-        .compile(context.variables, context.density :: context.gradient)
-    val initialValues = context.variables.map { v =>
-      0.0
-    }.toArray
+
+    val initialValues = 1
+      .to(density.nVars)
+      .map { _ =>
+        0.0
+      }
+      .toArray
     1.to(iterations).foldLeft(initialValues) {
       case (values, _) =>
-        val _ :: gradient = cf(values).toList
-        values.zip(gradient).map {
-          case (v, g) =>
-            v + (stepSize * g)
+        density.update(values)
+        values.zipWithIndex.map {
+          case (v, i) =>
+            v + (stepSize * density.gradient(i))
         }
     }
   }
