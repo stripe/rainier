@@ -21,38 +21,22 @@ abstract class SBCBenchmark {
 
   val s = sbc
   val model = build
-  val context = model.context
-  val vars = context.variables
-  val cf = compile
-  val inlined = context.density
-  val inlinecf = compileInlined
+  val vars = model.variables
+  val df = model.density
 
   @Benchmark
-  def synthesize = s.synthesize(syntheticSamples)
+  def synthesize() = s.synthesize(syntheticSamples)
 
   @Benchmark
-  def build = s.model(syntheticSamples)
+  def build() = s.model(syntheticSamples)
 
   @Benchmark
-  def compile =
-    context.compileDensity
+  def compile() =
+    model.density
 
   @Benchmark
-  def inline = model.context.density
-
-  @Benchmark
-  def compileInlined =
-    context.compiler.compile(vars, inlined)
-
-  @Benchmark
-  def run =
-    cf(vars.map { _ =>
-      rng.standardUniform
-    }.toArray)
-
-  @Benchmark
-  def runInlined =
-    inlinecf(vars.map { _ =>
+  def run() =
+    df.update(vars.map { _ =>
       rng.standardUniform
     }.toArray)
 }

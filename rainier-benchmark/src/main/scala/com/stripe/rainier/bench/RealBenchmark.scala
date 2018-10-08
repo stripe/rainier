@@ -17,54 +17,35 @@ import com.stripe.rainier.sampler._
 abstract class RealBenchmark {
   implicit val rng: RNG = RNG.default
 
-  protected def expression: Real
+  def model: RandomVariable[_]
 
-  val expr = expression
-  val context = Context(expr)
-  val vars = context.variables
-  val grad = context.gradient
-  val cf = context.compiler.compile(vars, expr)
-  val gf = compileGradient
+  val m = model
+  val d = m.density
+  val v = m.variables
 
   @Benchmark
-  def build = expression
+  def build = model
+
   @Benchmark
-  def gradient = Context(expr).gradient
-  @Benchmark
-  def compileGradient = Context(expr).compiler.compile(vars, grad)
+  def compile = m.density
+
   @Benchmark
   def run =
-    cf(vars.map { _ =>
+    d.update(v.map { _ =>
       rng.standardUniform
     }.toArray)
-  @Benchmark
-  def runGradient =
-    gf(vars.map { _ =>
-      rng.standardUniform
-    }.toArray)
-  @Benchmark
-  def eval = {
-    val evaluator = new Evaluator(vars.map { v =>
-      v -> rng.standardUniform
-    }.toMap)
-    evaluator.toDouble(expr)
-  }
-  @Benchmark
-  def evalGradient = {
-    val evaluator = new Evaluator(vars.map { v =>
-      v -> rng.standardUniform
-    }.toMap)
-    grad.map { g =>
-      evaluator.toDouble(g)
-    }
-  }
 }
 
-class TrivialBenchmark extends RealBenchmark {
+abstract class ExpressionBenchmark extends RealBenchmark {
+  def model = RandomVariable.fromDensity(expression)
+  def expression: Real
+}
+
+class TrivialBenchmark extends ExpressionBenchmark {
   def expression = Real(3)
 }
 
-class NormalBenchmark extends RealBenchmark {
+class NormalBenchmark extends ExpressionBenchmark {
   def expression: Real = {
     val x = new Variable
     Real.sum(Range.BigDecimal(0d, 2d, 0.001d).toList.map { y =>
@@ -73,7 +54,7 @@ class NormalBenchmark extends RealBenchmark {
   }
 }
 
-class PoissonBenchmark extends RealBenchmark {
+class PoissonBenchmark extends ExpressionBenchmark {
   def expression: Real = {
     val x = new Variable
     Real.sum(0.to(10).toList.map { y =>
@@ -83,7 +64,7 @@ class PoissonBenchmark extends RealBenchmark {
 }
 
 class FullNormalBenchmark extends RealBenchmark {
-  def expression: Real = {
+  def model = {
     val r = new scala.util.Random
     val trueMean = 3.0
     val trueStddev = 2.0
@@ -91,45 +72,37 @@ class FullNormalBenchmark extends RealBenchmark {
       (r.nextGaussian * trueStddev) + trueMean
     }
 
-    val model = for {
+    for {
       mean <- Uniform(0, 10).param
       stddev <- Uniform(0, 10).param
       _ <- Normal(mean, stddev).fit(data)
     } yield (mean, stddev)
-
-    model.density
   }
 }
 
 class BernoulliBenchmark extends RealBenchmark {
-  def expression: Real = {
+  def model = {
     val data =
       List(false, true, false, false, false, false, false, false, false, true)
 
-    val model = for {
+    for {
       theta <- Uniform.standard.param
       _ <- Categorical.boolean(theta).fit(data)
     } yield theta
-
-    model.density
   }
 }
 
 class FunnelBenchmark extends RealBenchmark {
-  def expression: Real = {
-    val model =
-      for {
-        y <- Normal(0, 3).param
-        x <- RandomVariable.traverse(1.to(9).map { _ =>
-          Normal(0, (y / 2).exp).param
-        })
-      } yield (x(0), y)
-
-    model.density
-  }
+  def model =
+    for {
+      y <- Normal(0, 3).param
+      x <- RandomVariable.traverse(1.to(9).map { _ =>
+        Normal(0, (y / 2).exp).param
+      })
+    } yield (x(0), y)
 }
 
-class ElOne100ErrorBenchmark extends RealBenchmark {
+class ElOne100ErrorBenchmark extends ExpressionBenchmark {
   def expression: Real = {
     val r = new scala.util.Random
     val x = new Variable
@@ -142,7 +115,7 @@ class ElOne100ErrorBenchmark extends RealBenchmark {
   }
 }
 
-class ElOne1000ErrorBenchmark extends RealBenchmark {
+class ElOne1000ErrorBenchmark extends ExpressionBenchmark {
   def expression: Real = {
     val r = new scala.util.Random
     val x = new Variable
@@ -155,7 +128,7 @@ class ElOne1000ErrorBenchmark extends RealBenchmark {
   }
 }
 
-class ElTwo100ErrorBenchmark extends RealBenchmark {
+class ElTwo100ErrorBenchmark extends ExpressionBenchmark {
   def expression: Real = {
     val r = new scala.util.Random
     val x = new Variable
@@ -168,7 +141,7 @@ class ElTwo100ErrorBenchmark extends RealBenchmark {
   }
 }
 
-class ElTwo1000ErrorBenchmark extends RealBenchmark {
+class ElTwo1000ErrorBenchmark extends ExpressionBenchmark {
   def expression: Real = {
     val r = new scala.util.Random
     val x = new Variable
@@ -182,7 +155,7 @@ class ElTwo1000ErrorBenchmark extends RealBenchmark {
 }
 
 class DLMBenchmark extends RealBenchmark {
-  def expression: Real = {
+  def model = {
     implicit val rng = ScalaRNG(4)
     val n = 50
     val mu = 3.0 // AR(1) mean
@@ -218,8 +191,6 @@ class DLMBenchmark extends RealBenchmark {
         _ <- Normal(ns, static.sigD).fit(obs(i))
       } yield (static, ns :: states)
 
-    val fullModel = (0 until n).foldLeft(prior)(addTimePoint(_, _))
-
-    fullModel.density
+    (0 until n).foldLeft(prior)(addTimePoint(_, _))
   }
 }
