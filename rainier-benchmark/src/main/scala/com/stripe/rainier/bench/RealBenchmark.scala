@@ -24,13 +24,13 @@ abstract class RealBenchmark {
   val v = m.variables
 
   @Benchmark
-  def build = model
+  def build() = model
 
   @Benchmark
-  def compile = m.density
+  def compile() = m.density
 
   @Benchmark
-  def run =
+  def run() =
     d.update(v.map { _ =>
       rng.standardUniform
     }.toArray)
