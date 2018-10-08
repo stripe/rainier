@@ -61,6 +61,7 @@ case class DataFunction(cf: CompiledFunction,
       outputs(o) = cf.output(inputs, globals, o)
       o += 1
     }
+    //println("computeWithoutData " + outputs.toList)
   }
 
   private def computeFirstWithData(inputs: Array[Double],
@@ -81,6 +82,7 @@ case class DataFunction(cf: CompiledFunction,
       outputs(o) += cf.output(inputs, globals, outputStartIndex + o)
       o += 1
     }
+    //println("computeFirstWithData " + outputs.toList)
   }
 
   private def computeRestWithData(inputs: Array[Double],
@@ -151,5 +153,6 @@ case class DataFunction(cf: CompiledFunction,
       outputs(o) += cf.output(inputs, globals, outputIndex)
       o += 1
     }
+    //println("computeBatchOutputs " + outputs.toList)
   }
 }
