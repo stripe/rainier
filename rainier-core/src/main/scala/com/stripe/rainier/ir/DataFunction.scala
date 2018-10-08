@@ -23,7 +23,6 @@ case class DataFunction(cf: CompiledFunction,
                         numParamInputs: Int,
                         numOutputs: Int,
                         data: Array[Array[Array[Double]]]) {
-
   val numInputs = cf.numInputs
   val numGlobals = cf.numGlobals
 
@@ -148,7 +147,7 @@ case class DataFunction(cf: CompiledFunction,
                                   bit: Int): Unit = {
     var o = 0
     while (o < numOutputs) {
-      val outputIndex = startIndex + ((bit + 1) * numOutputs)
+      val outputIndex = startIndex + ((bit + 1) * numOutputs) + o
       outputs(o) += cf.output(inputs, globals, outputIndex)
       o += 1
     }

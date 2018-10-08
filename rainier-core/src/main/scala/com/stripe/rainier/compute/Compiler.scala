@@ -22,7 +22,7 @@ trait Compiler {
 
   def compileTargets(targets: Iterable[Target],
                      gradient: Boolean,
-                     batchBits: Int): DataFunction = {
+                     batchBits: Int): (Seq[Variable], DataFunction) = {
     val (base, batched) =
       targets.foldLeft((Real.zero, List.empty[Target])) {
         case ((b, l), t) =>
@@ -31,13 +31,6 @@ trait Compiler {
             case None    => (b, t :: l)
           }
       }
-    compileTargets(base, batched, gradient, batchBits)
-  }
-
-  def compileTargets(base: Real,
-                     batched: List[Target],
-                     gradient: Boolean,
-                     batchBits: Int): DataFunction = {
 
     val variables =
       batched
@@ -47,6 +40,16 @@ trait Compiler {
         }
         .toList
         .sortBy(_.param.sym.id)
+
+    val df = compileTargets(base, batched, variables, gradient, batchBits)
+    (variables, df)
+  }
+
+  def compileTargets(base: Real,
+                     batched: List[Target],
+                     variables: List[Variable],
+                     gradient: Boolean,
+                     batchBits: Int): DataFunction = {
 
     def withGradient(real: Real): List[Real] =
       if (gradient)
@@ -69,10 +72,19 @@ trait Compiler {
 
     val cf = compileUnsafe(variables ++ batchVariables,
                            withGradient(base) ++ batchOutputs)
-    DataFunction(cf, batchBits, variables.size, 1, data)
+    val numOutputs =
+      if (gradient)
+        variables.size + 1
+      else
+        1
+    DataFunction(cf, batchBits, variables.size, numOutputs, data)
   }
 
   def compileUnsafe(inputs: Seq[Variable], outputs: Seq[Real]): CompiledFunction
+}
+
+object Compiler {
+  def default: Compiler = IRCompiler(200, 100)
 }
 
 final case class IRCompiler(methodSizeLimit: Int, classSizeLimit: Int)
