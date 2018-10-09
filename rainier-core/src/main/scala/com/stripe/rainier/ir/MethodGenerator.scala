@@ -56,13 +56,6 @@ private trait MethodGenerator {
     loadGlobalVar(pos)
   }
 
-  def storeOutput(pos: Int)(fn: => Unit): Unit = {
-    loadOutputs()
-    methodNode.visitLdcInsn(pos)
-    fn
-    methodNode.visitInsn(DASTORE)
-  }
-
   def loadParameter(pos: Int): Unit = {
     loadParams()
     methodNode.visitLdcInsn(pos)
@@ -129,6 +122,30 @@ private trait MethodGenerator {
     methodNode.visitInsn(POP2)
   }
 
+  def tableSwitch[K](items: Seq[K])(fn: Option[K] => Unit): Unit = {
+    val defaultLabel = new Label
+    val endLabel = new Label
+    val itemsAndLabels = items.map { k =>
+      k -> (new Label)
+    }
+    val labels = itemsAndLabels.map(_._2)
+    methodNode.visitTableSwitchInsn(0, items.size - 1, defaultLabel, labels: _*)
+    itemsAndLabels.foreach {
+      case (k, l) =>
+        methodNode.visitLabel(l)
+        fn(Some(k))
+        methodNode.visitJumpInsn(GOTO, endLabel)
+    }
+    methodNode.visitLabel(defaultLabel)
+    fn(None)
+    methodNode.visitLabel(endLabel)
+  }
+
+  def throwNPE(): Unit = {
+    methodNode.visitInsn(ACONST_NULL)
+    methodNode.visitInsn(ATHROW)
+  }
+
   /**
   The local var layout is assumed to be:
   For static methods:
@@ -136,11 +153,11 @@ private trait MethodGenerator {
   1: globals array
   2..N: locally allocated doubles (two slots each)
 
-  Otherwise (eg apply):
+  for output():
   0: this
   1: params array
   2: globals array
-  3: output array
+  3: output index
   **/
   def loadParams(): Unit =
     methodNode.visitVarInsn(ALOAD, if (isStatic) 0 else 1)
@@ -153,6 +170,6 @@ private trait MethodGenerator {
   def loadThis(): Unit =
     methodNode.visitVarInsn(ALOAD, 0)
 
-  def loadOutputs(): Unit =
-    methodNode.visitVarInsn(ALOAD, 3)
+  def loadOutputIndex(): Unit =
+    methodNode.visitVarInsn(ILOAD, 3)
 }

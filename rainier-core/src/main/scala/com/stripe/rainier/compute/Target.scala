@@ -1,76 +1,83 @@
 package com.stripe.rainier.compute
 
 class Target(val real: Real, val placeholders: Map[Variable, Array[Double]]) {
-  val nRows = size(placeholders)
-  val placeholderVariables = placeholders.keys.toList
-
-  def inlined = inl(placeholders)
-
-  def batched(nBatches: Int): (Target, Real) =
+  val nRows =
     if (placeholders.isEmpty)
-      (this, Real.zero)
-    else if (nBatches == 1)
-      (Target.empty, inlined)
-    else {
-      val nCopies = nRows / nBatches
-      val (realCopies, variableCopies) = makeCopies(nCopies)
-      val newReal = Real.sum(realCopies)
-      val newPlaceholders = makePlaceholders(variableCopies, nBatches).toMap
-      val newTarget = new Target(newReal, newPlaceholders)
-      val remainder = makeRemainder(nBatches, nCopies)
-      (newTarget, remainder)
-    }
-
-  private def makeCopies(
-      nCopies: Int): (Seq[Real], Seq[Map[Variable, Variable]]) =
-    0.until(nCopies)
-      .map { _ =>
-        val variablesCopy = placeholderVariables.map { v =>
-          v -> new Variable
-        }.toMap
-        val realCopy = PartialEvaluator.inline(real, variablesCopy)
-        (realCopy, variablesCopy)
-      }
-      .unzip
-
-  private def makePlaceholders(variableCopies: Seq[Map[Variable, Variable]],
-                               nBatches: Int): Seq[(Variable, Array[Double])] =
-    for {
-      (copyVariables, i) <- variableCopies.zipWithIndex
-      (v, cv) <- copyVariables
-    } yield {
-      cv -> placeholders(v).slice(i * nBatches, (i + 1) * nBatches)
-    }
-
-  private def makeRemainder(nBatches: Int, nCopies: Int): Real =
-    if (nCopies * nBatches == nRows)
-      Real.zero
-    else {
-      val data = placeholders.map {
-        case (v, d) =>
-          v -> d.slice(nCopies * nBatches, nRows)
-      }
-      inl(data)
-    }
-
-  private def inl(data: Map[Variable, Array[Double]]): Real =
-    if (data.isEmpty)
-      real
-    else {
-      val inlined = 0.until(size(data)).map { i =>
-        val row: Map[Variable, Real] = data.map {
-          case (v, a) => v -> Real(a(i))
-        }
-        PartialEvaluator.inline(real, row)
-      }
-      Real.sum(inlined.toList)
-    }
-
-  private def size(data: Map[Variable, Array[Double]]): Int =
-    if (data.isEmpty)
       0
     else
-      data.head._2.size
+      placeholders.head._2.size
+
+  val placeholderVariables: List[Variable] = placeholders.keys.toList
+  val variables: Set[Variable] = RealOps.variables(real) -- placeholderVariables
+
+  private def inlineRow(i: Int): Real = {
+    val row: Map[Variable, Real] = placeholders.map {
+      case (v, a) => v -> Real(a(i))
+    }
+    PartialEvaluator.inline(real, row)
+  }
+
+  def inlined: Real =
+    if (placeholders.isEmpty)
+      real
+    else {
+      val inlinedRows =
+        0.until(nRows).map { i =>
+          inlineRow(i)
+        }
+      Real.sum(inlinedRows.toList)
+    }
+
+  val MAX_INLINE_TERMS = 2000
+  def maybeInlined: Option[Real] =
+    if (placeholders.isEmpty)
+      Some(real)
+    else {
+      var result = Real.zero
+      var i = 0
+      while (i < nRows) {
+        result += inlineRow(i)
+        i += 1
+        result match {
+          case l: Line if (l.ax.size > MAX_INLINE_TERMS) =>
+            return None
+          case _ => ()
+        }
+      }
+      Some(result)
+    }
+
+  def batched(batchBits: Int): (List[Variable], List[Real]) = {
+    val (variables, outputs) =
+      0.to(batchBits)
+        .toList
+        .map { i =>
+          batch(i)
+        }
+        .unzip
+
+    (placeholderVariables ++ variables.flatten, real :: outputs)
+  }
+
+  private def batch(bit: Int): (List[Variable], Real) =
+    0.until(1 << bit).foldLeft((List.empty[Variable], Real.zero)) {
+      case ((v, r), _) =>
+        val newVars = placeholderVariables.map { _ =>
+          new Variable
+        }
+        val newReal =
+          PartialEvaluator.inline(real, placeholderVariables.zip(newVars).toMap)
+        (v ++ newVars, r + newReal)
+    }
+
+  def updater: (Real, List[Variable]) = {
+    val newVars = placeholderVariables.map { _ =>
+      new Variable
+    }
+    val newReal =
+      PartialEvaluator.inline(real, placeholderVariables.zip(newVars).toMap)
+    (newReal, newVars)
+  }
 }
 
 object Target {

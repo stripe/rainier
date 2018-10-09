@@ -1,10 +1,9 @@
 package com.stripe.rainier.sampler
 
-import com.stripe.rainier.compute._
 import scala.annotation.tailrec
 
 trait Sampler {
-  def sample(context: Context,
+  def sample(density: DensityFunction,
              warmupIterations: Int,
              iterations: Int,
              keepEvery: Int)(implicit rng: RNG): List[Array[Double]]
@@ -95,7 +94,7 @@ object Sampler {
   object Default {
     val sampler: Sampler = HMC(5)
     val iterations: Int = 10000
-    val warmupIterations: Int = 100000
+    val warmupIterations: Int = 1000
   }
 
   def diagnostics(chains: List[List[Array[Double]]]): List[Diagnostics] = {
@@ -110,16 +109,16 @@ object Sampler {
     }
   }
 
-  def sample(context: Context,
+  def sample(density: DensityFunction,
              sampler: Sampler,
              warmupIterations: Int,
              iterations: Int,
              keepEvery: Int)(implicit rng: RNG): List[Array[Double]] =
-    if (context.variables.isEmpty)
+    if (density.nVars == 0)
       1.to(iterations / keepEvery).toList.map { _ =>
         Array.empty[Double]
       } else
       sampler
-        .sample(context, warmupIterations, iterations, keepEvery)
+        .sample(density, warmupIterations, iterations, keepEvery)
 
 }
