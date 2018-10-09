@@ -1,14 +1,13 @@
 package com.stripe.rainier.sampler
 
-import com.stripe.rainier.compute._
 import scala.collection.mutable.ListBuffer
 
 final case class Walkers(walkers: Int) extends Sampler {
-  def sample(context: Context,
+  def sample(density: DensityFunction,
              warmupIterations: Int,
              iterations: Int,
              keepEvery: Int)(implicit rng: RNG): List[Array[Double]] = {
-    val initial = WalkersChain(context, walkers)
+    val initial = WalkersChain(density, walkers)
     val warmedUp =
       1.to(warmupIterations)
         .foldLeft(initial) {

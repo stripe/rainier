@@ -34,26 +34,26 @@ trait Generator[T] { self =>
       }
   }
 
-  private[core] def prepare(context: Context)(
+  private[core] def prepare(variables: Seq[Variable])(
       implicit r: RNG): Array[Double] => T = {
     val reqs = requirements.toList
     if (reqs.isEmpty) { array =>
       {
         implicit val evaluator: Evaluator =
           new Evaluator(
-            context.variables
+            variables
               .zip(array)
               .toMap)
         get
       }
     } else {
-      val cf = context.compiler.compile(context.variables, reqs)
+      val cf = Compiler.default.compile(variables, reqs)
       array =>
         {
           val reqValues = cf(array)
           implicit val evaluator: Evaluator =
             new Evaluator(
-              context.variables
+              variables
                 .zip(array)
                 .toMap ++
                 reqs.zip(reqValues).toMap
