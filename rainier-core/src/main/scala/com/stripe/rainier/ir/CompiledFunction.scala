@@ -4,9 +4,7 @@ trait CompiledFunction {
   def numInputs: Int
   def numGlobals: Int
   def numOutputs: Int
-  def apply(inputs: Array[Double],
-            globals: Array[Double],
-            outputs: Array[Double]): Unit
+  def output(inputs: Array[Double], globals: Array[Double], output: Int): Double
 }
 
 object CompiledFunction {
@@ -35,12 +33,12 @@ object CompiledFunction {
     val numGlobals = varTypes.globals.size
     val numOutputs = outputMeths.size
 
-    val acg = new ApplyClassGenerator(classPrefix,
-                                      classSizeLimit,
-                                      outputMeths.map(_.sym.id),
-                                      numInputs,
-                                      numGlobals,
-                                      numOutputs)
+    val ocg = new OutputClassGenerator(classPrefix,
+                                       classSizeLimit,
+                                       outputMeths.map(_.sym.id),
+                                       numInputs,
+                                       numGlobals,
+                                       numOutputs)
 
     val ecgs = methodNodes
       .groupBy(_._1)
@@ -52,8 +50,20 @@ object CompiledFunction {
 
     val parentClassLoader = this.getClass.getClassLoader
     val classLoader =
-      new GeneratedClassLoader(acg, ecgs, parentClassLoader)
+      new GeneratedClassLoader(ocg, ecgs, parentClassLoader)
 
     classLoader.newInstance
+  }
+
+  def run(cf: CompiledFunction,
+          inputs: Array[Double],
+          globals: Array[Double],
+          outputs: Array[Double]): Unit = {
+    var i = 0
+    val n = cf.numOutputs
+    while (i < n) {
+      outputs(i) = cf.output(inputs, globals, i)
+      i += 1
+    }
   }
 }

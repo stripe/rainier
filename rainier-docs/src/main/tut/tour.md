@@ -110,13 +110,13 @@ val poisson10: RandomVariable[_] = Poisson(10).fit(sales)
 
 Although it's almost never necessary, we can reach into any `RandomVariable` and get its current probability `density`:
 
-```tut
+```
 poisson9.density
 ```
 
 We can use this to find the likelihood ratio of these two hypotheses. Since the density is stored in log space, the best way to do this numerically is to subtract the logs first before exponentiating:
 
-```tut
+```
 val lr = (poisson9.density - poisson10.density).exp
 ```
 
@@ -128,7 +128,7 @@ val poisson: RandomVariable[_] = e_x.flatMap{r => Poisson(r).fit(sales)}
 
 By the way: before, when we looked at `poisson9.density`, the model had no parameters and so we got a constant value back. Now, since the model's density is a function of the parameter value, we get something more opaque back. This is why inspecting `density` is not normally useful.
 
-```tut
+```
 poisson.density
 ```
 

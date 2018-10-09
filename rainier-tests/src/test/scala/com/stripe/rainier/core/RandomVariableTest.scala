@@ -19,16 +19,17 @@ class RandomVariableTest extends FunSuite {
 
   def sampleOnce[S, T](x: RandomVariable[S], paramValue: Double)(
       implicit s: ToGenerator[S, T]): (T, Double) = {
-    val variables = Context(x.density).variables
+    val variables = x.variables
     implicit val num: Evaluator =
       new Evaluator(variables.map { v =>
         v -> paramValue
       }.toMap)
     implicit val rng: RNG = RNG.default
-
-    val density = num.toDouble(x.density)
     val value = x.toGenerator.value.get
-    (value, density)
+
+    val df = x.density
+    df.update(Array.fill(variables.size)(paramValue))
+    (value, df.density)
   }
 
   def testMonadLaws[A, B, F, G, H, A1, B1, F1, G1, H1](
