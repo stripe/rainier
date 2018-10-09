@@ -22,15 +22,7 @@ final case class SBC[T, L <: Distribution[T]](priors: Seq[Continuous],
   def posteriorSamples(nSamples: Int): List[Double] = {
     implicit val rng: RNG = ScalaRNG(1528666602081L)
     val values = synthesize(1000)._1
-    RandomVariable
-      .traverse(priors.map(_.param))
-      .flatMap { priorParams =>
-        val (d, r) = fn(priorParams)
-        RandomVariable
-          .fit(d, values)
-          .map(_ => r)
-      }
-      .sample(nSamples)
+    fit(values).sample(nSamples)
   }
 
   def animate(sampler: Sampler,
