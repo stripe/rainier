@@ -6,7 +6,7 @@ import com.stripe.rainier.sampler._
 trait SBCModel {
   implicit val rng: RNG = ScalaRNG(1528673302081L)
   def sbc: SBC[_, _]
-  val sampler: Sampler = HMC(1)
+  val sampler: Sampler = Walkers(4) //HMC(1)
   val warmupIterations: Int = 10000
   val syntheticSamples: Int = 1000
   val nSamples: Int = 10
@@ -25,7 +25,7 @@ trait SBCModel {
 /** Continuous **/
 object SBCUniformNormal extends SBCModel {
   def sbc = SBC[Double, Continuous](Uniform(0, 1))((x: Real) => Normal(x, 1))
-  override val sampler = HMC(2)
+  //override val sampler = HMC(2)
   def goldset =
     List(0.3501402791470262, 0.3501402791470262, 0.3501402791470262,
       0.3957013241213891, 0.351640706229258, 0.40631693523734325,
