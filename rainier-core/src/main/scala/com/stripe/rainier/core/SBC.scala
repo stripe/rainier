@@ -81,18 +81,6 @@ final case class SBC[T, L <: Distribution[T]](priors: Seq[Continuous],
           }
       }
 
-  def fit2(values: Seq[T],
-           paramsRV: RandomVariable[Seq[Real]]): RandomVariable[Real] =
-    paramsRV
-      .flatMap { priorParams =>
-        val (d, r) = fn(priorParams)
-        RandomVariable
-          .fit(d, values)
-          .map { _ =>
-            r
-          }
-      }
-
   def model(syntheticSamples: Int)(implicit rng: RNG): RandomVariable[Real] =
     fit(synthesize(syntheticSamples)._1)
 
