@@ -95,7 +95,7 @@ class RandomVariable[+T](val value: T, private val targets: Set[Target]) {
     val samples =
       range.map { _ =>
         Sampler
-          .sample(density, sampler, warmupIterations, iterations, keepEvery)
+          .sample(density(), sampler, warmupIterations, iterations, keepEvery)
           .map { array =>
             (array, fn(array))
           }
@@ -109,10 +109,11 @@ class RandomVariable[+T](val value: T, private val targets: Set[Target]) {
     (allSamples, diagnostics)
   }
 
-  lazy val (variables, density) = compile()
-  private def compile() = {
-    val (variables, dataFn) = Compiler.default.compileTargets(targets, true, 4)
-    val densityFn = new DensityFunction {
+  lazy val (variables, dataFn) =
+    Compiler.default.compileTargets(targets, true, 4)
+
+  def density() =
+    new DensityFunction {
       val nVars = variables.size
       val inputs = new Array[Double](dataFn.numInputs)
       val globals = new Array[Double](dataFn.numGlobals)
@@ -124,8 +125,6 @@ class RandomVariable[+T](val value: T, private val targets: Set[Target]) {
       def density = outputs(0)
       def gradient(index: Int) = outputs(index + 1)
     }
-    (variables, densityFn)
-  }
 
   //this is really just here to allow destructuring in for{}
   def withFilter(fn: T => Boolean): RandomVariable[T] =
