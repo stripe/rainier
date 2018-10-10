@@ -19,6 +19,12 @@ final case class SBC[T, L <: Distribution[T]](priors: Seq[Continuous],
 
   val priorGenerator = Generator.traverse(priors.map(_.generator))
 
+  def posteriorSamples(nSamples: Int): List[Double] = {
+    implicit val rng: RNG = ScalaRNG(1528666602081L)
+    val values = synthesize(1000)._1
+    fit(values).sample(nSamples)
+  }
+
   def animate(sampler: Sampler,
               warmupIterations: Int,
               syntheticSamples: Int,

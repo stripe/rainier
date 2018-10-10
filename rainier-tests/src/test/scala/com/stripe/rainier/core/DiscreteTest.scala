@@ -68,13 +68,13 @@ class DiscreteTest extends FunSuite {
     List(0.01, 0.1, 0.5, 0.99, 1.0))
 
   /** Negative Binomial test **/
-  check("NegativeBinomial(10, x), x = 0.1, 0.5, 0.8")(
-    x => NegativeBinomial(10, x),
+  check("NegativeBinomial(x, 10), x = 0.1, 0.5, 0.8")(
+    x => NegativeBinomial(x, 10),
     List(0.1, 0.5, 0.8))
 
   /** Negative Binomial test, Normal Approximation **/
-  check("NegativeBinomial(300, x), x = 0.2, 0.4, 0.6")(
-    x => NegativeBinomial(300, x),
+  check("NegativeBinomial(x, 300), x = 0.2, 0.4, 0.6")(
+    x => NegativeBinomial(x, 300),
     List(0.2, 0.4, 0.6))
 
   /** Zero Inflated Geometric test **/
@@ -94,13 +94,13 @@ class DiscreteTest extends FunSuite {
 
   /** Zero Inflated Negative Binomial test **/
   check(
-    "NegativeBinomial(20, .3).constantInflated(0, psi), psi = 0.3, 0.5, 0.9")(
-    psi => NegativeBinomial(20, .3).constantInflated(0, psi),
+    "NegativeBinomial(.3, 20).constantInflated(0, psi), psi = 0.3, 0.5, 0.9")(
+    psi => NegativeBinomial(.3, 20).constantInflated(0, psi),
     List(0.3, 0.5, 0.9))
 
   /** Zero Inflated Negative Binomial test **/
-  check("NegativeBinomial(20, p).constantInflated(0, .3), p = 0.2, 0.5, 0.9")(
-    p => NegativeBinomial(20, p).constantInflated(0, .3),
+  check("NegativeBinomial(p, 20).constantInflated(0, .3), p = 0.2, 0.5, 0.9")(
+    p => NegativeBinomial(p, 20).constantInflated(0, .3),
     List(0.2, 0.5, 0.9))
 
   /** Zero Inflated Binomial test **/

@@ -2,6 +2,7 @@ package com.stripe.rainier.compute
 
 import com.stripe.rainier.ir
 import scala.collection.immutable.ListMap
+
 /*
 A Real is a DAG which represents a mathematical function
 from 0 or more real-valued input parameters to a single real-valued output.
