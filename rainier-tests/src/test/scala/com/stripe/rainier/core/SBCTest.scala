@@ -10,6 +10,18 @@ class SBCTest extends FunSuite {
     }
   }
 
+  /** Continuous **/
   check(SBCUniformNormal)
   check(SBCLogNormal)
+//  check(SBCExponential)
+//  check(SBCLaplace)
+
+  /** Discrete **/
+  check(SBCBernoulli)
+  check(SBCBinomial)
+//  check(SBCBinomialNormalApproximation)
+  check(SBCBinomialPoissonApproximation)
+  check(SBCGeometric)
+//  check(SBCGeometricZeroInflated)
+  check(SBCNegativeBinomial)
 }
