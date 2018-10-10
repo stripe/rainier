@@ -111,7 +111,7 @@ class RandomVariable[+T](val value: T, private val targets: Set[Target]) {
 
   lazy val (variables, density) = compile()
   private def compile() = {
-    val (variables, dataFn) = Compiler.default.compileTargets(targets, true, 0)
+    val (variables, dataFn) = Compiler.default.compileTargets(targets, true, 4)
     val densityFn = new DensityFunction {
       val nVars = variables.size
       val inputs = new Array[Double](dataFn.numInputs)
