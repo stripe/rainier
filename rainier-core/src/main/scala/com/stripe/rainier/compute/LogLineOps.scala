@@ -2,6 +2,7 @@ package com.stripe.rainier.compute
 
 import com.stripe.rainier.unused
 import scala.annotation.tailrec
+import scala.collection.immutable.ListMap
 
 private[compute] object LogLineOps {
   def multiply(left: LogLine, right: LogLine): Real = {
@@ -75,15 +76,17 @@ private[compute] object LogLineOps {
       if (factors.isEmpty)
         l
       else {
-        val ll = LogLine(factors.toMap)
+        val ll = LogLine(ListMap(factors: _*))
         val (newAx, newB) =
-          l.ax.foldLeft((Map[NonConstant, BigDecimal](ll -> l.b), Real.BigZero)) {
+          l.ax.foldLeft(
+            (ListMap[NonConstant, BigDecimal](ll -> l.b), Real.BigZero)) {
             case ((nAx, nB), (x, a)) =>
               multiply(ll, LogLine(x)) match {
                 case Infinity | NegInfinity =>
                   ??? //I think this should never happen
-                case Constant(v)     => (nAx, nB + v * a)
-                case nc: NonConstant => (LineOps.merge(nAx, Map(nc -> a)), nB)
+                case Constant(v) => (nAx, nB + v * a)
+                case nc: NonConstant =>
+                  (LineOps.merge(nAx, ListMap(nc -> a)), nB)
               }
           }
         Line(newAx, newB)
