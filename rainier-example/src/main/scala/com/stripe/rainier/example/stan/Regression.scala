@@ -1,4 +1,4 @@
-package com.stripe.rainier.example
+package com.stripe.rainier.example.stan
 
 import com.stripe.rainier.compute._
 import com.stripe.rainier.core._
