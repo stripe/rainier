@@ -4,7 +4,7 @@ private[compute] object LineOps {
 
   def sum(left: Line, right: Line): Real = {
     val merged = left.ax.merge(right.ax)
-    if (merged.size == 0)
+    if (merged.isEmpty)
       Constant(left.b + right.b)
     else
       simplify(merged, left.b + right.b)
