@@ -109,7 +109,7 @@ private final class Line private (val ax: Coefficients, val b: BigDecimal)
 
 private object Line {
   def apply(ax: Coefficients, b: BigDecimal): Line = {
-    require(ax.size > 0)
+    require(!ax.isEmpty)
     new Line(ax, b)
   }
 
@@ -136,7 +136,7 @@ together, you are better off adding their logs.
 private final case class LogLine(
     ax: Coefficients
 ) extends NonConstant {
-  require(ax.size > 0)
+  require(!ax.isEmpty)
 }
 
 private object LogLine {
