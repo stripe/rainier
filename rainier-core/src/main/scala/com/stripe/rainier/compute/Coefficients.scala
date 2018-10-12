@@ -15,7 +15,13 @@ private trait Coefficients {
 private object Coefficients {
   def apply(pair: (NonConstant, BigDecimal)): Coefficients =
     Single(pair._1, pair._2)
-  def apply(seq: Seq[(NonConstant, BigDecimal)]): Coefficients = ???
+  def apply(seq: Seq[(NonConstant, BigDecimal)]): Coefficients =
+    if(seq.isEmpty)
+      empty
+    else if(seq.size == 1)
+      apply(seq.head)
+    else
+      Many(ListMap(seq: _*))
 
   val empty: Coefficients = new Coefficients {
     val isEmpty = true
@@ -49,5 +55,19 @@ private object Coefficients {
     def mapCoefficients(fn: BigDecimal => BigDecimal) =
       Single(term, fn(coefficient))
     def merge(other: Coefficients) = other + (term -> coefficient)
+  }
+
+  private class Many(map: ListMap[NonConstant, Coefficients])
+    extends Coefficients {
+      val isEmpty = false
+      def coefficients = map.values
+      def terms = map.keys
+      def toList = map.toList
+      val single = None
+      def -(term: NonConstant) = ???
+      def +(pair: (NonConstant, BigDecimal)) = ???
+      def mapCoefficients(fn: BigDecimal => BigDecimal) =
+        Many(map.map{case (x,a) => x -> fn(a)})
+      def merge(other: Coefficients) = ???
   }
 }
