@@ -1,6 +1,6 @@
 package com.stripe.rainier.compute
 
-private trait Coefficients {
+private sealed trait Coefficients {
   def isEmpty: Boolean
   def coefficients: Seq[BigDecimal]
   def terms: Seq[NonConstant]
@@ -13,15 +13,19 @@ private trait Coefficients {
 }
 
 private object Coefficients {
+  val SMALL = 100
+
   def apply(pair: (NonConstant, BigDecimal)): Coefficients =
     Single(pair._1, pair._2)
   def apply(seq: Seq[(NonConstant, BigDecimal)]): Coefficients =
-    if(seq.isEmpty)
+    if (seq.isEmpty)
       empty
-    else if(seq.size == 1)
+    else if (seq.size == 1)
       apply(seq.head)
+    else if (seq.size <= SMALL)
+      Small(seq.toList)
     else
-      Many(ListMap(seq: _*))
+      new Large(seq.toList)
 
   val empty: Coefficients = new Coefficients {
     val isEmpty = true
@@ -57,17 +61,26 @@ private object Coefficients {
     def merge(other: Coefficients) = other + (term -> coefficient)
   }
 
-  private class Many(map: ListMap[NonConstant, Coefficients])
-    extends Coefficients {
-      val isEmpty = false
-      def coefficients = map.values
-      def terms = map.keys
-      def toList = map.toList
-      val single = None
-      def -(term: NonConstant) = ???
-      def +(pair: (NonConstant, BigDecimal)) = ???
-      def mapCoefficients(fn: BigDecimal => BigDecimal) =
-        Many(map.map{case (x,a) => x -> fn(a)})
-      def merge(other: Coefficients) = ???
+  trait Many extends Coefficients {
+    val isEmpty = false
+    def coefficients = toList.map(_._2)
+    def terms = toList.map(_._1)
+    val single = None
+    def -(term: NonConstant) =
+      apply(toList.filter(_._1 == term))
+    def mapCoefficients(fn: BigDecimal => BigDecimal) =
+      apply(toList.map { case (x, a) => x -> fn(a) })
+  }
+
+  private case class Small(toList: List[(NonConstant, BigDecimal)])
+      extends Many {
+    def +(pair: (NonConstant, BigDecimal)) = ???
+    def merge(other: Coefficients) = ???
+  }
+
+  private class Large(val toList: List[(NonConstant, BigDecimal)])
+      extends Many {
+    def +(pair: (NonConstant, BigDecimal)) = ???
+    def merge(other: Coefficients) = ???
   }
 }
