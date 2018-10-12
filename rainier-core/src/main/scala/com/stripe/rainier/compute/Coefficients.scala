@@ -80,7 +80,9 @@ private object Coefficients {
 
   private class Large(val toList: List[(NonConstant, BigDecimal)])
       extends Many {
-    def +(pair: (NonConstant, BigDecimal)) = ???
-    def merge(other: Coefficients) = ???
+    def +(pair: (NonConstant, BigDecimal)) =
+      new Large(pair :: toList)
+    def merge(other: Coefficients) =
+      new Large(other.toList ++ toList)
   }
 }
