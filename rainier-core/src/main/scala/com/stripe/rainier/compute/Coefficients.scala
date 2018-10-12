@@ -1,7 +1,6 @@
 package com.stripe.rainier.compute
 
 private trait Coefficients {
-  def size: Int
   def isEmpty: Boolean
   def coefficients: Seq[BigDecimal]
   def terms: Seq[NonConstant]
@@ -19,7 +18,6 @@ private object Coefficients {
   def apply(seq: Seq[(NonConstant, BigDecimal)]): Coefficients = ???
 
   val empty: Coefficients = new Coefficients {
-    val size = 0
     val isEmpty = true
     val coefficients = Nil
     val terms = Nil
@@ -33,7 +31,6 @@ private object Coefficients {
 
   private case class Single(term: NonConstant, coefficient: BigDecimal)
       extends Coefficients {
-    val size = 1
     val isEmpty = false
     def coefficients = List(coefficient)
     def terms = List(term)
@@ -45,7 +42,7 @@ private object Coefficients {
       else
         this
     def +(pair: (NonConstant, BigDecimal)) =
-      if(pair._1) == term
+      if (pair._1 == term)
         Single(term, coefficient + pair._2)
       else
         apply(pair :: toList)
