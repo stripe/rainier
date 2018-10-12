@@ -81,13 +81,14 @@ private class Translator {
   The result may also be multiplied by a constant scaling factor (generally
   factored out of the original summation).
   **/
-  private def factoredLine(ax: Map[NonConstant, BigDecimal],
+  private def factoredLine(ax: Coefficients,
                            b: BigDecimal,
                            factor: Double,
                            ring: Ring): IR = {
-    val posTerms = ax.filter(_._2 > Real.BigZero).toList
+    val terms = ax.toList
+    val posTerms = terms.filter(_._2 > Real.BigZero)
     val negTerms =
-      ax.filter(_._2 < Real.BigZero).map { case (x, a) => x -> a.abs }.toList
+      terms.filter(_._2 < Real.BigZero).map { case (x, a) => x -> a.abs }
 
     val allPosTerms =
       if (b == ring.zero)
