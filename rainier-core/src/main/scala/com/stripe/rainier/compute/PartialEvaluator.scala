@@ -14,7 +14,7 @@ class PartialEvaluator(var cache: Map[Real, (Real, Boolean)]) {
   private def eval(real: Real): (Real, Boolean) = real match {
     case Infinity | NegInfinity | Constant(_) => (real, false)
     case l: Line =>
-      val terms = l.ax.map { case (r, d) => (apply(r), d) }
+      val terms = l.ax.toList.map { case (r, d) => (apply(r), d) }
       val anyModified =
         terms.exists { case ((_, modified), _) => modified }
       if (anyModified) {
@@ -24,7 +24,7 @@ class PartialEvaluator(var cache: Map[Real, (Real, Boolean)]) {
         (real, false)
       }
     case l: LogLine =>
-      val terms = l.ax.map { case (r, d) => (apply(r), d) }
+      val terms = l.ax.toList.map { case (r, d) => (apply(r), d) }
       val anyModified =
         terms.exists { case ((_, modified), _) => modified }
       if (anyModified) {

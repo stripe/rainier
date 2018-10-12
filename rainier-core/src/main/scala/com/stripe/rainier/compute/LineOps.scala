@@ -1,19 +1,17 @@
 package com.stripe.rainier.compute
 
-import scala.collection.immutable.ListMap
-
 private[compute] object LineOps {
 
   def sum(left: Line, right: Line): Real = {
-    val merged = merge(left.ax, right.ax)
-    if (merged.isEmpty)
+    val merged = left.ax.merge(right.ax)
+    if (merged.size == 0)
       Constant(left.b + right.b)
     else
       simplify(merged, left.b + right.b)
   }
 
   def scale(line: Line, v: BigDecimal): NonConstant =
-    simplify(line.ax.map { case (x, a) => (x, a * v) }, line.b * v)
+    simplify(line.ax.mapCoefficients(_ * v), line.b * v)
 
   def translate(line: Line, v: BigDecimal): NonConstant =
     simplify(line.ax, line.b + v)
@@ -32,9 +30,9 @@ private[compute] object LineOps {
         }
     }
     val (newAx, newB) =
-      terms.foldLeft((ListMap.empty[NonConstant, BigDecimal], Real.BigZero)) {
+      terms.foldLeft((Coefficients.empty, Real.BigZero)) {
         case ((nAx, nB), (x: NonConstant, a)) =>
-          (merge(nAx, ListMap(x -> a)), nB)
+          (nAx.merge(Coefficients(x -> a)), nB)
         case ((nAx, nB), (Constant(x), a)) =>
           (nAx, nB + x * a)
       }
@@ -51,8 +49,8 @@ private[compute] object LineOps {
    */
 
   def log(line: Line): Option[Real] =
-    line match {
-      case Line1(a, x, Real.BigZero) if a >= Real.BigZero =>
+    line.ax.single match {
+      case Some((x, a)) if (a >= Real.BigZero) && (line.b == Real.BigZero) =>
         Some(x.log + Math.log(a.toDouble))
       case _ => None
     }
@@ -66,8 +64,8 @@ private[compute] object LineOps {
   a multiply around, and there's a chance that a.pow(k) will simplify further.
    */
   def pow(line: Line, exponent: BigDecimal): Option[Real] =
-    line match {
-      case Line1(a, x, Real.BigZero) =>
+    line.ax.single match {
+      case Some((x, a)) if line.b == Real.BigZero =>
         Some(x.pow(exponent) * RealOps.pow(a, exponent))
       case _ => None
     }
@@ -82,7 +80,7 @@ private[compute] object LineOps {
    */
   def factor(line: Line): (Line, BigDecimal) = {
     val coefficientFreqs =
-      line.ax.values
+      line.ax.coefficients
         .groupBy(_.abs)
         .map { case (a, xs) => (a, xs.size) }
 
@@ -93,45 +91,10 @@ private[compute] object LineOps {
       (line, Real.BigOne)
   }
 
-  def merge(left: ListMap[NonConstant, BigDecimal],
-            right: ListMap[NonConstant, BigDecimal])
-    : ListMap[NonConstant, BigDecimal] = {
-    val (big, small) =
-      if (left.size > right.size)
-        (left, right)
-      else
-        (right, left)
-
-    small.foldLeft(big) {
-      case (acc, (k, v)) =>
-        val newV = big
-          .get(k)
-          .map { bigV =>
-            bigV + v
-          }
-          .getOrElse(v)
-
-        if (newV == Real.BigZero)
-          acc - k
-        else
-          acc + (k -> newV)
+  private def simplify(ax: Coefficients, b: BigDecimal): NonConstant =
+    ax.single match {
+      case Some((x, Real.BigOne)) if b == Real.BigZero =>
+        x
+      case _ => Line(ax, b)
     }
-  }
-
-  private def simplify(ax: ListMap[NonConstant, BigDecimal],
-                       b: BigDecimal): NonConstant = {
-    if (b == Real.BigZero && ax.size == 1 && ax.head._2 == Real.BigOne)
-      ax.head._1
-    else
-      Line(ax, b)
-  }
-
-  object Line1 {
-    def unapply(line: Line): Option[(BigDecimal, NonConstant, BigDecimal)] = {
-      if (line.ax.size == 1)
-        Some((line.ax.head._2, line.ax.head._1, line.b))
-      else
-        None
-    }
-  }
 }

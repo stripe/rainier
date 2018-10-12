@@ -1,7 +1,6 @@
 package com.stripe.rainier.compute
 
 import com.stripe.rainier.ir
-import scala.collection.immutable.ListMap
 
 /*
 A Real is a DAG which represents a mathematical function
@@ -105,12 +104,11 @@ Because it is common for ax to have a large number of terms, this is deliberatel
 as equality comparisons would be too expensive. The impact of this is subtle, see [0] at the bottom of this file
 for an example.
  */
-private final class Line private (val ax: ListMap[NonConstant, BigDecimal],
-                                  val b: BigDecimal)
+private final class Line private (val ax: Coefficients, val b: BigDecimal)
     extends NonConstant
 
 private object Line {
-  def apply(ax: ListMap[NonConstant, BigDecimal], b: BigDecimal): Line = {
+  def apply(ax: Coefficients, b: BigDecimal): Line = {
     require(ax.size > 0)
     new Line(ax, b)
   }
@@ -121,8 +119,8 @@ private object Line {
       case l: LogLine =>
         LogLineOps
           .distribute(l)
-          .getOrElse(Line(ListMap(l -> Real.BigOne), Real.BigZero))
-      case _ => Line(ListMap(nc -> Real.BigOne), Real.BigZero)
+          .getOrElse(Line(Coefficients(l -> Real.BigOne), Real.BigZero))
+      case _ => Line(Coefficients(nc -> Real.BigOne), Real.BigZero)
     }
 }
 
@@ -136,7 +134,7 @@ Luckily, this aligns well with the demands of numerical stability: if you have t
 together, you are better off adding their logs.
  */
 private final case class LogLine(
-    ax: ListMap[NonConstant, BigDecimal]
+    ax: Coefficients
 ) extends NonConstant {
   require(ax.size > 0)
 }
@@ -145,7 +143,7 @@ private object LogLine {
   def apply(nc: NonConstant): LogLine =
     nc match {
       case l: LogLine => l
-      case _          => LogLine(ListMap(nc -> Real.BigOne))
+      case _          => LogLine(Coefficients(nc -> Real.BigOne))
     }
 }
 
