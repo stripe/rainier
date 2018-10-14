@@ -1,88 +1,130 @@
 package com.stripe.rainier.compute
 
-private sealed trait Coefficients {
+import scala.annotation.tailrec
+
+sealed trait Coefficients {
   def isEmpty: Boolean
-  def coefficients: Seq[BigDecimal]
-  def terms: Seq[NonConstant]
+  def size: Int
+  def coefficients: Iterable[BigDecimal]
+  def terms: Iterable[NonConstant]
   def toList: List[(NonConstant, BigDecimal)]
-  def single: Option[(NonConstant, BigDecimal)]
-  def -(term: NonConstant): Coefficients
-  def +(pair: (NonConstant, BigDecimal)): Coefficients
+  def toMap: Map[NonConstant, BigDecimal]
+  def withComplements: Iterable[(NonConstant, BigDecimal, Coefficients)]
   def mapCoefficients(fn: BigDecimal => BigDecimal): Coefficients
   def merge(other: Coefficients): Coefficients
+  def +(pair: (NonConstant, BigDecimal)): Coefficients
 }
 
-private object Coefficients {
-  val SMALL = 100
-
+object Coefficients {
   def apply(pair: (NonConstant, BigDecimal)): Coefficients =
-    Single(pair._1, pair._2)
+    One(pair._1, pair._2)
   def apply(seq: Seq[(NonConstant, BigDecimal)]): Coefficients =
     if (seq.isEmpty)
-      empty
+      Empty
     else if (seq.size == 1)
       apply(seq.head)
-    else if (seq.size <= SMALL)
-      Small(seq.toList)
     else
-      new Large(seq.toList)
+      Many(seq.toMap, seq.map(_._1).toList)
 
-  val empty: Coefficients = new Coefficients {
+  val Empty: Coefficients = new Coefficients {
     val isEmpty = true
+    val size = 0
     val coefficients = Nil
     val terms = Nil
     val toList = Nil
-    val single = None
-    def -(term: NonConstant) = this
-    def +(pair: (NonConstant, BigDecimal)) = apply(pair)
+    val toMap = Map.empty
+    val withComplements = Nil
     def mapCoefficients(fn: BigDecimal => BigDecimal) = this
+    def +(pair: (NonConstant, BigDecimal)) = apply(pair)
     def merge(other: Coefficients) = other
   }
 
-  private case class Single(term: NonConstant, coefficient: BigDecimal)
+  case class One(term: NonConstant, coefficient: BigDecimal)
       extends Coefficients {
+    val size = 1
     val isEmpty = false
     def coefficients = List(coefficient)
     def terms = List(term)
     def toList = List((term, coefficient))
-    def single = Some((term, coefficient))
-    def -(term: NonConstant) =
-      if (term == this.term)
-        empty
-      else
-        this
-    def +(pair: (NonConstant, BigDecimal)) =
-      if (pair._1 == term)
-        Single(term, coefficient + pair._2)
-      else
-        apply(pair :: toList)
+    def toMap = Map(term -> coefficient)
+    def withComplements = List((term, coefficient, Empty))
     def mapCoefficients(fn: BigDecimal => BigDecimal) =
-      Single(term, fn(coefficient))
+      One(term, fn(coefficient))
     def merge(other: Coefficients) = other + (term -> coefficient)
-  }
-
-  trait Many extends Coefficients {
-    val isEmpty = false
-    def coefficients = toList.map(_._2)
-    def terms = toList.map(_._1)
-    val single = None
-    def -(term: NonConstant) =
-      apply(toList.filter(_._1 == term))
-    def mapCoefficients(fn: BigDecimal => BigDecimal) =
-      apply(toList.map { case (x, a) => x -> fn(a) })
-  }
-
-  private case class Small(toList: List[(NonConstant, BigDecimal)])
-      extends Many {
-    def +(pair: (NonConstant, BigDecimal)) = ???
-    def merge(other: Coefficients) = ???
-  }
-
-  private class Large(val toList: List[(NonConstant, BigDecimal)])
-      extends Many {
     def +(pair: (NonConstant, BigDecimal)) =
-      new Large(pair :: toList)
+      if (pair._1 == term) {
+        val newCoefficient = coefficient + pair._2
+        if (newCoefficient == Real.BigZero)
+          Empty
+        else
+          One(term, newCoefficient)
+      } else {
+        Coefficients(pair :: toList)
+      }
+  }
+
+  case class Many(toMap: Map[NonConstant, BigDecimal], terms: List[NonConstant])
+      extends Coefficients {
+    val isEmpty = false
+    def size = toMap.size
+    def coefficients = toMap.values
+    def toList = terms.map { x =>
+      x -> toMap(x)
+    }
+
+    def mapCoefficients(fn: BigDecimal => BigDecimal) =
+      Many(toMap.map { case (x, a) => x -> fn(a) }, terms)
+
+    def withComplements = {
+      @tailrec
+      def loop(
+          acc: List[(NonConstant, BigDecimal, Coefficients)],
+          a: List[NonConstant],
+          b: List[NonConstant]): List[(NonConstant, BigDecimal, Coefficients)] =
+        b match {
+          case head :: tail =>
+            val complementTerms =
+              if (a.size > b.size)
+                b ::: a
+              else
+                a ::: b
+            val complement =
+              if (complementTerms.size == 1)
+                One(complementTerms.head, toMap(complementTerms.head))
+              else
+                Many(toMap - head, complementTerms)
+            loop((head, toMap(head), complement) :: acc, head :: a, tail)
+          case Nil =>
+            acc
+        }
+      loop(Nil, Nil, terms)
+    }
+
     def merge(other: Coefficients) =
-      new Large(other.toList ++ toList)
+      if (other.size > size)
+        other.merge(this)
+      else
+        other.toList.foldLeft(this: Coefficients) {
+          case (acc, pair) => acc + pair
+        }
+
+    def +(pair: (NonConstant, BigDecimal)) = {
+      val (term, coefficient) = pair
+      if (toMap.contains(term)) {
+        val newCoefficient = coefficient + toMap(term)
+        if (newCoefficient == Real.BigZero) {
+          val newMap = toMap - term
+          val newTerms = terms.filterNot(_ == term)
+          if (newTerms.size == 1)
+            One(newTerms.head, newMap.values.head)
+          else
+            Many(newMap, newTerms)
+        } else {
+          Many(toMap + (term -> newCoefficient), terms)
+        }
+      } else {
+        Many(toMap + pair, term :: terms)
+      }
+    }
   }
 }
