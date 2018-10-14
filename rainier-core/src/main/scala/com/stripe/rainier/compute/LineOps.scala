@@ -30,7 +30,7 @@ private[compute] object LineOps {
         }
     }
     val (newAx, newB) =
-      terms.foldLeft((Coefficients.empty, Real.BigZero)) {
+      terms.foldLeft((Coefficients.Empty, Real.BigZero)) {
         case ((nAx, nB), (x: NonConstant, a)) =>
           (nAx.merge(Coefficients(x -> a)), nB)
         case ((nAx, nB), (Constant(x), a)) =>
@@ -49,8 +49,9 @@ private[compute] object LineOps {
    */
 
   def log(line: Line): Option[Real] =
-    line.ax.single match {
-      case Some((x, a)) if (a >= Real.BigZero) && (line.b == Real.BigZero) =>
+    line.ax match {
+      case Coefficients.One(x, a)
+          if (a >= Real.BigZero) && (line.b == Real.BigZero) =>
         Some(x.log + Math.log(a.toDouble))
       case _ => None
     }
@@ -64,8 +65,8 @@ private[compute] object LineOps {
   a multiply around, and there's a chance that a.pow(k) will simplify further.
    */
   def pow(line: Line, exponent: BigDecimal): Option[Real] =
-    line.ax.single match {
-      case Some((x, a)) if line.b == Real.BigZero =>
+    line.ax match {
+      case Coefficients.One(x, a) if line.b == Real.BigZero =>
         Some(x.pow(exponent) * RealOps.pow(a, exponent))
       case _ => None
     }
@@ -92,8 +93,8 @@ private[compute] object LineOps {
   }
 
   private def simplify(ax: Coefficients, b: BigDecimal): NonConstant =
-    ax.single match {
-      case Some((x, Real.BigOne)) if b == Real.BigZero =>
+    ax match {
+      case Coefficients.One(x, Real.BigOne) if b == Real.BigZero =>
         x
       case _ => Line(ax, b)
     }
