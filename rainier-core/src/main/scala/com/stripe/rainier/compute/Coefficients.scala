@@ -18,13 +18,15 @@ sealed trait Coefficients {
 object Coefficients {
   def apply(pair: (NonConstant, BigDecimal)): Coefficients =
     One(pair._1, pair._2)
-  def apply(seq: Seq[(NonConstant, BigDecimal)]): Coefficients =
-    if (seq.isEmpty)
+  def apply(seq: Seq[(NonConstant, BigDecimal)]): Coefficients = {
+    val filtered = seq.filter(_._2 != Real.BigZero)
+    if (filtered.isEmpty)
       Empty
-    else if (seq.size == 1)
-      apply(seq.head)
+    else if (filtered.size == 1)
+      apply(filtered.head)
     else
-      Many(seq.toMap, seq.map(_._1).toList)
+      Many(filtered.toMap, filtered.map(_._1).toList)
+  }
 
   val Empty: Coefficients = new Coefficients {
     val isEmpty = true
