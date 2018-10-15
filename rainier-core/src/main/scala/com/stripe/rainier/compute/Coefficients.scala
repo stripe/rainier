@@ -34,7 +34,7 @@ object Coefficients {
     val coefficients = Nil
     val terms = Nil
     val toList = Nil
-    val toMap = Map.empty
+    val toMap = Map.empty[NonConstant, BigDecimal]
     val withComplements = Nil
     def mapCoefficients(fn: BigDecimal => BigDecimal) = this
     def +(pair: (NonConstant, BigDecimal)) = apply(pair)
