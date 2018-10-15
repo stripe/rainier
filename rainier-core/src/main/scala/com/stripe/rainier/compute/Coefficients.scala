@@ -86,10 +86,10 @@ object Coefficients {
         b match {
           case head :: tail =>
             val complementTerms =
-              if (a.size > b.size)
-                b ::: a
+              if (a.size > tail.size)
+                tail ::: a
               else
-                a ::: b
+                a ::: tail
             val complement =
               if (complementTerms.size == 1)
                 One(complementTerms.head, toMap(complementTerms.head))
