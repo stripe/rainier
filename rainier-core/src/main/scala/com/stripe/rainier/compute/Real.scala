@@ -71,6 +71,17 @@ object Real {
     ir.Tracer.trace(params, irs)
   }
 
+  def traceGradient(real: Real): Unit = {
+    val translator = new Translator
+    val variables = RealOps.variables(real).toList
+    val gradient = Gradient.derive(variables, real)
+    val irs = gradient.map { r =>
+      translator.toIR(r)
+    }
+    val params = variables.map(_.param)
+    ir.Tracer.trace(params, irs)
+  }
+
   private[compute] val BigZero = BigDecimal(0.0)
   private[compute] val BigOne = BigDecimal(1.0)
   private[compute] val BigTwo = BigDecimal(2.0)
