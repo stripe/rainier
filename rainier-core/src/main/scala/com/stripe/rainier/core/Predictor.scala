@@ -59,4 +59,8 @@ object Predictor {
   def fromDouble[Y, B](
       fn: Real => Distribution.Aux[Y, B]): Predictor[Double, Y] =
     from[Double, Y, Real, B](fn)
+
+  def fromDoubleVector[Y, B](
+      fn: Seq[Real] => Distribution.Aux[Y, B]): Predictor[Seq[Double], Y] =
+    from[Seq[Double], Y, Seq[Real], B](fn)
 }

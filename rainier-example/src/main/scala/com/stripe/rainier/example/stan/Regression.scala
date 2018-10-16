@@ -33,22 +33,15 @@ sigma = 3
 y = rnorm(N, X * beta, sigma)
 dump(c('N', 'K', 'X','y'),file="regr.data.R"))
 **/
-
 object Regression {
-  def model(data: Seq[(Map[Int, Double], Double)]): RandomVariable[Real] = {
+  def model(data: Seq[(Seq[Double], Double)]): RandomVariable[Real] = {
+    val k = data.head._1.size
     for {
-      betas <- RandomVariable.traverse(
-        data.head._1.keys.toList.map { _ =>
-          Normal(0, 1).param
-        }
-      )
+      betas <- RandomVariable.fill(k)(Normal(0, 1).param)
       sigma <- Uniform(0, 10).param
       _ <- Predictor
-        .from[Map[Int, Double], Double, Map[Int, Real], Real] { m =>
-          val mean = Real.sum(m.toList.map {
-            case (i, r) =>
-              betas(i) * r
-          })
+        .fromDoubleVector { vec =>
+          val mean = Real.dot(betas, vec)
           Normal(mean, sigma)
         }
         .fit(data)
@@ -64,20 +57,14 @@ object Regression {
     plot1D(s)
   }
 
-  def synthesize(n: Int,
-                 k: Int,
-                 sigma: Double): Seq[(Map[Int, Double], Double)] = {
+  def synthesize(n: Int, k: Int, sigma: Double): Seq[(Seq[Double], Double)] = {
     val r = new scala.util.Random
-    val betas = 1.to(k).map { _ =>
-      r.nextGaussian * 2
-    }
-    1.to(n).map { _ =>
-      val cov = 1.to(k).map { _ =>
-        r.nextGaussian * 5
-      }
+    val betas = List.fill(k)(r.nextGaussian * 2)
+    List.fill(n) {
+      val cov = List.fill(k)(r.nextGaussian * 5)
       val ymean = cov.zip(betas).map { case (x, y) => x * y }.sum
       val y = (r.nextGaussian * sigma) + ymean
-      (cov.zipWithIndex.map { case (v, i) => i -> v }.toMap, y)
+      (cov, y)
     }
   }
 }

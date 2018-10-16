@@ -52,6 +52,9 @@ object Real {
   def sum(seq: Iterable[Real]): Real =
     seq.foldLeft(Real.zero)(_ + _)
 
+  def dot(left: Iterable[Real], right: Iterable[Real]): Real =
+    sum(left.zip(right).map { case (a, b) => a * b })
+
   def logSumExp(seq: Iterable[Real]): Real = {
     val max = seq.reduce(_ max _)
     val shifted = seq.map { x =>

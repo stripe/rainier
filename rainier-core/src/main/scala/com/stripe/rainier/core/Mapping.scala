@@ -68,6 +68,48 @@ object Mapping extends LowPriMappings {
         ab.placeholder(seq.map(_._1)).zip(xy.placeholder(seq.map(_._2)))
     }
 
+  implicit def seq[T, U](implicit tu: Mapping[T, U]): Mapping[Seq[T], Seq[U]] =
+    new Mapping[Seq[T], Seq[U]] {
+      def wrap(t: Seq[T]): Seq[U] =
+        t.map { v =>
+          tu.wrap(v)
+        }
+      def get(u: Seq[U])(implicit n: Numeric[Real]): Seq[T] =
+        u.map { x =>
+          tu.get(x)
+        }
+      def requirements(u: Seq[U]): Set[Real] =
+        u.flatMap { x =>
+          tu.requirements(x)
+        }.toSet
+      def placeholder(seq: Seq[Seq[T]]) = {
+        val maxSize = seq.map(_.size).max
+        new Placeholder[Seq[T], Seq[U]] {
+          val tuPlaceholders = 0.until(maxSize).map { i =>
+            tu.placeholder(seq.flatMap { s =>
+              s.lift(i)
+            })
+          }
+          val value = tuPlaceholders.map(_.value)
+          val variables = tuPlaceholders.flatMap(_.variables)
+          def extract(t: Seq[T], acc: List[Double]) =
+            tuPlaceholders.zipWithIndex.foldLeft(acc) {
+              case (a, (p, i)) =>
+                t.lift(i)
+                  .map { v =>
+                    p.extract(v, a)
+                  }
+                  .getOrElse {
+                    p.variables.map { _ =>
+                      0.0
+                    }.toList ++ a
+                  }
+            }
+        }
+
+      }
+    }
+
   implicit def map[K, T, U](
       implicit tu: Mapping[T, U]): Mapping[Map[K, T], Map[K, U]] =
     new Mapping[Map[K, T], Map[K, U]] {
