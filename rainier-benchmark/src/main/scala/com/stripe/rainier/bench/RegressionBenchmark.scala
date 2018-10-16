@@ -28,7 +28,6 @@ class RegressionBenchmark {
   lazy val vars = model.variables
   lazy val df = model.density
 
-  @Benchmark
   def synthesize() = {
     val betas = List.fill(k)(rng.standardNormal * 2)
     val sigma = 3.0
