@@ -163,8 +163,8 @@ private[compute] object RealOps {
           case Constant(_) | Infinity | NegInfinity => ()
           case v: Variable                          => vars = v :: vars
           case u: Unary                             => loop(u.original)
-          case l: Line                              => l.ax.keys.foreach(loop)
-          case l: LogLine                           => l.ax.keys.foreach(loop)
+          case l: Line                              => l.ax.terms.foreach(loop)
+          case l: LogLine                           => l.ax.terms.foreach(loop)
           case If(test, nz, z) =>
             loop(test)
             loop(nz)

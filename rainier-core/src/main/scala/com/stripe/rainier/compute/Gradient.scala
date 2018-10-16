@@ -38,18 +38,18 @@ private object Gradient {
             visit(u.original)
 
           case l: Line =>
-            l.ax.foreach {
+            l.ax.toList.foreach {
               case (x, a) =>
                 diff(x).register(ProductDiff(a, diff(l)))
+                visit(x)
             }
-            l.ax.foreach { case (x, _) => visit(x) }
 
           case l: LogLine =>
-            l.ax.foreach {
-              case (x, _) =>
-                diff(x).register(LogLineDiff(l, diff(l), x))
+            l.ax.withComplements.foreach {
+              case (x, a, c) =>
+                diff(x).register(LogLineDiff(diff(l), x, a, c))
+                visit(x)
             }
-            l.ax.foreach { case (x, _) => visit(x) }
 
           case f: If =>
             diff(f.whenNonZero).register(IfDiff(f, diff(f), true))
@@ -124,17 +124,17 @@ private object Gradient {
         gradient.toReal * child.exponent * child.base.pow(child.exponent - 1)
   }
 
-  private final case class LogLineDiff(child: LogLine,
-                                       gradient: Diff,
-                                       term: NonConstant)
+  private final case class LogLineDiff(gradient: Diff,
+                                       term: NonConstant,
+                                       exponent: BigDecimal,
+                                       complement: Coefficients)
       extends Diff {
     def toReal: Real = {
-      val exponent = child.ax(term)
       val otherTerms =
-        if (child.ax.size == 1)
+        if (complement.isEmpty)
           Real.one
         else
-          LogLine(child.ax - term)
+          LogLine(complement)
       gradient.toReal *
         exponent *
         term.pow(exponent - 1) *
