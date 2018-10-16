@@ -38,19 +38,18 @@ private object Gradient {
             visit(u.original)
 
           case l: Line =>
-            val ax = l.ax.toList
-            ax.foreach {
+            l.ax.toList.foreach {
               case (x, a) =>
                 diff(x).register(ProductDiff(a, diff(l)))
+                visit(x)
             }
-            ax.foreach { case (x, _) => visit(x) }
 
           case l: LogLine =>
             l.ax.withComplements.foreach {
               case (x, a, c) =>
                 diff(x).register(LogLineDiff(diff(l), x, a, c))
+                visit(x)
             }
-            l.ax.toList.foreach { case (x, _) => visit(x) }
 
           case f: If =>
             diff(f.whenNonZero).register(IfDiff(f, diff(f), true))
