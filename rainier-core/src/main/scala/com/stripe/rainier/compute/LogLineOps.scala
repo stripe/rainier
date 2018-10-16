@@ -2,11 +2,10 @@ package com.stripe.rainier.compute
 
 import com.stripe.rainier.unused
 import scala.annotation.tailrec
-import scala.collection.immutable.ListMap
 
 private[compute] object LogLineOps {
   def multiply(left: LogLine, right: LogLine): Real = {
-    val merged = LineOps.merge(left.ax, right.ax)
+    val merged = left.ax.merge(right.ax)
     if (merged.isEmpty)
       Real.one
     else
@@ -14,7 +13,7 @@ private[compute] object LogLineOps {
   }
 
   def pow(line: LogLine, v: BigDecimal): LogLine =
-    LogLine(line.ax.map { case (x, a) => x -> a * v })
+    LogLine(line.ax.mapCoefficients(_ * v))
 
   /*
   Return Some(real) if an optimization is possible here,
@@ -55,7 +54,7 @@ private[compute] object LogLineOps {
     }
 
     val initial = (List.empty[(NonConstant, BigDecimal)], Option.empty[Line])
-    val (factors, terms) = line.ax.foldLeft(initial) {
+    val (factors, terms) = line.ax.toList.foldLeft(initial) {
       case ((f, None), (l: Line, Real.BigOne))
           if (nTerms(l) < DistributeToMaxTerms) =>
         (f, Some(l))
@@ -76,17 +75,16 @@ private[compute] object LogLineOps {
       if (factors.isEmpty)
         l
       else {
-        val ll = LogLine(ListMap(factors: _*))
+        val ll = LogLine(Coefficients(factors))
         val (newAx, newB) =
-          l.ax.foldLeft(
-            (ListMap[NonConstant, BigDecimal](ll -> l.b), Real.BigZero)) {
+          l.ax.toList.foldLeft((Coefficients(ll -> l.b), Real.BigZero)) {
             case ((nAx, nB), (x, a)) =>
               multiply(ll, LogLine(x)) match {
                 case Infinity | NegInfinity =>
                   ??? //I think this should never happen
                 case Constant(v) => (nAx, nB + v * a)
                 case nc: NonConstant =>
-                  (LineOps.merge(nAx, ListMap(nc -> a)), nB)
+                  (nAx.merge(Coefficients(nc -> a)), nB)
               }
           }
         Line(newAx, newB)
@@ -106,7 +104,7 @@ private[compute] object LogLineOps {
   want a fractional k since non-integer exponents are presumed to be expensive.)
    */
   def factor(line: LogLine): (LogLine, Int) = {
-    val exponents = line.ax.values.toList
+    val exponents = line.ax.coefficients.toList
     val k =
       if (exponents.forall(_.isValidInt))
         exponents.map(_.toInt).reduce(gcd)
