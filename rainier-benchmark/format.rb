@@ -3,7 +3,7 @@ class Benchmark
     method_parts = parts[1].split(".")
     @klass = method_parts[0].split("Benchmark")[0]
     @method = method_parts[1]
-    @params = parts[2..-7].join(":")
+    @params = parts[2..-7].select{|x| x != "N/A"}.join(":")
     @timing = parts[-4].to_f
     @stddev = parts[-2].to_f
   end
