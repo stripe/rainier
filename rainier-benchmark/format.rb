@@ -3,11 +3,12 @@ class Benchmark
     method_parts = parts[1].split(".")
     @klass = method_parts[0].split("Benchmark")[0]
     @method = method_parts[1]
-    @timing = parts[4].to_f
-    @stddev = parts[6].to_f
+    @params = parts[2]
+    @timing = parts[5].to_f
+    @stddev = parts[7].to_f
   end
 
-  attr_reader :klass, :method
+  attr_reader :klass, :method, :params
 
   def rounded_time
     oom = 10 ** Math.log10(@stddev).to_i
@@ -25,12 +26,12 @@ ARGF.each do |line|
   end
 
   parts = stripped.split
-  if(parts.size == 8 && parts[2] == "avgt")
+  if(parts.size == 9 && parts[3] == "avgt")
     benchmarks << Benchmark.new(parts)
   end
 end
 
-benchmarks.sort_by!{|b| [b.method, b.klass]}
+benchmarks.sort_by!{|b| [b.method, b.klass, b.params]}
 benchmarks.each do |b|
-  printf("%-20s %-20s %20.3f\n", b.method, b.klass, b.rounded_time)
+  printf("%-20s %-30s %-30s %20.3f\n", b.method, b.klass, b.params, b.rounded_time)
 end
