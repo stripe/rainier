@@ -3,7 +3,7 @@ class Benchmark
     method_parts = parts[1].split(".")
     @klass = method_parts[0].split("Benchmark")[0]
     @method = method_parts[1]
-    @params = parts[2..-7].join(":")
+    @params = parts[2..-7].select{|x| x != "N/A"}.join(":")
     @timing = parts[-4].to_f
     @stddev = parts[-2].to_f
   end
@@ -33,5 +33,5 @@ end
 
 benchmarks.sort_by!{|b| [b.method, b.klass, b.params]}
 benchmarks.each do |b|
-  printf("%-20s %-20s %-20s %20.3f\n", b.method, b.klass, b.params, b.rounded_time)
+  printf("%-20s %-30s %-30s %20.3f\n", b.method, b.klass, b.params, b.rounded_time)
 end
