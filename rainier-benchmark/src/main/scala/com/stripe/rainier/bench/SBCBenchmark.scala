@@ -3,6 +3,7 @@ package com.stripe.rainier.bench
 import org.openjdk.jmh.annotations._
 import java.util.concurrent.TimeUnit
 
+import com.stripe.rainier.compute._
 import com.stripe.rainier.core._
 import com.stripe.rainier.sampler._
 
@@ -17,8 +18,9 @@ abstract class SBCBenchmark {
   implicit val rng: RNG = RNG.default
 
   protected def sbc: SBC[_, _]
+
   @Param(Array("1000", "10000", "100000"))
-  protected def syntheticSamples: Int = _
+  protected var syntheticSamples: Int = _
 
   lazy val s = sbc
   lazy val model = build
@@ -42,15 +44,56 @@ abstract class SBCBenchmark {
     }.toArray)
 }
 
-class SBCNormalBenchmark extends SBCBenchmark {
+class NormalBenchmark extends SBCBenchmark {
   def sbc =
     SBC[Double, Continuous](Uniform(0, 1)) { n =>
       Normal(n, 1)
     }
 }
 
-class SBCLaplaceBenchmark extends SBCBenchmark {
+class LaplaceBenchmark extends SBCBenchmark {
   def sbc = SBC[Double, Continuous](LogNormal(0, 1)) { x =>
     Laplace(x, x)
   }
+}
+
+class LogNormalBenchmark extends SBCBenchmark {
+  def sbc =
+    SBC[Double, Continuous](LogNormal(0, 1))((x: Real) => LogNormal(x, x))
+}
+
+class ExponentialBenchmark extends SBCBenchmark {
+  def sbc =
+    SBC[Double, Continuous](LogNormal(0, 1))((x: Real) => Exponential(x))
+}
+
+class BernoulliBenchmark extends SBCBenchmark {
+  def sbc =
+    SBC[Int, Discrete](Uniform(0, 1))((x: Real) => Bernoulli(x))
+}
+
+class BinomialBenchmark extends SBCBenchmark {
+  def sbc =
+    SBC[Int, Discrete](Uniform(0, 1))((x: Real) => Binomial(x, 10))
+}
+
+class GeometricBenchmark extends SBCBenchmark {
+  def sbc =
+    SBC[Int, Discrete](Uniform(0, 1))((x: Real) => Geometric(x))
+}
+
+class GeometricZeroInflatedBenchmark extends SBCBenchmark {
+  def sbc =
+    SBC[Int, Discrete](Uniform(0, 1))((x: Real) =>
+      Geometric(.3).zeroInflated(x))
+}
+
+class NegativeBinomialBenchmark extends SBCBenchmark {
+  def sbc =
+    SBC[Int, Discrete](Uniform(0, 1))((x: Real) => NegativeBinomial(x, 10))
+}
+
+class BinomialPoissonApproximationBenchmark extends SBCBenchmark {
+  def sbc =
+    SBC[Int, Discrete](Uniform(0, 0.04))((x: Real) => Binomial(x, 200))
 }
