@@ -3,9 +3,9 @@ class Benchmark
     method_parts = parts[1].split(".")
     @klass = method_parts[0].split("Benchmark")[0]
     @method = method_parts[1]
-    @params = parts[2]
-    @timing = parts[5].to_f
-    @stddev = parts[7].to_f
+    @params = parts[2..-7].join(":")
+    @timing = parts[-4].to_f
+    @stddev = parts[-2].to_f
   end
 
   attr_reader :klass, :method, :params
@@ -26,7 +26,7 @@ ARGF.each do |line|
   end
 
   parts = stripped.split
-  if(parts.size == 9 && parts[3] == "avgt")
+  if(parts[-6] == "avgt")
     benchmarks << Benchmark.new(parts)
   end
 end
