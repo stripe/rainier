@@ -97,3 +97,15 @@ class BinomialPoissonApproximationBenchmark extends SBCBenchmark {
   def sbc =
     SBC[Int, Discrete](Uniform(0, 0.04))((x: Real) => Binomial(x, 200))
 }
+
+class GaussianMixtureBenchmark extends SBCBenchmark {
+  def sbc =
+    SBC[Double, Continuous](Uniform(0, 1))(
+      (x: Real) =>
+        Mixture(
+          Map(
+            Normal(0, 1) -> x,
+            Normal(1, 2) -> (Real.one - x)
+          )
+      ))
+}
