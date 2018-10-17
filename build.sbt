@@ -139,12 +139,19 @@ lazy val rainierDocs = project.
   ).
   settings(unpublished)
 
+lazy val rainierProphet = project.
+  in(file("rainier-prophet")).
+  settings(name := "rainier-prophet").
+  dependsOn(rainierCore).
+  settings(commonSettings)
+
 lazy val rainierExample = project.
   in(file("rainier-example")).
   settings(name := "rainier-example").
   dependsOn(
     rainierCore,
     rainierPlot,
+    rainierProphet
   ).
   settings(commonSettings).
   settings(unpublished).
