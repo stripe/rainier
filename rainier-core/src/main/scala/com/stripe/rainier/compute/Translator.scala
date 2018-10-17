@@ -39,6 +39,17 @@ private class Translator {
     binary.memoize(keys, op, new BinaryIR(left, right, op))
   }
 
+  // We'll only use this for AddOp and SubtractOp
+  private def naryIR(irs: List[IR], op: BinaryOp): IR = {
+    val key = irs
+    val keys =
+      if (op.isCommutative)
+        List(key)
+      else
+        List(key, key.reverse)
+    binary.memoize(keys, op, new NaryIR(irs, op))
+  }
+
   private def ifIR(whenZero: IR, whenNonZero: IR, test: IR): IR =
     ifs.memoize(List(List(test, whenZero, whenNonZero)),
                 (),
@@ -46,7 +57,7 @@ private class Translator {
 
   private def lineIR(line: Line): IR = {
     val (y, k) = LineOps.factor(line)
-    factoredLine(y.ax, y.b, k.toDouble, multiplyRing)
+    factoredNaryLine(10, y.ax, y.b, k.toDouble, multiplyRing)
   }
 
   private def logLineIR(line: LogLine): IR = {
@@ -81,6 +92,31 @@ private class Translator {
   The result may also be multiplied by a constant scaling factor (generally
   factored out of the original summation).
   **/
+  private def factoredNaryLine(n: Int,
+                               ax: Coefficients,
+                               b: BigDecimal,
+                               factor: Double,
+                               ring: Ring): IR = {
+    // We'll always use MultiplyRing so should not take it as a param
+    val terms = ax.toList
+    val termsPerGroup = (math.ceil(ax.size * 1.0) / n).toInt
+    //We want special cases here
+    val combinedTerms = terms
+      .grouped(termsPerGroup)
+      .map(combineNaryTerms(n, _, ring))
+      .toList
+    val (ir, sign) = (naryIR(combinedTerms, ring.plus), 1.0)
+    (factor * sign) match {
+      case 1.0 => ir
+      case -1.0 =>
+        binaryIR(Const(ring.zero), ir, ring.minus)
+      case 2.0 =>
+        binaryIR(ir, ref(ir), ring.plus)
+      case k =>
+        binaryIR(ir, Const(k), ring.times)
+    }
+  }
+
   private def factoredLine(ax: Coefficients,
                            b: BigDecimal,
                            factor: Double,
@@ -118,8 +154,9 @@ private class Translator {
     }
   }
 
-  private def combineTerms(terms: Seq[(Real, BigDecimal)], ring: Ring): IR = {
-    val lazyIR = terms.map {
+  private def makeLazyIR(terms: Seq[(Real, BigDecimal)],
+                         ring: Ring): Seq[() => IR] = {
+    terms.map {
       case (x, Real.BigOne) =>
         () =>
           toIR(x)
@@ -133,8 +170,36 @@ private class Translator {
         () =>
           binaryIR(toIR(x), Const(a.toDouble), ring.times)
     }
+  }
+
+  private def combineTerms(terms: Seq[(Real, BigDecimal)], ring: Ring): IR = {
+    val lazyIR = makeLazyIR(terms, ring)
     combineTree(lazyIR, ring)
   }
+
+  private def combineNaryTerms(n: Int,
+                               terms: Seq[(Real, BigDecimal)],
+                               ring: Ring): IR = {
+    val lazyIR = makeLazyIR(terms, ring)
+    combineNaryTree(n, lazyIR, ring)
+  }
+
+  private def combineNaryTree(n: Int, terms: Seq[() => IR], ring: Ring): IR =
+    terms match {
+      case ts if ts.size < n => combineTree(ts, ring)
+      case _ =>
+        combineNaryTree(
+          n,
+          terms.grouped(n).toList.map {
+            case ys if ys.size <= 2 => combineTree(ys, ring)
+            case ys if ys.size <= n =>
+              () =>
+                naryIR(ys.map(_()), ring.plus)
+            case _ => sys.error(s"Should not have more than $n elements")
+          },
+          ring
+        )
+    }
 
   private def combineTree(terms: Seq[() => IR], ring: Ring): IR =
     terms match {
