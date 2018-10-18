@@ -99,9 +99,14 @@ private class Translator {
                                ring: Ring): IR = {
     // We'll always use MultiplyRing so should not take it as a param
     val terms = ax.toList
-    val termsPerGroup = (math.ceil(ax.size * 1.0) / n).toInt
+    val allTerms =
+      if (b == ring.zero)
+        terms
+      else
+        (Constant(b), Real.BigOne) :: terms
+    val termsPerGroup = (math.ceil(allTerms.size * 1.0) / n).toInt
     //We want special cases here
-    val combinedTerms = terms
+    val combinedTerms = allTerms
       .grouped(termsPerGroup)
       .map(combineNaryTerms(n, _, ring))
       .toList
@@ -191,10 +196,13 @@ private class Translator {
         combineNaryTree(
           n,
           terms.grouped(n).toList.map {
-            case ys if ys.size <= 2 => combineTree(ys, ring)
+            case ys if ys.size <= 2 =>
+              () =>
+                combineTree(ys, ring)
             case ys if ys.size <= n =>
               () =>
-                naryIR(ys.map(_()), ring.plus)
+                val irs = ys.map(_()).toList
+                naryIR(irs, ring.plus)
             case _ => sys.error(s"Should not have more than $n elements")
           },
           ring
