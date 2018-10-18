@@ -184,8 +184,26 @@ object If {
 private final case class Pow private (base: Real, exponent: NonConstant)
     extends NonConstant
 
-private final class Lookup(val index: NonConstant, val seq: IndexedSeq[Real])
+private final class Lookup(val index: NonConstant, val table: Array[Real])
     extends NonConstant
+
+object Lookup {
+  def apply(table: Seq[Real]): Real => Real =
+    apply(_, table)
+
+  def apply(index: Real, table: Seq[Real]): Real =
+    index match {
+      case Infinity | NegInfinity =>
+        throw new ArithmeticException("Cannot lookup an infinite number")
+      case Constant(v) =>
+        if (v.isWhole)
+          table(v.toInt)
+        else
+          throw new ArithmeticException("Cannot lookup a non-integral number")
+      case nc: NonConstant =>
+        new Lookup(nc, table.toArray)
+    }
+}
 
 /*
 [0] For example, of the following four ways of computing the same result, only the first two will have the most efficient

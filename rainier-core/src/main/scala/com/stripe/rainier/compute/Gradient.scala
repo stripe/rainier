@@ -59,7 +59,12 @@ private object Gradient {
             visit(f.whenZero)
 
           case l: Lookup =>
-            ???
+            l.table.zipWithIndex.foreach {
+              case (x, i) =>
+                diff(x).register(LookupDiff(l, diff(l), i))
+                visit(x)
+            }
+            visit(l.index)
         }
       }
     }
@@ -144,5 +149,11 @@ private object Gradient {
         term.pow(exponent - 1) *
         otherTerms
     }
+  }
+
+  private final case class LookupDiff(child: Lookup, gradient: Diff, index: Int)
+      extends Diff {
+    def toReal: Real =
+      If(child.index - index, Real.zero, gradient.toReal)
   }
 }
