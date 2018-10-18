@@ -23,6 +23,7 @@ private class Translator {
         case l: LogLine => logLineExpr(l)
         case Pow(base, exponent) =>
           binaryExpr(toExpr(base), toExpr(exponent), PowOp)
+        case l: Lookup           => lookupExpr(l)
       }
       reals += r -> expr
       expr
@@ -46,6 +47,8 @@ private class Translator {
                 (),
                 new IfIR(test, whenZero, whenNonZero))
 
+  private def lookupIR(lookup: Lookup): IR = ???
+  
   private def lineExpr(line: Line): Expr = {
     val (y, k) = LineOps.factor(line)
     factoredLine(y.ax, y.b, k.toDouble, multiplyRing)

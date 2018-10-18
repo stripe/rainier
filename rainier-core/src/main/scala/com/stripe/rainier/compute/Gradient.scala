@@ -57,6 +57,9 @@ private object Gradient {
             visit(f.test)
             visit(f.whenNonZero)
             visit(f.whenZero)
+
+          case l: Lookup =>
+            ???
         }
       }
     }

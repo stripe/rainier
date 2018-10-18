@@ -57,6 +57,8 @@ class PartialEvaluator(var cache: Map[Real, (Real, Boolean)]) {
         (newBase.pow(newExponent), true)
       else
         (real, false)
+    case l: Lookup =>
+      ???
     case v: Variable =>
       (v, false)
   }
