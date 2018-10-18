@@ -20,6 +20,12 @@ private class Packer(methodSizeLimit: Int) {
       case _: Ref => (p, 1)
     }
 
+  private def traverseVarDef(vd: VarDef, parentSize: Int): (IR, Int) = {
+    val (rhsIR, rhsSize) =
+      traverseAndMaybePack(v.rhs, parentSize)
+    (new VarDef(v.sym, rhsIR), rhsSize + 1)
+  }
+
   private def traverseAndMaybePack(p: IR, parentSize: Int): (IR, Int) = {
     val (ir, irSize) = traverseIR(p)
     if ((irSize + parentSize) > methodSizeLimit)
