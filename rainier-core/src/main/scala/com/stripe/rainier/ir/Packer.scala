@@ -17,6 +17,8 @@ private class Packer(methodSizeLimit: Int) {
         val (rhsIR, rhsSize) =
           traverseAndMaybePack(v.rhs, 1)
         (new VarDef(v.sym, rhsIR), rhsSize + 1)
+      case s: SumIR =>
+        (s, s.irs.size)
       case b: BinaryIR =>
         val (leftIR, leftSize) =
           traverseAndMaybePack(b.left, 2)
