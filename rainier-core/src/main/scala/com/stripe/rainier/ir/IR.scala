@@ -9,7 +9,7 @@ final class Parameter extends Ref {
 final case class Const(value: Double) extends Ref
 final case class VarRef(sym: Sym) extends Ref
 
-final case class SumIR(irs: List[IR], op: BinaryOp) extends IR
+final case class SumIR(irs: List[IR]) extends IR
 final case class BinaryIR(left: IR, right: IR, op: BinaryOp) extends IR
 final case class UnaryIR(original: IR, op: UnaryOp) extends IR
 final case class IfIR(test: IR, whenNonZero: IR, whenZero: IR) extends IR

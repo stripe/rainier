@@ -170,7 +170,7 @@ private class Translator {
     val lazyIRs = makeLazyIRs(terms, ring)
     lazyIRs match {
       case ts if ts.size < 3 => combineTree(ts, ring)
-      case ts                => SumIR(ts.map(_()).toList, ring.plus)
+      case ts                => SumIR(ts.map(_()).toList)
     }
   }
 

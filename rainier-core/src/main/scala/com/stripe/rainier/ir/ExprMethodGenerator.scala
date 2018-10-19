@@ -22,6 +22,9 @@ final private case class ExprMethodGenerator(method: MethodDef,
         constant(value)
       case p: Parameter =>
         loadParameter(varIndices(p))
+      case s: SumIR =>
+        s.irs.map(traverse)
+        binaryOp(AddOp)
       case b: BinaryIR =>
         traverse(b.left)
         traverse(b.right)
