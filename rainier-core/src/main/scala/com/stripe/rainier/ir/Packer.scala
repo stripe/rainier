@@ -20,7 +20,7 @@ private class Packer(methodSizeLimit: Int) {
       case _: Ref => (p, 1)
     }
 
-  private def traverseVarDef(vd: VarDef, parentSize: Int): (IR, Int) = {
+  private def traverseVarDef(v: VarDef, parentSize: Int): (VarDef, Int) = {
     val (rhsIR, rhsSize) =
       traverseAndMaybePack(v.rhs, parentSize)
     (new VarDef(v.sym, rhsIR), rhsSize + 1)

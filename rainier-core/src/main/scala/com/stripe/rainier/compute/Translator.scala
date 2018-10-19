@@ -47,10 +47,10 @@ private class Translator {
                 (),
                 new IfIR(test, whenZero, whenNonZero))
 
-  private def lookupExpr(lookup: Lookup): IR = {
-    val defs = lookup.table.map(toIR).collect{case v: VarDef => v}
+  private def lookupIR(lookup: Lookup): IR = {
+    val defs = lookup.table.map(toIR).collect { case v: VarDef => v }
     val index = toIR(lookup.index)
-    val refs = lookup.table.map(toIR).collect{case r: Ref => r}
+    val refs = lookup.table.map(toIR).collect { case r: Ref => r }
     LookupIR(index, defs, refs)
   }
 
