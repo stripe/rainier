@@ -1,10 +1,10 @@
 package com.stripe.rainier.ir
 
 object Tracer {
-  def trace(inputs: Seq[Parameter], irs: Seq[IR]): Unit = {
+  def trace(inputs: Seq[Parameter], exprs: Seq[Expr]): Unit = {
     val packer = new Packer(200)
-    val outputMeths = irs.map { ir =>
-      packer.pack(ir)
+    val outputMeths = exprs.map { expr =>
+      packer.pack(expr)
     }
     val allMeths = packer.methods
     val varTypes = VarTypes.methods(allMeths.toList)
