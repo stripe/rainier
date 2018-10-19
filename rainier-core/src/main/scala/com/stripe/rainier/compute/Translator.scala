@@ -92,9 +92,8 @@ private class Translator {
         terms
       else
         (Constant(b), Real.BigOne) :: terms
-    //We want special cases here
-    val (ir, sign) = (combineSumTerms(allTerms, ring), 1.0)
-    (factor * sign) match {
+    val ir = combineSumTerms(allTerms, ring)
+    factor match {
       case 1.0 => ir
       case -1.0 =>
         binaryIR(Const(ring.zero), ir, ring.minus)
