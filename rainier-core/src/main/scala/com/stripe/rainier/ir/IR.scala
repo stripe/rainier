@@ -15,7 +15,6 @@ final case class BinaryIR(left: Expr, right: Expr, op: BinaryOp) extends IR
 final case class UnaryIR(original: Expr, op: UnaryOp) extends IR
 final case class IfIR(test: Expr, whenNonZero: Expr, whenZero: Expr) extends IR
 final case class MethodRef(sym: Sym) extends IR
-final case class MethodRoot(expr: Expr) extends IR
 
 final case class MethodDef(sym: Sym, rhs: IR)
 

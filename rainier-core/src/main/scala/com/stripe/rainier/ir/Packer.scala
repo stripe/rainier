@@ -8,7 +8,7 @@ private class Packer(methodSizeLimit: Int) {
 
   def pack(p: Expr): MethodRef = {
     val (pExpr, _) = traverse(p, 0)
-    createMethod(MethodRoot(pExpr))
+    createMethod(UnaryIR(pExpr, NoOp))
   }
 
   private def traverse(p: Expr, parentSize: Int): (Expr, Int) =
@@ -48,6 +48,8 @@ private class Packer(methodSizeLimit: Int) {
         val (zExpr, zSize) =
           traverse(f.whenZero, testSize + nzSize + 1)
         (new IfIR(testExpr, nzExpr, zExpr), testSize + nzSize + zSize + 1)
+      case _: MethodRef =>
+        sys.error("there shouldn't be any method refs yet")
     }
 
   private def createMethod(rhs: IR): MethodRef = {
