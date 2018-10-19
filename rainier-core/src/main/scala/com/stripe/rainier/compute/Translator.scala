@@ -46,7 +46,7 @@ private class Translator {
 
   private def lineIR(line: Line): IR = {
     val (y, k) = LineOps.factor(line)
-    factoredSumLine(y.ax, y.b, k.toDouble, multiplyRing)
+    factoredSumLine(y.ax, y.b, k.toDouble)
   }
 
   private def logLineIR(line: LogLine): IR = {
@@ -83,9 +83,8 @@ private class Translator {
   **/
   private def factoredSumLine(ax: Coefficients,
                               b: BigDecimal,
-                              factor: Double,
-                              ring: Ring): IR = {
-    // We'll always use MultiplyRing so should not take it as a param
+                              factor: Double): IR = {
+    val ring = multiplyRing
     val terms = ax.toList
     val allTerms =
       if (b == ring.zero)
