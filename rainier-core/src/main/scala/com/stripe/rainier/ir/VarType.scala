@@ -81,6 +81,8 @@ private object VarTypes {
           traverse(v.rhs)
         case VarRef(sym) =>
           map(sym) += 1
+        case s: SumIR =>
+          s.irs.foreach(traverse)
         case b: BinaryIR =>
           traverse(b.left)
           traverse(b.right)

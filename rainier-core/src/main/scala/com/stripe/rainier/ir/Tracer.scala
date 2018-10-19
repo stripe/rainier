@@ -42,6 +42,9 @@ object Tracer {
         case p: Parameter =>
           val i = varIndices(p)
           s"params($i)"
+        case s: SumIR =>
+          val ts = s.irs.map(ir => traverse(ir))
+          s"Sum($ts)}"
         case b: BinaryIR =>
           b.op match {
             case PowOp =>
