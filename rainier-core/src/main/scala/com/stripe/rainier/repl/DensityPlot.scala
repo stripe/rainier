@@ -12,16 +12,7 @@ final case class DensityPlot(nRows: Int = 20,
                              markers: String = "·∘○") {
 
   def plot2D(points: Seq[(Double, Double)]): Seq[String] = {
-    val (fullXs, fullYs) = points.unzip
-    val (xMin, xMax) = findExtremes(fullXs)
-    val (yMin, yMax) = findExtremes(fullYs)
-    val (xBucketFn, xLabelFn) = mapping(xMax, xMin, nColumns, logX)
-    val (yBucketFn, yLabelFn) = mapping(yMax, yMin, nRows, logY)
-
-    val cellCounts =
-      points
-        .groupBy { case (x, y) => (xBucketFn(x), yBucketFn(y)) }
-        .map { case (k, v) => k -> v.size.toDouble }
+    val (cellCounts, xLabelFn, yLabelFn) = densityCountsLabel2D(points)
 
     val markerFn = if (cellCounts.values.max == 1) { x: Double =>
       markers.size - 1
@@ -38,14 +29,30 @@ final case class DensityPlot(nRows: Int = 20,
     plotCells(cells, xLabelFn, yLabelFn)
   }
 
+  def densityCounts1D(fullPoints: Seq[Double]): Seq[(Double, Double)] = {
+    val (xCounts, xLabelFn) = densityCountsLabel1D(fullPoints)
+    xCounts.toSeq
+      .map {
+        case (k, v) => xLabelFn(k) -> v
+      }
+      .sortBy(_._1)
+  }
+
+  def densityCounts2D(
+      points: Seq[(Double, Double)]): Seq[((Double, Double), Double)] = {
+    val (cellCounts, xLabelFn, yLabelFn) = densityCountsLabel2D(points)
+
+    cellCounts.toSeq
+      .map {
+        case ((x, y), v) => (xLabelFn(x), yLabelFn(y)) -> v
+      }
+      .sortBy(_._1)
+  }
+
   def plot1D(fullPoints: Seq[Double]): Seq[String] = {
-    val (min, max) = findExtremes(fullPoints)
-    val points = fullPoints.filter { x =>
-      x <= max && x >= min
-    }
-    val (xBucketFn, xLabelFn) = mapping(max, min, nColumns, logX)
-    val xCounts =
-      points.groupBy(xBucketFn).map { case (k, v) => k -> v.size.toDouble }
+
+    val (xCounts, xLabelFn) = densityCountsLabel1D(fullPoints)
+
     val (yBucketFn, yLabelFn) = mapping(xCounts.values.max, 0.0, nRows, logY)
 
     val cells =
@@ -62,6 +69,32 @@ final case class DensityPlot(nRows: Int = 20,
       }.toMap
 
     plotCells(cells, xLabelFn, yLabelFn)
+  }
+
+  private def densityCountsLabel2D(points: Seq[(Double, Double)])
+    : (Map[(Int, Int), Double], Int => Double, Int => Double) = {
+    val (fullXs, fullYs) = points.unzip
+    val (xMin, xMax) = findExtremes(fullXs)
+    val (yMin, yMax) = findExtremes(fullYs)
+    val (xBucketFn, xLabelFn) = mapping(xMax, xMin, nColumns, logX)
+    val (yBucketFn, yLabelFn) = mapping(yMax, yMin, nRows, logY)
+
+    val cellCounts =
+      points
+        .groupBy { case (x, y) => (xBucketFn(x), yBucketFn(y)) }
+        .map { case (k, v) => k -> v.size.toDouble }
+    (cellCounts, xLabelFn, yLabelFn)
+  }
+  private def densityCountsLabel1D(
+      fullPoints: Seq[Double]): (Map[Int, Double], Int => Double) = {
+    val (min, max) = findExtremes(fullPoints)
+    val points = fullPoints.filter { x =>
+      x <= max && x >= min
+    }
+    val (xBucketFn, xLabelFn) = mapping(max, min, nColumns, logX)
+    val xCounts =
+      points.groupBy(xBucketFn).map { case (k, v) => k -> v.size.toDouble }
+    (xCounts, xLabelFn)
   }
 
   private def findExtremes(values: Seq[Double]): (Double, Double) =
