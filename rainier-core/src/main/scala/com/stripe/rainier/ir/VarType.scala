@@ -84,6 +84,13 @@ private object VarTypes {
           traverse(i.test)
         case u: UnaryIR =>
           traverse(u.original)
+        case l: LookupIR =>
+          traverse(l.index)
+          l.table.foreach {
+            case (vOpt, r) =>
+              traverse(r)
+              vOpt.foreach(traverse)
+          }
         case _: MethodRef => ()
       }
 

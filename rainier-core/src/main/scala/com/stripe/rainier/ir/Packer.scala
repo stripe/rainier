@@ -19,7 +19,7 @@ private class Packer(methodSizeLimit: Int) {
         (new VarDef(v.sym, ir), irSize + 1)
       case _: Ref => (p, 1)
     }
-
+  /*
   private def traverseLookupIR(l: LookupIR): (LookupIR, Int) = {
     val (defIRs, defsSize) =
       l.defs.foldLeft((List.empty[VarDef], l.defs.size)) {
@@ -32,7 +32,7 @@ private class Packer(methodSizeLimit: Int) {
     (new LookupIR(indexIR, defIRs.reverse, l.refs),
      defsSize + l.refs.size + indexSize)
   }
-
+   */
   private def traverseAndMaybePack(p: IR, parentSize: Int): (IR, Int) = {
     val (ir, irSize) = traverseIR(p)
     if ((irSize + parentSize) > methodSizeLimit)
@@ -61,6 +61,8 @@ private class Packer(methodSizeLimit: Int) {
         val (zExpr, zSize) =
           traverse(f.whenZero, testSize + nzSize + 1)
         (new IfIR(testExpr, nzExpr, zExpr), testSize + nzSize + zSize + 1)
+      case l: LookupIR => //hacks
+        (l, 1)
       case _: MethodRef =>
         sys.error("there shouldn't be any method refs yet")
     }

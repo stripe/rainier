@@ -97,6 +97,7 @@ object Tracer {
             s"if($t == 0.0) $z else $nz"
           else
             s"(if($t == 0.0) $z else $nz)"
+        case l: LookupIR => ???
         case MethodRef(sym) =>
           val i = sym.id
           s"f$i(params, globals)"

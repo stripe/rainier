@@ -23,7 +23,7 @@ private class Translator {
         case l: LogLine => logLineExpr(l)
         case Pow(base, exponent) =>
           binaryExpr(toExpr(base), toExpr(exponent), PowOp)
-        case l: Lookup           => lookupExpr(l)
+        case l: Lookup => lookupExpr(l)
       }
       reals += r -> expr
       expr
@@ -47,11 +47,14 @@ private class Translator {
                 (),
                 new IfIR(test, whenZero, whenNonZero))
 
-  private def lookupIR(lookup: Lookup): IR = {
-    val defs = lookup.table.map(toIR).collect { case v: VarDef => v }
-    val index = toIR(lookup.index)
-    val refs = lookup.table.map(toIR).collect { case r: Ref => r }
-    LookupIR(index, defs, refs)
+  private def lookupExpr(lookup: Lookup): Expr = {
+    val tableExprs = lookup.table.map(toExpr)
+    val index = toExpr(lookup.index)
+    val withRefs = tableExprs.map {
+      case r: Ref    => (None, r)
+      case v: VarDef => (Some(v), ref(v))
+    }
+    new VarDef(Sym.freshSym(), LookupIR(index, withRefs))
   }
 
   private def lineExpr(line: Line): Expr = {

@@ -61,11 +61,11 @@ final private case class ExprMethodGenerator(method: MethodDef,
         constant(0.0)
         swapIfEqThenPop()
       case l: LookupIR =>
-        l.defs.foreach(traverse)
+        l.table.flatMap(_._1).foreach(traverse)
         traverse(l.index)
-        tableSwitch(l.refs){
+        tableSwitch(l.table.map(_._2)) {
           case Some(r) => traverse(r)
-          case None => throwNPE()
+          case None    => throwNPE()
         }
       case m: MethodRef =>
         callExprMethod(m.sym.id)
