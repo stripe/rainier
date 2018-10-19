@@ -20,10 +20,17 @@ private class Packer(methodSizeLimit: Int) {
       case _: Ref => (p, 1)
     }
 
-  private def traverseVarDef(v: VarDef, parentSize: Int): (VarDef, Int) = {
-    val (rhsIR, rhsSize) =
-      traverseAndMaybePack(v.rhs, parentSize)
-    (new VarDef(v.sym, rhsIR), rhsSize + 1)
+  private def traverseLookupIR(l: LookupIR): (LookupIR, Int) = {
+    val (defIRs, defsSize) =
+      l.defs.foldLeft((List.empty[VarDef], l.defs.size)) {
+        case ((acc, dsz), vd) =>
+          val (defIR, defSize) = traverseVarDef(vd)
+          (defIR :: acc, dsz - 1 + defSize)
+      }
+    val (indexIR, indexSize) =
+      traverseAndMaybePack(l.index, defsSize + l.refs.size)
+    (new LookupIR(indexIR, defIRs.reverse, l.refs),
+     defsSize + l.refs.size + indexSize)
   }
 
   private def traverseAndMaybePack(p: IR, parentSize: Int): (IR, Int) = {
