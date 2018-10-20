@@ -99,7 +99,7 @@ object Tracer {
             s"(if($t == 0.0) $z else $nz)"
         case s: SeqIR =>
           val a = traverse(s.first)
-          val b = traverse(s.second)
+          val b = traverseIR(s.second)
           if (needsParens)
             s"($a; $b)"
           else

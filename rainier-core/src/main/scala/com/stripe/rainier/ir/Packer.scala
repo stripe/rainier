@@ -13,19 +13,18 @@ private class Packer(methodSizeLimit: Int) {
 
   private def traverse(p: Expr, parentSize: Int): (Expr, Int) =
     p match {
-      case v: VarDef =>
-        val (ir, irSize) =
-          traverseAndMaybePack(v.rhs, parentSize: Int)
-        (new VarDef(v.sym, ir), irSize + 1)
-      case _: Ref => (p, 1)
+      case v: VarDef => traverseVarDef(v, parentSize)
+      case _: Ref    => (p, 1)
     }
 
-  private def traverseAndMaybePack(p: IR, parentSize: Int): (IR, Int) = {
-    val (ir, irSize) = traverseIR(p)
-    if ((irSize + parentSize) > methodSizeLimit)
-      (createMethod(ir), 1)
-    else
-      (ir, irSize)
+  private def traverseVarDef(v: VarDef, parentSize: Int): (VarDef, Int) = {
+    val (ir, irSize) = traverseIR(v.rhs)
+    val (newIR, newSize) =
+      if ((irSize + parentSize) > methodSizeLimit)
+        (createMethod(ir), 1)
+      else
+        (ir, irSize)
+    (new VarDef(v.sym, newIR), newSize + 1)
   }
 
   private def traverseIR(p: IR): (IR, Int) =
@@ -52,7 +51,7 @@ private class Packer(methodSizeLimit: Int) {
         val (secondIR, secondSize) =
           traverseIR(s.second)
         val (firstExpr, firstSize) =
-          traverse(s.first, secondSize + 1)
+          traverseVarDef(s.first, secondSize + 1)
         (new SeqIR(firstExpr, secondIR), firstSize + secondSize + 1)
       case _: MethodRef =>
         sys.error("there shouldn't be any method refs yet")

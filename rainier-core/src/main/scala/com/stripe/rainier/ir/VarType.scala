@@ -86,7 +86,7 @@ private object VarTypes {
           traverse(u.original)
         case s: SeqIR =>
           traverse(s.first)
-          traverse(s.second)
+          traverseIR(s.second)
         case _: MethodRef => ()
       }
 
