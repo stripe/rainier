@@ -13,32 +13,18 @@ private class Packer(methodSizeLimit: Int) {
 
   private def traverse(p: Expr, parentSize: Int): (Expr, Int) =
     p match {
-      case v: VarDef =>
-        val (ir, irSize) =
-          traverseAndMaybePack(v.rhs, parentSize: Int)
-        (new VarDef(v.sym, ir), irSize + 1)
+      case v: VarDef => traverseVarDef(v, parentSize)
       case _: Ref => (p, 1)
     }
-  /*
-  private def traverseLookupIR(l: LookupIR): (LookupIR, Int) = {
-    val (defIRs, defsSize) =
-      l.defs.foldLeft((List.empty[VarDef], l.defs.size)) {
-        case ((acc, dsz), vd) =>
-          val (defIR, defSize) = traverseVarDef(vd)
-          (defIR :: acc, dsz - 1 + defSize)
-      }
-    val (indexIR, indexSize) =
-      traverseAndMaybePack(l.index, defsSize + l.refs.size)
-    (new LookupIR(indexIR, defIRs.reverse, l.refs),
-     defsSize + l.refs.size + indexSize)
-  }
-   */
-  private def traverseAndMaybePack(p: IR, parentSize: Int): (IR, Int) = {
-    val (ir, irSize) = traverseIR(p)
-    if ((irSize + parentSize) > methodSizeLimit)
-      (createMethod(ir), 1)
-    else
-      (ir, irSize)
+
+  private def traverseVarDef(v: VarDef, parentSize: Int): (VarDef, Int) = {
+    val (ir, irSize) = traverseIR(v.rhs)
+    val (newIR, newSize) =
+      if ((irSize + parentSize) > methodSizeLimit)
+        (createMethod(ir), 1)
+      else
+        (ir, irSize)
+    (new VarDef(v.sym, newIR), newSize + 1)
   }
 
   private def traverseIR(p: IR): (IR, Int) =
@@ -61,11 +47,30 @@ private class Packer(methodSizeLimit: Int) {
         val (zExpr, zSize) =
           traverse(f.whenZero, testSize + nzSize + 1)
         (new IfIR(testExpr, nzExpr, zExpr), testSize + nzSize + zSize + 1)
-      case l: LookupIR => //hacks
-        (l, 1)
+      case l: LookupIR =>
+        traverseLookup(l)
       case _: MethodRef =>
         sys.error("there shouldn't be any method refs yet")
     }
+
+  private def traverseLookup(l: LookupIR): (LookupIR, Int) = {
+    @annotation.tailrec
+    def loop(
+      list: List[(Option[VarDef], Ref)],
+      acc: List[(Option[VarDef], Ref)],
+      size: Int): (List[(Option[VarDef], Ref)], Int) =
+      list match {
+        case Nil => (acc, size)
+        case (Some(vd), r) :: tail =>
+          val (newVD, sz) = traverseVarDef(vd, 0)
+          if((size + sz) > methodSizeLimit)
+            ???
+          else
+            loop(size + sz, tail, (newVD, r) :: acc)
+        case (None, r) :: tail =>
+          loop(size + 1, tail, (None, r) :: acc)
+      }
+  }
 
   private def createMethod(rhs: IR): MethodRef = {
     val s = Sym.freshSym()
