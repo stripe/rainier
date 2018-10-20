@@ -1,22 +1,22 @@
 package com.stripe.rainier.ir
 
-sealed trait IR
-
-sealed trait Ref extends IR
+sealed trait Expr
+sealed trait Ref extends Expr
 final class Parameter extends Ref {
   val sym = Sym.freshSym
 }
 final case class Const(value: Double) extends Ref
 final case class VarRef(sym: Sym) extends Ref
 
-final case class BinaryIR(left: IR, right: IR, op: BinaryOp) extends IR
-final case class UnaryIR(original: IR, op: UnaryOp) extends IR
-final case class IfIR(test: IR, whenNonZero: IR, whenZero: IR) extends IR
+final case class VarDef(sym: Sym, rhs: IR) extends Expr
 
-final case class VarDef(sym: Sym, rhs: IR) extends IR
-
-final case class MethodDef(sym: Sym, rhs: IR) extends IR
+sealed trait IR
+final case class BinaryIR(left: Expr, right: Expr, op: BinaryOp) extends IR
+final case class UnaryIR(original: Expr, op: UnaryOp) extends IR
+final case class IfIR(test: Expr, whenNonZero: Expr, whenZero: Expr) extends IR
 final case class MethodRef(sym: Sym) extends IR
+
+final case class MethodDef(sym: Sym, rhs: IR)
 
 final case class Sym private (id: Int)
 object Sym {

@@ -24,3 +24,4 @@ case object ExpOp extends UnaryOp
 case object LogOp extends UnaryOp
 case object AbsOp extends UnaryOp
 case object RectifierOp extends UnaryOp
+case object NoOp extends UnaryOp

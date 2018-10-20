@@ -6,47 +6,51 @@ private class Packer(methodSizeLimit: Int) {
   private val methodDefs: mutable.Map[Sym, MethodDef] = mutable.Map.empty
   def methods: Set[MethodDef] = methodDefs.values.toSet
 
-  def pack(p: IR): MethodRef = {
-    val (pIR, _) = traverse(p)
-    createMethod(pIR)
+  def pack(p: Expr): MethodRef = {
+    val (pExpr, _) = traverse(p, 0)
+    createMethod(UnaryIR(pExpr, NoOp))
   }
 
-  private def traverse(p: IR): (IR, Int) =
+  private def traverse(p: Expr, parentSize: Int): (Expr, Int) =
     p match {
       case v: VarDef =>
-        val (rhsIR, rhsSize) =
-          traverseAndMaybePack(v.rhs, 1)
-        (new VarDef(v.sym, rhsIR), rhsSize + 1)
-      case b: BinaryIR =>
-        val (leftIR, leftSize) =
-          traverseAndMaybePack(b.left, 2)
-        val (rightIR, rightSize) =
-          traverseAndMaybePack(b.right, leftSize + 1)
-        (new BinaryIR(leftIR, rightIR, b.op), leftSize + rightSize + 1)
-      case u: UnaryIR =>
-        val (originalIR, irSize) =
-          traverseAndMaybePack(u.original, 1)
-        (new UnaryIR(originalIR, u.op), irSize + 1)
-      case f: IfIR =>
-        val (testIR, testSize) =
-          traverseAndMaybePack(f.test, 3)
-        val (nzIR, nzSize) =
-          traverseAndMaybePack(f.whenNonZero, testSize + 2)
-        val (zIR, zSize) =
-          traverseAndMaybePack(f.whenZero, testSize + nzSize + 1)
-        (new IfIR(testIR, nzIR, zIR), testSize + nzSize + zSize + 1)
+        val (ir, irSize) =
+          traverseAndMaybePack(v.rhs, parentSize: Int)
+        (new VarDef(v.sym, ir), irSize + 1)
       case _: Ref => (p, 1)
-      case MethodDef(_, _) | MethodRef(_) =>
-        sys.error("This should never happen")
     }
 
   private def traverseAndMaybePack(p: IR, parentSize: Int): (IR, Int) = {
-    val (pt, size) = traverse(p)
-    if ((size + parentSize) > methodSizeLimit)
-      (createMethod(pt), 1)
+    val (ir, irSize) = traverseIR(p)
+    if ((irSize + parentSize) > methodSizeLimit)
+      (createMethod(ir), 1)
     else
-      (pt, size)
+      (ir, irSize)
   }
+
+  private def traverseIR(p: IR): (IR, Int) =
+    p match {
+      case b: BinaryIR =>
+        val (leftExpr, leftSize) =
+          traverse(b.left, 2)
+        val (rightExpr, rightSize) =
+          traverse(b.right, leftSize + 1)
+        (new BinaryIR(leftExpr, rightExpr, b.op), leftSize + rightSize + 1)
+      case u: UnaryIR =>
+        val (expr, exprSize) =
+          traverse(u.original, 1)
+        (new UnaryIR(expr, u.op), exprSize + 1)
+      case f: IfIR =>
+        val (testExpr, testSize) =
+          traverse(f.test, 3)
+        val (nzExpr, nzSize) =
+          traverse(f.whenNonZero, testSize + 2)
+        val (zExpr, zSize) =
+          traverse(f.whenZero, testSize + nzSize + 1)
+        (new IfIR(testExpr, nzExpr, zExpr), testSize + nzSize + zSize + 1)
+      case _: MethodRef =>
+        sys.error("there shouldn't be any method refs yet")
+    }
 
   private def createMethod(rhs: IR): MethodRef = {
     val s = Sym.freshSym()

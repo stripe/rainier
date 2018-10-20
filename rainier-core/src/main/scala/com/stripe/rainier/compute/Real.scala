@@ -68,20 +68,20 @@ object Real {
   //would produce as JVM bytecode
   def trace(real: Real): Unit = {
     val translator = new Translator
-    val irs = List(translator.toIR(real))
+    val exprs = List(translator.toExpr(real))
     val params = RealOps.variables(real).toList.map(_.param)
-    ir.Tracer.trace(params, irs)
+    ir.Tracer.trace(params, exprs)
   }
 
   def traceGradient(real: Real): Unit = {
     val translator = new Translator
     val variables = RealOps.variables(real).toList
     val gradient = Gradient.derive(variables, real)
-    val irs = gradient.map { r =>
-      translator.toIR(r)
+    val exprs = gradient.map { r =>
+      translator.toExpr(r)
     }
     val params = variables.map(_.param)
-    ir.Tracer.trace(params, irs)
+    ir.Tracer.trace(params, exprs)
   }
 
   private[compute] val BigZero = BigDecimal(0.0)

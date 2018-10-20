@@ -95,10 +95,10 @@ final case class IRCompiler(methodSizeLimit: Int, classSizeLimit: Int)
     val params = inputs.map { v =>
       v.param
     }
-    val irs = outputs.map { r =>
-      translator.toIR(r)
+    val exprs = outputs.map { r =>
+      translator.toExpr(r)
     }
-    CompiledFunction(params, irs, methodSizeLimit, classSizeLimit)
+    CompiledFunction(params, exprs, methodSizeLimit, classSizeLimit)
   }
 }
 

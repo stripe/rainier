@@ -1,10 +1,10 @@
 package com.stripe.rainier.ir
 
 object Tracer {
-  def trace(inputs: Seq[Parameter], irs: Seq[IR]): Unit = {
+  def trace(inputs: Seq[Parameter], exprs: Seq[Expr]): Unit = {
     val packer = new Packer(200)
-    val outputMeths = irs.map { ir =>
-      packer.pack(ir)
+    val outputMeths = exprs.map { expr =>
+      packer.pack(expr)
     }
     val allMeths = packer.methods
     val varTypes = VarTypes.methods(allMeths.toList)
@@ -33,15 +33,43 @@ object Tracer {
 
     println(
       "def f" + method.sym.id + "(params: Array[Double], globals: Array[Double]): Double = {")
-    println("  " + traverse(method.rhs))
+    println("  " + traverseIR(method.rhs))
     println("}")
 
-    def traverse(ir: IR, needsParens: Boolean = false): String = {
-      ir match {
+    def traverse(expr: Expr, needsParens: Boolean = false): String =
+      expr match {
         case Const(value) => value.toString
         case p: Parameter =>
           val i = varIndices(p)
           s"params($i)"
+        case v: VarDef =>
+          varTypes(v.sym) match {
+            case Inline =>
+              traverseIR(v.rhs, needsParens)
+            case Local(i) =>
+              val r = traverseIR(v.rhs)
+              val n = "tmp" + i
+              println(s"  val $n = $r")
+              n
+            case Global(i) =>
+              val r = traverseIR(v.rhs)
+              val n = s"globals($i)"
+              println(s"  val $n = $r")
+              n
+          }
+        case VarRef(sym) =>
+          varTypes(sym) match {
+            case Inline =>
+              sys.error("Should not have references to inlined vars")
+            case Local(i) =>
+              s"tmp$i"
+            case Global(i) =>
+              s"globals($i)"
+          }
+      }
+
+    def traverseIR(ir: IR, needsParens: Boolean = false): String =
+      ir match {
         case b: BinaryIR =>
           b.op match {
             case PowOp =>
@@ -69,37 +97,10 @@ object Tracer {
             s"if($t == 0.0) $z else $nz"
           else
             s"(if($t == 0.0) $z else $nz)"
-        case v: VarDef =>
-          varTypes(v.sym) match {
-            case Inline =>
-              traverse(v.rhs, needsParens)
-            case Local(i) =>
-              val r = traverse(v.rhs)
-              val n = "tmp" + i
-              println(s"  val $n = $r")
-              n
-            case Global(i) =>
-              val r = traverse(v.rhs)
-              val n = s"globals($i)"
-              println(s"  val $n = $r")
-              n
-          }
-        case VarRef(sym) =>
-          varTypes(sym) match {
-            case Inline =>
-              sys.error("Should not have references to inlined vars")
-            case Local(i) =>
-              s"tmp$i"
-            case Global(i) =>
-              s"globals($i)"
-          }
         case MethodRef(sym) =>
           val i = sym.id
           s"f$i(params, globals)"
-        case _: MethodDef =>
-          sys.error("Should not have nested method defs")
       }
-    }
   }
 
   private def name(b: BinaryOp): String =
@@ -117,5 +118,6 @@ object Tracer {
       case ExpOp       => "Math.exp"
       case AbsOp       => "Math.abs"
       case RectifierOp => "MathOps.rectifier"
+      case NoOp        => ""
     }
 }
