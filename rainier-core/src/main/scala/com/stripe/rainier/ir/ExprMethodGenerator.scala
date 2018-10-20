@@ -60,6 +60,10 @@ final private case class ExprMethodGenerator(method: MethodDef,
         traverse(i.test)
         constant(0.0)
         swapIfEqThenPop()
+      case s: SeqIR =>
+        traverse(s.first)
+        pop()
+        traverse(s.second)
       case m: MethodRef =>
         callExprMethod(m.sym.id)
     }

@@ -48,6 +48,12 @@ private class Packer(methodSizeLimit: Int) {
         val (zExpr, zSize) =
           traverse(f.whenZero, testSize + nzSize + 1)
         (new IfIR(testExpr, nzExpr, zExpr), testSize + nzSize + zSize + 1)
+      case s: SeqIR =>
+        val (secondIR, secondSize) =
+          traverseIR(s.second)
+        val (firstExpr, firstSize) =
+          traverse(s.first, secondSize + 1)
+        (new SeqIR(firstExpr, secondIR), firstSize + secondSize + 1)
       case _: MethodRef =>
         sys.error("there shouldn't be any method refs yet")
     }
