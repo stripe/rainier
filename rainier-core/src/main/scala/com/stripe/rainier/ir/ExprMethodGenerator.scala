@@ -67,6 +67,10 @@ final private case class ExprMethodGenerator(method: MethodDef,
           case Some(r) => traverse(r)
           case None    => throwNPE()
         }
+      case s: SeqIR =>
+        traverse(s.first)
+        pop()
+        traverse(s.second)
       case m: MethodRef =>
         callExprMethod(m.sym.id)
     }

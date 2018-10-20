@@ -91,6 +91,9 @@ private object VarTypes {
               traverse(r)
               vOpt.foreach(traverse)
           }
+        case s: SeqIR =>
+          traverse(s.first)
+          traverseIR(s.second)
         case _: MethodRef => ()
       }
 
