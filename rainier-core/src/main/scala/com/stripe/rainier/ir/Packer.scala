@@ -14,7 +14,7 @@ private class Packer(methodSizeLimit: Int) {
   private def traverse(p: Expr, parentSize: Int): (Expr, Int) =
     p match {
       case v: VarDef => traverseVarDef(v, parentSize)
-      case _: Ref => (p, 1)
+      case _: Ref    => (p, 1)
     }
 
   private def traverseVarDef(v: VarDef, parentSize: Int): (VarDef, Int) = {
@@ -61,15 +61,14 @@ private class Packer(methodSizeLimit: Int) {
 
   private def traverseLookup(l: LookupIR): (LookupIR, Int) = {
     @annotation.tailrec
-    def loop(
-      list: List[(Option[VarDef], Ref)],
-      acc: List[(Option[VarDef], Ref)],
-      size: Int): (List[(Option[VarDef], Ref)], Int) =
+    def loop(list: List[(Option[VarDef], Ref)],
+             acc: List[(Option[VarDef], Ref)],
+             size: Int): (List[(Option[VarDef], Ref)], Int) =
       list match {
         case Nil => (acc, size)
         case (Some(vd), r) :: tail =>
           val (newVD, sz) = traverseVarDef(vd, 0)
-          if((size + sz) > methodSizeLimit)
+          if ((size + sz) > methodSizeLimit)
             ???
           else
             loop(size + sz, tail, (newVD, r) :: acc)

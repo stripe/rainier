@@ -48,13 +48,12 @@ private class Translator {
                 new IfIR(test, whenZero, whenNonZero))
 
   private def lookupExpr(lookup: Lookup): Expr = {
-    val tableExprs = lookup.table.map(toExpr)
+    val tableExprs = lookup.table.map(toExpr).toList
+    val defs = tableExprs.collect{v: VarDef => v}
     val index = toExpr(lookup.index)
-    val withRefs = tableExprs.map {
-      case r: Ref    => (None, r)
-      case v: VarDef => (Some(v), ref(v))
-    }
-    new VarDef(Sym.freshSym(), LookupIR(index, withRefs))
+    val refs = tableExprs.map(ref)
+    val lookup = LookupIR(index, refs)
+    seqTree(defs, lookup)
   }
 
   private def lineExpr(line: Line): Expr = {
