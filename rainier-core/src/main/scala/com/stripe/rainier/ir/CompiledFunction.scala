@@ -11,7 +11,19 @@ object CompiledFunction {
   def apply(inputs: Seq[Parameter],
             exprs: Seq[Expr],
             methodSizeLimit: Int,
-            classSizeLimit: Int): CompiledFunction = {
+            classSizeLimit: Int): CompiledFunction =
+    classLoader(inputs, exprs, methodSizeLimit, classSizeLimit).newInstance
+
+  def bytecode(inputs: Seq[Parameter],
+               exprs: Seq[Expr],
+               methodSizeLimit: Int,
+               classSizeLimit: Int): Seq[Array[Byte]] =
+    classLoader(inputs, exprs, methodSizeLimit, classSizeLimit).bytecode
+
+  private def classLoader(inputs: Seq[Parameter],
+                          exprs: Seq[Expr],
+                          methodSizeLimit: Int,
+                          classSizeLimit: Int): GeneratedClassLoader = {
     val classPrefix = ClassGenerator.freshName
     val packer = new Packer(methodSizeLimit)
     val outputMeths = exprs.map { expr =>
@@ -49,10 +61,7 @@ object CompiledFunction {
       .toList
 
     val parentClassLoader = this.getClass.getClassLoader
-    val classLoader =
-      new GeneratedClassLoader(ocg, ecgs, parentClassLoader)
-
-    classLoader.newInstance
+    new GeneratedClassLoader(ocg, ecgs, parentClassLoader)
   }
 
   def run(cf: CompiledFunction,
