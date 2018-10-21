@@ -1,10 +1,11 @@
 package com.stripe.rainier.compute
 
-import org.benf.cfr.reader.entities.ClassFile
-import org.benf.cfr.reader.util.bytestream.BaseByteData
-import org.benf.cfr.reader.state.{DCCommonState, ClassFileSourceImpl}
-import org.benf.cfr.reader.util.getopt.OptionsImpl
-import org.benf.cfr.reader.util.output.ToStringDumper
+import org.benf.cfr.reader
+import reader.entities.ClassFile
+import reader.state.{DCCommonState, ClassFileSourceImpl}
+import reader.util.bytestream.BaseByteData
+import reader.util.getopt.OptionsImpl
+import reader.util.output.ToStringDumper
 
 object CFR {
   val optionMap = new java.util.HashMap[String, String]
