@@ -97,13 +97,7 @@ object Tracer {
             s"if($t == 0.0) $z else $nz"
           else
             s"(if($t == 0.0) $z else $nz)"
-        case s: SeqIR =>
-          val a = traverse(s.first)
-          val b = traverseIR(s.second)
-          if (needsParens)
-            s"($a; $b)"
-          else
-            s"$a; $b"
+        case s: SeqIR => ???
         case MethodRef(sym) =>
           val i = sym.id
           s"f$i(params, globals)"

@@ -10,12 +10,33 @@ final case class VarRef(sym: Sym) extends Ref
 
 final case class VarDef(sym: Sym, rhs: IR) extends Expr
 
+object VarDef {
+  def apply(ir: IR): VarDef =
+    VarDef(Sym.freshSym, ir)
+}
+
 sealed trait IR
 final case class BinaryIR(left: Expr, right: Expr, op: BinaryOp) extends IR
 final case class UnaryIR(original: Expr, op: UnaryOp) extends IR
 final case class IfIR(test: Expr, whenNonZero: Expr, whenZero: Expr) extends IR
-final case class SeqIR(first: VarDef, second: IR) extends IR
 final case class MethodRef(sym: Sym) extends IR
+final case class SeqIR(first: VarDef, second: VarDef) extends IR
+
+object SeqIR {
+  def apply(seq: Seq[VarDef]): VarDef =
+    tree(seq.toList, seq.size)
+
+  private def tree(list: List[VarDef], size: Int): VarDef =
+    size match {
+      case 1 => list.head
+      case 2 => VarDef(SeqIR(list.head, list.tail.head))
+      case _ =>
+        val leftSize = size / 2
+        val left = tree(list, leftSize)
+        val right = tree(list.drop(leftSize), size - leftSize)
+        VarDef(SeqIR(left, right))
+    }
+}
 
 final case class MethodDef(sym: Sym, rhs: IR)
 
