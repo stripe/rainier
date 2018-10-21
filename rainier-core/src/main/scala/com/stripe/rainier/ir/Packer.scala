@@ -48,7 +48,9 @@ private class Packer(methodSizeLimit: Int) {
           traverse(f.whenZero, testSize + nzSize + 1)
         (new IfIR(testExpr, nzExpr, zExpr), testSize + nzSize + zSize + 1)
       case l: LookupIR =>
-        traverseLookup(l)
+        val (indexExpr, indexSize) =
+          traverse(l.index, l.table.size)
+        (new LookupIR(indexExpr, l.table), indexSize + l.table.size)
       case s: SeqIR =>
         val (firstDef, firstSize) =
           traverseVarDef(s.first, 1)
@@ -58,24 +60,6 @@ private class Packer(methodSizeLimit: Int) {
       case _: MethodRef =>
         sys.error("there shouldn't be any method refs yet")
     }
-
-  private def traverseLookup(l: LookupIR): (LookupIR, Int) = {
-    @annotation.tailrec
-    def loop(list: List[(Option[VarDef], Ref)],
-             acc: List[(Option[VarDef], Ref)],
-             size: Int): (List[(Option[VarDef], Ref)], Int) =
-      list match {
-        case Nil => (acc, size)
-        case (Some(vd), r) :: tail =>
-          val (newVD, sz) = traverseVarDef(vd, 0)
-          if ((size + sz) > methodSizeLimit)
-            ???
-          else
-            loop(size + sz, tail, (newVD, r) :: acc)
-        case (None, r) :: tail =>
-          loop(size + 1, tail, (None, r) :: acc)
-      }
-  }
 
   private def createMethod(rhs: IR): MethodRef = {
     val s = Sym.freshSym()

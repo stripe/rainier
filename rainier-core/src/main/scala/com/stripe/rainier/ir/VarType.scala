@@ -86,11 +86,7 @@ private object VarTypes {
           traverse(u.original)
         case l: LookupIR =>
           traverse(l.index)
-          l.table.foreach {
-            case (vOpt, r) =>
-              traverse(r)
-              vOpt.foreach(traverse)
-          }
+          l.table.foreach(traverse)
         case s: SeqIR =>
           traverse(s.first)
           traverse(s.second)

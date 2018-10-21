@@ -49,11 +49,14 @@ private class Translator {
 
   private def lookupExpr(lookup: Lookup): Expr = {
     val tableExprs = lookup.table.map(toExpr).toList
-    val defs = tableExprs.collect{v: VarDef => v}
+    val defs = tableExprs.collect {
+      case v: VarDef =>
+        v
+    }
     val index = toExpr(lookup.index)
     val refs = tableExprs.map(ref)
-    val lookup = LookupIR(index, refs)
-    seqTree(defs, lookup)
+    val lookupExpr = VarDef(LookupIR(index, refs))
+    SeqIR(defs :+ lookupExpr)
   }
 
   private def lineExpr(line: Line): Expr = {

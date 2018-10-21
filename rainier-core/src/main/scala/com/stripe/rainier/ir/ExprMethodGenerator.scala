@@ -61,9 +61,8 @@ final private case class ExprMethodGenerator(method: MethodDef,
         constant(0.0)
         swapIfEqThenPop()
       case l: LookupIR =>
-        l.table.flatMap(_._1).foreach(traverse)
         traverse(l.index)
-        tableSwitch(l.table.map(_._2)) {
+        tableSwitch(l.table) {
           case Some(r) => traverse(r)
           case None    => throwNPE()
         }
