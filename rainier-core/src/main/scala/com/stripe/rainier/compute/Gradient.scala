@@ -100,6 +100,7 @@ private object Gradient {
         If(child.original, gradient.toReal * child.original / child, Real.zero)
       case RectifierOp =>
         If(child.original < 0, Real.zero, gradient.toReal)
+      case NoOp => gradient.toReal
     }
   }
 

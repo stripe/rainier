@@ -1,8 +1,8 @@
 package com.stripe.rainier.ir
 
-private[ir] class GeneratedClassLoader(cf: OutputClassGenerator,
-                                       helpers: Seq[ExprClassGenerator],
-                                       parent: ClassLoader)
+class GeneratedClassLoader private[ir] (cf: OutputClassGenerator,
+                                        helpers: Seq[ExprClassGenerator],
+                                        parent: ClassLoader)
     extends ClassLoader(parent) {
   val cfClass = defineClass(cf.name, cf.bytes, 0, cf.bytes.length)
   val helperClasses: Map[String, Class[_]] =
@@ -19,4 +19,7 @@ private[ir] class GeneratedClassLoader(cf: OutputClassGenerator,
 
   def newInstance: CompiledFunction =
     cfClass.newInstance.asInstanceOf[CompiledFunction]
+
+  def bytecode: Seq[Array[Byte]] =
+    cf.bytes :: helpers.toList.map(_.bytes)
 }

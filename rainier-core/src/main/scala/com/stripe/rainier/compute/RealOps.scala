@@ -15,6 +15,7 @@ private[compute] object RealOps {
               "Cannot take the log of a negative number")
           case AbsOp       => Infinity
           case RectifierOp => Real.zero
+          case NoOp        => original
         }
       case Constant(Real.BigZero) =>
         op match {
@@ -22,6 +23,7 @@ private[compute] object RealOps {
           case LogOp       => NegInfinity
           case AbsOp       => Real.zero
           case RectifierOp => Real.zero
+          case NoOp        => original
         }
       case Constant(value) =>
         op match {
@@ -38,6 +40,7 @@ private[compute] object RealOps {
               Real.zero
             else
               original
+          case NoOp => original
         }
       case nc: NonConstant =>
         val opt = (op, nc) match {

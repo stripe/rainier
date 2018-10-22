@@ -9,13 +9,13 @@ trait CompiledFunction {
 
 object CompiledFunction {
   def apply(inputs: Seq[Parameter],
-            irs: Seq[IR],
+            exprs: Seq[Expr],
             methodSizeLimit: Int,
             classSizeLimit: Int): CompiledFunction = {
     val classPrefix = ClassGenerator.freshName
     val packer = new Packer(methodSizeLimit)
-    val outputMeths = irs.map { ir =>
-      packer.pack(ir)
+    val outputMeths = exprs.map { expr =>
+      packer.pack(expr)
     }
     val allMeths = packer.methods
     val varTypes = VarTypes.methods(allMeths.toList)
@@ -49,9 +49,7 @@ object CompiledFunction {
       .toList
 
     val parentClassLoader = this.getClass.getClassLoader
-    val classLoader =
-      new GeneratedClassLoader(ocg, ecgs, parentClassLoader)
-
+    val classLoader = new GeneratedClassLoader(ocg, ecgs, parentClassLoader)
     classLoader.newInstance
   }
 

@@ -6,30 +6,32 @@ private class Translator {
   private val binary = new SymCache[BinaryOp]
   private val unary = new SymCache[UnaryOp]
   private val ifs = new SymCache[Unit]
-  private var reals = Map.empty[Real, IR]
+  private var reals = Map.empty[Real, Expr]
 
-  def toIR(r: Real): IR = reals.get(r) match {
-    case Some(ir) => ref(ir)
+  def toExpr(r: Real): Expr = reals.get(r) match {
+    case Some(expr) => ref(expr)
     case None =>
-      val ir = r match {
+      val expr = r match {
         case v: Variable         => v.param
         case Infinity            => Const(1.0 / 0.0)
         case NegInfinity         => Const(-1.0 / 0.0)
         case Constant(value)     => Const(value.toDouble)
-        case Unary(original, op) => unaryIR(toIR(original), op)
-        case i: If               => ifIR(toIR(i.whenNonZero), toIR(i.whenZero), toIR(i.test))
-        case l: Line             => lineIR(l)
-        case l: LogLine          => logLineIR(l)
-        case Pow(base, exponent) => binaryIR(toIR(base), toIR(exponent), PowOp)
+        case Unary(original, op) => unaryExpr(toExpr(original), op)
+        case i: If =>
+          ifExpr(toExpr(i.whenNonZero), toExpr(i.whenZero), toExpr(i.test))
+        case l: Line    => lineExpr(l)
+        case l: LogLine => logLineExpr(l)
+        case Pow(base, exponent) =>
+          binaryExpr(toExpr(base), toExpr(exponent), PowOp)
       }
-      reals += r -> ir
-      ir
+      reals += r -> expr
+      expr
   }
 
-  private def unaryIR(original: IR, op: UnaryOp): IR =
+  private def unaryExpr(original: Expr, op: UnaryOp): Expr =
     unary.memoize(List(List(original)), op, new UnaryIR(original, op))
 
-  private def binaryIR(left: IR, right: IR, op: BinaryOp): IR = {
+  private def binaryExpr(left: Expr, right: Expr, op: BinaryOp): Expr = {
     val key = List(left, right)
     val keys =
       if (op.isCommutative)
@@ -39,17 +41,17 @@ private class Translator {
     binary.memoize(keys, op, new BinaryIR(left, right, op))
   }
 
-  private def ifIR(whenZero: IR, whenNonZero: IR, test: IR): IR =
+  private def ifExpr(whenZero: Expr, whenNonZero: Expr, test: Expr): Expr =
     ifs.memoize(List(List(test, whenZero, whenNonZero)),
                 (),
                 new IfIR(test, whenZero, whenNonZero))
 
-  private def lineIR(line: Line): IR = {
+  private def lineExpr(line: Line): Expr = {
     val (y, k) = LineOps.factor(line)
     factoredSumLine(y.ax, y.b, k.toDouble)
   }
 
-  private def logLineIR(line: LogLine): IR = {
+  private def logLineExpr(line: LogLine): Expr = {
     val (y, k) = LogLineOps.factor(line)
     factoredLine(y.ax, Real.BigOne, k.toDouble, powRing)
   }
@@ -106,7 +108,7 @@ private class Translator {
   private def factoredLine(ax: Coefficients,
                            b: BigDecimal,
                            factor: Double,
-                           ring: Ring): IR = {
+                           ring: Ring): Expr = {
     val terms = ax.toList
     val posTerms = terms.filter(_._2 > Real.BigZero)
     val negTerms =
@@ -118,7 +120,7 @@ private class Translator {
       else
         (Constant(b), Real.BigOne) :: posTerms
 
-    val (ir, sign) =
+    val (expr, sign) =
       (allPosTerms.isEmpty, negTerms.isEmpty) match {
         case (true, true)  => (Const(0.0), 1.0)
         case (true, false) => (combineTerms(negTerms, ring), -1.0)
@@ -126,55 +128,56 @@ private class Translator {
         case (false, false) =>
           val posSum = combineTerms(allPosTerms, ring)
           val negSum = combineTerms(negTerms, ring)
-          (binaryIR(posSum, negSum, ring.minus), 1.0)
+          (binaryExpr(posSum, negSum, ring.minus), 1.0)
       }
 
     (factor * sign) match {
-      case 1.0 => ir
+      case 1.0 => expr
       case -1.0 =>
-        binaryIR(Const(ring.zero), ir, ring.minus)
+        binaryExpr(Const(ring.zero), expr, ring.minus)
       case 2.0 =>
-        binaryIR(ir, ref(ir), ring.plus)
+        binaryExpr(expr, ref(expr), ring.plus)
       case k =>
-        binaryIR(ir, Const(k), ring.times)
+        binaryExpr(expr, Const(k), ring.times)
     }
   }
 
-  private def makeLazyIRs(terms: Seq[(Real, BigDecimal)],
-                          ring: Ring): Seq[() => IR] = {
+  private def makeLazyExprs(terms: Seq[(Real, BigDecimal)],
+                          ring: Ring): Seq[() => Expr] = {
     terms.map {
       case (x, Real.BigOne) =>
         () =>
-          toIR(x)
+          toExpr(x)
       case (x, Real.BigTwo) =>
         () =>
-          binaryIR(toIR(x), toIR(x), ring.plus)
+          binaryExpr(toExpr(x), toExpr(x), ring.plus)
       case (l: LogLine, a) => //this can only happen for a Line's terms
         () =>
           factoredLine(l.ax, a, 1.0, powRing)
       case (x, a) =>
         () =>
-          binaryIR(toIR(x), Const(a.toDouble), ring.times)
+          binaryExpr(toExpr(x), Const(a.toDouble), ring.times)
     }
   }
 
-  private def combineTerms(terms: Seq[(Real, BigDecimal)], ring: Ring): IR = {
-    val lazyIRs = makeLazyIRs(terms, ring)
-    combineTree(lazyIRs, ring)
+  private def combineTerms(terms: Seq[(Real, BigDecimal)], ring: Ring): Expr = {
+    val lazyExprs = makeLazyExprs(terms, ring)
+    combineTree(lazyExprs, ring)
   }
 
   private def combineSumTerms(terms: Seq[(Real, BigDecimal)],
-                              ring: Ring): IR = {
-    val lazyIRs = makeLazyIRs(terms, ring)
-    lazyIRs match {
+                              ring: Ring): Expr = {
+    val lazyExprs = makeLazyExprs(terms, ring)
+    lazyExprs match {
       case ts if ts.size < 3 => combineTree(ts, ring)
       case ts =>
-        val irs = ts.map(_()).toList
-        binary.memoize(List(irs), AddOp, SumIR(irs))
+        val exprs = ts.map(_()).toList
+        binary.memoize(List(exprs), AddOp, SumIR(exprs))
     }
+    combineTree(lazyExpr, ring)
   }
 
-  private def combineTree(terms: Seq[() => IR], ring: Ring): IR =
+  private def combineTree(terms: Seq[() => Expr], ring: Ring): Expr =
     terms match {
       case Seq(t) => t()
       case _ =>
@@ -183,18 +186,17 @@ private class Translator {
             case Seq(t) => t
             case Seq(left, right) =>
               () =>
-                binaryIR(left(), right(), ring.plus)
+                binaryExpr(left(), right(), ring.plus)
             case _ => sys.error("Should only have 1 or 2 elems")
           },
           ring
         )
     }
 
-  private def ref(ir: IR): Ref =
-    ir match {
+  private def ref(expr: Expr): Ref =
+    expr match {
       case r: Ref         => r
       case VarDef(sym, _) => VarRef(sym)
-      case _              => sys.error("Should only see refs and vardefs")
     }
 
   private final class Ring(val times: BinaryOp,
@@ -206,16 +208,16 @@ private class Translator {
 
   /*
   This performs hash-consing aka the flyweight pattern to ensure that we don't
-  generate code to compute the same quantity twice. It keeps a cache keyed by one or more IR objects
-  along with some operation that will combine them to form a new IR. The IR keys are required
+  generate code to compute the same quantity twice. It keeps a cache keyed by one or more Expr objects
+  along with some operation that will combine them to form a new IR. The Expr keys are required
   to be in their lightweight Ref form rather than VarDefs - this is both to avoid the expensive
   recursive equality/hashing of a def, and also to ensure that we can memoize values derived from a def
   and its ref equally well.
    */
   private class SymCache[K] {
     var cache: Map[(List[Ref], K), Sym] = Map.empty
-    def memoize(irKeys: Seq[List[IR]], opKey: K, ir: => IR): IR = {
-      val refKeys = irKeys.map { l =>
+    def memoize(exprKeys: Seq[List[Expr]], opKey: K, ir: => IR): Expr = {
+      val refKeys = exprKeys.map { l =>
         l.map(ref)
       }
       val hit = refKeys.foldLeft(Option.empty[Sym]) {
@@ -224,7 +226,7 @@ private class Translator {
       }
       hit match {
         case Some(sym) =>
-          if (!irKeys.head.collect { case d: VarDef => d }.isEmpty)
+          if (!exprKeys.head.collect { case d: VarDef => d }.isEmpty)
             sys.error("VarRef was used before its VarDef")
           VarRef(sym)
         case None =>
