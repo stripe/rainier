@@ -9,6 +9,7 @@ lazy val root = project.
   settings(commonSettings).
   settings(unpublished).
   settings(
+    crossScalaVersions := Nil,
     bazelWorkspaceGenerate := true,
     bazelBuildGenerate := false,
     bazelCustomWorkspace :=
