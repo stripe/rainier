@@ -175,6 +175,9 @@ private[compute] object RealOps {
           case Pow(base, exponent) =>
             loop(base)
             loop(exponent)
+          case l: Lookup =>
+            loop(l.index)
+            l.table.foreach(loop)
         }
       }
 

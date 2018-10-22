@@ -64,26 +64,6 @@ object Real {
     summed.log + max
   }
 
-  //print out Scala code that is equivalent to what the Compiler
-  //would produce as JVM bytecode
-  def trace(real: Real): Unit = {
-    val translator = new Translator
-    val exprs = List(translator.toExpr(real))
-    val params = RealOps.variables(real).toList.map(_.param)
-    ir.Tracer.trace(params, exprs)
-  }
-
-  def traceGradient(real: Real): Unit = {
-    val translator = new Translator
-    val variables = RealOps.variables(real).toList
-    val gradient = Gradient.derive(variables, real)
-    val exprs = gradient.map { r =>
-      translator.toExpr(r)
-    }
-    val params = variables.map(_.param)
-    ir.Tracer.trace(params, exprs)
-  }
-
   private[compute] val BigZero = BigDecimal(0.0)
   private[compute] val BigOne = BigDecimal(1.0)
   private[compute] val BigTwo = BigDecimal(2.0)
@@ -183,6 +163,27 @@ object If {
 
 private final case class Pow private (base: Real, exponent: NonConstant)
     extends NonConstant
+
+private final class Lookup(val index: NonConstant, val table: Array[Real])
+    extends NonConstant
+
+object Lookup {
+  def apply(table: Seq[Real]): Real => Real =
+    apply(_, table)
+
+  def apply(index: Real, table: Seq[Real]): Real =
+    index match {
+      case Infinity | NegInfinity =>
+        throw new ArithmeticException("Cannot lookup an infinite number")
+      case Constant(v) =>
+        if (v.isWhole)
+          table(v.toInt)
+        else
+          throw new ArithmeticException("Cannot lookup a non-integral number")
+      case nc: NonConstant =>
+        new Lookup(nc, table.toArray)
+    }
+}
 
 /*
 [0] For example, of the following four ways of computing the same result, only the first two will have the most efficient
