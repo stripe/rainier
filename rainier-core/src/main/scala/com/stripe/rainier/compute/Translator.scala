@@ -85,7 +85,7 @@ private class Translator {
   **/
   private def factoredSumLine(ax: Coefficients,
                               b: BigDecimal,
-                              factor: Double): IR = {
+                              factor: Double): Expr = {
     val ring = multiplyRing
     val terms = ax.toList
     val allTerms =
@@ -93,15 +93,15 @@ private class Translator {
         terms
       else
         (Constant(b), Real.BigOne) :: terms
-    val ir = combineSumTerms(allTerms, ring)
+    val expr = combineSumTerms(allTerms, ring)
     factor match {
-      case 1.0 => ir
+      case 1.0 => expr
       case -1.0 =>
-        binaryIR(Const(ring.zero), ir, ring.minus)
+        binaryExpr(Const(ring.zero), expr, ring.minus)
       case 2.0 =>
-        binaryIR(ir, ref(ir), ring.plus)
+        binaryExpr(expr, ref(expr), ring.plus)
       case k =>
-        binaryIR(ir, Const(k), ring.times)
+        binaryExpr(expr, Const(k), ring.times)
     }
   }
 
@@ -143,7 +143,7 @@ private class Translator {
   }
 
   private def makeLazyExprs(terms: Seq[(Real, BigDecimal)],
-                          ring: Ring): Seq[() => Expr] = {
+                            ring: Ring): Seq[() => Expr] = {
     terms.map {
       case (x, Real.BigOne) =>
         () =>
@@ -174,7 +174,7 @@ private class Translator {
         val exprs = ts.map(_()).toList
         binary.memoize(List(exprs), AddOp, SumIR(exprs))
     }
-    combineTree(lazyExpr, ring)
+    combineTree(lazyExprs, ring)
   }
 
   private def combineTree(terms: Seq[() => Expr], ring: Ring): Expr =

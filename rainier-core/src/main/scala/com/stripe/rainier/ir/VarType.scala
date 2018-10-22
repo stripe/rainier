@@ -76,7 +76,7 @@ private object VarTypes {
     def traverseIR(ir: IR): Unit =
       ir match {
         case s: SumIR =>
-          s.irs.foreach(traverse)
+          s.exprs.foreach(traverse)
         case b: BinaryIR =>
           traverse(b.left)
           traverse(b.right)

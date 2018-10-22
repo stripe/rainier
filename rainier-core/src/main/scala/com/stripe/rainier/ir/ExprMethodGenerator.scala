@@ -47,6 +47,8 @@ final private case class ExprMethodGenerator(method: MethodDef,
 
   def traverse(ir: IR): Unit =
     ir match {
+      case s: SumIR =>
+        s.exprs.foreach(traverse)
       case b: BinaryIR =>
         traverse(b.left)
         traverse(b.right)
