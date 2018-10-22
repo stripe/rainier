@@ -192,6 +192,13 @@ lazy val rainierTests = project.
     "org.typelevel" %% "cats-testkit" % V.cats)).
   settings(unpublished)
 
+lazy val rainierTrace = project.
+  in(file("rainier-trace")).
+  settings(name := "rainier-trace").
+  dependsOn(rainierCore).
+  settings(commonSettings).
+  settings(unpublished)
+
 // shaded asm dep trickery
 
 /* publishable project with the shaded deps */

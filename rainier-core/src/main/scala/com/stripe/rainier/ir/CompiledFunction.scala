@@ -49,9 +49,7 @@ object CompiledFunction {
       .toList
 
     val parentClassLoader = this.getClass.getClassLoader
-    val classLoader =
-      new GeneratedClassLoader(ocg, ecgs, parentClassLoader)
-
+    val classLoader = new GeneratedClassLoader(ocg, ecgs, parentClassLoader)
     classLoader.newInstance
   }
 
