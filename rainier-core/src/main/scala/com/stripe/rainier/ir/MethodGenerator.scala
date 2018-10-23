@@ -125,6 +125,10 @@ private trait MethodGenerator {
     methodNode.visitInsn(POP2)
   }
 
+  def pop(): Unit = {
+    methodNode.visitInsn(POP2)
+  }
+
   def tableSwitch[K](items: Seq[K])(fn: Option[K] => Unit): Unit = {
     val defaultLabel = new Label
     val endLabel = new Label

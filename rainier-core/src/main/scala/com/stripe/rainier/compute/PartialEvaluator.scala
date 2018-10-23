@@ -57,6 +57,15 @@ class PartialEvaluator(var cache: Map[Real, (Real, Boolean)]) {
         (newBase.pow(newExponent), true)
       else
         (real, false)
+    case l: Lookup =>
+      val (newIndex, indexModified) = apply(l.index)
+      val newTable = l.table.map(apply)
+      val anyModified =
+        newTable.exists { case (_, modified) => modified }
+      if (indexModified || anyModified)
+        (Lookup(newIndex, newTable.map(_._1)), true)
+      else
+        (l, false)
     case v: Variable =>
       (v, false)
   }
