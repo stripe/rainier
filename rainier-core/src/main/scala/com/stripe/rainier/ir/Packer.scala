@@ -30,9 +30,7 @@ private class Packer(methodSizeLimit: Int) {
   private def traverseIR(p: IR): (IR, Int) =
     p match {
       case s: SumIR =>
-        val size = s.exprs.size
-        val exprs = s.exprs.map(traverse(_, size)._1)
-        (new SumIR(exprs), size)
+        (s, s.exprs.size)
       case b: BinaryIR =>
         val (leftExpr, leftSize) =
           traverse(b.left, 2)

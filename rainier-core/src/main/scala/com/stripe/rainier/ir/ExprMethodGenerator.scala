@@ -49,6 +49,7 @@ final private case class ExprMethodGenerator(method: MethodDef,
     ir match {
       case s: SumIR =>
         s.exprs.foreach(traverse)
+        binaryOp(AddOp)
       case b: BinaryIR =>
         traverse(b.left)
         traverse(b.right)

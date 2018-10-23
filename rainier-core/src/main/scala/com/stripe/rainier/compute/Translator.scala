@@ -61,7 +61,8 @@ private class Translator {
 
   private def sumExpr(exprs: List[Expr]): Expr = {
     val defs = exprs.collect { case v: VarDef => v }
-    val sumExpr = VarDef(SumIR(exprs))
+    val refs = exprs.map(ref)
+    val sumExpr = VarDef(SumIR(refs))
     SeqIR(defs :+ sumExpr)
   }
 
@@ -112,7 +113,7 @@ private class Translator {
         terms
       else
         (Constant(b), Real.BigOne) :: terms
-    val expr = combineSumTerms(allTerms, ring)
+    val expr = combineSumTerms(allTerms)
     factor match {
       case 1.0 => expr
       case -1.0 =>
@@ -184,12 +185,11 @@ private class Translator {
     combineTree(lazyExprs, ring)
   }
 
-  private def combineSumTerms(terms: Seq[(Real, BigDecimal)],
-                              ring: Ring): Expr = {
+  private def combineSumTerms(terms: Seq[(Real, BigDecimal)]): Expr = {
+    val ring = multiplyRing
     val lazyExprs = makeLazyExprs(terms, ring)
-    lazyExprs match {
-      case ts if ts.size < 3 => combineTree(ts, ring)
-      case ts                => sumExpr(ts.map(_()).toList)
+    if (lazyExprs.size < 3) { combineTree(lazyExprs, ring) } else {
+      sumExpr(lazyExprs.map(_()).toList)
     }
   }
 
