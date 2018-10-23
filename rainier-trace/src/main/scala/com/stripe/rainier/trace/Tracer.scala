@@ -8,10 +8,12 @@ case class Tracer(compiler: Compiler, gradient: Boolean) {
   def apply(real: Real): Unit = {
     val outputs =
       if (gradient)
-        real :: real.gradient
-      else
-        List(real)
-    Tracer.dump(compiler.compileUnsafe(real.variables, outputs))
+        ("density", real) :: real.gradient.zipWithIndex.map {
+          case (r, i) =>
+            ("grad" + i, r)
+        } else
+        List(("density", real))
+    Tracer.dump(compiler.compile(real.variables, outputs))
   }
 
   def apply(rv: RandomVariable[_], batchBits: Int = 1): Unit = {

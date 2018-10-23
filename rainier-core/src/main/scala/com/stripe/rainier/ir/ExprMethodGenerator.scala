@@ -8,7 +8,7 @@ final private case class ExprMethodGenerator(method: MethodDef,
     extends MethodGenerator {
   val isStatic: Boolean = true
   val methodName: String = exprMethodName(method.sym.id)
-  val className: String = classNameForMethod(method.sym.id)
+  val className: String = classNameForMethod(classPrefix, method.sym.id)
   val methodDesc: String = "([D[D)D"
 
   private val varIndices = inputs.zipWithIndex.toMap
@@ -78,6 +78,6 @@ final private case class ExprMethodGenerator(method: MethodDef,
         pop()
         traverse(s.second)
       case m: MethodRef =>
-        callExprMethod(m.sym.id)
+        callExprMethod(classPrefix, m.sym.id)
     }
 }
