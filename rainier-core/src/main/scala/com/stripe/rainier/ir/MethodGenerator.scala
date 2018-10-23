@@ -31,7 +31,6 @@ private trait MethodGenerator {
   def methodName: String
   def methodDesc: String
   def isStatic: Boolean
-  def classPrefix: String
   def classSizeLimit: Int
 
   def loadLocalVar(pos: Int): Unit =
@@ -93,14 +92,20 @@ private trait MethodGenerator {
     }
   }
 
-  def classNameForMethod(id: Int): String =
-    classPrefix + "$" + (id / classSizeLimit)
+  def classNameForMethod(classPrefix: String, id: Int): String = {
+    val n = id / classSizeLimit
+    if (n > 0)
+      classPrefix + "$" + n
+    else
+      classPrefix
+  }
+
   def exprMethodName(id: Int): String = s"_$id"
-  def callExprMethod(id: Int): Unit = {
+  def callExprMethod(classPrefix: String, id: Int): Unit = {
     loadParams()
     loadGlobalVars()
     methodNode.visitMethodInsn(INVOKESTATIC,
-                               classNameForMethod(id),
+                               classNameForMethod(classPrefix, id),
                                exprMethodName(id),
                                "([D[D)D",
                                false)

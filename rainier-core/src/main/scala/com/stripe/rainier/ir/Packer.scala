@@ -1,10 +1,8 @@
 package com.stripe.rainier.ir
 
-import scala.collection.mutable
-
 private class Packer(methodSizeLimit: Int) {
-  private val methodDefs: mutable.Map[Sym, MethodDef] = mutable.Map.empty
-  def methods: Set[MethodDef] = methodDefs.values.toSet
+  private var methodDefs: List[MethodDef] = Nil
+  def methods = methodDefs
 
   def pack(p: Expr): MethodRef = {
     val (pExpr, _) = traverse(p, 0)
@@ -64,7 +62,7 @@ private class Packer(methodSizeLimit: Int) {
   private def createMethod(rhs: IR): MethodRef = {
     val s = Sym.freshSym()
     val md = new MethodDef(s, rhs)
-    methodDefs(s) = md
+    methodDefs = md :: methodDefs
     MethodRef(s)
   }
 }
