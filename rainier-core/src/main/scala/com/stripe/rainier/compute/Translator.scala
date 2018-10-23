@@ -59,6 +59,12 @@ private class Translator {
     SeqIR(defs :+ lookupExpr)
   }
 
+  private def sumExpr(exprs: List[Expr]): Expr = {
+    val defs = exprs.collect { case v: VarDef => v }
+    val sumExpr = VarDef(SumIR(exprs))
+    SeqIR(defs :+ sumExpr)
+  }
+
   private def lineExpr(line: Line): Expr = {
     val (y, k) = LineOps.factor(line)
     factoredSumLine(y.ax, y.b, k.toDouble)
@@ -183,9 +189,7 @@ private class Translator {
     val lazyExprs = makeLazyExprs(terms, ring)
     lazyExprs match {
       case ts if ts.size < 3 => combineTree(ts, ring)
-      case ts =>
-        val exprs = ts.map(_()).toList
-        binary.memoize(List(exprs), AddOp, SumIR(exprs))
+      case ts                => sumExpr(ts.map(_()).toList)
     }
   }
 
