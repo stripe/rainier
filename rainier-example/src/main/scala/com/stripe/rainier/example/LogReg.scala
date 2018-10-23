@@ -20,7 +20,7 @@ object LogReg {
     val N = 1000
     val beta0 = 0.1
     val beta1 = 0.3
-    val x = (1 to N) map { i =>
+    val x = (1 to N) map { _ =>
       3.0 * rng.standardNormal
     }
     val theta = x map { xi =>

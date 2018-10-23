@@ -10,7 +10,7 @@ object BatchNormal {
     val r = new scala.util.Random
     val trueMean = 3.0
     val trueStddev = 2.0
-    val data = 1.to(k).toArray.map { i =>
+    val data = 1.to(k).toArray.map { _ =>
       (r.nextGaussian * trueStddev) + trueMean
     }
 
