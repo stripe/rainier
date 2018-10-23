@@ -3,6 +3,14 @@ package com.stripe.rainier.compute
 import com.stripe.rainier.ir.{CompiledFunction, DataFunction}
 
 final case class Compiler(methodSizeLimit: Int, classSizeLimit: Int) {
+  def compile(variables: Seq[Variable], real: Real): Array[Double] => Double = {
+    val cf = compile(variables, List(("base", real)))
+    return { array =>
+      val globalBuf = new Array[Double](cf.numGlobals)
+      cf.output(array, globalBuf, 0)
+    }
+  }
+
   def compileTargets(targets: Iterable[Target],
                      gradient: Boolean,
                      batchBits: Int): (Seq[Variable], DataFunction) = {
