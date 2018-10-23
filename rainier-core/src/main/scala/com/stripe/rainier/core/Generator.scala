@@ -47,10 +47,18 @@ trait Generator[T] { self =>
         get
       }
     } else {
-      val cf = Compiler.default.compile(variables, reqs)
+      val namedReqs = reqs.zipWithIndex.map {
+        case (r, i) =>
+          ("req" + i, r)
+      }
+      val cf = Compiler.default.compile(variables, namedReqs)
       array =>
         {
-          val reqValues = cf(array)
+          val globalBuf = new Array[Double](cf.numGlobals)
+          val reqValues = new Array[Double](cf.numOutputs)
+          0.until(cf.numOutputs).foreach { i =>
+            reqValues(i) = cf.output(array, globalBuf, i)
+          }
           implicit val evaluator: Evaluator =
             new Evaluator(
               variables

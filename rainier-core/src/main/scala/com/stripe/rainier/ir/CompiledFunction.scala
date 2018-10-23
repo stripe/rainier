@@ -9,33 +9,43 @@ trait CompiledFunction {
 
 object CompiledFunction {
   def apply(inputs: Seq[Parameter],
-            exprs: Seq[Expr],
+            exprs: Seq[(String, Expr)],
             methodSizeLimit: Int,
             classSizeLimit: Int): CompiledFunction = {
-    val classPrefix = ClassGenerator.freshName
-    val packer = new Packer(methodSizeLimit)
-    val outputMeths = exprs.map { expr =>
-      packer.pack(expr)
+    val outputClassName = ClassGenerator.freshName
+    val methodGroups = exprs.map {
+      case (name, expr) =>
+        val packer = new Packer(methodSizeLimit)
+        val outputRef = packer.pack(expr)
+        (outputClassName + "$" + name, outputRef, packer.methods)
     }
-    val allMeths = packer.methods
+    val allMeths = methodGroups.flatMap(_._3)
     val varTypes = VarTypes.methods(allMeths.toList)
 
-    val methodNodes = allMeths.map { meth =>
-      val mg = new ExprMethodGenerator(meth,
-                                       inputs,
-                                       varTypes,
-                                       classPrefix,
-                                       classSizeLimit)
-      mg.className -> mg.methodNode
+    val methodNodes = methodGroups.flatMap {
+      case (classPrefix, _, methods) =>
+        methods.map { meth =>
+          val mg = new ExprMethodGenerator(meth,
+                                           inputs,
+                                           varTypes,
+                                           classPrefix,
+                                           classSizeLimit)
+          mg.className -> mg.methodNode
+        }
     }
 
     val numInputs = inputs.size
     val numGlobals = varTypes.globals.size
-    val numOutputs = outputMeths.size
+    val numOutputs = methodGroups.size
 
-    val ocg = new OutputClassGenerator(classPrefix,
+    val outputIDs = methodGroups.map {
+      case (classPrefix, outputRef, _) =>
+        (classPrefix, outputRef.sym.id)
+    }
+
+    val ocg = new OutputClassGenerator(outputClassName,
                                        classSizeLimit,
-                                       outputMeths.map(_.sym.id),
+                                       outputIDs,
                                        numInputs,
                                        numGlobals,
                                        numOutputs)
