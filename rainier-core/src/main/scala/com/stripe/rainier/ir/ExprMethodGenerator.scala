@@ -48,8 +48,14 @@ final private case class ExprMethodGenerator(method: MethodDef,
   def traverse(ir: IR): Unit =
     ir match {
       case s: SumIR =>
-        s.exprs.foreach(traverse)
+        val fst :: snd :: rest = s.exprs
+        traverse(fst)
+        traverse(snd)
         binaryOp(AddOp)
+        rest.foreach { term =>
+          traverse(term)
+          binaryOp(AddOp)
+        }
       case b: BinaryIR =>
         traverse(b.left)
         traverse(b.right)
