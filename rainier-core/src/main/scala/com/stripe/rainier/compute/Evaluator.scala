@@ -34,6 +34,8 @@ class Evaluator(var cache: Map[Real, Double]) extends Numeric[Real] {
         toDouble(nz)
     case Pow(base, exponent) =>
       Math.pow(toDouble(base), toDouble(exponent))
+    case l: Lookup =>
+      toDouble(l.table(toDouble(l.index).toInt))
     case v: Variable => sys.error(s"No value provided for $v")
   }
 
