@@ -77,6 +77,7 @@ lazy val V = new {
   val evilplot = "0.2.0"
   val scalacheck = "1.14.0"
   val scalatest = "3.0.5"
+  val flogger = "0.3.1"
 }
 
 // primary modules
@@ -91,6 +92,9 @@ lazy val rainierCore = project.
       BazelDep("//.rainier-shaded-asm", "asmTreeShaded") +
       BazelDep("//.rainier-shaded-asm", "asmShaded") -
       BazelDep("//.rainier-shaded-asm", "shadedAsm"),
+    libraryDependencies ++= Seq(
+      "com.google.flogger" % "flogger" % V.flogger,
+      "com.google.flogger" % "flogger-system-backend" % V.flogger)
   )
 
 lazy val rainierPlot = project.
