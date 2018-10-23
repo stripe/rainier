@@ -14,7 +14,7 @@ final case class DensityPlot(nRows: Int = 20,
   def plot2D(points: Seq[(Double, Double)]): Seq[String] = {
     val (cellCounts, xLabelFn, yLabelFn) = densityCountsLabel2D(points)
 
-    val markerFn = if (cellCounts.values.max == 1) { x: Double =>
+    val markerFn = if (cellCounts.values.max == 1) { _: Double =>
       markers.size - 1
     } else
       mapping(cellCounts.values.max + 1,

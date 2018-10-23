@@ -29,7 +29,7 @@ trait Generator[T] { self =>
   def repeat(k: Real): Generator[Seq[T]] = new Generator[Seq[T]] {
     val requirements: Set[Real] = self.requirements
     def get(implicit r: RNG, n: Numeric[Real]): Seq[T] =
-      0.until(n.toInt(k)).map { i =>
+      0.until(n.toInt(k)).map { _ =>
         self.get
       }
   }

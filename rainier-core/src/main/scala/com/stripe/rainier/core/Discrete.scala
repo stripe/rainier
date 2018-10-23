@@ -20,7 +20,7 @@ trait Discrete extends Distribution[Int] { self: Discrete =>
   */
 final case class DiscreteConstant(constant: Real) extends Discrete {
   val generator: Generator[Int] =
-    Generator.require(Set(constant)) { (c, n) =>
+    Generator.require(Set(constant)) { (_, n) =>
       n.toInt(constant)
     }
 
@@ -72,7 +72,7 @@ final case class NegativeBinomial(p: Real, n: Real) extends Discrete {
   val generator: Generator[Int] = {
     val nbGenerator = Generator.require(Set(n, p)) { (r, m) =>
       (1 to m.toInt(n))
-        .map({ x =>
+        .map({ _ =>
           Geometric(1 - p).generator.get(r, m)
         })
         .sum
