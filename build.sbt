@@ -127,7 +127,10 @@ lazy val rainierDocs = project.
   in(file("rainier-docs")).
   settings(name := "rainier-docs").
   enablePlugins(TutPlugin).
-  dependsOn(rainierCore).
+  dependsOn(
+    rainierCore,
+    rainierTrace,
+  ).
   settings(commonSettings).
   settings(
     scalacOptions in Tut ~= {
