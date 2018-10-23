@@ -174,7 +174,6 @@ private class Translator {
         val exprs = ts.map(_()).toList
         binary.memoize(List(exprs), AddOp, SumIR(exprs))
     }
-    combineTree(lazyExprs, ring)
   }
 
   private def combineTree(terms: Seq[() => Expr], ring: Ring): Expr =
