@@ -19,7 +19,7 @@ object RNG {
 
 final case class ScalaRNG(seed: Long) extends RNG {
   FINE.log("Initializing RNG with seed %d", seed)
-  
+
   val rand: Random = new Random(seed)
   def standardUniform: Double = rand.nextDouble
   def standardNormal: Double = rand.nextGaussian

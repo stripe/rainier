@@ -2,12 +2,15 @@ package com.stripe.rainier.log
 
 import com.google.common.flogger.{FluentLogger, LoggerConfig}
 import FluentLogger.Api
-import java.util.logging.Level
+import java.util.logging.{Level, ConsoleHandler}
 
 abstract class Logger {
   def logger: FluentLogger
-  def setLevel(level: Level) =
-    LoggerConfig.of(logger).setLevel(level)
+  def setLevel(level: Level) = {
+    logger.atInfo.log("Setting level of %s to %s", this, level)
+    val config = LoggerConfig.of(logger)
+    config.setLevel(level)
+  }
 
   def SEVERE: Api = logger.at(Level.SEVERE)
   def WARNING: Api = logger.at(Level.WARNING)

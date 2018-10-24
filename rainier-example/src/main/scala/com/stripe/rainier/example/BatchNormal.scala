@@ -4,6 +4,7 @@ import com.stripe.rainier.compute.Real
 import com.stripe.rainier.core._
 import com.stripe.rainier.repl._
 import com.stripe.rainier.sampler._
+import java.util.logging.Level
 
 object BatchNormal {
   def model(k: Int): RandomVariable[(Real, Real)] = {
@@ -22,6 +23,7 @@ object BatchNormal {
   }
 
   def main(args: Array[String]): Unit = {
+    com.stripe.rainier.sampler.Log.setLevel(Level.FINE)
     plot2D(model(100000).sample(Walkers(100), 10000, 10000))
   }
 }
