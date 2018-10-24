@@ -1,6 +1,7 @@
 package com.stripe.rainier.sampler
 
 import scala.util.Random
+import Log._
 
 trait RNG {
   def standardUniform: Double
@@ -12,12 +13,13 @@ trait RNG {
 object RNG {
   lazy val default: RNG = {
     val seed = System.currentTimeMillis
-    println("Initializing RNG with seed " + seed)
     ScalaRNG(seed)
   }
 }
 
 final case class ScalaRNG(seed: Long) extends RNG {
+  FINE.log("Initializing RNG with seed %d", seed)
+  
   val rand: Random = new Random(seed)
   def standardUniform: Double = rand.nextDouble
   def standardNormal: Double = rand.nextGaussian
