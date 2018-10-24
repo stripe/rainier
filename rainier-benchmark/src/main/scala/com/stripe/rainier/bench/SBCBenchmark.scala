@@ -19,7 +19,7 @@ abstract class SBCBenchmark {
 
   protected def sbc: SBC[_, _]
 
-  @Param(Array("1000", "10000", "100000"))
+  @Param(Array("100", "1000", "10000", "100000"))
   protected var syntheticSamples: Int = _
 
   lazy val s = sbc
