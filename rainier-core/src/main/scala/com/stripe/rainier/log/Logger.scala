@@ -1,18 +1,18 @@
-package com.stripe.rainier.compute
+package com.stripe.rainier.log
 
-import com.google.common.flogger.FluentLogger
+import com.google.common.flogger.{FluentLogger, LoggerConfig}
+import FluentLogger.Api
 import java.util.logging.Level
-import Level._
 
 abstract class Logger {
   def logger: FluentLogger
-  def setLevel(level: Level) = 
+  def setLevel(level: Level) =
     LoggerConfig.of(logger).setLevel(level)
 
-  def SEVERE = logger.as(SEVERE)
-  def WARNING = logger.as(WARNING)
-  def INFO = logger.as(INFO)
-  def FINE = logger.as(FINE)
-  def FINER = logger.as(FINER)
-  def FINEST = logger.as(FINEST)
+  def SEVERE: Api = logger.at(Level.SEVERE)
+  def WARNING: Api = logger.at(Level.WARNING)
+  def INFO: Api = logger.at(Level.INFO)
+  def FINE: Api = logger.at(Level.FINE)
+  def FINER: Api = logger.at(Level.FINER)
+  def FINEST: Api = logger.at(Level.FINEST)
 }
