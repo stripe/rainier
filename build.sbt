@@ -128,7 +128,7 @@ lazy val rainierDocs = project.
   settings(commonSettings).
   settings(
     scalacOptions in Tut ~= {
-      _.filterNot(Set("-Ywarn-unused-import", "-Yno-predef", "-Ywarn-unused:imports"))
+      _.filterNot(sc => sc.contains("-Ywarn-unused") || sc == "-Yno-predef" )
     },
     // todo: uncomment once docs generation is deterministic
     // tutTargetDirectory := (baseDirectory in LocalRootProject).value / "docs"
