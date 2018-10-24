@@ -119,9 +119,10 @@ object EvilTracePlot {
           }
         } else if (k1 < k2) {
           val scat =
-            ScatterPlot(out.map(p => Point(p(k1), p(k2))),
-                        pointRenderer =
-                          Some(PointRenderer.default(Some(HSL(210, 100, 56)))))
+            ScatterPlot(
+              out.map(p => Point(p(k1), p(k2))),
+              pointRenderer =
+                Some(PointRenderer.default[Point](Some(HSL(210, 100, 56)))))
               .xAxis()
               .yAxis()
               .frame()

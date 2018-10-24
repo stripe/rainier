@@ -34,8 +34,8 @@ scalafmtOnCompile in ThisBuild := true
 
 lazy val commonSettings = Seq(
   organization:= "com.stripe",
-  scalaVersion := "2.12.4",
-  crossScalaVersions := List("2.11.12", "2.12.4"),
+  scalaVersion := "2.12.7",
+  crossScalaVersions := List("2.11.12", scalaVersion.value),
   releaseCrossBuild := true,
   releasePublishArtifactsAction := PgpKeys.publishSigned.value,
   homepage := Some(url("https://github.com/stripe/rainier")),
@@ -65,16 +65,11 @@ lazy val commonSettings = Seq(
 
 lazy val unpublished = Seq(publish := {}, publishLocal := {}, publishArtifact := false)
 
-// evilplot is 2.12 only, so these settings are needed for projects
-// depending on evilplot
-lazy val evilPlotCrossSettings = Seq(
-  crossScalaVersions ~= { _.filter(_.startsWith("2.12")) })
-
 /* dependency versions */
 lazy val V = new {
   val asm = "6.0"
   val cats = "1.1.0"
-  val evilplot = "0.2.0"
+  val evilplot = "0.6.0"
   val scalacheck = "1.14.0"
   val scalatest = "3.0.5"
   val flogger = "0.3.1"
@@ -102,7 +97,6 @@ lazy val rainierPlot = project.
   settings(name := "rainier-plot").
   dependsOn(rainierCore).
   settings(commonSettings).
-  settings(evilPlotCrossSettings).
   settings(
     resolvers += Resolver.bintrayRepo("cibotech", "public"),
     libraryDependencies += "com.cibo" %% "evilplot" % V.evilplot)
@@ -138,7 +132,7 @@ lazy val rainierDocs = project.
   settings(commonSettings).
   settings(
     scalacOptions in Tut ~= {
-      _.filterNot(Set("-Ywarn-unused-import", "-Yno-predef", "-Ywarn-unused:imports"))
+      _.filterNot(sc => sc.contains("-Ywarn-unused") || sc == "-Yno-predef" )
     },
     // todo: uncomment once docs generation is deterministic
     // tutTargetDirectory := (baseDirectory in LocalRootProject).value / "docs"
@@ -153,7 +147,6 @@ lazy val rainierExample = project.
     rainierPlot,
   ).
   settings(commonSettings).
-  settings(evilPlotCrossSettings).
   settings(unpublished).
   settings(bazelCustomBuild := BuildPrelude +: BuildTargets +: BazelString(
     """

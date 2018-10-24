@@ -47,7 +47,7 @@ trait LocationScaleFamily { self =>
     val support: Support = UnboundedSupport
 
     val generator: Generator[Double] =
-      Generator.from { (r, n) =>
+      Generator.from { (r, _) =>
         generate(r)
       }
     def logDensity(real: Real): Real =
@@ -197,7 +197,7 @@ object Uniform {
 
     def logDensity(real: Real): Real = beta11.logDensity(real)
     val generator: Generator[Double] =
-      Generator.from { (r, n) =>
+      Generator.from { (r, _) =>
         r.standardUniform
       }
   }
