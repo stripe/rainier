@@ -12,13 +12,33 @@ class GraphViz {
   private def label(value: String): Map[String, String] =
     Map("label" -> value)
 
+  private def struct(sid: String,
+                     fields: Seq[(String, Option[String])]): Unit = {
+    val fsrcs = 0.to(fields.size).map { i =>
+      s"f$i"
+    }
+    val flabels = fields.map(_._1)
+    val label = fsrcs
+      .zip(flabels)
+      .map {
+        case (src, lbl) =>
+          s"<$src> $lbl"
+      }
+      .mkString("|")
+    statement(sid, Map("label" -> label, "shape" -> "record"))
+    fsrcs.zip(fields.map(_._2)).foreach {
+      case (src, Some(dest)) => edge(s"$sid:$src", dest)
+      case _                 => ()
+    }
+  }
+
   private def opLabel(op: UnaryOp): String =
     op match {
       case ExpOp       => "exp"
       case LogOp       => "log"
       case AbsOp       => "abs"
       case RectifierOp => "relu"
-      case NoOp        => ""
+      case NoOp        => "x"
     }
 
   private def statement(value: String,
@@ -68,58 +88,63 @@ class GraphViz {
         if (!seen) {
           nc match {
             case Unary(original, op) =>
-              statement(ncID, label(opLabel(op)))
               val origID = traverse(original)
-              edge(ncID, origID)
+              struct(ncID, List((opLabel(op), None), ("x", Some(origID))))
             case If(test, nz, z) =>
-              statement(ncID, Map("shape" -> "diamond", "label" -> "if(x==0)"))
               val testID = traverse(test)
               val nzID = traverse(nz)
               val zID = traverse(z)
-              edge(ncID, testID, label("x"))
-              edge(ncID, nzID, label("false"))
-              edge(ncID, zID, label("true"))
+              struct(ncID,
+                     List(
+                       ("if", None),
+                       ("x==0", Some(testID)),
+                       ("false", Some(nzID)),
+                       ("true", Some(zID))
+                     ))
             case Pow(base, exponent) =>
-              statement(ncID, label("x^y"))
               val baseID = traverse(base)
               val exponentID = traverse(exponent)
-              edge(ncID, baseID, label("x"))
-              edge(ncID, exponentID, label("y"))
+              struct(ncID,
+                     List(
+                       ("^", None),
+                       ("", Some(baseID)),
+                       ("", Some(exponentID))
+                     ))
             case LogLine(ax) =>
-              statement(ncID, label("π(x^a)"))
-              coefficients(ncID, ax)
+              struct(ncID, coefficients("*", "^", ax))
             case l: Line =>
+              val coef = coefficients("+", "*", l.ax)
               if (l.b == Real.BigZero)
-                statement(ncID, label("x•a"))
+                struct(ncID, coef)
               else
-                statement(ncID, label("x•a + %.2f".format(l.b.toDouble)))
-              coefficients(ncID, l.ax)
+                struct(ncID, coef :+ ("%0.2f".format(l.b.toDouble) -> None))
             case l: Lookup =>
-              statement(ncID, label("table(index)"))
               val indexID = traverse(l.index)
               val tableIDs = l.table.map(traverse)
-              edge(ncID, indexID, label("index"))
-              tableIDs.zipWithIndex.map {
-                case (tID, t) =>
-                  edge(ncID, tID, label(s"table($t)"))
-              }
+              struct(ncID,
+                     List(("switch", None), ("x", Some(indexID))) ++
+                       tableIDs.zipWithIndex.map {
+                         case (t, i) => (i.toString, Some(t))
+                       })
             case _: Variable =>
-              statement(ncID, Map("label" -> "Variable"))
+              statement(ncID, label("Variable"))
           }
         }
         ncID
     }
 
-  private def coefficients(ncID: String, ax: Coefficients): Unit =
-    ax.toList.foreach {
-      case (x, a) =>
+  private def coefficients(plusOp: String,
+                           timesOp: String,
+                           ax: Coefficients): Seq[(String, Option[String])] =
+    (plusOp, None) :: ax.toList.zipWithIndex.map {
+      case ((x, a), i) =>
         val xID = traverse(x)
-        val annotations =
+        val label =
           if (a == 1.0)
-            Map.empty[String, String]
+            "x(%d)".format(i)
           else
-            label("%.2f".format(a))
-        edge(ncID, xID, annotations)
+            "x(%d)%s%.2f".format(i, timesOp, a)
+        (label, Some(xID))
     }
 
   def dot = buf.toString + "\n}"
