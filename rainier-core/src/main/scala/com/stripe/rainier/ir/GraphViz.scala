@@ -24,6 +24,32 @@ class GraphViz {
     }
   }
 
+  def matrix(mid: String,
+             label: String,
+             columns: Seq[Seq[String]]): Seq[String] = {
+    val cdsts = 0.to(columns.size).map { i =>
+      s"c$i"
+    }
+    val colLabel =
+      columns
+        .zip(cdsts)
+        .map {
+          case (col, dst) =>
+            val values = col.mkString("|")
+            if (col.size == 1)
+              s"<$dst> $values"
+            else
+              s"{<$dst> $values}"
+        }
+        .mkString("|")
+    val fullLabel =
+      s"$label | $colLabel"
+    statement(mid, Map("label" -> fullLabel, "shape" -> "Mrecord"))
+    cdsts.map { dst =>
+      s"$mid:$dst"
+    }
+  }
+
   def statement(value: String, annotations: Map[String, String]): Unit = {
     buf ++= value
     if (!annotations.isEmpty) {

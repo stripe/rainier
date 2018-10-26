@@ -37,23 +37,16 @@ class Viz {
   def registerPlaceholders(map: Map[Variable, Array[Double]]): Unit = {
     counter += 1
     val mid = s"m$counter"
-    val cols = map.toList.zipWithIndex.map {
-      case ((v, a), i) =>
-        val label = s"f${i + 1}"
-        ids += (v -> s"$mid:$label")
-        val elems = a
-          .take(5)
-          .map { c =>
-            double(c)
-          }
-          .mkString("|")
-        val fullLabel =
-          if (a.size > 1) s"{$elems}"
-          else
-            elems
-        (fullLabel, None)
+    val cols = map.toList
+    val colData = cols.map {
+      case (_, arr) =>
+        arr.take(5).toList.map(double)
     }
-    gv.record(mid, ("data" -> None) +: cols)
+    val colIDs = gv.matrix(mid, "data", colData)
+    cols.zip(colIDs).foreach {
+      case ((v, _), cid) =>
+        ids += (v -> cid)
+    }
   }
 
   def double(c: Double): String =
