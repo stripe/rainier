@@ -42,8 +42,11 @@ sealed trait Real {
   lazy val variables: List[Variable] = RealOps.variables(this).toList
   lazy val gradient: List[Real] = Gradient.derive(variables, this)
 
-  def writeGraph(path: String): Unit =
-    Viz.write(this, path)
+  def writeGraph(path: String): Unit = {
+    val v = new Viz
+    v.traverse(this)
+    v.gv.write(path)
+  }
 }
 
 object Real {

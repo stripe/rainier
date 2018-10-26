@@ -2,7 +2,7 @@ package com.stripe.rainier.compute
 
 import com.stripe.rainier.ir._
 
-private class Viz {
+class Viz {
   private var counter = 0
   private var ids = Map.empty[NonConstant, String]
   val gv = new GraphViz
@@ -34,9 +34,34 @@ private class Viz {
     id
   }
 
+  def registerPlaceholders(map: Map[Variable, Array[Double]]): Unit = {
+    counter += 1
+    val mid = s"m$counter"
+    val cols = map.toList.zipWithIndex.map {
+      case ((v, a), i) =>
+        val label = s"f${i + 1}"
+        ids += (v -> s"$mid:$label")
+        val elems = a
+          .take(5)
+          .map { c =>
+            double(c)
+          }
+          .mkString("|")
+        val fullLabel =
+          if (a.size > 1) s"{$elems}"
+          else
+            elems
+        (fullLabel, None)
+    }
+    gv.record(mid, ("data" -> None) +: cols)
+  }
+
+  def double(c: Double): String =
+    "%.2f".format(c)
+
   def traverse(r: Real): String =
     r match {
-      case Constant(c) => constant("%.2f".format(c))
+      case Constant(c) => constant(double(c.toDouble))
       case Infinity    => constant("inf")
       case NegInfinity => constant("-inf")
       case nc: NonConstant =>
@@ -73,7 +98,7 @@ private class Viz {
               if (l.b == Real.BigZero)
                 gv.record(ncID, coef)
               else
-                gv.record(ncID, coef :+ ("%0.2f".format(l.b.toDouble) -> None))
+                gv.record(ncID, coef :+ (double(l.b.toDouble) -> None))
             case l: Lookup =>
               val indexID = traverse(l.index)
               val tableIDs = l.table.map(traverse)
@@ -83,7 +108,7 @@ private class Viz {
                             case (t, i) => (i.toString, Some(t))
                           })
             case _: Variable =>
-              gv.statement(ncID, Map("label" -> "Variable"))
+              gv.statement(ncID, Map("label" -> "θ"))
           }
         }
         ncID
@@ -99,15 +124,7 @@ private class Viz {
           if (a == 1.0)
             "x(%d)".format(i)
           else
-            "x(%d)%s%.2f".format(i, timesOp, a)
+            "x(%d)%s%s".format(i, timesOp, double(a.toDouble))
         (label, Some(xID))
     }
-}
-
-object Viz {
-  def write(r: Real, path: String): Unit = {
-    val v = new Viz
-    v.traverse(r)
-    v.gv.write(path)
-  }
 }

@@ -136,6 +136,16 @@ class RandomVariable[+T](val value: T, val targets: Set[Target]) {
   def toGenerator[U](
       implicit tg: ToGenerator[T, U]): RandomVariable[Generator[U]] =
     new RandomVariable(tg(value), targets)
+
+  def writeGraph(path: String): Unit = {
+    val v = new Viz
+    targets.foreach { t =>
+      if (!t.placeholders.isEmpty)
+        v.registerPlaceholders(t.placeholders)
+      v.traverse(t.real)
+    }
+    v.gv.write(path)
+  }
 }
 
 /**
