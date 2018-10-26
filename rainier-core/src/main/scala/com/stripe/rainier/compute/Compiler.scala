@@ -14,15 +14,7 @@ final case class Compiler(methodSizeLimit: Int, classSizeLimit: Int) {
   def compileTargets(targets: Iterable[Target],
                      gradient: Boolean,
                      batchBits: Int): (Seq[Variable], DataFunction) = {
-    val (base, batched) =
-      targets.foldLeft((Real.zero, List.empty[Target])) {
-        case ((b, l), t) =>
-          t.maybeInlined match {
-            case Some(r) => ((b + r), l)
-            case None    => (b, t :: l)
-          }
-      }
-
+    val (base, batched) = Target.merge(targets)
     val variables =
       batched
         .foldLeft(RealOps.variables(base)) {

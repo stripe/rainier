@@ -88,4 +88,12 @@ class Target(val real: Real, val placeholders: Map[Variable, Array[Double]]) {
 object Target {
   def apply(real: Real): Target = new Target(real, Map.empty)
   val empty: Target = apply(Real.zero)
+  def merge(targets: Iterable[Target]): (Real, List[Target]) =
+    targets.foldLeft((Real.zero, List.empty[Target])) {
+      case ((b, l), t) =>
+        t.maybeInlined match {
+          case Some(r) => ((b + r), l)
+          case None    => (b, t :: l)
+        }
+    }
 }
