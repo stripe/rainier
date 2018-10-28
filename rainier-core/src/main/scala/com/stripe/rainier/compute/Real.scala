@@ -104,15 +104,12 @@ Because it is common for ax to have a large number of terms, this is deliberatel
 as equality comparisons would be too expensive. The impact of this is subtle, see [0] at the bottom of this file
 for an example.
  */
-private final class Line private (val ax: Coefficients, val b: BigDecimal)
-    extends NonConstant
+private final case class Line private (ax: Coefficients, b: BigDecimal)
+    extends NonConstant {
+  require(!ax.isEmpty)
+}
 
 private object Line {
-  def apply(ax: Coefficients, b: BigDecimal): Line = {
-    require(!ax.isEmpty)
-    new Line(ax, b)
-  }
-
   def apply(nc: NonConstant): Line =
     nc match {
       case l: Line => l
