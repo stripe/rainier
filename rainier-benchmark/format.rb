@@ -18,6 +18,8 @@ class Benchmark
   end
 end
 
+puts "git SHA #{`git rev-parse HEAD`}"
+
 benchmarks = []
 ARGF.each do |line|
   stripped = line.gsub(/\e\[.*?m/, "")
