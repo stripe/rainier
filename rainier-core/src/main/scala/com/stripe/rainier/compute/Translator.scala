@@ -59,13 +59,6 @@ private class Translator {
     SeqIR(defs :+ lookupExpr)
   }
 
-//  private def sumExpr(exprs: List[Expr]): Expr = {
-//    val defs = exprs.collect { case v: VarDef => v }
-//    val refs = exprs.map(ref)
-//    val sumExpr = VarDef(SumIR(refs))
-//    SeqIR(defs :+ sumExpr)
-//  }
-
   private def lineExpr(line: Line): Expr = {
     val (y, k) = LineOps.factor(line)
     factoredSumLine(y.ax, y.b, k.toDouble)
@@ -188,12 +181,23 @@ private class Translator {
   private def combineSumTerms(terms: Seq[(Real, BigDecimal)]): Expr = {
     val ring = multiplyRing
     val lazyExprs = makeLazyExprs(terms, ring)
-    if (lazyExprs.size < 3) { combineTree(lazyExprs, ring) } else {
-      lazyExprs.foldRight[Expr](Const(0.0)) {
-        case (lazyExpr, accum) => binaryExpr(accum, lazyExpr(), ring.plus)
-      }
-    }
+    sumChain(lazyExprs)
   }
+
+  private def foldChain(terms: Seq[() => Expr],
+                        accum: Expr,
+                        iteration: Int): Expr =
+    (terms, iteration) match {
+      case (ts, 0) if ts.size < 3 => combineTree(ts, multiplyRing)
+      case (ts, _) if ts.size < 3 =>
+        binaryExpr(accum, combineTree(ts, multiplyRing), multiplyRing.plus)
+      case (t :: ts, 0) => foldChain(ts, t(), 1)
+      case (t :: ts, n) =>
+        foldChain(ts, binaryExpr(accum, t(), multiplyRing.plus), n + 1)
+    }
+
+  private def sumChain(terms: Seq[() => Expr]): Expr =
+    foldChain(terms, Const(0.0), 0)
 
   private def combineTree(terms: Seq[() => Expr], ring: Ring): Expr =
     terms match {
