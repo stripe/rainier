@@ -27,9 +27,9 @@ class Viz(varTypes: VarTypes) {
       case PowOp      => "^"
     }
 
-  private def label(value: String): String = {
+  private def label(value: String, shape: String): String = {
     val id = nextID()
-    gv.statement(id, Map("label" -> value))
+    gv.statement(id, Map("label" -> value, "shape" -> shape))
     id
   }
 
@@ -37,15 +37,15 @@ class Viz(varTypes: VarTypes) {
     "%.2f".format(c)
 
   def outputMethod(name: String, methodID: String): Unit = {
-    val nameID = label(name)
+    val nameID = label(name, "house")
     gv.edge(nameID, methodID)
   }
 
   def traverse(r: Expr): String =
     r match {
-      case Const(c)     => label(double(c))
-      case _: Parameter => label("θ")
-      case VarRef(sym)  => label(sym.id.toString)
+      case Const(c)     => label(double(c), "oval")
+      case _: Parameter => label("θ", "diamond")
+      case VarRef(sym)  => label(sym.id.toString, "square")
       case VarDef(sym, rhs) =>
         traverseDef(sym, rhs)
     }
@@ -70,24 +70,16 @@ class Viz(varTypes: VarTypes) {
       case BinaryIR(left, right, op) =>
         val leftID = traverse(left)
         val rightID = traverse(right)
-        val id = nextID()
-        gv.record(id,
-                  List(
-                    (opLabel(op), None),
-                    ("", Some(leftID)),
-                    ("", Some(rightID))
-                  ))
+        val id = label(opLabel(op), "oval")
+        gv.edge(id, leftID)
+        gv.edge(id, rightID)
         id
       case UnaryIR(original, NoOp) =>
         traverse(original)
       case UnaryIR(original, op) =>
         val origID = traverse(original)
-        val id = nextID()
-        gv.record(id,
-                  List(
-                    (opLabel(op), None),
-                    ("", Some(origID))
-                  ))
+        val id = label(opLabel(op), "oval")
+        gv.edge(id, origID)
         id
       case IfIR(test, nz, z) =>
         val testID = traverse(test)
@@ -96,17 +88,17 @@ class Viz(varTypes: VarTypes) {
         val id = nextID()
         gv.record(id,
                   List(
-                    ("if", None),
-                    ("x==0", Some(testID)),
-                    ("false", Some(nzID)),
-                    ("true", Some(zID))
+                    ("If", None),
+                    ("test", Some(testID)),
+                    ("nonZero", Some(nzID)),
+                    ("zero", Some(zID))
                   ))
         id
       case LookupIR(index, table) =>
         val indexID = traverse(index)
         val id = nextID()
         gv.record(id,
-                  List(("switch", None), ("", Some(indexID))) ++
+                  List(("Lookup", None), ("idx", Some(indexID))) ++
                     table.zipWithIndex.map {
                       case (ref, i) =>
                         (i.toString, Some(traverse(ref)))
@@ -115,15 +107,12 @@ class Viz(varTypes: VarTypes) {
       case SeqIR(first, second) =>
         val firstID = traverse(first)
         val secondID = traverse(second)
-        val id = nextID()
-        gv.record(id,
-                  List(
-                    ("first", Some(firstID)),
-                    ("next", Some(secondID))
-                  ))
+        val id = label("", "rarrow")
+        gv.edge(id, firstID)
+        gv.edge(id, secondID, Map("style" -> "bold"))
         id
 
-      case MethodRef(sym) => label(sym.id.toString)
+      case MethodRef(sym) => label(sym.id.toString, "parallelogram")
     }
 }
 
