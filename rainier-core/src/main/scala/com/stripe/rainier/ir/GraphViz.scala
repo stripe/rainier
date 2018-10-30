@@ -75,9 +75,12 @@ class GraphViz {
     pw.close
   }
 
-  def subgraph[T](id: String, label: String)(fn: => T): T = {
+  def subgraph[T](id: String, annotations: Map[String, String])(fn: => T): T = {
     buf ++= "subgraph %s {\n".format(id)
-    buf ++= "label=\"%s\";\n".format(label)
+    annotations.foreach {
+      case (k, v) =>
+        buf ++= "%s=\"%s\";\n".format(k, v)
+    }
     val t = fn
     buf ++= "}\n"
     t
