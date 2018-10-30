@@ -3,7 +3,7 @@ import java.io._
 
 class GraphViz {
   private val buf = new StringBuilder
-  buf ++= "digraph {\n"
+  buf ++= "digraph {\nsplines=\"false\";\n"
 
   def record(sid: String, fields: Seq[(String, Option[String])]): Unit = {
     val fsrcs = 0.to(fields.size).map { i =>
