@@ -21,6 +21,13 @@ case class Tracer(compiler: Compiler, gradient: Boolean) {
       compiler.compileTargets(rv.targets, gradient, batchBits)
     Tracer.dump(df.cf)
   }
+
+  def output(rv: RandomVariable[_], batchBits: Int = 1): String = {
+    val (_, df) =
+      compiler.compileTargets(rv.targets, gradient, batchBits)
+    Tracer.dumps(df.cf)
+  }
+
 }
 
 object Tracer {
@@ -28,6 +35,14 @@ object Tracer {
     cf.getClass.getClassLoader match {
       case cl: GeneratedClassLoader =>
         CFR.decompile(cl.bytecode).foreach(println)
+      case _ =>
+        sys.error("Cannot find bytecode for class")
+    }
+
+  def dumps(cf: CompiledFunction): String =
+    cf.getClass.getClassLoader match {
+      case cl: GeneratedClassLoader =>
+        CFR.decompile(cl.bytecode).mkString("\n")
       case _ =>
         sys.error("Cannot find bytecode for class")
     }
