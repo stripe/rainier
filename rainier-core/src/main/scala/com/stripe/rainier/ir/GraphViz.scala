@@ -75,10 +75,11 @@ class GraphViz {
     pw.close
   }
 
-  def subgraph(id: String, label: String)(fn: => Unit): Unit = {
+  def subgraph[T](id: String, label: String)(fn: => T): T = {
     buf ++= "subgraph %s {\n".format(id)
-    buf ++= "label=\"%s\"".format(label)
-    fn
+    buf ++= "label=\"%s\";\n".format(label)
+    val t = fn
     buf ++= "}\n"
+    t
   }
 }

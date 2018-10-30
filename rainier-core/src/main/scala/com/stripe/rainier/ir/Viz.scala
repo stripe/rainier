@@ -55,13 +55,10 @@ class Viz(varTypes: VarTypes) {
         traverseSubgraph(sym.id, "global", ir)
     }
 
-  def traverseSubgraph(id: Int, scope: String, ir: IR): String = {
-    val gid = s"g$id"
-    gv.subgraph(gid, s"$id ($scope)") {
-      val _ = traverseIR(ir)
+  def traverseSubgraph(id: Int, scope: String, ir: IR): String =
+    gv.subgraph(s"cluster_$id", s"$id ($scope)") {
+      traverseIR(ir)
     }
-    gid
-  }
 
   def traverseIR(ir: IR): String =
     ir match {
@@ -76,6 +73,8 @@ class Viz(varTypes: VarTypes) {
                     ("", Some(rightID))
                   ))
         id
+      case UnaryIR(original, NoOp) =>
+        traverse(original)
       case UnaryIR(original, op) =>
         val origID = traverse(original)
         val id = nextID()
