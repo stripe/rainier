@@ -186,7 +186,7 @@ private class Translator {
     val ring = multiplyRing
     val lazyExprs = makeLazyExprs(terms, ring)
     val defs = foldChain(lazyExprs, ref(Const(0.0)), Seq[VarDef](), 0)
-    SeqIR(defs)
+    SeqIR(defs.reverse)
   }
 
   private def foldChain(terms: Seq[() => Expr],
