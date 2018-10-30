@@ -7,11 +7,11 @@ import com.stripe.rainier.compute._
 import com.stripe.rainier.core._
 import com.stripe.rainier.sampler._
 
-@BenchmarkMode(Array(Mode.AverageTime))
+@BenchmarkMode(Array(Mode.SampleTime))
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
 @Warmup(iterations = 3, time = 1)
 @Measurement(iterations = 5, time = 1)
-@Fork(3)
+@Fork(1)
 @Threads(4)
 @State(Scope.Benchmark)
 abstract class SBCBenchmark {

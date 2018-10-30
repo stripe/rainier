@@ -2,22 +2,22 @@ class Benchmark
   def initialize(parts)
     method_parts = parts[1].split(".")
     @klass = method_parts[0].split("Benchmark")[0]
-    @method = method_parts[1]
-    @params = parts[2..-7].select{|x| x != "N/A"}.join(":")
-    @timing = parts[-4].to_f
-    @stddev = parts[-2].to_f
+    @method = method_parts[1].split(":")[0]
+    @pctile = method_parts[2].to_i
+    @params = parts[2..-4].select{|x| x != "N/A"}.join(":")
+    @timing = parts[-2].to_f
   end
 
-  attr_reader :klass, :method, :params
+  attr_reader :klass, :method, :params, :pctile, :timing
 
   def rounded_time
-    oom = 10 ** Math.log10(@stddev).to_i
-    rnd_dev = ((@stddev / oom).ceil * oom) * 2
-    (@timing.to_f / rnd_dev).ceil.to_f * rnd_dev
+    diff = @timing / 5
+    oom = 10 ** Math.log10(diff).ceil
+    (@timing / oom).round.to_f * oom
   end
 end
 
-benchmarks = []
+p50 = []
 ARGF.each do |line|
   stripped = line.gsub(/\e\[.*?m/, "")
 
@@ -26,12 +26,15 @@ ARGF.each do |line|
   end
 
   parts = stripped.split
-  if(parts[-6] == "avgt")
-    benchmarks << Benchmark.new(parts)
+  if(parts[-1] == "us/op" && parts[1] =~ /p0[.]/)
+    b = Benchmark.new(parts)
+    if(b.pctile == 50)
+        p50 << b
+    end
   end
 end
 
-benchmarks.sort_by!{|b| [b.method, b.klass, b.params]}
-benchmarks.each do |b|
-  printf("%-20s %-30s %-30s %20.3f\n", b.method, b.klass, b.params, b.rounded_time)
+p50.sort_by!{|b| [b.method, b.klass, b.params]}
+p50.each do |b|
+  printf("%-20s %-25s %-20s %15.3f\n", b.method, b.klass, b.params, b.rounded_time)
 end
