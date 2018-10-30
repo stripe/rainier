@@ -181,7 +181,7 @@ private class Translator {
   private def combineSumTerms(terms: Seq[(Real, BigDecimal)]): Expr = {
     val ring = multiplyRing
     val lazyExprs = makeLazyExprs(terms, ring)
-    sumChain(lazyExprs)
+    foldChain(lazyExprs, Const(0.0), 0)
   }
 
   private def foldChain(terms: Seq[() => Expr],
@@ -195,9 +195,6 @@ private class Translator {
       case (t :: ts, n) =>
         foldChain(ts, binaryExpr(accum, t(), multiplyRing.plus), n + 1)
     }
-
-  private def sumChain(terms: Seq[() => Expr]): Expr =
-    foldChain(terms, Const(0.0), 0)
 
   private def combineTree(terms: Seq[() => Expr], ring: Ring): Expr =
     terms match {
