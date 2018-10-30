@@ -194,12 +194,11 @@ private class Translator {
                         defs: Seq[VarDef],
                         iteration: Int): Seq[VarDef] =
     (terms, iteration) match {
-      case (Nil, _)     => defs
       case (t :: ts, 0) => foldChain(ts, ref(t()), defs, 1)
       case (t :: ts, n) =>
         val binaryDef = binaryVarDef(accum, t())
         foldChain(ts, ref(binaryDef), binaryDef +: defs, n + 1)
-      case _ => defs // this never happens
+      case _ => defs
     }
 
   private def combineTree(terms: Seq[() => Expr], ring: Ring): Expr =
