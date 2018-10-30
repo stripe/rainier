@@ -42,6 +42,10 @@ private class Translator {
     binary.memoize(keys, op, new BinaryIR(left, right, op))
   }
 
+  private def binaryVarDef(left: Ref, right: Expr): VarDef = {
+    binary.memoizeSum(left, right, AddOp, new BinaryIR(left, right, AddOp))
+  }
+
   private def ifExpr(whenZero: Expr, whenNonZero: Expr, test: Expr): Expr =
     ifs.memoize(List(List(test, whenZero, whenNonZero)),
                 (),
@@ -181,19 +185,21 @@ private class Translator {
   private def combineSumTerms(terms: Seq[(Real, BigDecimal)]): Expr = {
     val ring = multiplyRing
     val lazyExprs = makeLazyExprs(terms, ring)
-    foldChain(lazyExprs, Const(0.0), 0)
+    val (_, defs) = foldChain(lazyExprs, ref(Const(0.0)), Seq[VarDef](), 0)
+    SeqIR(defs)
   }
 
   private def foldChain(terms: Seq[() => Expr],
-                        accum: Expr,
-                        iteration: Int): Expr =
+                        accum: Ref,
+                        defs: Seq[VarDef],
+                        iteration: Int): (Ref, Seq[VarDef]) =
     (terms, iteration) match {
-      case (ts, 0) if ts.size < 3 => combineTree(ts, multiplyRing)
-      case (ts, _) if ts.size < 3 =>
-        binaryExpr(accum, combineTree(ts, multiplyRing), multiplyRing.plus)
-      case (t :: ts, 0) => foldChain(ts, t(), 1)
+      case (Nil, _)     => (accum, defs)
+      case (t :: ts, 0) => foldChain(ts, ref(t()), defs, 1)
       case (t :: ts, n) =>
-        foldChain(ts, binaryExpr(accum, t(), multiplyRing.plus), n + 1)
+        val binaryDef = binaryVarDef(accum, t())
+        foldChain(ts, ref(binaryDef), binaryDef +: defs, n + 1)
+      case _ => (accum, defs) // this never happens
     }
 
   private def combineTree(terms: Seq[() => Expr], ring: Ring): Expr =
@@ -253,6 +259,11 @@ private class Translator {
           cache += (refKeys.head, opKey) -> sym
           new VarDef(sym, ir)
       }
+    }
+    def memoizeSum(left: Ref, right: Expr, opKey: K, ir: => IR): VarDef = {
+      val sym = Sym.freshSym()
+      cache += (List(left, ref(right)), opKey) -> sym
+      new VarDef(sym, ir)
     }
   }
 }
