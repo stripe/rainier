@@ -122,3 +122,21 @@ class Viz(varTypes: VarTypes) {
       case MethodRef(sym) => label(sym.id.toString)
     }
 }
+
+object Viz {
+  def apply(exprs: Seq[(String, Expr)]): Viz = {
+    val methodGroups = exprs.map {
+      case (name, expr) =>
+        val packer = new Packer(200)
+        val outputRef = packer.pack(expr)
+        (name, outputRef, packer.methods)
+    }
+    val allMeths = methodGroups.flatMap(_._3)
+    val varTypes = VarTypes.methods(allMeths.toList)
+    val viz = new Viz(varTypes)
+    allMeths.foreach { methDef =>
+      viz.traverseSubgraph(methDef.sym.id, "method", methDef.rhs)
+    }
+    viz
+  }
+}

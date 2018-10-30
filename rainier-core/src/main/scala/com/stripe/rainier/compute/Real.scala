@@ -47,6 +47,13 @@ sealed trait Real {
     v.traverse(this)
     v.gv.write(path)
   }
+
+  def writeIRGraph(path: String): Unit = {
+    val translator = new Translator
+    val expr = translator.toExpr(this)
+    val viz = ir.Viz(List(("", expr)))
+    viz.gv.write(path)
+  }
 }
 
 object Real {
