@@ -36,6 +36,11 @@ class Viz(varTypes: VarTypes) {
   def double(c: Double): String =
     "%.2f".format(c)
 
+  def outputMethod(name: String, methodID: String): Unit = {
+    val nameID = label(name)
+    gv.edge(nameID, methodID)
+  }
+
   def traverse(r: Expr): String =
     r match {
       case Const(c)     => label(double(c))
@@ -123,18 +128,30 @@ class Viz(varTypes: VarTypes) {
 }
 
 object Viz {
-  def apply(exprs: Seq[(String, Expr)]): Viz = {
+  def apply(exprs: Seq[(String, Expr)], methodSizeLimit: Option[Int]): Viz = {
     val methodGroups = exprs.map {
       case (name, expr) =>
-        val packer = new Packer(200)
-        val outputRef = packer.pack(expr)
-        (name, outputRef, packer.methods)
+        methodSizeLimit match {
+          case Some(l) =>
+            val packer = new Packer(l)
+            val outputRef = packer.pack(expr)
+            (name, outputRef, packer.methods)
+          case None =>
+            val sym = Sym.freshSym()
+            val methods = List(new MethodDef(sym, UnaryIR(expr, NoOp)))
+            val outputRef = MethodRef(sym)
+            (name, outputRef, methods)
+        }
     }
     val allMeths = methodGroups.flatMap(_._3)
     val varTypes = VarTypes.methods(allMeths.toList)
     val viz = new Viz(varTypes)
-    allMeths.foreach { methDef =>
-      viz.traverseSubgraph(methDef.sym.id, "method", methDef.rhs)
+    val methMap = allMeths.map { methDef =>
+      methDef.sym -> viz.traverseSubgraph(methDef.sym.id, "method", methDef.rhs)
+    }.toMap
+    methodGroups.foreach {
+      case (name, outputRef, _) =>
+        viz.outputMethod(name, methMap(outputRef.sym))
     }
     viz
   }
