@@ -74,4 +74,11 @@ class GraphViz {
     pw.write(dot)
     pw.close
   }
+
+  def subgraph(id: String, label: String)(fn: => Unit): Unit = {
+    buf ++= "subgraph %s {\n".format(id)
+    buf ++= "label=\"%s\"".format(label)
+    fn
+    buf ++= "}\n"
+  }
 }
