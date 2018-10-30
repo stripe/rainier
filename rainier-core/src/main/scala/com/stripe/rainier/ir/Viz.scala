@@ -1,12 +1,20 @@
 package com.stripe.rainier.ir
 
-class Viz(varTypes: VarTypes) {
+class Viz(methodDefs: List[MethodDef]) {
   val gv = new GraphViz
 
   private var counter = 0
   def nextID(): String = {
     counter += 1
     s"r$counter"
+  }
+
+  private val varTypes = VarTypes.methods(methodDefs)
+  private var methods = Map.empty[Sym, String]
+  methodDefs.foreach { methDef =>
+    methods +=
+      (methDef.sym ->
+        traverseDef(methDef.sym.id, "method", methDef.rhs))
   }
 
   private def opLabel(op: UnaryOp): String =
@@ -36,9 +44,9 @@ class Viz(varTypes: VarTypes) {
   def double(c: Double): String =
     "%.2f".format(c)
 
-  def outputMethod(name: String, methodID: String): Unit = {
+  def outputMethod(name: String, sym: Sym): Unit = {
     val nameID = label(name, "house")
-    gv.edge(nameID, methodID)
+    gv.edge(nameID, methods(sym))
   }
 
   def traverse(r: Expr): String =
@@ -47,20 +55,20 @@ class Viz(varTypes: VarTypes) {
       case _: Parameter => label("θ", "diamond")
       case VarRef(sym)  => label(sym.id.toString, "square")
       case VarDef(sym, rhs) =>
-        traverseDef(sym, rhs)
+        traverseVarDef(sym, rhs)
     }
 
-  def traverseDef(sym: Sym, ir: IR): String =
+  def traverseVarDef(sym: Sym, ir: IR): String =
     varTypes(sym) match {
       case Inline =>
         traverseIR(ir)
       case Local(_) =>
-        traverseSubgraph(sym.id, "local", ir)
+        traverseDef(sym.id, "local", ir)
       case Global(_) =>
-        traverseSubgraph(sym.id, "global", ir)
+        traverseDef(sym.id, "global", ir)
     }
 
-  def traverseSubgraph(id: Int, scope: String, ir: IR): String =
+  def traverseDef(id: Int, scope: String, ir: IR): String =
     gv.subgraph(s"cluster_$id", s"$id ($scope)") {
       traverseIR(ir)
     }
@@ -112,19 +120,19 @@ class Viz(varTypes: VarTypes) {
         gv.edge(id, secondID, Map("style" -> "bold"))
         id
 
-      case MethodRef(sym) => label(sym.id.toString, "parallelogram")
+      case MethodRef(sym) => methods(sym)
     }
 }
 
 object Viz {
   def apply(exprs: Seq[(String, Expr)], methodSizeLimit: Option[Int]): Viz = {
-    val methodGroups = exprs.map {
+    val methodGroups = exprs.toList.map {
       case (name, expr) =>
         methodSizeLimit match {
           case Some(l) =>
             val packer = new Packer(l)
             val outputRef = packer.pack(expr)
-            (name, outputRef, packer.methods)
+            (name, outputRef, packer.methods.reverse)
           case None =>
             val sym = Sym.freshSym()
             val methods = List(new MethodDef(sym, UnaryIR(expr, NoOp)))
@@ -133,14 +141,10 @@ object Viz {
         }
     }
     val allMeths = methodGroups.flatMap(_._3)
-    val varTypes = VarTypes.methods(allMeths.toList)
-    val viz = new Viz(varTypes)
-    val methMap = allMeths.map { methDef =>
-      methDef.sym -> viz.traverseSubgraph(methDef.sym.id, "method", methDef.rhs)
-    }.toMap
+    val viz = new Viz(allMeths)
     methodGroups.foreach {
       case (name, outputRef, _) =>
-        viz.outputMethod(name, methMap(outputRef.sym))
+        viz.outputMethod(name, outputRef.sym)
     }
     viz
   }
