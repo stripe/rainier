@@ -102,7 +102,7 @@ class Viz {
                             case (t, i) => (i.toString, Some(t))
                           })
             case _: Variable =>
-              gv.statement(ncID, Map("label" -> "θ"))
+              gv.statement(ncID, Map("label" -> "θ", "shape" -> "diamond"))
           }
         }
         ncID
