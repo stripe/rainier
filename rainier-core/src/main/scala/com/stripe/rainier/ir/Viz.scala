@@ -35,9 +35,11 @@ class Viz(methodDefs: List[MethodDef]) {
       case PowOp      => "^"
     }
 
-  private def label(value: String, shape: String): String = {
+  private def label(value: String,
+                    shape: String,
+                    color: String = "black"): String = {
     val id = nextID()
-    gv.statement(id, Map("label" -> value, "shape" -> shape))
+    gv.statement(id, Map("label" -> value, "shape" -> shape, "color" -> color))
     id
   }
 
@@ -51,17 +53,9 @@ class Viz(methodDefs: List[MethodDef]) {
 
   def traverse(r: Expr): String =
     r match {
-      case Const(c)     => label(double(c), "oval")
-      case _: Parameter => label("θ", "diamond")
-      case VarRef(sym) =>
-        val id = nextID()
-        gv.statement(id,
-                     Map(
-                       "label" -> slot(sym),
-                       "color" -> color(sym),
-                       "shape" -> "square"
-                     ))
-        id
+      case Const(c)     => label(double(c), "box3d")
+      case _: Parameter => label("θ", "doublecircle")
+      case VarRef(sym)  => label(slot(sym), "square", color(sym))
       case VarDef(sym, rhs) =>
         traverseVarDef(sym, rhs)
     }
@@ -113,24 +107,24 @@ class Viz(methodDefs: List[MethodDef]) {
         val testID = traverse(test)
         val nzID = traverse(nz)
         val zID = traverse(z)
-        val id = nextID()
-        gv.record(id,
-                  List(
-                    ("If", None),
-                    ("test", Some(testID)),
-                    ("nonZero", Some(nzID)),
-                    ("zero", Some(zID))
-                  ))
+        val id = label("If", "diamond")
+        gv.edge(id, testID, Map("style" -> "bold"))
+        gv.edge(id, nzID, Map("color" -> "green"))
+        gv.edge(id, zID, Map("color" -> "red"))
         id
       case LookupIR(index, table) =>
         val indexID = traverse(index)
         val id = nextID()
-        gv.record(id,
-                  List(("Lookup", None), ("idx", Some(indexID))) ++
-                    table.zipWithIndex.map {
-                      case (ref, i) =>
-                        (i.toString, Some(traverse(ref)))
-                    })
+        gv.subgraph(s"cluster_$id", Map.empty) {
+          gv.statement(
+            id,
+            Map("label" -> "Lookup", "shape" -> "box", "color" -> "grey"))
+          table.foreach { ref =>
+            val rid = traverse(ref)
+            gv.edge(id, rid, Map("color" -> "grey", "arrowhead" -> "none"))
+          }
+        }
+        gv.edge(id, indexID)
         id
       case SeqIR(first, second) =>
         val firstID = traverse(first)
