@@ -13,7 +13,7 @@ class Viz {
       case LogOp       => "log"
       case AbsOp       => "abs"
       case RectifierOp => "relu"
-      case NoOp        => "x"
+      case NoOp        => "nop"
     }
 
   private def id(real: NonConstant): (String, Boolean) =
@@ -55,39 +55,40 @@ class Viz {
   def traverse(r: Real): String =
     r match {
       case Constant(c) => constant(double(c.toDouble))
-      case Infinity    => constant("inf")
-      case NegInfinity => constant("-inf")
+      case Infinity    => constant("∞")
+      case NegInfinity => constant("-∞")
       case nc: NonConstant =>
         val (ncID, seen) = id(nc)
         if (!seen) {
           nc match {
             case Unary(original, op) =>
               val origID = traverse(original)
-              gv.record(ncID, List((opLabel(op), None), ("x", Some(origID))))
+              gv.record(ncID,
+                        List(("Unary", None), (opLabel(op), Some(origID))))
             case If(test, nz, z) =>
               val testID = traverse(test)
               val nzID = traverse(nz)
               val zID = traverse(z)
               gv.record(ncID,
                         List(
-                          ("if", None),
-                          ("x==0", Some(testID)),
-                          ("false", Some(nzID)),
-                          ("true", Some(zID))
+                          ("If", None),
+                          ("test", Some(testID)),
+                          ("nonZero", Some(nzID)),
+                          ("zero", Some(zID))
                         ))
             case Pow(base, exponent) =>
               val baseID = traverse(base)
               val exponentID = traverse(exponent)
               gv.record(ncID,
                         List(
-                          ("^", None),
-                          ("", Some(baseID)),
-                          ("", Some(exponentID))
+                          ("Pow", None),
+                          ("base", Some(baseID)),
+                          ("exp", Some(exponentID))
                         ))
             case LogLine(ax) =>
-              gv.record(ncID, coefficients("*", "^", ax))
+              gv.record(ncID, coefficients("LogLine", "^", ax))
             case l: Line =>
-              val coef = coefficients("+", "*", l.ax)
+              val coef = coefficients("Line", "*", l.ax)
               if (l.b == Real.BigZero)
                 gv.record(ncID, coef)
               else
@@ -96,28 +97,24 @@ class Viz {
               val indexID = traverse(l.index)
               val tableIDs = l.table.map(traverse)
               gv.record(ncID,
-                        List(("switch", None), ("x", Some(indexID))) ++
+                        List(("Lookup", None), ("idx", Some(indexID))) ++
                           tableIDs.zipWithIndex.map {
                             case (t, i) => (i.toString, Some(t))
                           })
             case _: Variable =>
-              gv.statement(ncID, Map("label" -> "θ"))
+              gv.statement(ncID, Map("label" -> "θ", "shape" -> "diamond"))
           }
         }
         ncID
     }
 
-  private def coefficients(plusOp: String,
+  private def coefficients(lineType: String,
                            timesOp: String,
                            ax: Coefficients): Seq[(String, Option[String])] =
-    (plusOp, None) :: ax.toList.zipWithIndex.map {
-      case ((x, a), i) =>
+    (lineType -> None) :: ax.toList.map {
+      case (x, a) =>
         val xID = traverse(x)
-        val label =
-          if (a == 1.0)
-            "x(%d)".format(i)
-          else
-            "x(%d)%s%s".format(i, timesOp, double(a.toDouble))
+        val label = "%s%s".format(timesOp, double(a.toDouble))
         (label, Some(xID))
     }
 }
