@@ -6,7 +6,7 @@ build                Binomial                  100                         1000.
 build                Binomial                  1000                       10000.000
 build                Binomial                  10000                     100000.000
 build                Binomial                  100000                   1000000.000
-build                BinomialPoissonApproximation 100                          400.000
+build                BinomialPoissonApproximation 100                         1000.000
 build                BinomialPoissonApproximation 1000                        3000.000
 build                BinomialPoissonApproximation 10000                      30000.000
 build                BinomialPoissonApproximation 100000                    300000.000
@@ -14,7 +14,7 @@ build                Exponential               100                          200.
 build                Exponential               1000                        2000.000
 build                Exponential               10000                      20000.000
 build                Exponential               100000                    200000.000
-build                GaussianMixture           100                          300.000
+build                GaussianMixture           100                          400.000
 build                GaussianMixture           1000                        2000.000
 build                GaussianMixture           10000                      20000.000
 build                GaussianMixture           100000                    200000.000
@@ -22,15 +22,15 @@ build                Geometric                 100                          100.
 build                Geometric                 1000                        1000.000
 build                Geometric                 10000                      10000.000
 build                Geometric                 100000                    100000.000
-build                GeometricZeroInflated     100                          200.000
+build                GeometricZeroInflated     100                          300.000
 build                GeometricZeroInflated     1000                        1000.000
 build                GeometricZeroInflated     10000                      10000.000
 build                GeometricZeroInflated     100000                    100000.000
-build                Laplace                   100                          100.000
+build                Laplace                   100                          200.000
 build                Laplace                   1000                        1000.000
 build                Laplace                   10000                      10000.000
 build                Laplace                   100000                    100000.000
-build                LogNormal                 100                          200.000
+build                LogNormal                 100                          300.000
 build                LogNormal                 1000                        2000.000
 build                LogNormal                 10000                      20000.000
 build                LogNormal                 100000                    200000.000
@@ -42,9 +42,9 @@ build                Normal                    100                          200.
 build                Normal                    1000                        1000.000
 build                Normal                    10000                      10000.000
 build                Normal                    100000                    200000.000
-build                Regression                100:10                      3000.000
+build                Regression                100:10                      4000.000
 build                Regression                100:10000                1000000.000
-build                Regression                10:10                        400.000
+build                Regression                10:10                       1000.000
 build                Regression                10:10000                   30000.000
 build                Regression                1:10                         200.000
 build                Regression                1:10000                    10000.000
@@ -111,7 +111,7 @@ run                  BinomialPoissonApproximation 1000                          
 run                  BinomialPoissonApproximation 10000                          1.000
 run                  BinomialPoissonApproximation 100000                         1.000
 run                  Exponential               100                            3.000
-run                  Exponential               1000                          50.000
+run                  Exponential               1000                          40.000
 run                  Exponential               10000                        400.000
 run                  Exponential               100000                      4000.000
 run                  GaussianMixture           100                           20.000
@@ -123,9 +123,9 @@ run                  Geometric                 1000                           1.
 run                  Geometric                 10000                          1.000
 run                  Geometric                 100000                         1.000
 run                  GeometricZeroInflated     100                            1.000
-run                  GeometricZeroInflated     1000                        1000.000
-run                  GeometricZeroInflated     10000                      10000.000
-run                  GeometricZeroInflated     100000                    100000.000
+run                  GeometricZeroInflated     1000                           1.000
+run                  GeometricZeroInflated     10000                          1.000
+run                  GeometricZeroInflated     100000                         1.000
 run                  Laplace                   100                            5.000
 run                  Laplace                   1000                         100.000
 run                  Laplace                   10000                       1000.000
@@ -145,7 +145,7 @@ run                  Normal                    100000                         1.
 run                  Regression                100:10                       100.000
 run                  Regression                100:10000                  20000.000
 run                  Regression                10:10                         10.000
-run                  Regression                10:10000                    4000.000
+run                  Regression                10:10000                    3000.000
 run                  Regression                1:10                           2.000
 run                  Regression                1:10000                        2.000
 synthesize           Bernoulli                 100                          100.000
@@ -190,5 +190,5 @@ synthesize           NegativeBinomial          10000                     100000.
 synthesize           NegativeBinomial          100000                   1000000.000
 synthesize           Normal                    100                          100.000
 synthesize           Normal                    1000                        1000.000
-synthesize           Normal                    10000                      10000.000
+synthesize           Normal                    10000                      20000.000
 synthesize           Normal                    100000                    200000.000
