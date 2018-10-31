@@ -1,20 +1,15 @@
 package com.stripe.rainier.ir
 
 class Viz(methodDefs: List[MethodDef]) {
+  import GraphViz._
   val gv = new GraphViz
-
-  private var counter = 0
-  def nextID(): String = {
-    counter += 1
-    s"r$counter"
-  }
 
   private val varTypes = VarTypes.methods(methodDefs)
   private var methods = Map.empty[Sym, String]
   methodDefs.foreach { methDef =>
     methods +=
       (methDef.sym ->
-        traverseDef(methDef.sym.id, "", "black", methDef.rhs))
+        traverseDef("", "black", methDef.rhs))
   }
 
   private def opLabel(op: UnaryOp): String =
@@ -35,39 +30,30 @@ class Viz(methodDefs: List[MethodDef]) {
       case PowOp      => "^"
     }
 
-  private def label(value: String,
-                    shape: String,
-                    color: String = "black"): String = {
-    val id = nextID()
-    gv.statement(id, Map("label" -> value, "shape" -> shape, "color" -> color))
-    id
-  }
-
-  def double(c: Double): String =
-    "%.2f".format(c)
-
-  def outputMethod(name: String, sym: Sym): Unit = {
-    val nameID = label(name, "house")
-    gv.edge(nameID, methods(sym))
-  }
+  def outputMethod(name: String, sym: Sym): Unit =
+    gv.edge(gv.node(label(name), shape("house")), methods(sym))
 
   def traverse(r: Expr): String =
     r match {
-      case Const(c)     => label(double(c), "box3d")
-      case _: Parameter => label("θ", "doublecircle")
-      case VarRef(sym)  => label(slot(sym), "square", color(sym))
+      case Const(c) =>
+        gv.node(label(formatDouble(c)), color("yellow"), shape("box"))
+
+      case _: Parameter =>
+        gv.node(label("θ"), color("green"), shape("doublecircle"))
+      case VarRef(sym) =>
+        gv.node(label(varSlot(sym)), color(varColor(sym)), shape("square"))
       case VarDef(sym, rhs) =>
         traverseVarDef(sym, rhs)
     }
 
-  def color(sym: Sym): String =
+  def varColor(sym: Sym): String =
     varTypes(sym) match {
       case Inline    => ""
       case Local(_)  => "blue"
       case Global(_) => "red"
     }
 
-  def slot(sym: Sym): String =
+  def varSlot(sym: Sym): String =
     varTypes(sym) match {
       case Inline    => ""
       case Local(x)  => s"t$x"
@@ -78,12 +64,11 @@ class Viz(methodDefs: List[MethodDef]) {
     varTypes(sym) match {
       case Inline =>
         traverseIR(ir)
-      case _ => traverseDef(sym.id, slot(sym), color(sym), ir)
+      case _ => traverseDef(varSlot(sym), varColor(sym), ir)
     }
 
-  def traverseDef(id: Int, slot: String, color: String, ir: IR): String =
-    gv.subgraph(s"cluster_$id",
-                Map("label" -> slot, "labeljust" -> "l", "color" -> color)) {
+  def traverseDef(slot: String, clr: String, ir: IR): String =
+    gv.cluster(label(slot), justify("l"), color(clr)) {
       traverseIR(ir)
     }
 
@@ -92,7 +77,7 @@ class Viz(methodDefs: List[MethodDef]) {
       case BinaryIR(left, right, op) =>
         val leftID = traverse(left)
         val rightID = traverse(right)
-        val id = label(opLabel(op), "oval")
+        val id = gv.node(label(opLabel(op)), shape("oval"))
         gv.edge(id, leftID)
         gv.edge(id, rightID)
         id
@@ -100,38 +85,37 @@ class Viz(methodDefs: List[MethodDef]) {
         traverse(original)
       case UnaryIR(original, op) =>
         val origID = traverse(original)
-        val id = label(opLabel(op), "oval")
+        val id = gv.node(label(opLabel(op)), shape("oval"))
         gv.edge(id, origID)
         id
       case IfIR(test, nz, z) =>
         val testID = traverse(test)
         val nzID = traverse(nz)
         val zID = traverse(z)
-        val id = label("If", "diamond")
-        gv.edge(id, testID, Map("style" -> "bold"))
-        gv.edge(id, nzID, Map("color" -> "green"))
-        gv.edge(id, zID, Map("color" -> "red"))
+        val id = gv.node(label("If"), shape("diamond"))
+        gv.edge(id, testID, style("bold"))
+        gv.edge(id, nzID, color("green"))
+        gv.edge(id, zID, color("red"))
         id
       case LookupIR(index, table) =>
         val indexID = traverse(index)
-        val id = nextID()
-        gv.subgraph(s"cluster_$id", Map.empty) {
-          gv.statement(
-            id,
-            Map("label" -> "Lookup", "shape" -> "box", "color" -> "grey"))
+        val lookupID = gv.cluster() {
+          val id =
+            gv.node(label("Lookup"), shape("star"), color("grey"))
           table.foreach { ref =>
             val rid = traverse(ref)
-            gv.edge(id, rid, Map("color" -> "grey", "arrowhead" -> "none"))
+            gv.edge(id, rid, color("grey"), "arrowhead" -> "none")
           }
+          id
         }
-        gv.edge(id, indexID)
-        id
+        gv.edge(lookupID, indexID)
+        lookupID
       case SeqIR(first, second) =>
         val firstID = traverse(first)
         val secondID = traverse(second)
-        val id = label("", "rarrow")
+        val id = gv.node(shape("rarrow"))
         gv.edge(id, firstID)
-        gv.edge(id, secondID, Map("style" -> "bold"))
+        gv.edge(id, secondID, style("bold"))
         id
 
       case MethodRef(sym) => methods(sym)

@@ -3,81 +3,32 @@ import java.io._
 
 class GraphViz {
   private val buf = new StringBuilder
-  buf ++= "digraph {\nsplines=\"false\";\n"
+  buf ++= "digraph {\nsplines=\"ortho\";\n"
 
-  def record(sid: String, fields: Seq[(String, Option[String])]): Unit = {
-    val fsrcs = 0.to(fields.size).map { i =>
-      s"f$i"
-    }
-    val flabels = fields.map(_._1)
-    val label = fsrcs
-      .zip(flabels)
-      .map {
-        case (src, lbl) =>
-          s"<$src> $lbl"
-      }
-      .mkString("|")
-    statement(sid, Map("label" -> label, "shape" -> "record"))
-    fsrcs.zip(fields.map(_._2)).foreach {
-      case (src, Some(dest)) => edge(s"$sid:$src", dest)
-      case _                 => ()
-    }
+  private var counter = 0
+  private def nextID() = {
+    counter += 1
+    s"r$counter"
   }
 
-  def matrix(mid: String,
-             label: String,
-             columns: Seq[Seq[String]]): Seq[String] = {
-    val cdsts = 0.to(columns.size).map { i =>
-      s"c$i"
-    }
-    val colLabel =
-      columns
-        .zip(cdsts)
-        .map {
-          case (col, dst) =>
-            val values = col.mkString("|")
-            if (col.size == 1)
-              s"<$dst> $values"
-            else
-              s"{<$dst> $values}"
-        }
-        .mkString("|")
-    val fullLabel =
-      s"$label | $colLabel"
-    statement(mid, Map("label" -> fullLabel, "shape" -> "Mrecord"))
-    cdsts.map { dst =>
-      s"$mid:$dst"
-    }
+  def node(attrs: (String, String)*): String = {
+    val id = nextID()
+    buf ++= id
+    attributes(attrs)
+    buf ++= ";\n"
+    id
   }
 
-  def statement(value: String, annotations: Map[String, String]): Unit = {
-    buf ++= value
-    if (!annotations.isEmpty) {
-      buf ++= " ["
-      annotations.foreach {
-        case (k, v) =>
-          buf ++= "\"%s\"=\"%s\"".format(k, v)
-      }
-      buf ++= "]"
-    }
+  def edge(left: String, right: String, attrs: (String, String)*): Unit = {
+    buf ++= s"$left -> $right"
+    attributes(attrs)
     buf ++= ";\n"
   }
 
-  def edge(left: String,
-           right: String,
-           annotations: Map[String, String] = Map.empty): Unit =
-    statement(s"$left -> $right", annotations)
-
-  def dot = buf.toString + "\n}"
-  def write(path: String): Unit = {
-    val pw = new PrintWriter(new File(path))
-    pw.write(dot)
-    pw.close
-  }
-
-  def subgraph[T](id: String, annotations: Map[String, String])(fn: => T): T = {
-    buf ++= "subgraph %s {\n".format(id)
-    annotations.foreach {
+  def cluster[T](attrs: (String, String)*)(fn: => T): T = {
+    val id = nextID()
+    buf ++= "subgraph cluster_%s {\n".format(id)
+    attrs.foreach {
       case (k, v) =>
         buf ++= "%s=\"%s\";\n".format(k, v)
     }
@@ -85,4 +36,38 @@ class GraphViz {
     buf ++= "}\n"
     t
   }
+
+  private def attributes(seq: Seq[(String, String)]): Unit = {
+    if (!seq.isEmpty) {
+      buf ++= " ["
+      seq.foreach {
+        case (k, v) =>
+          buf ++= "\"%s\"=\"%s\"".format(k, v)
+      }
+      buf ++= "]"
+    }
+  }
+
+  def dot = buf.toString + "\n}"
+  def write(path: String): Unit = {
+    val pw = new PrintWriter(new File(path))
+    pw.write(dot)
+    pw.close
+  }
+}
+
+object GraphViz {
+  def label(v: String): (String, String) =
+    "label" -> v
+  def color(v: String): (String, String) =
+    "color" -> v
+  def shape(v: String): (String, String) =
+    "shape" -> v
+  def style(v: String): (String, String) =
+    "style" -> v
+  def justify(v: String): (String, String) =
+    "labeljust" -> v
+
+  def formatDouble(d: Double): String =
+    "%.2f".format(d)
 }
