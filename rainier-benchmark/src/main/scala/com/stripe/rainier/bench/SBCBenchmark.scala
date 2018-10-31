@@ -11,7 +11,7 @@ import com.stripe.rainier.sampler._
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
 @Warmup(iterations = 3, time = 1)
 @Measurement(iterations = 5, time = 1)
-@Fork(1)
+@Fork(3)
 @Threads(4)
 @State(Scope.Benchmark)
 abstract class SBCBenchmark {
