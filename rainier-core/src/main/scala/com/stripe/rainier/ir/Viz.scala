@@ -14,7 +14,7 @@ class Viz(methodDefs: List[MethodDef]) {
   methodDefs.foreach { methDef =>
     methods +=
       (methDef.sym ->
-        traverseDef(methDef.sym.id, "black", methDef.rhs))
+        traverseDef(methDef.sym.id, "", "black", methDef.rhs))
   }
 
   private def opLabel(op: UnaryOp): String =
@@ -57,7 +57,7 @@ class Viz(methodDefs: List[MethodDef]) {
         val id = nextID()
         gv.statement(id,
                      Map(
-                       "label" -> sym.id.toString,
+                       "label" -> slot(sym),
                        "color" -> color(sym),
                        "shape" -> "square"
                      ))
@@ -73,17 +73,23 @@ class Viz(methodDefs: List[MethodDef]) {
       case Global(_) => "red"
     }
 
+  def slot(sym: Sym): String =
+    varTypes(sym) match {
+      case Inline    => ""
+      case Local(x)  => s"t$x"
+      case Global(x) => s"g$x"
+    }
+
   def traverseVarDef(sym: Sym, ir: IR): String =
     varTypes(sym) match {
       case Inline =>
         traverseIR(ir)
-      case _ => traverseDef(sym.id, color(sym), ir)
+      case _ => traverseDef(sym.id, slot(sym), color(sym), ir)
     }
 
-  def traverseDef(id: Int, color: String, ir: IR): String =
-    gv.subgraph(
-      s"cluster_$id",
-      Map("label" -> id.toString, "labeljust" -> "l", "color" -> color)) {
+  def traverseDef(id: Int, slot: String, color: String, ir: IR): String =
+    gv.subgraph(s"cluster_$id",
+                Map("label" -> slot, "labeljust" -> "l", "color" -> color)) {
       traverseIR(ir)
     }
 
