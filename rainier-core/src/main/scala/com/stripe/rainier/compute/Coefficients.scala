@@ -65,7 +65,8 @@ object Coefficients {
       }
   }
 
-  case class Many(toMap: Map[NonConstant, BigDecimal], terms: List[NonConstant])
+  class Many(val toMap: Map[NonConstant, BigDecimal],
+             val terms: List[NonConstant])
       extends Coefficients {
     val isEmpty = false
     def size = toMap.size
@@ -128,5 +129,10 @@ object Coefficients {
         Many(toMap + pair, term :: terms)
       }
     }
+  }
+
+  object Many {
+    def apply(toMap: Map[NonConstant, BigDecimal], terms: List[NonConstant]) =
+      new Many(toMap, terms)
   }
 }
