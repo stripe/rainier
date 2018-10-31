@@ -3,7 +3,7 @@ import java.io._
 
 class GraphViz {
   private val buf = new StringBuilder
-  buf ++= "digraph {\n"
+  buf ++= "digraph {\nsplines=\"false\";\n"
 
   def record(sid: String, fields: Seq[(String, Option[String])]): Unit = {
     val fsrcs = 0.to(fields.size).map { i =>
@@ -73,5 +73,16 @@ class GraphViz {
     val pw = new PrintWriter(new File(path))
     pw.write(dot)
     pw.close
+  }
+
+  def subgraph[T](id: String, annotations: Map[String, String])(fn: => T): T = {
+    buf ++= "subgraph %s {\n".format(id)
+    annotations.foreach {
+      case (k, v) =>
+        buf ++= "%s=\"%s\";\n".format(k, v)
+    }
+    val t = fn
+    buf ++= "}\n"
+    t
   }
 }
