@@ -59,7 +59,7 @@ class Viz(methodDefs: List[MethodDef]) {
                      Map(
                        "label" -> sym.id.toString,
                        "color" -> color(sym),
-                       "shape" -> "square",
+                       "shape" -> "square"
                      ))
         id
       case VarDef(sym, rhs) =>
