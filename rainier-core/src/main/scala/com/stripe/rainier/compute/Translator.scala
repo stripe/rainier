@@ -185,20 +185,44 @@ private class Translator {
   private def combineSumTerms(terms: Seq[(Real, BigDecimal)]): Expr = {
     val ring = multiplyRing
     val lazyExprs = makeLazyExprs(terms, ring)
-    val defs = foldChain(lazyExprs, ref(Const(0.0)), Seq[VarDef](), 0)
-    SeqIR(defs.reverse)
+//    val defs = foldChain(lazyExprs, ref(Const(0.0)), Seq[VarDef](), 0)
+//    SeqIR(defs.reverse)
+    foldChain1(lazyExprs, Const(0.0), 0)
   }
 
   private def foldChain(terms: Seq[() => Expr],
                         accum: Ref,
                         defs: Seq[VarDef],
-                        iteration: Int): Seq[VarDef] =
+                        iteration: Int): (Expr, Seq[VarDef]) =
     (terms, iteration) match {
       case (t :: ts, 0) => foldChain(ts, ref(t()), defs, 1)
       case (t :: ts, n) =>
         val binaryDef = binaryVarDef(accum, t())
         foldChain(ts, ref(binaryDef), binaryDef +: defs, n + 1)
-      case _ => defs
+      case _ => (accum, defs)
+    }
+
+  // This works fine, but has no SeqIR and will overflow
+  private def foldChain0(terms: Seq[() => Expr],
+                         accum: Expr,
+                         iteration: Int): Expr =
+    (terms, iteration) match {
+      case (t :: ts, 0) => foldChain0(ts, t(), 1)
+      case (t :: ts, n) =>
+        foldChain0(ts, binaryExpr(accum, t(), AddOp), n + 1)
+      case _ => accum
+    }
+
+  private def foldChain1(terms: Seq[() => Expr],
+                         accum: Expr,
+                         iteration: Int): Expr =
+    (terms, iteration) match {
+      case (ts, 0) if ts.size < 3 => combineTree(ts, multiplyRing)
+      case (ts, _) if ts.size < 3 =>
+        binaryExpr(accum, combineTree(ts, multiplyRing), multiplyRing.plus)
+      case (t :: ts, 0) => foldChain1(ts, t(), 1)
+      case (t :: ts, n) =>
+        foldChain1(ts, binaryExpr(accum, t(), multiplyRing.plus), n + 1)
     }
 
   private def combineTree(terms: Seq[() => Expr], ring: Ring): Expr =
