@@ -42,10 +42,6 @@ private class Translator {
     binary.memoize(keys, op, new BinaryIR(left, right, op))
   }
 
-  private def binaryVarDef(left: Ref, right: Expr): VarDef = {
-    binary.memoizeSum(left, right, AddOp, new BinaryIR(left, right, AddOp))
-  }
-
   private def ifExpr(whenZero: Expr, whenNonZero: Expr, test: Expr): Expr =
     ifs.memoize(List(List(test, whenZero, whenNonZero)),
                 (),
@@ -185,31 +181,16 @@ private class Translator {
   private def combineSumTerms(terms: Seq[(Real, BigDecimal)]): Expr = {
     val ring = multiplyRing
     val lazyExprs = makeLazyExprs(terms, ring)
-//    val defs = foldChain(lazyExprs, ref(Const(0.0)), Seq[VarDef](), 0)
-//    SeqIR(defs.reverse)
-    foldChain0(lazyExprs, Const(0.0), 0)
+    foldChain(lazyExprs, Const(0.0), 0)
   }
 
   private def foldChain(terms: Seq[() => Expr],
-                        accum: Ref,
-                        defs: Seq[VarDef],
-                        iteration: Int): (Expr, Seq[VarDef]) =
+                        accum: Expr,
+                        iteration: Int): Expr =
     (terms, iteration) match {
-      case (t :: ts, 0) => foldChain(ts, ref(t()), defs, 1)
+      case (t :: ts, 0) => foldChain(ts, t(), 1)
       case (t :: ts, n) =>
-        val binaryDef = binaryVarDef(accum, t())
-        foldChain(ts, ref(binaryDef), binaryDef +: defs, n + 1)
-      case _ => (accum, defs)
-    }
-
-  // This works fine with no SeqIR
-  private def foldChain0(terms: Seq[() => Expr],
-                         accum: Expr,
-                         iteration: Int): Expr =
-    (terms, iteration) match {
-      case (t :: ts, 0) => foldChain0(ts, t(), 1)
-      case (t :: ts, n) =>
-        foldChain0(ts, binaryExpr(accum, t(), AddOp), n + 1)
+        foldChain(ts, binaryExpr(accum, t(), AddOp), n + 1)
       case _ => accum
     }
 
@@ -270,11 +251,6 @@ private class Translator {
           cache += (refKeys.head, opKey) -> sym
           new VarDef(sym, ir)
       }
-    }
-    def memoizeSum(left: Ref, right: Expr, opKey: K, ir: => IR): VarDef = {
-      val sym = Sym.freshSym()
-      cache += (List(left, ref(right)), opKey) -> sym
-      new VarDef(sym, ir)
     }
   }
 }
