@@ -31,21 +31,20 @@ case class Tracer(compiler: Compiler, gradient: Boolean) {
 }
 
 object Tracer {
-  def dump(cf: CompiledFunction): Unit =
+
+  def decompile(cf: CompiledFunction): Seq[String] =
     cf.getClass.getClassLoader match {
       case cl: GeneratedClassLoader =>
-        CFR.decompile(cl.bytecode).foreach(println)
+        CFR.decompile(cl.bytecode)
       case _ =>
         sys.error("Cannot find bytecode for class")
     }
 
+  def dump(cf: CompiledFunction): Unit =
+    decompile(cf).foreach{println}
+
   def dumps(cf: CompiledFunction): String =
-    cf.getClass.getClassLoader match {
-      case cl: GeneratedClassLoader =>
-        CFR.decompile(cl.bytecode).mkString("\n")
-      case _ =>
-        sys.error("Cannot find bytecode for class")
-    }
+    decompile(cf).mkString("\n")
 
   val default = Tracer(Compiler.default, false)
   val gradient = Tracer(Compiler.default, true)

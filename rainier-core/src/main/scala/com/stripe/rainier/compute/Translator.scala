@@ -99,10 +99,9 @@ private class Translator {
   private def factoredSumLine(ax: Coefficients,
                               b: BigDecimal,
                               factor: Double): Expr = {
-    val ring = multiplyRing
     val terms = ax.toList
     val allTerms =
-      if (b == ring.zero)
+      if (b == 0.0)
         terms
       else
         (Constant(b), Real.BigOne) :: terms
@@ -110,11 +109,11 @@ private class Translator {
     factor match {
       case 1.0 => expr
       case -1.0 =>
-        binaryExpr(Const(ring.zero), expr, ring.minus)
+        binaryExpr(Const(0.0), expr, SubtractOp)
       case 2.0 =>
-        binaryExpr(expr, ref(expr), ring.plus)
+        binaryExpr(expr, ref(expr), AddOp)
       case k =>
-        binaryExpr(expr, Const(k), ring.times)
+        binaryExpr(expr, Const(k), MultiplyOp)
     }
   }
 
@@ -179,8 +178,7 @@ private class Translator {
   }
 
   private def combineSumTerms(terms: Seq[(Real, BigDecimal)]): Expr = {
-    val ring = multiplyRing
-    val lazyExprs = makeLazyExprs(terms, ring)
+    val lazyExprs = makeLazyExprs(terms, multiplyRing)
     foldChain(lazyExprs, Const(0.0), 0)
   }
 
