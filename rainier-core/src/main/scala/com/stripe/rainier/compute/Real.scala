@@ -32,13 +32,7 @@ sealed trait Real {
 
   //because abs a does not have a smooth derivative, try to avoid using it
   def abs: Real = RealOps.unary(this, ir.AbsOp)
-  def rectifier: Real = RealOps.unary(this, ir.RectifierOp)
-
-  def >(other: Real): Real = (this - other).rectifier
-  def <(other: Real): Real = (other - this).rectifier
-  def >=(other: Real): Real = If(this - other, this > other, Real.one)
-  def <=(other: Real): Real = If(this - other, this < other, Real.one)
-
+  def compare(other: Real): Real = Compare(other, this)
   lazy val variables: List[Variable] = RealOps.variables(this).toList
   lazy val gradient: List[Real] = Gradient.derive(variables, this)
 }
@@ -63,6 +57,24 @@ object Real {
     val summed = Real.sum(shifted.map(_.exp))
     summed.log + max
   }
+
+  def eq(left: Real, right: Real, ifTrue: Real, ifFalse: Real): Real =
+    lookupCompare(left, right, ifFalse, ifTrue, ifFalse)
+  def lt(left: Real, right: Real, ifTrue: Real, ifFalse: Real): Real =
+    lookupCompare(left, right, ifFalse, ifFalse, ifTrue)
+  def gt(left: Real, right: Real, ifTrue: Real, ifFalse: Real): Real =
+    lookupCompare(left, right, ifTrue, ifFalse, ifFalse)
+  def lte(left: Real, right: Real, ifTrue: Real, ifFalse: Real): Real =
+    lookupCompare(left, right, ifFalse, ifTrue, ifTrue)
+  def gte(left: Real, right: Real, ifTrue: Real, ifFalse: Real): Real =
+    lookupCompare(left, right, ifTrue, ifTrue, ifFalse)
+
+  private def lookupCompare(left: Real,
+                            right: Real,
+                            gt: Real,
+                            eq: Real,
+                            lt: Real) =
+    Lookup(left.compare(right), List(gt, eq, lt), -1)
 
   private[compute] val BigZero = BigDecimal(0.0)
   private[compute] val BigOne = BigDecimal(1.0)
@@ -141,47 +153,52 @@ private object LogLine {
     }
 }
 
-/*
-This node type represents an expression which is equal to `whenZero` when
-test is equal to zero, and `whenNotZero` otherwise. Because this expression
-does not have a smooth derivative, it is not recommended that you use this
-unless absolutely necessary.
- */
-final case class If private (test: NonConstant,
-                             whenNonZero: Real,
-                             whenZero: Real)
+private final case class Compare private (left: Real, right: Real)
     extends NonConstant
 
-object If {
-  def apply(test: Real, whenNonZero: => Real, whenZero: => Real): Real =
-    test match {
-      case Constant(Real.BigZero)               => whenZero
-      case Constant(_) | Infinity | NegInfinity => whenNonZero
-      case nc: NonConstant                      => new If(nc, whenNonZero, whenZero)
+private object Compare {
+  def apply(left: Real, right: Real): Real =
+    (left, right) match {
+      case (Infinity, Infinity)       => Real.zero
+      case (Infinity, _)              => Real.one
+      case (_, Infinity)              => Constant(-1)
+      case (NegInfinity, NegInfinity) => Real.zero
+      case (NegInfinity, _)           => Constant(-1)
+      case (_, NegInfinity)           => Real.one
+      case (Constant(a), Constant(b)) =>
+        if (a == b)
+          Real.zero
+        else if (a > b)
+          Real.one
+        else
+          Constant(-1)
+      case _ => new Compare(left, right)
     }
 }
 
 private final case class Pow private (base: Real, exponent: NonConstant)
     extends NonConstant
 
-private final class Lookup(val index: NonConstant, val table: Array[Real])
+private final class Lookup(val index: NonConstant,
+                           val table: Array[Real],
+                           val low: Int)
     extends NonConstant
 
 object Lookup {
   def apply(table: Seq[Real]): Real => Real =
     apply(_, table)
 
-  def apply(index: Real, table: Seq[Real]): Real =
+  def apply(index: Real, table: Seq[Real], low: Int = 0): Real =
     index match {
       case Infinity | NegInfinity =>
         throw new ArithmeticException("Cannot lookup an infinite number")
       case Constant(v) =>
         if (v.isWhole)
-          table(v.toInt)
+          table(v.toInt - low)
         else
           throw new ArithmeticException("Cannot lookup a non-integral number")
       case nc: NonConstant =>
-        new Lookup(nc, table.toArray)
+        new Lookup(nc, table.toArray, low)
     }
 }
 

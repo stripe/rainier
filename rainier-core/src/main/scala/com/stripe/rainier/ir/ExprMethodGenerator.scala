@@ -54,16 +54,10 @@ final private case class ExprMethodGenerator(method: MethodDef,
       case u: UnaryIR =>
         traverse(u.original)
         unaryOp(u.op)
-      case i: IfIR =>
-        traverse(i.whenNonZero)
-        traverse(i.whenZero)
-        traverse(i.test)
-        constant(0.0)
-        swapIfEqThenPop()
       case l: LookupIR =>
         traverse(l.index)
         doubleToInt()
-        tableSwitch(l.table) {
+        tableSwitch(l.table, l.low) {
           case Some(r) => traverse(r)
           case None    => throwNPE()
         }

@@ -1,6 +1,6 @@
 package com.stripe.rainier.core
 
-import com.stripe.rainier.compute.{If, Real}
+import com.stripe.rainier.compute.Real
 
 /**
   * A finite discrete distribution
@@ -99,9 +99,7 @@ object Multinomial {
     Combinatorics.factorial(multi.k) + Real.sum(v.toList.map {
       case (t, i) =>
         val p = multi.pmf.getOrElse(t, Real.zero)
-        val pTerm =
-          If(i, i * p.log, If(p, whenNonZero = i * p.log, whenZero = Real.zero))
-
+        val pTerm = i * p.log //???
         pTerm - Combinatorics.factorial(i)
     })
 }

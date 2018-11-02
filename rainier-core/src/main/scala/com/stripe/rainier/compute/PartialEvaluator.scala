@@ -42,12 +42,11 @@ class PartialEvaluator(var cache: Map[Real, (Real, Boolean)]) {
         (RealOps.unary(r, op), true)
       else
         (real, false)
-    case If(test, nz, z) =>
-      val (newTest, testModified) = apply(test)
-      val (newNz, nzModified) = apply(nz)
-      val (newZ, zModified) = apply(z)
-      if (testModified || nzModified || zModified)
-        (If(newTest, newNz, newZ), true)
+    case Compare(left, right) =>
+      val (newLeft, leftModified) = apply(left)
+      val (newRight, rightModified) = apply(right)
+      if (leftModified || rightModified)
+        (Compare(newLeft, newRight), true)
       else
         (real, false)
     case Pow(base, exponent) =>
@@ -63,7 +62,7 @@ class PartialEvaluator(var cache: Map[Real, (Real, Boolean)]) {
       val anyModified =
         newTable.exists { case (_, modified) => modified }
       if (indexModified || anyModified)
-        (Lookup(newIndex, newTable.map(_._1)), true)
+        (Lookup(newIndex, newTable.map(_._1), l.low), true)
       else
         (l, false)
     case v: Variable =>
