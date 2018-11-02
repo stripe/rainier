@@ -41,7 +41,7 @@ object Tracer {
     }
 
   def dump(cf: CompiledFunction): Unit =
-    decompile(cf).foreach{println}
+    decompile(cf).foreach { println }
 
   def dumps(cf: CompiledFunction): String =
     decompile(cf).mkString("\n")
