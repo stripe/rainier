@@ -130,6 +130,10 @@ private trait MethodGenerator {
     methodNode.visitInsn(POP2)
   }
 
+  def doubleToInt(): Unit = {
+    methodNode.visitInsn(D2I)
+  }
+
   def pop(): Unit = {
     methodNode.visitInsn(POP2)
   }
