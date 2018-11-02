@@ -84,6 +84,11 @@ class RealTest extends FunSuite {
       (x * x * x))
   }
 
+  run("lookup") { x =>
+    val i = x.abs * 2 //should be a non-negative whole number
+    Lookup(i, Real.seq(List(0, 1, 2, 3, 4)))
+  }
+
   val exponents = scala.util.Random.shuffle(-40.to(40))
   run("exponent sums") { x =>
     exponents.foldLeft(x) {
