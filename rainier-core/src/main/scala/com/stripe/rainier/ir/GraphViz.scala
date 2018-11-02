@@ -2,8 +2,10 @@ package com.stripe.rainier.ir
 import java.io._
 
 class GraphViz {
+  import GraphViz._
+
   private val buf = new StringBuilder
-  buf ++= "digraph {\nsplines=\"ortho\";\n"
+  buf ++= "digraph {\nsplines=\"true\";\n"
 
   private var counter = 0
   private def nextID() = {
@@ -19,10 +21,44 @@ class GraphViz {
     id
   }
 
+  def record(labels: Seq[String],
+             attrs: (String, String)*): (String, Seq[String]) = {
+    val ports = 1.to(labels.size).map { i =>
+      s"f$i"
+    }
+    val fullLabel =
+      labels.zip(ports).map { case (l, p) => s"<$p> $l" }.mkString("|")
+    val id = node((label(fullLabel) :: shape("record") :: attrs.toList): _*)
+    (id, ports.map { p =>
+      s"$id:$p"
+    })
+  }
+
+  def line(size: Int, clr: String, attrs: (String, String)*): Seq[String] = {
+    val ids = List.fill(size) {
+      node((shape("point") :: attrs.toList): _*)
+    }
+    rank("sink", ids)
+    ids.sliding(2, 1).foreach {
+      case List(a, b) => edge(a, b, color(clr), "arrowhead" -> "none")
+      case _          => ()
+    }
+    ids
+  }
+
   def edge(left: String, right: String, attrs: (String, String)*): Unit = {
     buf ++= s"$left -> $right"
     attributes(attrs)
     buf ++= ";\n"
+  }
+
+  def rank(level: String, ids: Seq[String]): Unit = {
+    buf ++= s"{rank = $level; "
+    ids.foreach { id =>
+      buf ++= id
+      buf ++= ";"
+    }
+    buf ++= "};\n"
   }
 
   def cluster[T](attrs: (String, String)*)(fn: => T): T = {
@@ -67,7 +103,14 @@ object GraphViz {
     "style" -> v
   def justify(v: String): (String, String) =
     "labeljust" -> v
+  def location(v: String): (String, String) =
+    "labelloc" -> v
 
-  def formatDouble(d: Double): String =
-    "%.2f".format(d)
+  def formatDouble(d: Double): String = {
+    val eps = Math.abs(d - Math.round(d))
+    if (eps > 0.01)
+      "%.2f".format(d)
+    else
+      d.toInt.toString
+  }
 }

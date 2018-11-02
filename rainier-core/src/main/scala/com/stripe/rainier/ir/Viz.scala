@@ -33,10 +33,17 @@ class Viz(methodDefs: List[MethodDef]) {
   def outputMethod(name: String, sym: Sym): Unit =
     gv.edge(gv.node(label(name), shape("house")), methods(sym))
 
+  def refLabel(r: Ref): String =
+    r match {
+      case Const(c)     => formatDouble(c)
+      case _: Parameter => "θ"
+      case VarRef(sym)  => varSlot(sym)
+    }
+
   def traverse(r: Expr): String =
     r match {
       case Const(c) =>
-        gv.node(label(formatDouble(c)), color("yellow"), shape("box"))
+        gv.node(label(formatDouble(c)), shape("circle"))
 
       case _: Parameter =>
         gv.node(label("θ"), color("green"), shape("doublecircle"))
@@ -98,22 +105,16 @@ class Viz(methodDefs: List[MethodDef]) {
         gv.edge(id, zID, color("red"))
         id
       case LookupIR(index, table) =>
+        val refLabels =
+          table.map(refLabel)
+        val (id, slotIDs) = gv.record("Lookup" :: refLabels.toList)
         val indexID = traverse(index)
-        val lookupID = gv.cluster() {
-          val id =
-            gv.node(label("Lookup"), shape("star"), color("grey"))
-          table.foreach { ref =>
-            val rid = traverse(ref)
-            gv.edge(id, rid, color("grey"), "arrowhead" -> "none")
-          }
-          id
-        }
-        gv.edge(lookupID, indexID)
-        lookupID
+        gv.edge(slotIDs.head, indexID)
+        id
       case SeqIR(first, second) =>
         val firstID = traverse(first)
         val secondID = traverse(second)
-        val id = gv.node(shape("rarrow"))
+        val id = gv.node(label(""), shape("rarrow"))
         gv.edge(id, firstID)
         gv.edge(id, secondID, style("bold"))
         id

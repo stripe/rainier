@@ -33,8 +33,7 @@ class Viz {
   private def constant(value: String): String =
     gv.node(
       label(value),
-      color("yellow"),
-      shape("box")
+      shape("circle")
     )
 
   private var ids = Map.empty[NonConstant, String]
@@ -75,21 +74,22 @@ class Viz {
         gv.edge(id, exponentID)
         id
       case LogLine(ax) =>
-        coefficients("purple", "*", "^", ax, None)
+        coefficients("LogLine", ax, None)
       case l: Line =>
         val b =
           if (l.b == Real.BigZero)
             None
           else
             Some(l.b)
-        coefficients("blue", "+", "*", l.ax, b)
+        coefficients("Line", l.ax, b)
       case l: Lookup =>
+        val (id, slotIDs) =
+          gv.record("Lookup" :: 0.until(l.table.size).map(_.toString).toList)
         val indexID = traverse(l.index)
+        gv.edge(slotIDs.head, indexID)
         val tableIDs = l.table.map(traverse)
-        val id = gv.node(label("Lookup"), shape("star"))
-        gv.edge(id, indexID, style("bold"))
-        tableIDs.foreach { t =>
-          gv.edge(id, t)
+        slotIDs.tail.zip(tableIDs).foreach {
+          case (s, t) => gv.edge(s, t)
         }
         id
       case _: Variable =>
@@ -99,42 +99,19 @@ class Viz {
     id
   }
 
-  private def coefficients(clr: String,
-                           plusOp: String,
-                           timesOp: String,
+  private def coefficients(name: String,
                            ax: Coefficients,
                            b: Option[BigDecimal]): String = {
-    val axIDs = ax.toList.map {
-      case (x, a) =>
-        traverse(x) -> a
+    val (xs, as) = ax.toList.unzip
+    val vals = (as ++ b.toList).map { a =>
+      formatDouble(a.toDouble)
     }
-    if (axIDs.size == 1 && !b.isDefined) {
-      val boxID = coefficient(clr, timesOp, axIDs.head._2)
-      gv.edge(boxID, axIDs.head._1)
-      boxID
-    } else {
-      val (id, edges) = gv.cluster(color(clr)) {
-        val id = gv.node(label(plusOp), shape("oval"))
-        b.foreach { a =>
-          gv.edge(id, constant(formatDouble(a.toDouble)))
-        }
-        (id, axIDs.map {
-          case (xid, a) =>
-            val boxID = coefficient("grey", timesOp, a)
-            gv.edge(id, boxID)
-            (boxID, xid)
-        })
-      }
-      edges.foreach { case (boxID, xid) => gv.edge(boxID, xid) }
-      id
+    val (recordID, weightIDs) = gv.record(name :: vals)
+    weightIDs.tail.take(xs.size).zip(xs).foreach {
+      case (wid, x) =>
+        val xid = traverse(x)
+        gv.edge(wid, xid)
     }
+    recordID
   }
-
-  private def coefficient(clr: String, timesOp: String, a: BigDecimal): String =
-    if (a == Real.BigOne)
-      gv.node(label(""), color("grey"), shape("square"))
-    else {
-      val lbl = "%s%s".format(timesOp, formatDouble(a.toDouble))
-      gv.node(label(lbl), color(clr), shape("square"))
-    }
 }
