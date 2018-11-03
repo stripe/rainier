@@ -61,7 +61,7 @@ private class Translator {
 
   private def lineExpr(line: Line): Expr = {
     val (y, k) = LineOps.factor(line)
-    factoredLine(y.ax, y.b, k.toDouble, multiplyRing)
+    factoredSumLine(y.ax, y.b, k.toDouble)
   }
 
   private def logLineExpr(line: LogLine): Expr = {
@@ -96,6 +96,27 @@ private class Translator {
   The result may also be multiplied by a constant scaling factor (generally
   factored out of the original summation).
   **/
+  private def factoredSumLine(ax: Coefficients,
+                              b: BigDecimal,
+                              factor: Double): Expr = {
+    val terms = ax.toList
+    val allTerms =
+      if (b == 0.0)
+        terms
+      else
+        (Constant(b), Real.BigOne) :: terms
+    val expr = combineSumTerms(allTerms)
+    factor match {
+      case 1.0 => expr
+      case -1.0 =>
+        binaryExpr(Const(0.0), expr, SubtractOp)
+      case 2.0 =>
+        binaryExpr(expr, ref(expr), AddOp)
+      case k =>
+        binaryExpr(expr, Const(k), MultiplyOp)
+    }
+  }
+
   private def factoredLine(ax: Coefficients,
                            b: BigDecimal,
                            factor: Double,
@@ -133,8 +154,9 @@ private class Translator {
     }
   }
 
-  private def combineTerms(terms: Seq[(Real, BigDecimal)], ring: Ring): Expr = {
-    val lazyExpr = terms.map {
+  private def makeLazyExprs(terms: Seq[(Real, BigDecimal)],
+                            ring: Ring): Seq[() => Expr] = {
+    terms.map {
       case (x, Real.BigOne) =>
         () =>
           toExpr(x)
@@ -148,7 +170,18 @@ private class Translator {
         () =>
           binaryExpr(toExpr(x), Const(a.toDouble), ring.times)
     }
-    combineTree(lazyExpr, ring)
+  }
+
+  private def combineTerms(terms: Seq[(Real, BigDecimal)], ring: Ring): Expr = {
+    val lazyExprs = makeLazyExprs(terms, ring)
+    combineTree(lazyExprs, ring)
+  }
+
+  private def combineSumTerms(terms: Seq[(Real, BigDecimal)]): Expr = {
+    val lazyExprs = makeLazyExprs(terms, multiplyRing)
+    lazyExprs.tail.foldLeft(lazyExprs.head()) {
+      case (accum, t) => binaryExpr(accum, t(), AddOp)
+    }
   }
 
   private def combineTree(terms: Seq[() => Expr], ring: Ring): Expr =
