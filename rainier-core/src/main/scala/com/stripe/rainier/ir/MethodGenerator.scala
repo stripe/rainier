@@ -30,7 +30,6 @@ private trait MethodGenerator {
 
   def storeLocalVar(pos: Int): Unit = {
     methodNode.visitVarInsn(DSTORE, localVarSlot(pos))
-    loadLocalVar(pos)
   }
 
   def loadGlobalVar(pos: Int): Unit = {
@@ -44,7 +43,6 @@ private trait MethodGenerator {
     methodNode.visitLdcInsn(pos)
     fn
     methodNode.visitInsn(DASTORE)
-    loadGlobalVar(pos)
   }
 
   def loadParameter(pos: Int): Unit = {
@@ -53,16 +51,15 @@ private trait MethodGenerator {
     methodNode.visitInsn(DALOAD)
   }
 
-  def binaryOp(op: BinaryOp, keepInt: Boolean = false): Unit =
+  def binaryOp(op: BinaryOp): Unit =
     op match {
       case AddOp      => methodNode.visitInsn(DADD)
       case SubtractOp => methodNode.visitInsn(DSUB)
       case MultiplyOp => methodNode.visitInsn(DMUL)
       case DivideOp   => methodNode.visitInsn(DDIV)
       case CompareOp =>
-        methodNode.visitInsn(DCMPL)
-        if (!keepInt)
-          methodNode.visitInsn(I2D)
+        compareDoubles()
+        intToDouble()
       case PowOp =>
         methodNode.visitMethodInsn(INVOKESTATIC,
                                    "java/lang/Math",
@@ -112,6 +109,9 @@ private trait MethodGenerator {
   def returnDouble(): Unit =
     methodNode.visitInsn(DRETURN)
 
+  def compareDoubles(): Unit =
+    methodNode.visitInsn(DCMPL)
+
   def constant(value: Double): Unit =
     methodNode.visitLdcInsn(value)
 
@@ -127,6 +127,10 @@ private trait MethodGenerator {
 
   def doubleToInt(): Unit = {
     methodNode.visitInsn(D2I)
+  }
+
+  def intToDouble(): Unit = {
+    methodNode.visitInsn(I2D)
   }
 
   def pop(): Unit = {

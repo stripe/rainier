@@ -23,17 +23,7 @@ final private case class ExprMethodGenerator(method: MethodDef,
       case p: Parameter =>
         loadParameter(varIndices(p))
       case v: VarDef =>
-        varTypes(v.sym) match {
-          case Inline =>
-            traverse(v.rhs)
-          case Local(i) =>
-            traverse(v.rhs)
-            storeLocalVar(i)
-          case Global(i) =>
-            storeGlobalVar(i) {
-              traverse(v.rhs)
-            }
-        }
+        traverseVarDef(v, true)
       case VarRef(sym) =>
         varTypes(sym) match {
           case Inline =>
@@ -43,6 +33,37 @@ final private case class ExprMethodGenerator(method: MethodDef,
           case Global(i) =>
             loadGlobalVar(i)
         }
+    }
+
+  def traverseVarDef(v: VarDef, loadAfter: Boolean): Unit =
+    varTypes(v.sym) match {
+      case Inline =>
+        require(loadAfter)
+        traverse(v.rhs)
+      case Local(i) =>
+        traverse(v.rhs)
+        storeLocalVar(i)
+        if (loadAfter)
+          loadLocalVar(i)
+      case Global(i) =>
+        storeGlobalVar(i) {
+          traverse(v.rhs)
+        }
+        if (loadAfter)
+          loadGlobalVar(i)
+    }
+
+  def traverseInt(expr: Expr): Unit =
+    expr match {
+      //special case since compare returns an int
+      case VarDef(sym, BinaryIR(left, right, CompareOp))
+          if (varTypes(sym) == Inline) =>
+        traverse(left)
+        traverse(right)
+        compareDoubles()
+      case _ =>
+        traverse(expr)
+        doubleToInt()
     }
 
   def traverse(ir: IR): Unit =
@@ -55,16 +76,14 @@ final private case class ExprMethodGenerator(method: MethodDef,
         traverse(u.original)
         unaryOp(u.op)
       case l: LookupIR =>
-        traverse(l.index)
-        doubleToInt()
+        traverseInt(l.index)
         tableSwitch(l.table, l.low) {
           case Some(r) => traverse(r)
           case None    => throwNPE()
         }
       case s: SeqIR =>
-        traverse(s.first)
-        pop()
-        traverse(s.second)
+        traverseVarDef(s.first, false)
+        traverseVarDef(s.second, true)
       case m: MethodRef =>
         callExprMethod(classPrefix, m.sym.id)
     }
