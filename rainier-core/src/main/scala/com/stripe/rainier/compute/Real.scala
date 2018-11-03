@@ -32,7 +32,7 @@ sealed trait Real {
 
   //because abs a does not have a smooth derivative, try to avoid using it
   def abs: Real = RealOps.unary(this, ir.AbsOp)
-  def compare(other: Real): Real = Compare(other, this)
+
   lazy val variables: List[Variable] = RealOps.variables(this).toList
   lazy val gradient: List[Real] = Gradient.derive(variables, this)
 }
@@ -74,7 +74,7 @@ object Real {
                             gt: Real,
                             eq: Real,
                             lt: Real) =
-    Lookup(left.compare(right), List(gt, eq, lt), -1)
+    Lookup(Compare(left,right), List(gt, eq, lt), -1)
 
   private[compute] val BigZero = BigDecimal(0.0)
   private[compute] val BigOne = BigDecimal(1.0)
@@ -153,6 +153,10 @@ private object LogLine {
     }
 }
 
+/*
+Evaluates to 0 if left and right are equal, 1 if left > right, and
+-1 if left < right.
+*/
 private final case class Compare private (left: Real, right: Real)
     extends NonConstant
 
@@ -179,6 +183,9 @@ private object Compare {
 private final case class Pow private (base: Real, exponent: NonConstant)
     extends NonConstant
 
+/*
+Evaluates to the (index-low)'th element of table.
+*/
 private final class Lookup(val index: NonConstant,
                            val table: Array[Real],
                            val low: Int)
