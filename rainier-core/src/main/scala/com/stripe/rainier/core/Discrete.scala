@@ -1,6 +1,6 @@
 package com.stripe.rainier.core
 
-import com.stripe.rainier.compute.{If, Real}
+import com.stripe.rainier.compute.Real
 
 trait Discrete extends Distribution[Int] { self: Discrete =>
   type P = Real
@@ -25,7 +25,7 @@ final case class DiscreteConstant(constant: Real) extends Discrete {
     }
 
   def logDensity(v: Real): Real =
-    If(v - constant, Real.negInfinity, 0)
+    Real.eq(v, constant, 0, Real.negInfinity)
 }
 
 /**
@@ -42,7 +42,7 @@ final case class Bernoulli(p: Real) extends Discrete {
     }
 
   def logDensity(v: Real) =
-    If(v, p.log, (1 - p).log)
+    Real.eq(v, Real.zero, (1 - p).log, p.log)
 }
 
 /**

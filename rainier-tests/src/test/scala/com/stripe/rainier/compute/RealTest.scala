@@ -69,9 +69,6 @@ class RealTest extends FunSuite {
     x.pow(2).log
   }
 
-  run("if") { x =>
-    If(x, x * 2, x * 3) * 5
-  }
   run("poisson") { x =>
     Real.sum(0.to(10).toList.map { y =>
       Poisson(x.abs + 1).logDensity(y)
@@ -84,6 +81,11 @@ class RealTest extends FunSuite {
       (x * x * x))
   }
 
+  run("lookup") { x =>
+    val i = x.abs * 2 //should be a non-negative whole number
+    Lookup(i, Real.seq(List(0, 1, 2, 3, 4)))
+  }
+
   val exponents = scala.util.Random.shuffle(-40.to(40))
   run("exponent sums") { x =>
     exponents.foldLeft(x) {
@@ -94,9 +96,5 @@ class RealTest extends FunSuite {
 
   run("pow") { x =>
     x.pow(x)
-  }
-
-  run("<") { x =>
-    Real(5.499999999999998) < x
   }
 }

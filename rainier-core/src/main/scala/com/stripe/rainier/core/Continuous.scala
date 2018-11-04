@@ -100,10 +100,11 @@ object Gamma {
     val support = BoundedBelowSupport(Real.zero)
 
     def logDensity(real: Real): Real =
-      If(real > 0,
-         (shape - 1) * real.log -
-           Combinatorics.gamma(shape) - real,
-         Real.zero.log)
+      Real.gt(real,
+              Real.zero,
+              (shape - 1) * real.log -
+                Combinatorics.gamma(shape) - real,
+              Real.zero.log)
 
     def generator: Generator[Double] = Generator.require(Set(shape)) { (r, n) =>
       val a = n.toDouble(shape)
@@ -154,9 +155,10 @@ final case class Beta(a: Real, b: Real) extends StandardContinuous {
   val support = new BoundedSupport(Real.zero, Real.one)
 
   def logDensity(real: Real): Real =
-    If(real >= 0,
-       If(real <= 1, betaDensity(real), Real.negInfinity),
-       Real.negInfinity)
+    Real.gte(real,
+             Real.zero,
+             Real.lte(real, Real.one, betaDensity(real), Real.negInfinity),
+             Real.negInfinity)
 
   val generator: Generator[Double] =
     Gamma(a, 1).generator.zip(Gamma(b, 1).generator).map {

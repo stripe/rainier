@@ -37,18 +37,10 @@ private class Packer(methodSizeLimit: Int) {
         val (expr, exprSize) =
           traverse(u.original, 1)
         (new UnaryIR(expr, u.op), exprSize + 1)
-      case f: IfIR =>
-        val (testExpr, testSize) =
-          traverse(f.test, 3)
-        val (nzExpr, nzSize) =
-          traverse(f.whenNonZero, testSize + 2)
-        val (zExpr, zSize) =
-          traverse(f.whenZero, testSize + nzSize + 1)
-        (new IfIR(testExpr, nzExpr, zExpr), testSize + nzSize + zSize + 1)
       case l: LookupIR =>
         val (indexExpr, indexSize) =
           traverse(l.index, l.table.size)
-        (new LookupIR(indexExpr, l.table), indexSize + l.table.size)
+        (new LookupIR(indexExpr, l.table, l.low), indexSize + l.table.size)
       case s: SeqIR =>
         val (firstDef, firstSize) =
           traverseVarDef(s.first, 1)
