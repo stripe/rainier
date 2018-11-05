@@ -138,7 +138,7 @@ class RandomVariable[+T](val value: T, val targets: Set[Target]) {
     new RandomVariable(tg(value), targets)
 
   def writeGraph(path: String, maybeInline: Boolean = false): Unit = {
-    val v = new Viz
+    val v = new RealViz
     val (reals, placeholders) =
       if (maybeInline) {
         val (base, batched) = Target.merge(targets)

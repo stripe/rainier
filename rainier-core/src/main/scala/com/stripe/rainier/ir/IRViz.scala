@@ -1,6 +1,6 @@
 package com.stripe.rainier.ir
 
-class Viz(methodDefs: List[MethodDef]) {
+class IRViz(methodDefs: List[MethodDef]) {
   import GraphViz._
   val gv = new GraphViz
 
@@ -14,11 +14,10 @@ class Viz(methodDefs: List[MethodDef]) {
 
   private def opLabel(op: UnaryOp): String =
     op match {
-      case ExpOp       => "exp"
-      case LogOp       => "log"
-      case AbsOp       => "abs"
-      case RectifierOp => "relu"
-      case NoOp        => "x"
+      case ExpOp => "exp"
+      case LogOp => "log"
+      case AbsOp => "abs"
+      case NoOp  => "x"
     }
 
   private def opLabel(op: BinaryOp): String =
@@ -28,6 +27,7 @@ class Viz(methodDefs: List[MethodDef]) {
       case SubtractOp => "-"
       case DivideOp   => "/"
       case PowOp      => "^"
+      case CompareOp  => "<=>"
     }
 
   def outputMethod(name: String, sym: Sym): Unit =
@@ -95,18 +95,12 @@ class Viz(methodDefs: List[MethodDef]) {
         val id = gv.node(label(opLabel(op)), shape("oval"))
         gv.edge(id, origID)
         id
-      case IfIR(test, nz, z) =>
-        val testID = traverse(test)
-        val nzID = traverse(nz)
-        val zID = traverse(z)
-        val id = gv.node(label("If"), shape("diamond"))
-        gv.edge(id, testID, style("bold"))
-        gv.edge(id, nzID, color("green"))
-        gv.edge(id, zID, color("red"))
-        id
-      case LookupIR(index, table) =>
+      case LookupIR(index, table, low) =>
         val refLabels =
-          table.map(refLabel)
+          table.zipWithIndex.map {
+            case (t, i) =>
+              "%d: %s".format((i + low), refLabel(t))
+          }
         val (id, slotIDs) = gv.record("Lookup" :: refLabels.toList)
         val indexID = traverse(index)
         gv.edge(slotIDs.head, indexID)
@@ -123,8 +117,8 @@ class Viz(methodDefs: List[MethodDef]) {
     }
 }
 
-object Viz {
-  def apply(exprs: Seq[(String, Expr)], methodSizeLimit: Option[Int]): Viz = {
+object IRViz {
+  def apply(exprs: Seq[(String, Expr)], methodSizeLimit: Option[Int]): IRViz = {
     val methodGroups = exprs.toList.map {
       case (name, expr) =>
         methodSizeLimit match {
@@ -140,7 +134,7 @@ object Viz {
         }
     }
     val allMeths = methodGroups.flatMap(_._3)
-    val viz = new Viz(allMeths)
+    val viz = new IRViz(allMeths)
     methodGroups.foreach {
       case (name, outputRef, _) =>
         viz.outputMethod(name, outputRef.sym)

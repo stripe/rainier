@@ -37,7 +37,7 @@ sealed trait Real {
   lazy val gradient: List[Real] = Gradient.derive(variables, this)
 
   def writeGraph(path: String): Unit = {
-    val v = new Viz
+    val v = new RealViz
     v.traverse(this)
     v.gv.write(path)
   }
@@ -45,7 +45,7 @@ sealed trait Real {
   def writeIRGraph(path: String, methodSizeLimit: Option[Int] = None): Unit = {
     val translator = new Translator
     val expr = translator.toExpr(this)
-    val viz = ir.Viz(List(("output", expr)), methodSizeLimit)
+    val viz = ir.IRViz(List(("output", expr)), methodSizeLimit)
     viz.gv.write(path)
   }
 }
@@ -87,7 +87,7 @@ object Real {
                             gt: Real,
                             eq: Real,
                             lt: Real) =
-    Lookup(Compare(left,right), List(gt, eq, lt), -1)
+    Lookup(Compare(left, right), List(gt, eq, lt), -1)
 
   private[compute] val BigZero = BigDecimal(0.0)
   private[compute] val BigOne = BigDecimal(1.0)
@@ -169,7 +169,7 @@ private object LogLine {
 /*
 Evaluates to 0 if left and right are equal, 1 if left > right, and
 -1 if left < right.
-*/
+ */
 private final case class Compare private (left: Real, right: Real)
     extends NonConstant
 
@@ -198,7 +198,7 @@ private final case class Pow private (base: Real, exponent: NonConstant)
 
 /*
 Evaluates to the (index-low)'th element of table.
-*/
+ */
 private final class Lookup(val index: NonConstant,
                            val table: Array[Real],
                            val low: Int)
