@@ -15,7 +15,7 @@ class IRViz(methodDefs: List[MethodDef]) {
   private def opLabel(op: UnaryOp): String =
     op match {
       case ExpOp => "exp"
-      case LogOp => "log"
+      case LogOp => "ln"
       case AbsOp => "abs"
       case NoOp  => "x"
     }
@@ -26,8 +26,8 @@ class IRViz(methodDefs: List[MethodDef]) {
       case MultiplyOp => "*"
       case SubtractOp => "-"
       case DivideOp   => "/"
-      case PowOp      => "^"
-      case CompareOp  => "<=>"
+      case PowOp      => "⬆"
+      case CompareOp  => "⟺"
     }
 
   def outputMethod(name: String, sym: Sym): Unit =
