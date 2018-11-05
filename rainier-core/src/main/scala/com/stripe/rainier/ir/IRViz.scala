@@ -33,6 +33,12 @@ class IRViz(methodDefs: List[MethodDef]) {
   def outputMethod(name: String, sym: Sym): Unit =
     gv.edge(gv.node(label(name), shape("house")), methods(sym))
 
+  def idOrLabel(r: Expr): Either[String, String] =
+    r match {
+      case VarDef(sym, rhs) => Left(traverseVarDef(sym, rhs))
+      case ref: Ref         => Right(refLabel(ref))
+    }
+
   def refLabel(r: Ref): String =
     r match {
       case Const(c)     => formatDouble(c)
@@ -41,16 +47,13 @@ class IRViz(methodDefs: List[MethodDef]) {
     }
 
   def traverse(r: Expr): String =
-    r match {
-      case Const(c) =>
-        gv.node(label(formatDouble(c)), shape("circle"))
-
-      case _: Parameter =>
-        gv.node(label("θ"), color("green"), shape("doublecircle"))
-      case VarRef(sym) =>
-        gv.node(label(varSlot(sym)), color(varColor(sym)), shape("square"))
-      case VarDef(sym, rhs) =>
-        traverseVarDef(sym, rhs)
+    idOrLabel(r) match {
+      case Left(id) => id
+      case Right(l) =>
+        gv.node(
+          label(l),
+          shape("square")
+        )
     }
 
   def varColor(sym: Sym): String =
@@ -82,11 +85,17 @@ class IRViz(methodDefs: List[MethodDef]) {
   def traverseIR(ir: IR): String =
     ir match {
       case BinaryIR(left, right, op) =>
-        val leftID = traverse(left)
-        val rightID = traverse(right)
-        val id = gv.node(label(opLabel(op)), shape("oval"))
-        gv.edge(id, leftID)
-        gv.edge(id, rightID)
+        val leftE = idOrLabel(left)
+        val rightE = idOrLabel(right)
+        val labels =
+          List(leftE.getOrElse(""), opLabel(op), rightE.getOrElse(""))
+        val (id, slotIDs) = gv.record(labels)
+        leftE.swap.foreach { leftID =>
+          gv.edge(slotIDs(0), leftID)
+        }
+        rightE.swap.foreach { rightID =>
+          gv.edge(slotIDs(2), rightID)
+        }
         id
       case UnaryIR(original, NoOp) =>
         traverse(original)
@@ -95,24 +104,19 @@ class IRViz(methodDefs: List[MethodDef]) {
         val id = gv.node(label(opLabel(op)), shape("oval"))
         gv.edge(id, origID)
         id
-      case LookupIR(index, table, low) =>
-        val refLabels =
-          table.zipWithIndex.map {
-            case (t, i) =>
-              "%d: %s".format((i + low), refLabel(t))
-          }
-        val (id, slotIDs) = gv.record("Lookup" :: refLabels.toList)
+      case LookupIR(index, table, _) =>
+        val refLabels = table.map(refLabel)
+        val (id, slotIDs) = gv.record("𝑖" :: refLabels.toList)
         val indexID = traverse(index)
         gv.edge(slotIDs.head, indexID)
         id
       case SeqIR(first, second) =>
-        val firstID = traverse(first)
-        val secondID = traverse(second)
+        val firstID = traverseVarDef(first.sym, first.rhs)
+        val secondID = traverseVarDef(second.sym, second.rhs)
         val id = gv.node(label(""), shape("rarrow"))
         gv.edge(id, firstID)
         gv.edge(id, secondID, style("bold"))
         id
-
       case MethodRef(sym) => methods(sym)
     }
 }

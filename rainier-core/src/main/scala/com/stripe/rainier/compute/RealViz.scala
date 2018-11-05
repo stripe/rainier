@@ -37,7 +37,7 @@ class RealViz {
       case Right(l) =>
         gv.node(
           label(l),
-          shape("circle")
+          shape("square")
         )
     }
 
