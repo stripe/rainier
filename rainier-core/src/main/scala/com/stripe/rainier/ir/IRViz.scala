@@ -26,8 +26,8 @@ class IRViz(methodDefs: List[MethodDef]) {
       case MultiplyOp => "*"
       case SubtractOp => "-"
       case DivideOp   => "/"
-      case PowOp      => "^"
-      case CompareOp  => "<=>"
+      case PowOp      => "⬆"
+      case CompareOp  => "⟺"
     }
 
   def outputMethod(name: String, sym: Sym): Unit =
