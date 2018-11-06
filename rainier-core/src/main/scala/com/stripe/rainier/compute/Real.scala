@@ -87,7 +87,7 @@ object Real {
                             gt: Real,
                             eq: Real,
                             lt: Real) =
-    Lookup(Compare(left, right), List(gt, eq, lt), -1)
+    Lookup(Compare(left, right), List(lt, eq, gt), -1)
 
   private[compute] val BigZero = BigDecimal(0.0)
   private[compute] val BigOne = BigDecimal(1.0)
