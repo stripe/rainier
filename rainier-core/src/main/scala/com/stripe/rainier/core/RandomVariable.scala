@@ -47,14 +47,14 @@ class RandomVariable[+T](val value: T, val targets: Set[Target]) {
 
   def replay[V](recording: Recording)(implicit rng: RNG,
                                       tg: ToGenerator[T, V]): List[V] = {
-    val fn = tg(value).prepare(variables)
+    val fn = tg(value).prepare(targetGroup.variables)
     recording.samples.map(fn)
   }
 
   def replay[V](recording: Recording, iterations: Int)(
       implicit rng: RNG,
       tg: ToGenerator[T, V]): List[V] = {
-    val fn = tg(value).prepare(variables)
+    val fn = tg(value).prepare(targetGroup.variables)
     val sampledParams = RandomVariable(
       Categorical.list(recording.samples).generator).sample(iterations)
     sampledParams.map(fn)
@@ -74,7 +74,7 @@ class RandomVariable[+T](val value: T, val targets: Set[Target]) {
       warmupIterations: Int,
       iterations: Int,
       keepEvery: Int = 1)(implicit rng: RNG, tg: ToGenerator[T, V]): List[V] = {
-    val fn = tg(value).prepare(variables)
+    val fn = tg(value).prepare(targetGroup.variables)
     Sampler
       .sample(density, sampler, warmupIterations, iterations, keepEvery)
       .map { array =>
@@ -90,7 +90,7 @@ class RandomVariable[+T](val value: T, val targets: Set[Target]) {
                                keepEvery: Int = 1)(
       implicit rng: RNG,
       tg: ToGenerator[T, V]): (List[V], List[Diagnostics]) = {
-    val fn = tg(value).prepare(variables)
+    val fn = tg(value).prepare(targetGroup.variables)
     val range = if (parallel) 1.to(chains).par else 1.to(chains)
     val samples =
       range.map { _ =>
@@ -109,12 +109,13 @@ class RandomVariable[+T](val value: T, val targets: Set[Target]) {
     (allSamples, diagnostics)
   }
 
-  lazy val (variables, dataFn) =
-    Compiler.default.compileTargets(targets, true, 4)
+  lazy val targetGroup = TargetGroup(targets)
+  lazy val dataFn =
+    Compiler.default.compileTargets(targetGroup, true, 4)
 
   def density() =
     new DensityFunction {
-      val nVars = variables.size
+      val nVars = targetGroup.variables.size
       val inputs = new Array[Double](dataFn.numInputs)
       val globals = new Array[Double](dataFn.numGlobals)
       val outputs = new Array[Double](dataFn.numOutputs)
@@ -137,24 +138,13 @@ class RandomVariable[+T](val value: T, val targets: Set[Target]) {
       implicit tg: ToGenerator[T, U]): RandomVariable[Generator[U]] =
     new RandomVariable(tg(value), targets)
 
-  def writeGraph(path: String,
-                 gradient: Boolean = false,
-                 maybeInline: Boolean = false): Unit = {
+  def writeGraph(path: String, gradient: Boolean = false): Unit = {
     val v = new RealViz
-    val gradVars = if (gradient) variables.toList else Nil
-
-    if (maybeInline) {
-      val (base, batched) = Target.merge(targets)
-      v.output("base", base, gradVars, Map.empty)
-      batched.zipWithIndex.foreach {
-        case (b, i) =>
-          v.output(s"target$i", b.real, gradVars, b.placeholders)
-      }
-    } else {
-      targets.zipWithIndex.foreach {
-        case (t, i) =>
-          v.output(s"target$i", t.real, gradVars, t.placeholders)
-      }
+    val gradVars = if (gradient) targetGroup.variables else Nil
+    v.output("base", targetGroup.base, gradVars, Map.empty)
+    targetGroup.batched.zipWithIndex.foreach {
+      case (b, i) =>
+        v.output(s"target$i", b.real, gradVars, b.placeholders)
     }
     v.gv.write(path)
   }
