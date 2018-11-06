@@ -2,7 +2,7 @@ package com.stripe.rainier.compute
 
 import com.stripe.rainier.ir._
 
-class RealViz {
+private class RealViz {
   import GraphViz._
   val gv = new GraphViz
 
@@ -83,18 +83,18 @@ class RealViz {
                             idOrLabel(left),
                             idOrLabel(right))
           case LogLine(ax) =>
-            coefficients("Π↑", ax, None)
+            coefficients("∏^", ax, None)
           case l: Line =>
             val b =
               if (l.b == Real.BigZero)
                 None
               else
                 Some(l.b)
-            coefficients("Σπ", l.ax, b)
+            coefficients("∑*", l.ax, b)
           case l: Lookup =>
             val tableEs = l.table.toList.map(idOrLabel)
             val labels = tableEs.map(_.getOrElse(""))
-            val (id, slotIDs) = gv.record("𝑖" :: labels)
+            val (id, slotIDs) = gv.record("⋲" :: labels)
             val indexID = nonConstant(l.index)
             gv.edge(slotIDs.head, indexID)
             slotIDs.tail.zip(tableEs).foreach {
@@ -123,5 +123,29 @@ class RealViz {
         gv.edge(wid, xid)
     }
     recordID
+  }
+}
+
+object RealViz {
+  def apply(reals: List[(String, Real, Map[Variable, Array[Double]])],
+            gradVars: List[Variable]): GraphViz = {
+    val v = new RealViz
+    reals.foreach {
+      case (name, real, placeholders) =>
+        v.output(name, real, gradVars, placeholders)
+    }
+    v.gv
+  }
+
+  def ir(reals: List[(String, Real)],
+         gradVars: List[Variable],
+         methodSizeLimit: Option[Int]): GraphViz = {
+    val withGrad =
+      reals.flatMap {
+        case (name, real) => Compiler.withGradient(name, real, gradVars)
+      }
+    val translator = new Translator
+    val exprs = withGrad.map { case (n, r) => n -> translator.toExpr(r) }
+    IRViz(exprs, methodSizeLimit)
   }
 }

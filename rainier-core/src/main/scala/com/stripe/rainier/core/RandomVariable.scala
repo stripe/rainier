@@ -139,14 +139,26 @@ class RandomVariable[+T](val value: T, val targets: Set[Target]) {
     new RandomVariable(tg(value), targets)
 
   def writeGraph(path: String, gradient: Boolean = false): Unit = {
-    val v = new RealViz
     val gradVars = if (gradient) targetGroup.variables else Nil
-    v.output("base", targetGroup.base, gradVars, Map.empty)
-    targetGroup.batched.zipWithIndex.foreach {
+    val tuples = ("base", targetGroup.base, Map.empty[Variable, Array[Double]]) ::
+      targetGroup.batched.zipWithIndex.map {
       case (b, i) =>
-        v.output(s"target$i", b.real, gradVars, b.placeholders)
+        (s"target$i", b.real, b.placeholders)
     }
-    v.gv.write(path)
+    RealViz(tuples, gradVars).write(path)
+  }
+
+  def writeIRGraph(path: String,
+                   gradient: Boolean = false,
+                   methodSizeLimit: Option[Int] = None): Unit = {
+    val gradVars = if (gradient) targetGroup.variables else Nil
+    val tuples =
+      (("base", targetGroup.base) ::
+        targetGroup.batched.zipWithIndex.map {
+        case (b, i) => (s"target$i" -> b.real)
+      })
+
+    RealViz.ir(tuples, gradVars, methodSizeLimit).write(path)
   }
 }
 

@@ -5,7 +5,7 @@ class GraphViz {
   import GraphViz._
 
   private val buf = new StringBuilder
-  buf ++= "digraph {\nsplines=\"true\";\n"
+  buf ++= "digraph {\n"
 
   private var counter = 0
   private def nextID() = {
@@ -133,10 +133,16 @@ object GraphViz {
     "labelloc" -> v
 
   def formatDouble(d: Double): String = {
-    val eps = Math.abs(d - Math.round(d))
-    if (eps > 0.01)
-      "%.2f".format(d)
-    else
-      d.toInt.toString
+    if (d.isNegInfinity)
+      "-∞"
+    else if (d.isInfinity)
+      "∞"
+    else {
+      val eps = Math.abs(d - Math.round(d))
+      if (eps > 0.01)
+        "%.2f".format(d)
+      else
+        d.toInt.toString
+    }
   }
 }

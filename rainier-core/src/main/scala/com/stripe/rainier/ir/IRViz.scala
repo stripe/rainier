@@ -1,6 +1,6 @@
 package com.stripe.rainier.ir
 
-class IRViz(methodDefs: List[MethodDef]) {
+private class IRViz(methodDefs: List[MethodDef]) {
   import GraphViz._
   val gv = new GraphViz
 
@@ -77,7 +77,7 @@ class IRViz(methodDefs: List[MethodDef]) {
         id
       case LookupIR(index, table, _) =>
         val refLabels = table.map(refLabel)
-        val (id, slotIDs) = gv.record("𝑖" :: refLabels.toList)
+        val (id, slotIDs) = gv.record("⋲" :: refLabels.toList)
         val indexID = traverse(index)
         gv.edge(slotIDs.head, indexID)
         id
@@ -93,7 +93,8 @@ class IRViz(methodDefs: List[MethodDef]) {
 }
 
 object IRViz {
-  def apply(exprs: Seq[(String, Expr)], methodSizeLimit: Option[Int]): IRViz = {
+  def apply(exprs: Seq[(String, Expr)],
+            methodSizeLimit: Option[Int]): GraphViz = {
     val methodGroups = exprs.toList.map {
       case (name, expr) =>
         methodSizeLimit match {
@@ -114,7 +115,7 @@ object IRViz {
       case (name, outputRef, _) =>
         viz.outputMethod(name, outputRef.sym)
     }
-    viz
+    viz.gv
   }
 
   def opLabel(op: UnaryOp): String =
@@ -131,7 +132,7 @@ object IRViz {
       case MultiplyOp => "*"
       case SubtractOp => "-"
       case DivideOp   => "/"
-      case PowOp      => "⬆"
+      case PowOp      => "^"
       case CompareOp  => "⟺"
     }
 }

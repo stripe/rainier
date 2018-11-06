@@ -37,16 +37,11 @@ sealed trait Real {
   lazy val gradient: List[Real] = Gradient.derive(variables, this)
 
   def writeGraph(path: String): Unit = {
-    val v = new RealViz
-    v.output("output", this, Map.empty)
-    v.gv.write(path)
+    RealViz(List(("output", this, Map.empty)), Nil).write(path)
   }
 
   def writeIRGraph(path: String, methodSizeLimit: Option[Int] = None): Unit = {
-    val translator = new Translator
-    val expr = translator.toExpr(this)
-    val v = ir.IRViz(List(("output", expr)), methodSizeLimit)
-    v.gv.write(path)
+    RealViz.ir(List(("output", this)), Nil, methodSizeLimit).write(path)
   }
 }
 

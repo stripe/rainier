@@ -14,17 +14,7 @@ final case class Compiler(methodSizeLimit: Int, classSizeLimit: Int) {
   def compileTargets(targets: TargetGroup,
                      gradient: Boolean,
                      batchBits: Int): DataFunction = {
-    def withGradient(name: String, real: Real): List[(String, Real)] =
-      if (gradient)
-        (name, real) :: Gradient
-          .derive(targets.variables, real)
-          .zipWithIndex
-          .map {
-            case (g, i) =>
-              (name + "_" + "grad" + i, g)
-          } else
-        List((name, real))
-
+    val gradVars = if (gradient) targets.variables else Nil
     val (batchVariables, batchOutputs) =
       targets.batched.zipWithIndex
         .foldLeft((List.empty[Variable], List.empty[(String, Real)])) {
@@ -33,7 +23,7 @@ final case class Compiler(methodSizeLimit: Int, classSizeLimit: Int) {
             val newOutsWithGradient =
               newOuts.zipWithIndex.flatMap {
                 case (o, j) =>
-                  withGradient("target" + i + "_bit" + j, o)
+                  Compiler.withGradient("target" + i + "_bit" + j, o, gradVars)
               }
             (ins ++ newIns, outs ++ newOutsWithGradient)
         }
@@ -44,8 +34,9 @@ final case class Compiler(methodSizeLimit: Int, classSizeLimit: Int) {
       }.toArray
     }.toArray
 
-    val cf = compile(targets.variables ++ batchVariables,
-                     withGradient("base", targets.base) ++ batchOutputs)
+    val cf = compile(
+      targets.variables ++ batchVariables,
+      Compiler.withGradient("base", targets.base, gradVars) ++ batchOutputs)
     val numOutputs =
       if (gradient)
         targets.variables.size + 1
@@ -76,4 +67,18 @@ final case class Compiler(methodSizeLimit: Int, classSizeLimit: Int) {
 
 object Compiler {
   def default: Compiler = Compiler(200, 100)
+
+  def withGradient(name: String,
+                   real: Real,
+                   variables: List[Variable]): List[(String, Real)] =
+    if (variables.isEmpty)
+      List((name, real))
+    else
+      (name, real) :: Gradient
+        .derive(variables, real)
+        .zipWithIndex
+        .map {
+          case (g, i) =>
+            (name + "_" + "grad" + i, g)
+        }
 }
