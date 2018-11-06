@@ -99,7 +99,7 @@ object Multinomial {
     Combinatorics.factorial(multi.k) + Real.sum(v.toList.map {
       case (t, i) =>
         val p = multi.pmf.getOrElse(t, Real.zero)
-        val pTerm = 
+        val pTerm =
           Real.eq(i, Real.zero, Real.zero, i * p.log)
         pTerm - Combinatorics.factorial(i)
     })
