@@ -12,24 +12,6 @@ class IRViz(methodDefs: List[MethodDef]) {
         traverseDef("", "black", methDef.rhs))
   }
 
-  private def opLabel(op: UnaryOp): String =
-    op match {
-      case ExpOp => "exp"
-      case LogOp => "ln"
-      case AbsOp => "abs"
-      case NoOp  => "x"
-    }
-
-  private def opLabel(op: BinaryOp): String =
-    op match {
-      case AddOp      => "+"
-      case MultiplyOp => "*"
-      case SubtractOp => "-"
-      case DivideOp   => "/"
-      case PowOp      => "⬆"
-      case CompareOp  => "⟺"
-    }
-
   def outputMethod(name: String, sym: Sym): Unit =
     gv.edge(gv.node(label(name), shape("house")), methods(sym))
 
@@ -85,23 +67,12 @@ class IRViz(methodDefs: List[MethodDef]) {
   def traverseIR(ir: IR): String =
     ir match {
       case BinaryIR(left, right, op) =>
-        val leftE = idOrLabel(left)
-        val rightE = idOrLabel(right)
-        val labels =
-          List(leftE.getOrElse(""), opLabel(op), rightE.getOrElse(""))
-        val (id, slotIDs) = gv.record(labels)
-        leftE.swap.foreach { leftID =>
-          gv.edge(slotIDs(0), leftID)
-        }
-        rightE.swap.foreach { rightID =>
-          gv.edge(slotIDs(2), rightID)
-        }
-        id
+        gv.binaryRecord(IRViz.opLabel(op), idOrLabel(left), idOrLabel(right))
       case UnaryIR(original, NoOp) =>
         traverse(original)
       case UnaryIR(original, op) =>
         val origID = traverse(original)
-        val id = gv.node(label(opLabel(op)), shape("oval"))
+        val id = gv.node(label(IRViz.opLabel(op)), shape("oval"))
         gv.edge(id, origID)
         id
       case LookupIR(index, table, _) =>
@@ -145,4 +116,22 @@ object IRViz {
     }
     viz
   }
+
+  def opLabel(op: UnaryOp): String =
+    op match {
+      case ExpOp => "exp"
+      case LogOp => "ln"
+      case AbsOp => "abs"
+      case NoOp  => "nop"
+    }
+
+  def opLabel(op: BinaryOp): String =
+    op match {
+      case AddOp      => "+"
+      case MultiplyOp => "*"
+      case SubtractOp => "-"
+      case DivideOp   => "/"
+      case PowOp      => "⬆"
+      case CompareOp  => "⟺"
+    }
 }

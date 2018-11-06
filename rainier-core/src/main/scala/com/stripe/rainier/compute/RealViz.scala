@@ -6,17 +6,41 @@ class RealViz {
   import GraphViz._
   val gv = new GraphViz
 
-  private def opLabel(op: UnaryOp): String =
-    op match {
-      case ExpOp => "exp"
-      case LogOp => "ln"
-      case AbsOp => "abs"
-      case NoOp  => "nop"
-    }
+  private var ids = Map.empty[NonConstant, String]
 
-  def registerPlaceholders(name: String,
-                           map: Map[Variable, Array[Double]]): Unit =
-    gv.cluster(label(name)) {
+  def output(name: String,
+             r: Real,
+             gradVars: List[Variable],
+             placeholders: Map[Variable, Array[Double]]): Unit = {
+    output(name, r, placeholders)
+    if (!gradVars.isEmpty) {
+      Gradient.derive(gradVars, r).zipWithIndex.foreach {
+        case (g, i) =>
+          output(name + s"_grad$i", g, Map.empty)
+      }
+    }
+  }
+
+  def output(name: String,
+             r: Real,
+             placeholders: Map[Variable, Array[Double]]): Unit = {
+    val id = gv.cluster() {
+      if (!placeholders.isEmpty)
+        registerPlaceholders(placeholders)
+      idOrLabel(r) match {
+        case Left(id) => id
+        case Right(l) =>
+          gv.node(
+            label(l),
+            shape("square")
+          )
+      }
+    }
+    gv.edge(gv.node(label(name), shape("house")), id)
+  }
+
+  private def registerPlaceholders(map: Map[Variable, Array[Double]]): Unit =
+    gv.cluster(label("data")) {
       val cols = map.toList
       val colData = cols.map {
         case (_, arr) =>
@@ -32,40 +56,32 @@ class RealViz {
       }
     }
 
-  private var ids = Map.empty[NonConstant, String]
-
-  def traverse(r: Real): String =
-    idOrLabel(r) match {
-      case Left(id) => id
-      case Right(l) =>
-        gv.node(
-          label(l),
-          shape("square")
-        )
-    }
-
   private def idOrLabel(r: Real): Either[String, String] =
     r match {
-      case nc: NonConstant => Left(traverseNonConstant(nc))
+      case nc: NonConstant => Left(nonConstant(nc))
       case Constant(c)     => Right(formatDouble(c.toDouble))
       case Infinity        => Right("∞")
       case NegInfinity     => Right("-∞")
     }
 
-  private def traverseNonConstant(nc: NonConstant): String =
+  private def nonConstant(nc: NonConstant): String =
     ids.get(nc) match {
       case Some(id) => id
       case None =>
         val id = nc match {
           case Unary(original, op) =>
-            val origID = traverseNonConstant(original)
-            val id = gv.node(label(opLabel(op)), shape("oval"))
+            val origID = nonConstant(original)
+            val id = gv.node(label(IRViz.opLabel(op)), shape("oval"))
             gv.edge(id, origID)
             id
           case Pow(base, exponent) =>
-            binary("⬆", base, exponent)
+            gv.binaryRecord(IRViz.opLabel(PowOp),
+                            idOrLabel(base),
+                            idOrLabel(exponent))
           case Compare(left, right) =>
-            binary("⟺", left, right)
+            gv.binaryRecord(IRViz.opLabel(CompareOp),
+                            idOrLabel(left),
+                            idOrLabel(right))
           case LogLine(ax) =>
             coefficients("Π↑", ax, None)
           case l: Line =>
@@ -79,7 +95,7 @@ class RealViz {
             val tableEs = l.table.toList.map(idOrLabel)
             val labels = tableEs.map(_.getOrElse(""))
             val (id, slotIDs) = gv.record("𝑖" :: labels)
-            val indexID = traverseNonConstant(l.index)
+            val indexID = nonConstant(l.index)
             gv.edge(slotIDs.head, indexID)
             slotIDs.tail.zip(tableEs).foreach {
               case (s, Left(id)) => gv.edge(s, id)
@@ -87,28 +103,11 @@ class RealViz {
             }
             id
           case _: Variable =>
-            gv.node(label("θ"), color("green"), shape("doublecircle"))
+            gv.node(label("θ"), shape("doublecircle"))
         }
         ids += (nc -> id)
         id
     }
-
-  private def binary(op: String, left: Real, right: Real): String = {
-    val leftE = idOrLabel(left)
-    val rightE = idOrLabel(right)
-    val labels =
-      List(leftE.getOrElse(""), op, rightE.getOrElse(""))
-
-    val (id, slotIDs) = gv.record(labels)
-
-    leftE.swap.foreach { leftID =>
-      gv.edge(slotIDs(0), leftID)
-    }
-    rightE.swap.foreach { rightID =>
-      gv.edge(slotIDs(2), rightID)
-    }
-    id
-  }
 
   private def coefficients(name: String,
                            ax: Coefficients,
@@ -120,7 +119,7 @@ class RealViz {
     val (recordID, weightIDs) = gv.record(name :: vals)
     weightIDs.tail.take(xs.size).zip(xs).foreach {
       case (wid, x) =>
-        val xid = traverse(x)
+        val xid = nonConstant(x)
         gv.edge(wid, xid)
     }
     recordID

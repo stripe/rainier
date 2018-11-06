@@ -38,7 +38,7 @@ sealed trait Real {
 
   def writeGraph(path: String): Unit = {
     val v = new RealViz
-    v.traverse(this)
+    v.output("output", this, Map.empty)
     v.gv.write(path)
   }
 

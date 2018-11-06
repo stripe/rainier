@@ -21,6 +21,22 @@ class GraphViz {
     id
   }
 
+  def binaryRecord(op: String,
+                   left: Either[String, String],
+                   right: Either[String, String]): String = {
+
+    val labels =
+      List(left.getOrElse(""), op, right.getOrElse(""))
+    val (id, slotIDs) = record(labels)
+    left.swap.foreach { leftID =>
+      edge(slotIDs(0), leftID)
+    }
+    right.swap.foreach { rightID =>
+      edge(slotIDs(2), rightID)
+    }
+    id
+  }
+
   def record(labels: Seq[String],
              attrs: (String, String)*): (String, Seq[String]) =
     record(false, labels, attrs: _*)

@@ -137,20 +137,24 @@ class RandomVariable[+T](val value: T, val targets: Set[Target]) {
       implicit tg: ToGenerator[T, U]): RandomVariable[Generator[U]] =
     new RandomVariable(tg(value), targets)
 
-  def writeGraph(path: String, maybeInline: Boolean = false): Unit = {
+  def writeGraph(path: String,
+                 gradient: Boolean = false,
+                 maybeInline: Boolean = false): Unit = {
     val v = new RealViz
-    val (reals, placeholders) =
-      if (maybeInline) {
-        val (base, batched) = Target.merge(targets)
-        (base :: batched.map(_.real), batched.map(_.placeholders))
-      } else {
-        (targets.map(_.real), targets.map(_.placeholders).filterNot(_.isEmpty))
+    val gradVars = if (gradient) variables.toList else Nil
+
+    if (maybeInline) {
+      val (base, batched) = Target.merge(targets)
+      v.output("base", base, gradVars, Map.empty)
+      batched.zipWithIndex.foreach {
+        case (b, i) =>
+          v.output(s"target$i", b.real, gradVars, b.placeholders)
       }
-    placeholders.foreach { ph =>
-      v.registerPlaceholders("data", ph)
-    }
-    reals.foreach { r =>
-      v.traverse(r)
+    } else {
+      targets.zipWithIndex.foreach {
+        case (t, i) =>
+          v.output(s"target$i", t.real, gradVars, t.placeholders)
+      }
     }
     v.gv.write(path)
   }
