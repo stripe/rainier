@@ -19,7 +19,7 @@ class RandomVariableTest extends FunSuite {
 
   def sampleOnce[S, T](x: RandomVariable[S], paramValue: Double)(
       implicit s: ToGenerator[S, T]): (T, Double) = {
-    val variables = x.variables
+    val variables = x.targetGroup.variables
     implicit val num: Evaluator =
       new Evaluator(variables.map { v =>
         v -> paramValue

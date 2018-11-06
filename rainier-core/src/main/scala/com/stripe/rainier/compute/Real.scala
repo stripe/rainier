@@ -30,7 +30,7 @@ sealed trait Real {
   def exp: Real = RealOps.unary(this, ir.ExpOp)
   def log: Real = RealOps.unary(this, ir.LogOp)
 
-  //because abs a does not have a smooth derivative, try to avoid using it
+  //because abs does not have a smooth derivative, try to avoid using it
   def abs: Real = RealOps.unary(this, ir.AbsOp)
 
   lazy val variables: List[Variable] = RealOps.variables(this).toList
@@ -45,8 +45,8 @@ sealed trait Real {
   def writeIRGraph(path: String, methodSizeLimit: Option[Int] = None): Unit = {
     val translator = new Translator
     val expr = translator.toExpr(this)
-    val viz = ir.IRViz(List(("output", expr)), methodSizeLimit)
-    viz.gv.write(path)
+    val v = ir.IRViz(List(("output", expr)), methodSizeLimit)
+    v.gv.write(path)
   }
 }
 
