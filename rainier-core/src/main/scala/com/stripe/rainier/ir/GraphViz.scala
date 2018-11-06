@@ -22,12 +22,22 @@ class GraphViz {
   }
 
   def record(labels: Seq[String],
+             attrs: (String, String)*): (String, Seq[String]) =
+    record(false, labels, attrs: _*)
+
+  def record(isVertical: Boolean,
+             labels: Seq[String],
              attrs: (String, String)*): (String, Seq[String]) = {
     val ports = 1.to(labels.size).map { i =>
       s"f$i"
     }
-    val fullLabel =
+    val cells =
       labels.zip(ports).map { case (l, p) => s"<$p> $l" }.mkString("|")
+    val fullLabel =
+      if (isVertical)
+        s"{$cells}"
+      else
+        cells
     val id = node((label(fullLabel) :: shape("record") :: attrs.toList): _*)
     (id, ports.map { p =>
       s"$id:$p"

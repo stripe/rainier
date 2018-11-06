@@ -14,20 +14,23 @@ class RealViz {
       case NoOp  => "nop"
     }
 
-  def registerPlaceholders(map: Map[Variable, Array[Double]]): Unit = ??? /*{
-    counter += 1
-    val mid = s"m$counter"
-    val cols = map.toList
-    val colData = cols.map {
-      case (_, arr) =>
-        arr.take(5).toList.map(double)
+  def registerPlaceholders(name: String,
+                           map: Map[Variable, Array[Double]]): Unit =
+    gv.cluster(label(name)) {
+      val cols = map.toList
+      val colData = cols.map {
+        case (_, arr) =>
+          arr.take(5).toList.map(formatDouble)
+      }
+      val colIDs = colData.map { d =>
+        val (id, _) = gv.record(true, d)
+        id
+      }
+      cols.zip(colIDs).foreach {
+        case ((v, _), cid) =>
+          ids += (v -> cid)
+      }
     }
-    val colIDs = gv.matrix(mid, "data", colData)
-    cols.zip(colIDs).foreach {
-      case ((v, _), cid) =>
-        ids += (v -> cid)
-    }
-  }*/
 
   private var ids = Map.empty[NonConstant, String]
 

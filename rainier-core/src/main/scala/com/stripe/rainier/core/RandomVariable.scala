@@ -147,7 +147,7 @@ class RandomVariable[+T](val value: T, val targets: Set[Target]) {
         (targets.map(_.real), targets.map(_.placeholders).filterNot(_.isEmpty))
       }
     placeholders.foreach { ph =>
-      v.registerPlaceholders(ph)
+      v.registerPlaceholders("data", ph)
     }
     reals.foreach { r =>
       v.traverse(r)
