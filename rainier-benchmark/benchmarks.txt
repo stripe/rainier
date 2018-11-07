@@ -6,7 +6,7 @@ build                Binomial                  100                         1000.
 build                Binomial                  1000                       10000.000
 build                Binomial                  10000                     100000.000
 build                Binomial                  100000                   1000000.000
-build                BinomialPoissonApproximation 100                          400.000
+build                BinomialPoissonApproximation 100                          500.000
 build                BinomialPoissonApproximation 1000                        3000.000
 build                BinomialPoissonApproximation 10000                      30000.000
 build                BinomialPoissonApproximation 100000                    300000.000
@@ -142,7 +142,7 @@ run                  Normal                    1000                           1.
 run                  Normal                    10000                          1.000
 run                  Normal                    100000                         1.000
 run                  Regression                100:10                       100.000
-run                  Regression                100:10000                  20000.000
+run                  Regression                100:10000                  30000.000
 run                  Regression                10:10                         10.000
 run                  Regression                10:10000                    3000.000
 run                  Regression                1:10                           2.000
@@ -180,8 +180,8 @@ synthesize           Laplace                   1000                        1000.
 synthesize           Laplace                   10000                      10000.000
 synthesize           Laplace                   100000                    100000.000
 synthesize           LogNormal                 100                          200.000
-synthesize           LogNormal                 1000                        2000.000
-synthesize           LogNormal                 10000                      20000.000
+synthesize           LogNormal                 1000                        1000.000
+synthesize           LogNormal                 10000                      10000.000
 synthesize           LogNormal                 100000                    200000.000
 synthesize           NegativeBinomial          100                         1000.000
 synthesize           NegativeBinomial          1000                       10000.000
