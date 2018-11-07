@@ -81,12 +81,6 @@ final case class Compiler(methodSizeLimit: Int, classSizeLimit: Int) {
 
   def compile(inputs: Seq[Variable],
               outputs: Seq[(String, Real)]): CompiledFunction = {
-    logger
-      .atInfo()
-      .log("Compiling method with %d inputs and %d outputs",
-           inputs.size,
-           outputs.size)
-
     val translator = new Translator
     val params = inputs.map { v =>
       v.param
