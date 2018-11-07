@@ -110,6 +110,8 @@ final case class SBC[T, L <: Distribution[T]](priors: Seq[Continuous],
     val t0 = System.currentTimeMillis
     val (rawRank, rHat, effectiveSampleSize) =
       sample(sampler, warmupIterations, syntheticSamples, thin)
+    if (rHat > 1.5)
+      sys.error(s"Failed to converge: rHat = $rHat")
     val ms = System.currentTimeMillis - t0
 
     if (trials > 1 && effectiveSampleSize < Samples) {
