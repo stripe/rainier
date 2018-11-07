@@ -157,7 +157,7 @@ private object LogLine {
 Evaluates to 0 if left and right are equal, 1 if left > right, and
 -1 if left < right.
  */
-private final case class Compare private (left: Real, right: Real)
+private final case class Compare private[Compare] (left: Real, right: Real)
     extends NonConstant
 
 private object Compare {
