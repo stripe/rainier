@@ -4,14 +4,6 @@ import com.stripe.rainier.internal.asm.Opcodes._
 import com.stripe.rainier.internal.asm.tree.MethodNode
 import com.stripe.rainier.internal.asm.Label
 
-object MathOps {
-  def rectifier(x: Double): Double =
-    if (x < 0.0)
-      0.0
-    else
-      x
-}
-
 private trait MethodGenerator {
   def access = {
     if (isStatic)
@@ -61,12 +53,16 @@ private trait MethodGenerator {
     methodNode.visitInsn(DALOAD)
   }
 
-  def binaryOp(op: BinaryOp): Unit =
+  def binaryOp(op: BinaryOp, keepInt: Boolean = false): Unit =
     op match {
       case AddOp      => methodNode.visitInsn(DADD)
       case SubtractOp => methodNode.visitInsn(DSUB)
       case MultiplyOp => methodNode.visitInsn(DMUL)
       case DivideOp   => methodNode.visitInsn(DDIV)
+      case CompareOp =>
+        methodNode.visitInsn(DCMPL)
+        if (!keepInt)
+          methodNode.visitInsn(I2D)
       case PowOp =>
         methodNode.visitMethodInsn(INVOKESTATIC,
                                    "java/lang/Math",
@@ -77,11 +73,10 @@ private trait MethodGenerator {
 
   def unaryOp(op: UnaryOp): Unit = {
     (op match {
-      case LogOp       => Some(("java/lang/Math", "log"))
-      case ExpOp       => Some(("java/lang/Math", "exp"))
-      case AbsOp       => Some(("java/lang/Math", "abs"))
-      case RectifierOp => Some(("com/stripe/rainier/ir/MathOps", "rectifier"))
-      case NoOp        => None
+      case LogOp => Some(("java/lang/Math", "log"))
+      case ExpOp => Some(("java/lang/Math", "exp"))
+      case AbsOp => Some(("java/lang/Math", "abs"))
+      case NoOp  => None
     }).foreach {
       case (className, methodName) =>
         methodNode.visitMethodInsn(INVOKESTATIC,
@@ -138,14 +133,17 @@ private trait MethodGenerator {
     methodNode.visitInsn(POP2)
   }
 
-  def tableSwitch[K](items: Seq[K])(fn: Option[K] => Unit): Unit = {
+  def tableSwitch[K](items: Seq[K], low: Int)(fn: Option[K] => Unit): Unit = {
     val defaultLabel = new Label
     val endLabel = new Label
     val itemsAndLabels = items.map { k =>
       k -> (new Label)
     }
     val labels = itemsAndLabels.map(_._2)
-    methodNode.visitTableSwitchInsn(0, items.size - 1, defaultLabel, labels: _*)
+    methodNode.visitTableSwitchInsn(low,
+                                    low + items.size - 1,
+                                    defaultLabel,
+                                    labels: _*)
     itemsAndLabels.foreach {
       case (k, l) =>
         methodNode.visitLabel(l)
