@@ -11,72 +11,38 @@ final case class Compiler(methodSizeLimit: Int, classSizeLimit: Int) {
     }
   }
 
-  def compileTargets(targets: Iterable[Target],
-                     gradient: Boolean,
-                     batchBits: Int): (Seq[Variable], DataFunction) = {
-    val (base, batched) =
-      targets.foldLeft((Real.zero, List.empty[Target])) {
-        case ((b, l), t) =>
-          t.maybeInlined match {
-            case Some(r) => ((b + r), l)
-            case None    => (b, t :: l)
-          }
-      }
-
-    val variables =
-      batched
-        .foldLeft(RealOps.variables(base)) {
-          case (set, target) =>
-            set ++ target.variables
-        }
-        .toList
-        .sortBy(_.param.sym.id)
-
-    val df = compileTargets(base, batched, variables, gradient, batchBits)
-    (variables, df)
-  }
-
-  def compileTargets(base: Real,
-                     batched: List[Target],
-                     variables: List[Variable],
+  def compileTargets(targets: TargetGroup,
                      gradient: Boolean,
                      batchBits: Int): DataFunction = {
-
-    def withGradient(name: String, real: Real): List[(String, Real)] =
-      if (gradient)
-        (name, real) :: Gradient.derive(variables, real).zipWithIndex.map {
-          case (g, i) =>
-            (name + "_" + "grad" + i, g)
-        } else
-        List((name, real))
-
+    val gradVars = if (gradient) targets.variables else Nil
     val (batchVariables, batchOutputs) =
-      batched.zipWithIndex.foldLeft(
-        (List.empty[Variable], List.empty[(String, Real)])) {
-        case ((ins, outs), (target, i)) =>
-          val (newIns, newOuts) = target.batched(batchBits)
-          val newOutsWithGradient =
-            newOuts.zipWithIndex.flatMap {
-              case (o, j) =>
-                withGradient("target" + i + "_bit" + j, o)
-            }
-          (ins ++ newIns, outs ++ newOutsWithGradient)
-      }
+      targets.batched.zipWithIndex
+        .foldLeft((List.empty[Variable], List.empty[(String, Real)])) {
+          case ((ins, outs), (target, i)) =>
+            val (newIns, newOuts) = target.batched(batchBits)
+            val newOutsWithGradient =
+              newOuts.zipWithIndex.flatMap {
+                case (o, j) =>
+                  Compiler.withGradient("target" + i + "_bit" + j, o, gradVars)
+              }
+            (ins ++ newIns, outs ++ newOutsWithGradient)
+        }
 
-    val data = batched.map { target =>
+    val data = targets.batched.map { target =>
       target.placeholderVariables.map { v =>
         target.placeholders(v)
       }.toArray
     }.toArray
 
-    val cf = compile(variables ++ batchVariables,
-                     withGradient("base", base) ++ batchOutputs)
+    val cf = compile(
+      targets.variables ++ batchVariables,
+      Compiler.withGradient("base", targets.base, gradVars) ++ batchOutputs)
     val numOutputs =
       if (gradient)
-        variables.size + 1
+        targets.variables.size + 1
       else
         1
-    DataFunction(cf, batchBits, variables.size, numOutputs, data)
+    DataFunction(cf, batchBits, targets.variables.size, numOutputs, data)
   }
 
   def compile(inputs: Seq[Variable],
@@ -95,4 +61,18 @@ final case class Compiler(methodSizeLimit: Int, classSizeLimit: Int) {
 
 object Compiler {
   def default: Compiler = Compiler(200, 100)
+
+  def withGradient(name: String,
+                   real: Real,
+                   variables: List[Variable]): List[(String, Real)] =
+    if (variables.isEmpty)
+      List((name, real))
+    else
+      (name, real) :: Gradient
+        .derive(variables, real)
+        .zipWithIndex
+        .map {
+          case (g, i) =>
+            (name + "_" + "grad" + i, g)
+        }
 }
