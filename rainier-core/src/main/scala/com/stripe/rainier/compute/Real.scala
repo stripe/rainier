@@ -41,7 +41,9 @@ sealed trait Real {
   }
 
   def writeIRGraph(path: String, methodSizeLimit: Option[Int] = None): Unit = {
-    RealViz.ir(List(("output", this)), Nil, methodSizeLimit).write(path)
+    RealViz
+      .ir(List(("output", this)), variables, false, methodSizeLimit)
+      .write(path)
   }
 }
 

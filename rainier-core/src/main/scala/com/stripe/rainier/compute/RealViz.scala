@@ -40,7 +40,7 @@ private class RealViz {
   }
 
   private def registerPlaceholders(map: Map[Variable, Array[Double]]): Unit =
-    gv.cluster(label("data")) {
+    gv.cluster(label("X"), justify("l")) {
       val cols = map.toList
       val colData = cols.map {
         case (_, arr) =>
@@ -138,14 +138,17 @@ object RealViz {
   }
 
   def ir(reals: List[(String, Real)],
-         gradVars: List[Variable],
+         variables: List[Variable],
+         gradient: Boolean,
          methodSizeLimit: Option[Int]): GraphViz = {
     val withGrad =
-      reals.flatMap {
-        case (name, real) => Compiler.withGradient(name, real, gradVars)
-      }
+      if (gradient)
+        reals.flatMap {
+          case (name, real) => Compiler.withGradient(name, real, variables)
+        } else
+        reals
     val translator = new Translator
     val exprs = withGrad.map { case (n, r) => n -> translator.toExpr(r) }
-    IRViz(exprs, methodSizeLimit)
+    IRViz(exprs, variables.map(_.param), methodSizeLimit)
   }
 }

@@ -1,11 +1,16 @@
 package com.stripe.rainier.ir
 
-private class IRViz(methodDefs: List[MethodDef]) {
+private class IRViz(parameters: Seq[Parameter], methodDefs: List[MethodDef]) {
   import GraphViz._
   val gv = new GraphViz
 
   private val varTypes = VarTypes.methods(methodDefs)
   private var methods = Map.empty[Sym, String]
+  private var paramMap =
+    parameters.zipWithIndex.map {
+      case (p, i) => p -> s"θ_$i"
+    }.toMap
+
   methodDefs.foreach { methDef =>
     methods +=
       (methDef.sym ->
@@ -21,10 +26,20 @@ private class IRViz(methodDefs: List[MethodDef]) {
       case ref: Ref         => Right(refLabel(ref))
     }
 
+  def paramLabel(p: Parameter): String =
+    paramMap.get(p) match {
+      case Some(s) => s
+      case None =>
+        val i = paramMap.size - parameters.size
+        val s = s"X_$i"
+        paramMap += (p -> s)
+        s
+    }
+
   def refLabel(r: Ref): String =
     r match {
       case Const(c)     => formatDouble(c)
-      case _: Parameter => "θ"
+      case p: Parameter => paramLabel(p)
       case VarRef(sym)  => varSlot(sym)
     }
 
@@ -94,6 +109,7 @@ private class IRViz(methodDefs: List[MethodDef]) {
 
 object IRViz {
   def apply(exprs: Seq[(String, Expr)],
+            parameters: Seq[Parameter],
             methodSizeLimit: Option[Int]): GraphViz = {
     val methodGroups = exprs.toList.map {
       case (name, expr) =>
@@ -110,7 +126,7 @@ object IRViz {
         }
     }
     val allMeths = methodGroups.flatMap(_._3)
-    val viz = new IRViz(allMeths)
+    val viz = new IRViz(parameters, allMeths)
     methodGroups.foreach {
       case (name, outputRef, _) =>
         viz.outputMethod(name, outputRef.sym)
