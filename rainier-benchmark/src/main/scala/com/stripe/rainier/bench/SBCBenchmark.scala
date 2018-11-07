@@ -24,7 +24,7 @@ abstract class SBCBenchmark {
 
   lazy val s = sbc
   lazy val model = build
-  lazy val vars = model.variables
+  lazy val vars = model.targetGroup.variables
   lazy val df = model.density
 
   @Benchmark
