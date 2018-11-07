@@ -93,7 +93,7 @@ private class RealViz {
             coefficients("∑*", l.ax, b)
           case l: Lookup =>
             val tableEs = l.table.toList.map(idOrLabel)
-            val labels = tableEs.map(_.getOrElse(""))
+            val labels = tableEs.map(_.right.getOrElse(""))
             val (id, slotIDs) = gv.record("⋲" :: labels)
             val indexID = nonConstant(l.index)
             gv.edge(slotIDs.head, indexID)

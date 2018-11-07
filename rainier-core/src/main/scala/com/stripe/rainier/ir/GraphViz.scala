@@ -26,12 +26,12 @@ class GraphViz {
                    right: Either[String, String]): String = {
 
     val labels =
-      List(left.toOption.getOrElse(""), op, right.toOption.getOrElse(""))
+      List(left.right.getOrElse(""), op, right.right.getOrElse(""))
     val (id, slotIDs) = record(labels)
-    left.swap.toOption.foreach { leftID =>
+    left.left.foreach { leftID =>
       edge(slotIDs(0), leftID)
     }
-    right.swap.toOption.foreach { rightID =>
+    right.left.foreach { rightID =>
       edge(slotIDs(2), rightID)
     }
     id
