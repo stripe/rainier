@@ -149,6 +149,24 @@ private[compute] object RealOps {
     else
       BigDecimal(Math.pow(a.toDouble, b.toDouble))
 
+  def compare(left: Real, right: Real): Real =
+    (left, right) match {
+      case (Infinity, Infinity)       => Real.zero
+      case (Infinity, _)              => Real.one
+      case (_, Infinity)              => Constant(-1)
+      case (NegInfinity, NegInfinity) => Real.zero
+      case (NegInfinity, _)           => Constant(-1)
+      case (_, NegInfinity)           => Real.one
+      case (Constant(a), Constant(b)) =>
+        if (a == b)
+          Real.zero
+        else if (a > b)
+          Real.one
+        else
+          Constant(-1)
+      case _ => Compare(left, right)
+    }
+
   def variables(real: Real): Set[Variable] = {
     var seen = Set.empty[Real]
     var vars = List.empty[Variable]

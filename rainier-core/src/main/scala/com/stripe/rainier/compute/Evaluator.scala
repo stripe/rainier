@@ -28,7 +28,7 @@ class Evaluator(var cache: Map[Real, Double]) extends Numeric[Real] {
     case Unary(original, op) =>
       eval(RealOps.unary(Constant(toDouble(original)), op))
     case Compare(left, right) =>
-      eval(Compare(toDouble(left), toDouble(right)))
+      eval(RealOps.compare(toDouble(left), toDouble(right)))
     case Pow(base, exponent) =>
       Math.pow(toDouble(base), toDouble(exponent))
     case l: Lookup =>
