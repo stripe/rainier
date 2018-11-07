@@ -14,7 +14,7 @@ build                Exponential               100                          200.
 build                Exponential               1000                        2000.000
 build                Exponential               10000                      20000.000
 build                Exponential               100000                    200000.000
-build                GaussianMixture           100                          300.000
+build                GaussianMixture           100                          200.000
 build                GaussianMixture           1000                        2000.000
 build                GaussianMixture           10000                      20000.000
 build                GaussianMixture           100000                    200000.000
@@ -44,7 +44,7 @@ build                Normal                    10000                      10000.
 build                Normal                    100000                    100000.000
 build                Regression                100:10                      3000.000
 build                Regression                100:10000                1000000.000
-build                Regression                10:10                        400.000
+build                Regression                10:10                        300.000
 build                Regression                10:10000                   20000.000
 build                Regression                1:10                         200.000
 build                Regression                1:10000                    10000.000
@@ -59,7 +59,6 @@ compile              Binomial                  100000                         1.
 compile              BinomialPoissonApproximation 100                            1.000
 compile              BinomialPoissonApproximation 1000                           1.000
 compile              BinomialPoissonApproximation 10000                          1.000
-compile              BinomialPoissonApproximation 100000                         1.000
 compile              Exponential               100                            1.000
 compile              Exponential               1000                           1.000
 compile              Exponential               10000                          1.000
@@ -110,10 +109,10 @@ run                  BinomialPoissonApproximation 100                           
 run                  BinomialPoissonApproximation 1000                           1.000
 run                  BinomialPoissonApproximation 10000                          1.000
 run                  BinomialPoissonApproximation 100000                         1.000
-run                  Exponential               100                            3.000
-run                  Exponential               1000                          50.000
-run                  Exponential               10000                        500.000
-run                  Exponential               100000                      5000.000
+run                  Exponential               100                            2.000
+run                  Exponential               1000                          30.000
+run                  Exponential               10000                        300.000
+run                  Exponential               100000                      3000.000
 run                  GaussianMixture           100                           20.000
 run                  GaussianMixture           1000                         300.000
 run                  GaussianMixture           10000                       3000.000
@@ -122,11 +121,11 @@ run                  Geometric                 100                            1.
 run                  Geometric                 1000                           1.000
 run                  Geometric                 10000                          1.000
 run                  Geometric                 100000                         1.000
-run                  GeometricZeroInflated     100                            2.000
+run                  GeometricZeroInflated     100                           10.000
 run                  GeometricZeroInflated     1000                         300.000
-run                  GeometricZeroInflated     10000                       3000.000
-run                  GeometricZeroInflated     100000                    100000.000
-run                  Laplace                   100                            5.000
+run                  GeometricZeroInflated     10000                      10000.000
+run                  GeometricZeroInflated     100000                     50000.000
+run                  Laplace                   100                            4.000
 run                  Laplace                   1000                         100.000
 run                  Laplace                   10000                       1000.000
 run                  Laplace                   100000                     10000.000

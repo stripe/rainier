@@ -8,7 +8,7 @@ final private case class OutputMethodGenerator(classSizeLimit: Int,
   val methodDesc: String = "([D[DI)D"
 
   loadOutputIndex()
-  tableSwitch(outputIDs) {
+  tableSwitch(outputIDs, 0) {
     case Some((c, i)) => callExprMethod(c, i)
     case None         => throwNPE() //easiest exception to generate
   }
