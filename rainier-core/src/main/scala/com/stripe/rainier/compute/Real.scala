@@ -82,7 +82,7 @@ object Real {
                             gt: Real,
                             eq: Real,
                             lt: Real) =
-    Lookup(Compare(left, right), List(lt, eq, gt), -1)
+    Lookup(RealOps.compare(left, right), List(lt, eq, gt), -1)
 
   private[compute] val BigZero = BigDecimal(0.0)
   private[compute] val BigOne = BigDecimal(1.0)
@@ -167,26 +167,6 @@ Evaluates to 0 if left and right are equal, 1 if left > right, and
  */
 private final case class Compare private (left: Real, right: Real)
     extends NonConstant
-
-private object Compare {
-  def apply(left: Real, right: Real): Real =
-    (left, right) match {
-      case (Infinity, Infinity)       => Real.zero
-      case (Infinity, _)              => Real.one
-      case (_, Infinity)              => Constant(-1)
-      case (NegInfinity, NegInfinity) => Real.zero
-      case (NegInfinity, _)           => Constant(-1)
-      case (_, NegInfinity)           => Real.one
-      case (Constant(a), Constant(b)) =>
-        if (a == b)
-          Real.zero
-        else if (a > b)
-          Real.one
-        else
-          Constant(-1)
-      case _ => new Compare(left, right)
-    }
-}
 
 private final case class Pow private (base: Real, exponent: NonConstant)
     extends NonConstant
