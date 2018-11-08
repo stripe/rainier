@@ -2,71 +2,113 @@ package com.stripe.rainier.ir
 import java.io._
 
 class GraphViz {
-  private val buf = new StringBuilder
-  buf ++= "digraph {\nsplines=\"false\";\n"
+  import GraphViz._
 
-  def record(sid: String, fields: Seq[(String, Option[String])]): Unit = {
-    val fsrcs = 0.to(fields.size).map { i =>
+  private val buf = new StringBuilder
+  buf ++= "digraph {\n"
+
+  private var counter = 0
+  private def nextID() = {
+    counter += 1
+    s"r$counter"
+  }
+
+  def node(attrs: (String, String)*): String = {
+    val id = nextID()
+    buf ++= id
+    attributes(attrs)
+    buf ++= ";\n"
+    id
+  }
+
+  def binaryRecord(op: String,
+                   left: Either[String, String],
+                   right: Either[String, String]): String = {
+
+    val labels =
+      List(left.right.getOrElse(""), op, right.right.getOrElse(""))
+    val (id, slotIDs) = record(labels)
+    left.left.foreach { leftID =>
+      edge(slotIDs(0), leftID)
+    }
+    right.left.foreach { rightID =>
+      edge(slotIDs(2), rightID)
+    }
+    id
+  }
+
+  def record(labels: Seq[String],
+             attrs: (String, String)*): (String, Seq[String]) =
+    record(false, labels, attrs: _*)
+
+  def record(isVertical: Boolean,
+             labels: Seq[String],
+             attrs: (String, String)*): (String, Seq[String]) = {
+    val ports = 1.to(labels.size).map { i =>
       s"f$i"
     }
-    val flabels = fields.map(_._1)
-    val label = fsrcs
-      .zip(flabels)
-      .map {
-        case (src, lbl) =>
-          s"<$src> $lbl"
-      }
-      .mkString("|")
-    statement(sid, Map("label" -> label, "shape" -> "record"))
-    fsrcs.zip(fields.map(_._2)).foreach {
-      case (src, Some(dest)) => edge(s"$sid:$src", dest)
-      case _                 => ()
-    }
-  }
-
-  def matrix(mid: String,
-             label: String,
-             columns: Seq[Seq[String]]): Seq[String] = {
-    val cdsts = 0.to(columns.size).map { i =>
-      s"c$i"
-    }
-    val colLabel =
-      columns
-        .zip(cdsts)
-        .map {
-          case (col, dst) =>
-            val values = col.mkString("|")
-            if (col.size == 1)
-              s"<$dst> $values"
-            else
-              s"{<$dst> $values}"
-        }
-        .mkString("|")
+    val cells =
+      labels.zip(ports).map { case (l, p) => s"<$p> $l" }.mkString("|")
     val fullLabel =
-      s"$label | $colLabel"
-    statement(mid, Map("label" -> fullLabel, "shape" -> "Mrecord"))
-    cdsts.map { dst =>
-      s"$mid:$dst"
-    }
+      if (isVertical)
+        s"{$cells}"
+      else
+        cells
+    val id = node((label(fullLabel) :: shape("record") :: attrs.toList): _*)
+    (id, ports.map { p =>
+      s"$id:$p"
+    })
   }
 
-  def statement(value: String, annotations: Map[String, String]): Unit = {
-    buf ++= value
-    if (!annotations.isEmpty) {
+  def line(size: Int, clr: String, attrs: (String, String)*): Seq[String] = {
+    val ids = List.fill(size) {
+      node((shape("point") :: attrs.toList): _*)
+    }
+    rank("sink", ids)
+    ids.sliding(2, 1).foreach {
+      case List(a, b) => edge(a, b, color(clr), "arrowhead" -> "none")
+      case _          => ()
+    }
+    ids
+  }
+
+  def edge(left: String, right: String, attrs: (String, String)*): Unit = {
+    buf ++= s"$left -> $right"
+    attributes(attrs)
+    buf ++= ";\n"
+  }
+
+  def rank(level: String, ids: Seq[String]): Unit = {
+    buf ++= s"{rank = $level; "
+    ids.foreach { id =>
+      buf ++= id
+      buf ++= ";"
+    }
+    buf ++= "};\n"
+  }
+
+  def cluster[T](attrs: (String, String)*)(fn: => T): T = {
+    val id = nextID()
+    buf ++= "subgraph cluster_%s {\n".format(id)
+    attrs.foreach {
+      case (k, v) =>
+        buf ++= "%s=\"%s\";\n".format(k, v)
+    }
+    val t = fn
+    buf ++= "}\n"
+    t
+  }
+
+  private def attributes(seq: Seq[(String, String)]): Unit = {
+    if (!seq.isEmpty) {
       buf ++= " ["
-      annotations.foreach {
+      seq.foreach {
         case (k, v) =>
           buf ++= "\"%s\"=\"%s\"".format(k, v)
       }
       buf ++= "]"
     }
-    buf ++= ";\n"
   }
-
-  def edge(left: String,
-           right: String,
-           annotations: Map[String, String] = Map.empty): Unit =
-    statement(s"$left -> $right", annotations)
 
   def dot = buf.toString + "\n}"
   def write(path: String): Unit = {
@@ -74,15 +116,33 @@ class GraphViz {
     pw.write(dot)
     pw.close
   }
+}
 
-  def subgraph[T](id: String, annotations: Map[String, String])(fn: => T): T = {
-    buf ++= "subgraph %s {\n".format(id)
-    annotations.foreach {
-      case (k, v) =>
-        buf ++= "%s=\"%s\";\n".format(k, v)
+object GraphViz {
+  def label(v: String): (String, String) =
+    "label" -> v
+  def color(v: String): (String, String) =
+    "color" -> v
+  def shape(v: String): (String, String) =
+    "shape" -> v
+  def style(v: String): (String, String) =
+    "style" -> v
+  def justify(v: String): (String, String) =
+    "labeljust" -> v
+  def location(v: String): (String, String) =
+    "labelloc" -> v
+
+  def formatDouble(d: Double): String = {
+    if (d.isNegInfinity)
+      "-∞"
+    else if (d.isInfinity)
+      "∞"
+    else {
+      val eps = Math.abs(d - Math.round(d))
+      if (eps > 0.01)
+        "%.2f".format(d)
+      else
+        d.toInt.toString
     }
-    val t = fn
-    buf ++= "}\n"
-    t
   }
 }

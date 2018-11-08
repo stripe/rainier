@@ -5,7 +5,6 @@ import com.stripe.rainier.ir._
 private class Translator {
   private val binary = new SymCache[BinaryOp]
   private val unary = new SymCache[UnaryOp]
-  private val ifs = new SymCache[Unit]
   private var reals = Map.empty[Real, Expr]
 
   def toExpr(r: Real): Expr = reals.get(r) match {
@@ -17,12 +16,12 @@ private class Translator {
         case NegInfinity         => Const(-1.0 / 0.0)
         case Constant(value)     => Const(value.toDouble)
         case Unary(original, op) => unaryExpr(toExpr(original), op)
-        case i: If =>
-          ifExpr(toExpr(i.whenNonZero), toExpr(i.whenZero), toExpr(i.test))
-        case l: Line    => lineExpr(l)
-        case l: LogLine => logLineExpr(l)
+        case l: Line             => lineExpr(l)
+        case l: LogLine          => logLineExpr(l)
         case Pow(base, exponent) =>
           binaryExpr(toExpr(base), toExpr(exponent), PowOp)
+        case Compare(left, right) =>
+          binaryExpr(toExpr(left), toExpr(right), CompareOp)
         case l: Lookup => lookupExpr(l)
       }
       reals += r -> expr
@@ -42,11 +41,6 @@ private class Translator {
     binary.memoize(keys, op, new BinaryIR(left, right, op))
   }
 
-  private def ifExpr(whenZero: Expr, whenNonZero: Expr, test: Expr): Expr =
-    ifs.memoize(List(List(test, whenZero, whenNonZero)),
-                (),
-                new IfIR(test, whenZero, whenNonZero))
-
   private def lookupExpr(lookup: Lookup): Expr = {
     val tableExprs = lookup.table.map(toExpr).toList
     val defs = tableExprs.collect {
@@ -55,13 +49,13 @@ private class Translator {
     }
     val index = toExpr(lookup.index)
     val refs = tableExprs.map(ref)
-    val lookupExpr = VarDef(LookupIR(index, refs))
+    val lookupExpr = VarDef(LookupIR(index, refs, lookup.low))
     SeqIR(defs :+ lookupExpr)
   }
 
   private def lineExpr(line: Line): Expr = {
     val (y, k) = LineOps.factor(line)
-    factoredLine(y.ax, y.b, k.toDouble, multiplyRing)
+    factoredSumLine(y.ax, y.b, k.toDouble)
   }
 
   private def logLineExpr(line: LogLine): Expr = {
@@ -96,6 +90,27 @@ private class Translator {
   The result may also be multiplied by a constant scaling factor (generally
   factored out of the original summation).
   **/
+  private def factoredSumLine(ax: Coefficients,
+                              b: BigDecimal,
+                              factor: Double): Expr = {
+    val terms = ax.toList
+    val allTerms =
+      if (b == 0.0)
+        terms
+      else
+        (Constant(b), Real.BigOne) :: terms
+    val expr = combineSumTerms(allTerms)
+    factor match {
+      case 1.0 => expr
+      case -1.0 =>
+        binaryExpr(Const(0.0), expr, SubtractOp)
+      case 2.0 =>
+        binaryExpr(expr, ref(expr), AddOp)
+      case k =>
+        binaryExpr(expr, Const(k), MultiplyOp)
+    }
+  }
+
   private def factoredLine(ax: Coefficients,
                            b: BigDecimal,
                            factor: Double,
@@ -133,8 +148,9 @@ private class Translator {
     }
   }
 
-  private def combineTerms(terms: Seq[(Real, BigDecimal)], ring: Ring): Expr = {
-    val lazyExpr = terms.map {
+  private def makeLazyExprs(terms: Seq[(Real, BigDecimal)],
+                            ring: Ring): Seq[() => Expr] = {
+    terms.map {
       case (x, Real.BigOne) =>
         () =>
           toExpr(x)
@@ -148,7 +164,18 @@ private class Translator {
         () =>
           binaryExpr(toExpr(x), Const(a.toDouble), ring.times)
     }
-    combineTree(lazyExpr, ring)
+  }
+
+  private def combineTerms(terms: Seq[(Real, BigDecimal)], ring: Ring): Expr = {
+    val lazyExprs = makeLazyExprs(terms, ring)
+    combineTree(lazyExprs, ring)
+  }
+
+  private def combineSumTerms(terms: Seq[(Real, BigDecimal)]): Expr = {
+    val lazyExprs = makeLazyExprs(terms, multiplyRing)
+    lazyExprs.tail.foldLeft(lazyExprs.head()) {
+      case (accum, t) => binaryExpr(accum, t(), AddOp)
+    }
   }
 
   private def combineTree(terms: Seq[() => Expr], ring: Ring): Expr =

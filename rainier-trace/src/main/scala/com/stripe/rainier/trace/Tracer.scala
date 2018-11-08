@@ -17,8 +17,8 @@ case class Tracer(compiler: Compiler, gradient: Boolean) {
   }
 
   def apply(rv: RandomVariable[_], batchBits: Int = 1): Unit = {
-    val (_, df) =
-      compiler.compileTargets(rv.targets, gradient, batchBits)
+    val df =
+      compiler.compileTargets(rv.targetGroup, gradient, batchBits)
     Tracer.dump(df.cf)
   }
 }

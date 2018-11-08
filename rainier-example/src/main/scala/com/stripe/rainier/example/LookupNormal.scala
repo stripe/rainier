@@ -9,7 +9,7 @@ object LookupNormal {
     for {
       globalMean <- Uniform(0, 10).param
       means <- RandomVariable
-        .fill(k)(Normal(globalMean, 10).param)
+        .fill(k)(Normal(globalMean, 1).param)
         .map(Lookup(_))
       stddev <- Uniform(0, 10).param
       _ <- Predictor
@@ -24,7 +24,7 @@ object LookupNormal {
     val r = new scala.util.Random
     val trueStddev = 2.0
     val globalMean = 3.0
-    val means = List.fill(k)((r.nextGaussian * 10) + globalMean)
+    val means = List.fill(k)((r.nextGaussian) + globalMean)
     List.fill(n) {
       val i = r.nextInt(k)
       val v = (r.nextGaussian * trueStddev) + means(i)
@@ -33,6 +33,6 @@ object LookupNormal {
   }
 
   def main(args: Array[String]): Unit = {
-    plot2D(model(100, 10000).sample())
+    plot2D(model(30, 10000).sample())
   }
 }
