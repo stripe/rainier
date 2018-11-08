@@ -129,6 +129,13 @@ object Coefficients {
         Many(toMap + pair, term :: terms)
       }
     }
+
+    override lazy val hashCode = toMap.hashCode
+    override def equals(other: Any) =
+      other match {
+        case m: Many => eq(m) || toMap == m.toMap
+        case _       => false
+      }
   }
 
   object Many {
