@@ -4,7 +4,6 @@ import com.stripe.rainier.compute.Real
 import com.stripe.rainier.core._
 import com.stripe.rainier.repl._
 import com.stripe.rainier.sampler._
-import java.util.logging.Level
 
 object BatchNormal {
   def model(k: Int): RandomVariable[(Real, Real)] = {

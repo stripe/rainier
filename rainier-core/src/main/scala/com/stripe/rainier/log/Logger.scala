@@ -7,7 +7,7 @@ import java.util.logging.{Level, ConsoleHandler}
 
 trait Logger {
   def logger: FluentLogger
-  def setConsoleLevel(level: Level) = {
+  def setConsoleLevel(level: Level): Unit = {
     val config = LoggerConfig.of(logger)
     config.setUseParentHandlers(false)
     config.setLevel(level)
@@ -28,6 +28,11 @@ trait Logger {
   def FINE: Api = logger.at(Level.FINE)
   def FINER: Api = logger.at(Level.FINER)
   def FINEST: Api = logger.at(Level.FINEST)
+
+  def showInfo(): Unit = setConsoleLevel(Level.INFO)
+  def showFine(): Unit = setConsoleLevel(Level.FINE)
+  def showFiner(): Unit = setConsoleLevel(Level.FINE)
+  def showFinest(): Unit = setConsoleLevel(Level.FINE)
 
   protected def init: FluentLogger = {
     val cons = classOf[FluentLogger].getDeclaredConstructors.head
