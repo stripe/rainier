@@ -28,7 +28,7 @@ val data: List[(Int,Int)] = ???
 val model = for {
     slope <- LogNormal(0,1).param
     intercept <- LogNormal(0,1).param
-    regression <- Predictor.from{x: Int => Poisson(x*slope + intercept)}.fit(data)
+    regression <- Predictor.fromInt{x => Poisson(x*slope + intercept)}.fit(data)
 } yield regression
 ```
 
@@ -36,11 +36,11 @@ val model = for {
 
 Rainier requires that all of the observations or training data for a given model fit comfortably into RAM on a single machine. It does not make use of GPUs or of SIMD instructions.
 
-Within those constraints, however, it is extremely fast. Rainier takes advantage of knowing all of your data ahead of time by aggressively precomputing as much as it can, which is a significant practical benefit relative to systems that compile a data-agnostic model. It produces optimized, unboxed, JIT-friendly JVM bytecode for all numerical calculations. This compilation happens in-process and is fast enough for interactive use at a REPL.
+Within those constraints, however, it is extremely fast. Rainier takes advantage of knowing all of your data ahead of time by aggressively precomputing as much as it can, which can be a significant practical benefit relative to systems that compile a data-agnostic model. It produces optimized, unboxed, JIT-friendly JVM bytecode for all numerical calculations. This compilation happens in-process and is fast enough for interactive use at a REPL.
 
 For example, on a MacBook Pro, gradient evaluation for [Neal's funnel](/rainier-example/src/main/scala/com/stripe/rainier/example/Funnel.scala) takes under a microsecond, and end-to-end compilation and sampling for 10,000 iterations of HMC with 5 leapfrog steps each takes around 50ms.
 
-As a rough comparison, Rainier seems to yield a 10x or more speedup relative to the equivalent Stan models. This is promising, though please keep in mind that benchmarking is hard,  micro-benchmarks are often meaningless, and Stan's sampler implementation is much more sophisticated and much, much, much better tested than Rainier's!
+Depending on the model, our benchmarking shows Rainier runningg anywhere from 0.1x to 10x the speed of Stan. Please keep in mind that benchmarking is hard,  micro-benchmarks are often meaningless, and raw performance aside, Stan's sampler implementation is much more sophisticated and much, much, much better tested than Rainier's!
 
 ## Documentation
 
@@ -96,15 +96,16 @@ You can enable fatal warnings locally by either setting
 Rainier is published on sonatype. To use it in your SBT project, you can add the following to your build.sbt:
 
 ```scala
-libraryDependencies += "com.stripe" %% "rainier-core" % "0.1.1"
+libraryDependencies += "com.stripe" %% "rainier-core" % "0.2.0"
 ```
 
 ## Authors
 
-Rainier was written primarily by [Avi Bryant](http://twitter.com/avibryant), with guidance and contributions from:
- * [Roban Kramer](https://twitter.com/robanhk)
+Rainier's primary author is [Avi Bryant](http://twitter.com/avibryant). Many thanks for the important contributions and support from:
  * [Mio Alter](https://twitter.com/mioalter)
  * [Grzegorz Kossakowski](https://twitter.com/gkossakowski)
+ * [Roban Kramer](https://twitter.com/robanhk)
  * [Darren Wilkinson](https://twitter.com/darrenjw)
-
-Thanks also to Aaron Steele and Michael Manapat for organizational support, and Travis Brown and Andy Scott for build wrangling and other dev infrastructure.
+ * Christian Anderson
+ * Aaron Steele
+ * Michael Manapat
