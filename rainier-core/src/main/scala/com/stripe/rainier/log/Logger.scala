@@ -6,8 +6,7 @@ import java.util.logging.{Level, ConsoleHandler}
 
 abstract class Logger {
   def logger: FluentLogger
-  def setLevel(level: Level) = {
-    logger.atInfo.log("Setting level of %s to %s", this, level)
+  def setConsoleLevel(level: Level) = {
     val config = LoggerConfig.of(logger)
     config.setLevel(level)
   }
