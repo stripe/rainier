@@ -24,14 +24,12 @@ abstract class SBCBenchmark {
 
   var s: SBC[_, _] = _
   var model: RandomVariable[_] = _
-  var vars: Seq[Variable] = _
   var df: DensityFunction = _
 
   @Setup(Level.Trial)
   def setup() = {
     s = sbc
     model = build
-    vars = model.targetGroup.variables
     df = model.density
   }
 
@@ -43,13 +41,11 @@ abstract class SBCBenchmark {
 
   @Benchmark
   def compile() =
-    model.density
+    Compiler.default.compileTargets(TargetGroup(model.targets), true, 4)
 
   @Benchmark
   def run() =
-    df.update(vars.map { _ =>
-      rng.standardUniform
-    }.toArray)
+    df.update(Array.fill(df.nVars){rng.standardUniform})
 }
 
 class NormalBenchmark extends SBCBenchmark {
