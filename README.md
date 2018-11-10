@@ -101,11 +101,18 @@ libraryDependencies += "com.stripe" %% "rainier-core" % "0.2.0"
 
 ## Authors
 
-Rainier's primary author is [Avi Bryant](http://twitter.com/avibryant). Many thanks for the important contributions and support from:
- * [Mio Alter](https://twitter.com/mioalter)
- * [Grzegorz Kossakowski](https://twitter.com/gkossakowski)
- * [Roban Kramer](https://twitter.com/robanhk)
- * [Darren Wilkinson](https://twitter.com/darrenjw)
+Rainier's primary author is [Avi Bryant](http://twitter.com/avibryant) with major contributions from [Mio Alter](https://twitter.com/mioalter). Many thanks also for contributions and support from:
  * Christian Anderson
- * Aaron Steele
+ * Alex Beal
+ * Travis Brown
+ * Peadar Coyle
+ * Mike Heaton
+ * Grzegorz Kossakowski
+ * Roban Kramer
  * Michael Manapat
+ * Alan O'Donnell
+ * David Rodriguez
+ * Andy Scott
+ * Aaron Steele
+ * Kai(luo) Wang
+ * Darren Wilkinson
