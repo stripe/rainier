@@ -51,13 +51,6 @@ private object Gradient {
                 visit(x)
             }
 
-          case f: If =>
-            diff(f.whenNonZero).register(IfDiff(f, diff(f), true))
-            diff(f.whenZero).register(IfDiff(f, diff(f), false))
-            visit(f.test)
-            visit(f.whenNonZero)
-            visit(f.whenZero)
-
           case l: Lookup =>
             l.table.zipWithIndex.foreach {
               case (x, i) =>
@@ -65,6 +58,11 @@ private object Gradient {
                 visit(x)
             }
             visit(l.index)
+
+          case c: Compare =>
+            //no gradient
+            visit(c.left)
+            visit(c.right)
         }
       }
     }
@@ -105,20 +103,12 @@ private object Gradient {
       case LogOp => gradient.toReal * (Real.one / child.original)
       case ExpOp => gradient.toReal * child
       case AbsOp =>
-        If(child.original, gradient.toReal * child.original / child, Real.zero)
-      case RectifierOp =>
-        If(child.original < 0, Real.zero, gradient.toReal)
+        Real.lt(child.original,
+                Real.zero,
+                gradient.toReal * child.original / child,
+                Real.zero)
       case NoOp => gradient.toReal
     }
-  }
-
-  private final case class IfDiff(child: If, gradient: Diff, nzBranch: Boolean)
-      extends Diff {
-    def toReal: Real =
-      if (nzBranch)
-        If(child.test, gradient.toReal, Real.zero)
-      else
-        If(child.test, Real.zero, gradient.toReal)
   }
 
   private final case class PowDiff(child: Pow,
@@ -128,7 +118,8 @@ private object Gradient {
 
     def toReal: Real =
       if (isExponent)
-        gradient.toReal * child * If(child.base, child.base, Real.one).log
+        gradient.toReal * child *
+          Real.eq(child.base, Real.zero, Real.one, child.base).log
       else
         gradient.toReal * child.exponent * child.base.pow(child.exponent - 1)
   }
@@ -154,6 +145,6 @@ private object Gradient {
   private final case class LookupDiff(child: Lookup, gradient: Diff, index: Int)
       extends Diff {
     def toReal: Real =
-      If(child.index - index, Real.zero, gradient.toReal)
+      Real.eq(child.index, index, gradient.toReal, Real.zero)
   }
 }

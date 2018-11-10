@@ -89,3 +89,28 @@ object Target {
   def apply(real: Real): Target = new Target(real, Map.empty)
   val empty: Target = apply(Real.zero)
 }
+
+case class TargetGroup(base: Real,
+                       batched: List[Target],
+                       variables: List[Variable])
+
+object TargetGroup {
+  def apply(targets: Iterable[Target]): TargetGroup = {
+    val (base, batched) = targets.foldLeft((Real.zero, List.empty[Target])) {
+      case ((b, l), t) =>
+        t.maybeInlined match {
+          case Some(r) => ((b + r), l)
+          case None    => (b, t :: l)
+        }
+    }
+    val variables =
+      batched
+        .foldLeft(RealOps.variables(base)) {
+          case (set, target) =>
+            set ++ target.variables
+        }
+        .toList
+        .sortBy(_.param.sym.id)
+    TargetGroup(base, batched, variables)
+  }
+}

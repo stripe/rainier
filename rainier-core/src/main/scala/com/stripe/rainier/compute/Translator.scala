@@ -5,7 +5,6 @@ import com.stripe.rainier.ir._
 private class Translator {
   private val binary = new SymCache[BinaryOp]
   private val unary = new SymCache[UnaryOp]
-  private val ifs = new SymCache[Unit]
   private var reals = Map.empty[Real, Expr]
 
   def toExpr(r: Real): Expr = reals.get(r) match {
@@ -17,12 +16,12 @@ private class Translator {
         case NegInfinity         => Const(-1.0 / 0.0)
         case Constant(value)     => Const(value.toDouble)
         case Unary(original, op) => unaryExpr(toExpr(original), op)
-        case i: If =>
-          ifExpr(toExpr(i.whenNonZero), toExpr(i.whenZero), toExpr(i.test))
-        case l: Line    => lineExpr(l)
-        case l: LogLine => logLineExpr(l)
+        case l: Line             => lineExpr(l)
+        case l: LogLine          => logLineExpr(l)
         case Pow(base, exponent) =>
           binaryExpr(toExpr(base), toExpr(exponent), PowOp)
+        case Compare(left, right) =>
+          binaryExpr(toExpr(left), toExpr(right), CompareOp)
         case l: Lookup => lookupExpr(l)
       }
       reals += r -> expr
@@ -42,11 +41,6 @@ private class Translator {
     binary.memoize(keys, op, new BinaryIR(left, right, op))
   }
 
-  private def ifExpr(whenZero: Expr, whenNonZero: Expr, test: Expr): Expr =
-    ifs.memoize(List(List(test, whenZero, whenNonZero)),
-                (),
-                new IfIR(test, whenZero, whenNonZero))
-
   private def lookupExpr(lookup: Lookup): Expr = {
     val tableExprs = lookup.table.map(toExpr).toList
     val defs = tableExprs.collect {
@@ -55,7 +49,7 @@ private class Translator {
     }
     val index = toExpr(lookup.index)
     val refs = tableExprs.map(ref)
-    val lookupExpr = VarDef(LookupIR(index, refs))
+    val lookupExpr = VarDef(LookupIR(index, refs, lookup.low))
     SeqIR(defs :+ lookupExpr)
   }
 

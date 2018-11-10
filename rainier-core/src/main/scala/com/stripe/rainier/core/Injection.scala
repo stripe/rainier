@@ -11,7 +11,9 @@ private[rainier] trait Injection { self =>
   def fastForwards(x: Double)(implicit n: Numeric[Real]): Double =
     n.toDouble(forwards(Real(x)))
   def backwards(y: Real): Real
-  def isDefinedAt(@unused y: Real): Real = Real.one
+  def whenDefinedAt(@unused y: Real,
+                    ifDefined: Real,
+                    @unused notDefined: Real): Real = ifDefined
   def requirements: Set[Real]
   def transformSupport(supp: Support): Support
   /*
@@ -24,10 +26,9 @@ private[rainier] trait Injection { self =>
     val support: Support = transformSupport(dist.support)
 
     def logDensity(real: Real): Real =
-      If(isDefinedAt(real),
-         dist.logDensity(backwards(real)) +
-           logJacobian(real),
-         Real.zero.log)
+      whenDefinedAt(real,
+                    dist.logDensity(backwards(real)) + logJacobian(real),
+                    Real.negInfinity)
 
     val generator: Generator[Double] =
       Generator.require(self.requirements) { (r, n) =>
@@ -89,7 +90,10 @@ object Exp extends Injection {
   def backwards(y: Real): Real = y.log
   def logJacobian(y: Real): Real = y.log * -1
 
-  override def isDefinedAt(y: Real): Real = y > 0
+  override def whenDefinedAt(y: Real,
+                             whenDefined: Real,
+                             notDefined: Real): Real =
+    Real.gt(y, Real.zero, whenDefined, notDefined)
   val requirements: Set[Real] = Set.empty
 
   def transformSupport(supp: Support): Support = supp match {

@@ -18,8 +18,7 @@ object VarDef {
 sealed trait IR
 final case class BinaryIR(left: Expr, right: Expr, op: BinaryOp) extends IR
 final case class UnaryIR(original: Expr, op: UnaryOp) extends IR
-final case class IfIR(test: Expr, whenNonZero: Expr, whenZero: Expr) extends IR
-final case class LookupIR(index: Expr, table: List[Ref]) extends IR
+final case class LookupIR(index: Expr, table: List[Ref], low: Int) extends IR
 final case class MethodRef(sym: Sym) extends IR
 final case class SeqIR(first: VarDef, second: VarDef) extends IR
 
