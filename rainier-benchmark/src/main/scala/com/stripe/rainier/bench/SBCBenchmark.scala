@@ -22,10 +22,18 @@ abstract class SBCBenchmark {
   @Param(Array("100", "1000", "10000", "100000"))
   protected var syntheticSamples: Int = _
 
-  val s = sbc
-  val model = build
-  val vars = model.targetGroup.variables
-  val df = model.density
+  var s: SBC[_, _] = _
+  var model: RandomVariable[_] = _
+  var vars: Seq[Variable] = _
+  var df: DensityFunction = _
+
+  @Setup(Level.Trial)
+  def setup() = {
+    s = sbc
+    model = build
+    vars = model.targetGroup.variables
+    df = model.density
+  }
 
   @Benchmark
   def synthesize() = s.synthesize(syntheticSamples)
