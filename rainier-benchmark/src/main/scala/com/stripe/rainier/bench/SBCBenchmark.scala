@@ -45,7 +45,7 @@ abstract class SBCBenchmark {
 
   @Benchmark
   def run() =
-    df.update(Array.fill(df.nVars){rng.standardUniform})
+    df.update(Array.fill(df.nVars) { rng.standardUniform })
 }
 
 class NormalBenchmark extends SBCBenchmark {
