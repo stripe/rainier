@@ -22,10 +22,16 @@ abstract class SBCBenchmark {
   @Param(Array("100", "1000", "10000", "100000"))
   protected var syntheticSamples: Int = _
 
-  lazy val s = sbc
-  lazy val model = build
-  lazy val vars = model.targetGroup.variables
-  lazy val df = model.density
+  var s: SBC[_, _] = _
+  var model: RandomVariable[_] = _
+  var df: DensityFunction = _
+
+  @Setup(Level.Trial)
+  def setup() = {
+    s = sbc
+    model = build
+    df = model.density
+  }
 
   @Benchmark
   def synthesize() = s.synthesize(syntheticSamples)
@@ -35,13 +41,11 @@ abstract class SBCBenchmark {
 
   @Benchmark
   def compile() =
-    model.density
+    Compiler.default.compileTargets(TargetGroup(model.targets), true, 4)
 
   @Benchmark
   def run() =
-    df.update(vars.map { _ =>
-      rng.standardUniform
-    }.toArray)
+    df.update(Array.fill(df.nVars) { rng.standardUniform })
 }
 
 class NormalBenchmark extends SBCBenchmark {
