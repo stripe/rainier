@@ -20,6 +20,8 @@ val model = for {
     intercept <- LogNormal(0,1).param
     regression <- Predictor.fromInt{x => Poisson(x*slope + intercept)}.fit(data)
 } yield regression.predict(21)
+
+model.sample(10)
 ```
 
 ## Distribution
