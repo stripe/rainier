@@ -24,17 +24,15 @@ private class RealViz {
   def output(name: String,
              r: Real,
              placeholders: Map[Variable, Array[Double]]): Unit = {
-    val id = gv.cluster() {
-      if (!placeholders.isEmpty)
-        registerPlaceholders(placeholders)
-      idOrLabel(r) match {
-        case Left(id) => id
-        case Right(l) =>
-          gv.node(
-            label(l),
-            shape("square")
-          )
-      }
+    if (!placeholders.isEmpty)
+      registerPlaceholders(placeholders)
+    val id = idOrLabel(r) match {
+      case Left(id) => id
+      case Right(l) =>
+        gv.node(
+          label(l),
+          shape("square")
+        )
     }
     gv.edge(gv.node(label(name), shape("house")), id)
   }
@@ -127,6 +125,11 @@ private class RealViz {
 }
 
 object RealViz {
+  def apply(reals: (String, Real)*): GraphViz =
+    apply(reals.toList.map {
+      case (s, r) => (s, r, Map.empty[Variable, Array[Double]])
+    }, Nil)
+
   def apply(reals: List[(String, Real, Map[Variable, Array[Double]])],
             gradVars: List[Variable]): GraphViz = {
     val v = new RealViz
