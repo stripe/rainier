@@ -175,7 +175,7 @@ private class Translator {
                              compensation: Expr,
                              term: Expr) = {
     val nextExpr = binaryExpr(term, compensation, SubtractOp)
-    val newAccumulator = binaryExpr(accumulator, nextExpr, AddOp)
+    val newAccumulator = binaryExpr(ref(accumulator), nextExpr, AddOp)
     val newCompensation = binaryExpr(
       binaryExpr(newAccumulator, ref(accumulator), SubtractOp),
       ref(nextExpr),
