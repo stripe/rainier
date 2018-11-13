@@ -171,9 +171,9 @@ private class Translator {
     combineTree(lazyExprs, ring)
   }
 
-  private def kahanSumUpdate(term: Expr,
-                             accumulator: Expr,
-                             compensation: Expr) = {
+  private def kahanSumUpdate(accumulator: Expr,
+                             compensation: Expr,
+                             term: Expr) = {
     val nextExpr = binaryExpr(term, compensation, SubtractOp)
     val newAccumulator = binaryExpr(accumulator, nextExpr, AddOp)
     val newCompensation = binaryExpr(
@@ -189,7 +189,7 @@ private class Translator {
     val initialAccumulator = (lazyExprs.head(), toExpr(0.0))
     val (accumulator, _) =
       lazyExprs.tail.foldLeft(initialAccumulator) {
-        case ((accum, comp), t) => kahanSumUpdate(t(), accum, comp)
+        case ((accum, comp), t) => kahanSumUpdate(accum, comp, t())
       }
     accumulator
   }
