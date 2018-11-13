@@ -65,7 +65,7 @@ object Coefficients {
       }
   }
 
-  case class Many(toMap: Map[NonConstant, BigDecimal], terms: List[NonConstant])
+  class Many(toMap: Map[NonConstant, BigDecimal], terms: List[NonConstant])
       extends Coefficients {
     val isEmpty = false
     def size = toMap.size
@@ -128,19 +128,17 @@ object Coefficients {
         Many(toMap + pair, term :: terms)
       }
     }
-    /*
+    
     override lazy val hashCode = toMap.hashCode
     override def equals(other: Any) =
       other match {
         case m: Many => eq(m) || toMap == m.toMap
         case _       => false
       }
-   */
   }
-  /**
+
   object Many {
     def apply(toMap: Map[NonConstant, BigDecimal], terms: List[NonConstant]) =
       new Many(toMap, terms)
   }
-  */
 }
