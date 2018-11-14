@@ -93,12 +93,12 @@ private class Translator {
   private def factoredSumLine(ax: Coefficients,
                               b: BigDecimal,
                               factor: Double): Expr = {
-    val terms = ax.toList
+    val terms = ax.toList.map { case (x, a) => (x, a.toDouble) }
     val allTerms =
       if (b == 0.0)
         terms
       else
-        (Constant(b), Real.BigOne) :: terms
+        (Constant(b), 1.0) :: terms
     val expr = combineSumTerms(allTerms)
     factor match {
       case 1.0 => expr
@@ -115,16 +115,16 @@ private class Translator {
                            b: BigDecimal,
                            factor: Double,
                            ring: Ring): Expr = {
-    val terms = ax.toList
-    val posTerms = terms.filter(_._2 > Real.BigZero)
+    val terms = ax.toList.map { case (x, a) => (x, a.toDouble) }
+    val posTerms = terms.filter(_._2 > 0.0)
     val negTerms =
-      terms.filter(_._2 < Real.BigZero).map { case (x, a) => x -> a.abs }
+      terms.filter(_._2 < 0.0).map { case (x, a) => x -> a.abs }
 
     val allPosTerms =
       if (b == ring.zero)
         posTerms
       else
-        (Constant(b), Real.BigOne) :: posTerms
+        (Constant(b), 1.0) :: posTerms
 
     val (expr, sign) =
       (allPosTerms.isEmpty, negTerms.isEmpty) match {
@@ -148,30 +148,30 @@ private class Translator {
     }
   }
 
-  private def makeLazyExprs(terms: Seq[(Real, BigDecimal)],
+  private def makeLazyExprs(terms: Seq[(Real, Double)],
                             ring: Ring): Seq[() => Expr] = {
     terms.map {
-      case (x, Real.BigOne) =>
+      case (x, 1.0) =>
         () =>
           toExpr(x)
-      case (x, Real.BigTwo) =>
+      case (x, 2.0) =>
         () =>
           binaryExpr(toExpr(x), toExpr(x), ring.plus)
       case (l: LogLine, a) => //this can only happen for a Line's terms
         () =>
-          factoredLine(l.ax, a, 1.0, powRing)
+          factoredLine(l.ax, BigDecimal(a), 1.0, powRing)
       case (x, a) =>
         () =>
-          binaryExpr(toExpr(x), Const(a.toDouble), ring.times)
+          binaryExpr(toExpr(x), Const(a), ring.times)
     }
   }
 
-  private def combineTerms(terms: Seq[(Real, BigDecimal)], ring: Ring): Expr = {
+  private def combineTerms(terms: Seq[(Real, Double)], ring: Ring): Expr = {
     val lazyExprs = makeLazyExprs(terms, ring)
     combineTree(lazyExprs, ring)
   }
 
-  private def combineSumTerms(terms: Seq[(Real, BigDecimal)]): Expr = {
+  private def combineSumTerms(terms: Seq[(Real, Double)]): Expr = {
     val lazyExprs = makeLazyExprs(terms, multiplyRing)
     lazyExprs.tail.foldLeft(lazyExprs.head()) {
       case (accum, t) => binaryExpr(accum, t(), AddOp)
