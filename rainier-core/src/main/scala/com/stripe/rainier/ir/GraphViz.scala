@@ -72,8 +72,8 @@ class GraphViz {
     ids
   }
 
-  def edge(left: String, right: String, attrs: (String, String)*): Unit = {
-    buf ++= s"$left -> $right"
+  def edge(dest: String, src: String, attrs: (String, String)*): Unit = {
+    buf ++= s"$src -> $dest"
     attributes(attrs)
     buf ++= ";\n"
   }

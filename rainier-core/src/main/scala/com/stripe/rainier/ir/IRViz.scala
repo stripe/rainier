@@ -17,8 +17,11 @@ private class IRViz(parameters: Seq[Parameter], methodDefs: List[MethodDef]) {
         traverseDef("", "black", methDef.rhs))
   }
 
-  def outputMethod(name: String, sym: Sym): Unit =
-    gv.edge(gv.node(label(name), shape("house")), methods(sym))
+  def outputMethod(name: String, sym: Sym): Unit = {
+    val id = gv.node(label(name), shape("house"))
+    gv.edge(id, methods(sym))
+    gv.rank("sink", List(id))
+  }
 
   def idOrLabel(r: Expr): Either[String, String] =
     r match {

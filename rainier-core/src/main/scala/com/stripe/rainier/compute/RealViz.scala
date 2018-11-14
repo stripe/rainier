@@ -35,6 +35,7 @@ private class RealViz {
         )
     }
     gv.edge(gv.node(label(name), shape("house")), id)
+    gv.rank("sink", List(id))
   }
 
   private def registerPlaceholders(map: Map[Variable, Array[Double]]): Unit =
