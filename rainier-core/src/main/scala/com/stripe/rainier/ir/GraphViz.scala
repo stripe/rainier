@@ -5,7 +5,7 @@ class GraphViz {
   import GraphViz._
 
   private val buf = new StringBuilder
-  buf ++= "digraph {\n"
+  buf ++= "digraph {\n rankdir=LR;\n"
 
   private var counter = 0
   private def nextID() = {
