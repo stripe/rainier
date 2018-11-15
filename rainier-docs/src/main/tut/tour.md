@@ -12,16 +12,14 @@ import com.stripe.rainier.compute._
 
 Together, those traits let you define Bayesian models in Rainier. To throw you a little bit into the deep end, here's a simple linear regression that we'll return to later. This probably won't entirely make sense yet. That's ok. Hopefully it will serve as a bit of a roadmap that put the rest of the tour in context as we build up to it.
 
-```tut
+```scala
 val data =  List((0,8), (1,12), (2,16), (3,20), (4,21), (5,31), (6,23), (7,33), (8,31), (9,33), (10,36), (11,42), (12,39), (13,56), (14,55), (15,63), (16,52), (17,66), (18,52), (19,80), (20,71))
 
 val model = for {
   slope <- LogNormal(0,1).param
   intercept <- LogNormal(0,1).param
-  regression <- Predictor.fromInt{x => Poisson(x*slope + intercept)}.fit(data)
+  regression <- Predictor.fromInt{ x => Poisson(x*slope + intercept) }.fit(data)
 } yield regression.predict(21)
-
-model.sample(10)
 ```
 
 ## Distribution
@@ -37,8 +35,8 @@ val normal: Distribution[Double] = Normal(0,1)
 In Rainier, `Distribution` objects play three different roles. `Continuous` distributions (like `Normal`), implement `param`, and all distributions implement `fit` and `generator`. Each of these methods is central to one of the three stages of building a model in Rainier:
 
 * defining your parameters and their priors
-* fitting the parameters to some observed data and
-* using the fit parameters to generate samples of some posterior distribution of interest.
+* fitting the parameters to some observed data
+* using the fitted parameters to generate samples of some posterior distribution of interest
 
 We'll start by exploring each of these in turn.
 
@@ -140,11 +138,7 @@ e_x.value == rate.value
 
 So, for the same input in the latent parameter space, `e_x` and `rate` will produce the same output.
 
-However, when we `flatMap`, behind the scenes we're also working with the `density` object. Specifically, when we start with one `RandomVariable` (like `e_x`), and use `flatMap` to flatten another `RandomVariable` into it (like the result of `fit`), the resulting `RandomVariable` (like `rate`) will have a `density` that *combines* the densities of the other two `RandomVariable`s. Put another way, `flatMap` is the Bayesian update operation: you're putting in a prior, coming up with a likelihood, and getting back the posterior. That's what the `fit` line is doing: constructing a likelihood function that we can incorporate into our posterior density. And if we look at the densities, we'll see that they are indeed different:
-
-```tut
-e_x.density == rate.density
-```
+However, when we `flatMap`, behind the scenes we're also working with the `density` object. Specifically, when we start with one `RandomVariable` (like `e_x`), and use `flatMap` to flatten another `RandomVariable` into it (like the result of `fit`), the resulting `RandomVariable` (like `rate`) will have a `density` that *combines* the densities of the other two `RandomVariable`s. Put another way, `flatMap` is the Bayesian update operation: you're putting in a prior, coming up with a likelihood, and getting back the posterior. That's what the `fit` line is doing: constructing a likelihood function that we can incorporate into our posterior density.
 
 So although `F(q)` has not changed, `P(Q=q)` *has* changed; which means that `P(F(q)=f)` has also changed, and it's that change which we're observing when we see that sampling values of `F` produces different results in the two cases.
 
@@ -264,7 +258,7 @@ val regr3 = for {
   _ <- Predictor.from[(Int, Int), Int, (Real, Real), Real]{ case (i,x) => Poisson(intercept + slopes(i) * x) }.fit(allData)
 } yield (slopes(0), intercept)
 ```
-Here, `i` indexes the model and `x` is the x-value of the observation. Plotting slope vs intercept now, we can see that, even though these are two separate regressions, we get tighter bounds than before by letting the new data influence the shared parameter. It makes sense that we'd get more confidence on the intercept, since we have two different time series to learn from now; but because of the anti-correlation, that also leads to somewhat more confidence than before on the `slope1` parameter as well.
+Here, `i` indexes which model we're feeding the data to and `x` is the x-value of the observation. Plotting slope vs intercept now, we can see that, even though these are two separate regressions, we get tighter bounds than before by letting the new data influence the shared parameter. It makes sense that we'd get more confidence on the intercept, since we have two different time series to learn from now; but because of the anti-correlation, that also leads to somewhat more confidence than before on the `slope1` parameter as well.
 
 ```tut
 plot2D(regr3.sample())
