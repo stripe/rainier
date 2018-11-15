@@ -248,22 +248,37 @@ Finally, let's close with a small and somewhat contrived example of a hierarchic
 val data2 = List((0,9), (1,2), (2,3), (3,17), (4,21), (5,12), (6,21), (7,19), (8,21), (9,18), (10,25), (11,27), (12,33), (13,23), (14,28), (15,45), (16,35), (17,45), (18,47), (19,54), (20,40))
 ```
 
-It's straightforward to set up two separate slopes, two separate predictors, but the same interecept. We'll still just sample the first slope so we can compare to the previous model. We _could_ write out the parameters of the models separately and fit each one to its respective data, but this is a bit tedious, so we can use Rainier's `Lookup` to do it more succinctly.
+It's straightforward to set up two separate slopes, two separate predictors, but the same intercept. We'll still just sample the first slope so we can compare to the previous model. We can write out the two slopes and predictors manually
+
+```tut
+val regr3 =  for {
+    slope0 <- LogNormal(0,1).param
+    slope1 <- LogNormal(0,1).param
+    intercept <- LogNormal(0,1).param
+    _ <- Predictor.fromInt{ i => Poisson(intercept + slope0 * i) }.fit(data)
+    _ <- Predictor.fromInt{ i => Poisson(intercept + slope1 * i) }.fit(data2)
+} yield (slope0, intercept)
+```
+
+or we can use Rainier's `Lookup` to package the two slopes into a single `RandomVariable` from which we can lookup the one we want. This means that our predictor now has to take both the index of the model to which the data belongs as well as the actual observation as input.
 
 ```tut
 val allData = data.map{ case (x,y) => ((0, x), y) } ++ data2.map{ case (x, y) => ((1, x), y) }
-val regr3 = for {
+val regLookup = for {
   slopes <- RandomVariable.fill(2)(LogNormal(0,1).param).map(Lookup(_))
   intercept <- LogNormal(0,1).param
-  _ <- Predictor.from[(Int, Int), Int, (Real, Real), Real]{ case (i,x) => Poisson(intercept + slopes(i) * x) }.fit(allData)
+  _ <- Predictor.fromIntPair{ case (index, x) => Poisson(intercept + slopes(index) * x) }.fit(allData)
 } yield (slopes(0), intercept)
 ```
-Here, `i` indexes which model we're feeding the data to and `x` is the x-value of the observation. Plotting slope vs intercept now, we can see that, even though these are two separate regressions, we get tighter bounds than before by letting the new data influence the shared parameter. It makes sense that we'd get more confidence on the intercept, since we have two different time series to learn from now; but because of the anti-correlation, that also leads to somewhat more confidence than before on the `slope1` parameter as well.
+
+Plotting slope vs. intercept now, we first see that they do agree.
 
 ```tut
 plot2D(regr3.sample())
+plot2D(regLookup.sample())
 ```
 
+Mathematically, we see that, even though these are two separate regressions, we get tighter bounds than before by letting the new data influence the shared parameter. It makes sense that we'd get more confidence on the intercept, since we have two different time series to learn from now; but because of the anti-correlation, that also leads to somewhat more confidence than before on the `slope1` parameter as well.
 ## Learning More
 
 This tour has focused on the high-level API. If you want to understand more about what's going on under the hood, you might enjoy reading about [Real](real.md) or checking out some [implementation notes](impl.md). If you want to learn more about Bayesian modeling in general, [Cam Davidson Pilon's book][CDP] is an excellent resource - the examples are in Python, but porting them to Rainier is a good learning exercise. Over time, we hope to add more Rainier-specific documentation and community resources; for now, feel free to file a [GitHub issue][GISSUES] with any questions or problems.
