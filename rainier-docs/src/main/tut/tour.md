@@ -113,14 +113,14 @@ val poisson10: RandomVariable[_] = Poisson(10).fit(sales)
 Although it's almost never necessary, we can reach into any `RandomVariable` and get its current probability `density`:
 
 ```tut
-poisson9.densityValue()
-poisson10.densityValue()
+poisson9.densityValue
+poisson10.densityValue
 ```
 
 We can use this to find the likelihood ratio of these two hypotheses. Since the density is stored in log space, the best way to do this numerically is to subtract the logs first before exponentiating:
 
 ```tut
-val lr = (poisson9.densityValue() - poisson10.densityValue()).exp
+val lr = (poisson9.densityValue - poisson10.densityValue).exp
 ```
 
 We can see here that our data is about 3x as likely to have come from a `Poisson(9)` as it is to have come from a `Poisson(10)`. We could keep doing this with a large number of values to build up a sense of the rate distribution, but it would be tedious, and we'd be ignoring any prior we had on the rate. Instead, the right way to do this in Rainier is to make the rate a parameter, and let the library do the hard work of exploring the space. Specifically, we can use `flatMap` to chain the creation of the parameter with the creation and fit of the `Poisson` distribution. Since we want our rate to be a positive number, and expect it to be more likely to be on the small side than the large side, the log-normal parameter we created earlier as `e_x` seems like a reasonable choice.
@@ -129,14 +129,14 @@ We can see here that our data is about 3x as likely to have come from a `Poisson
 val poisson: RandomVariable[_] = e_x.flatMap{r => Poisson(r).fit(sales)}
 ```
 
-Reaching under the hood for a second: our `poisson9`'s `density` had no parameters whereas now, our model's density is a function of the parameter value
+By the way: before, when we looked at `poisson9.densityValue`, the model had no parameters and so we got a constant value back. Now, since the model's density is a function of the parameter value, we get something more opaque back. This is why inspecting `density` is not normally useful.
 
 ```tut
-poisson9.density().nVars
-poisson.density().nVars
+poisson.densityValue
 ```
 
-Rather than manipulating the `density` directly, we can sample the quantity we're actually interested in. To start with, let's try to sample the rate parameter of the Poisson, conditioned on our observed data. Here's almost the same thing we had above, recreated with the slightly friendlier `for` syntax, and yielding the `r` parameter at the end:
+Instead, we can sample the quantity we're actually interested in. To start with, let's try to sample the rate parameter of the Poisson, conditioned by our observed data. Here's almost the same thing we had above, recreated with the slightly friendlier `for` syntax, and yielding the `r` parameter at the end:
+
 
 ```tut
 val rate = for {
