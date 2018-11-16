@@ -110,7 +110,7 @@ val poisson9: RandomVariable[_] = Poisson(9).fit(sales)
 val poisson10: RandomVariable[_] = Poisson(10).fit(sales)
 ```
 
-Although it's almost never necessary, we can reach into any `RandomVariable` and get its current probability `density`:
+Although it's almost never necessary, we can reach into any `RandomVariable` and get its current probability `densityValue`:
 
 ```tut
 poisson9.densityValue
