@@ -110,9 +110,9 @@ val poisson9: RandomVariable[_] = Poisson(9).fit(sales)
 val poisson10: RandomVariable[_] = Poisson(10).fit(sales)
 ```
 
-Since it is almost never necessary to reach into a `RandomVariable` and get its current probability `density`, Rainier makes this hard to do. Taking on faith momentarily that
+A `RandomVariable`'s density is a rather opaque objects and, since it is almost never necessary to reach into a `RandomVariable` and get its current probability `density`, Rainier makes this hard to do. Taking on faith momentarily that
 
-```tut
+```tut:silent
 val poisson9density = -18.03523006575617
 val poisson10density = -19.135041188917896
 ```
@@ -129,13 +129,14 @@ We can see here that our data is about 3x as likely to have come from a `Poisson
 val poisson: RandomVariable[_] = e_x.flatMap{r => Poisson(r).fit(sales)}
 ```
 
-By the way: before, when we looked at `poisson9.density`, the model had no parameters and so we got a constant value back. Now, since the model's density is a function of the parameter value, we get something more opaque back. This is why inspecting `density` is not normally useful.
+Reaching under the hood for a second: our `poisson9`'s `density` had no parameters whereas now, our model's density is a function of the parameter value
 
-```
-poisson.density
+```tut
+poisson9.density().nVars
+poisson.density().nVars
 ```
 
-Instead, we can sample the quantity we're actually interested in. To start with, let's try to sample the rate parameter of the Poisson, conditioned by our observed data. Here's almost the same thing we had above, recreated with the slightly friendlier `for` syntax, and yielding the `r` parameter at the end:
+As mentioned, the `density` itself is rather opaque so instead of manipulating it directly, we can sample the quantity we're actually interested in. To start with, let's try to sample the rate parameter of the Poisson, conditioned by our observed data. Here's almost the same thing we had above, recreated with the slightly friendlier `for` syntax, and yielding the `r` parameter at the end:
 
 ```tut
 val rate = for {
