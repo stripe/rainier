@@ -296,7 +296,7 @@ or we can use Rainier's `Lookup` to package the two slopes into a single `Random
 
 ```tut
 val allData = data.map{ case (x,y) => ((0, x), y) } ++ data2.map{ case (x, y) => ((1, x), y) }
-val regLookup = for {
+val regr4 = for {
   slopes <- RandomVariable.fill(2)(LogNormal(0,1).param).map(Lookup(_))
   intercept <- LogNormal(0,1).param
   _ <- Predictor.fromIntPair{ case (index, x) => Poisson(intercept + slopes(index) * x) }.fit(allData)
@@ -306,7 +306,7 @@ val regLookup = for {
 Plotting slope vs. intercept now, we see that, even though these are two separate regressions, we get tighter bounds than before by letting the new data influence the shared parameter. It makes sense that we'd get more confidence on the intercept, since we have two different time series to learn from now; but because of the anti-correlation, that also leads to somewhat more confidence than before on the `slopes(0)` parameter as well.
 
 ```tut
-plot2D(regLookup.sample())
+plot2D(regr4.sample())
 ```
 
 ## Learning More
