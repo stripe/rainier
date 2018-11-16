@@ -56,6 +56,10 @@ object Predictor {
   def fromInt[Y, B](fn: Real => Distribution.Aux[Y, B]): Predictor[Int, Y] =
     from[Int, Y, Real, B](fn)
 
+  def fromIntPair[Y, B](
+      fn: ((Real, Real)) => Distribution.Aux[Y, B]): Predictor[(Int, Int), Y] =
+    from[(Int, Int), Y, (Real, Real), B](fn)
+
   def fromDouble[Y, B](
       fn: Real => Distribution.Aux[Y, B]): Predictor[Double, Y] =
     from[Double, Y, Real, B](fn)

@@ -119,7 +119,7 @@ This, of course, isn't a very exciting function - it just multiplies two numbers
 
 ## Tracing
 
-```tut
+```tut:silent
 import com.stripe.rainier.trace._
 ```
 
