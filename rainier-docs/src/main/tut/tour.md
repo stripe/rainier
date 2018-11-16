@@ -129,7 +129,7 @@ We can see here that our data is about 3x as likely to have come from a `Poisson
 val poisson: RandomVariable[_] = e_x.flatMap{r => Poisson(r).fit(sales)}
 ```
 
-By the way: before, when we looked at `poisson9.densityValue`, the model had no parameters and so we got a constant value back. Now, since the model's density is a function of the parameter value, we get something more opaque back. This is why inspecting `density` is not normally useful.
+By the way: before, when we looked at `poisson9.densityValue`, the model had no parameters and so we got a constant value back. Now, since the model's density is a function of the parameter value, we get something more opaque back. This is why inspecting the density is not normally useful.
 
 ```tut
 poisson.densityValue
