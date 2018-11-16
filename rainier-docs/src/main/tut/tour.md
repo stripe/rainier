@@ -110,7 +110,7 @@ val poisson9: RandomVariable[_] = Poisson(9).fit(sales)
 val poisson10: RandomVariable[_] = Poisson(10).fit(sales)
 ```
 
-A `RandomVariable`'s density is a rather opaque objects and, since it is almost never necessary to reach into a `RandomVariable` and get its current probability `density`, Rainier makes this hard to do. Taking on faith momentarily that
+A `RandomVariable`'s density is a rather opaque object and, since it is almost never necessary to reach into a `RandomVariable` and get its current probability `density`, Rainier makes this hard to do. Taking on faith momentarily that
 
 ```tut:silent
 val poisson9density = -18.03523006575617
@@ -136,7 +136,7 @@ poisson9.density().nVars
 poisson.density().nVars
 ```
 
-As mentioned, the `density` itself is rather opaque so instead of manipulating it directly, we can sample the quantity we're actually interested in. To start with, let's try to sample the rate parameter of the Poisson, conditioned by our observed data. Here's almost the same thing we had above, recreated with the slightly friendlier `for` syntax, and yielding the `r` parameter at the end:
+Rather than manipulating the `density` directly, we can sample the quantity we're actually interested in. To start with, let's try to sample the rate parameter of the Poisson, conditioned on our observed data. Here's almost the same thing we had above, recreated with the slightly friendlier `for` syntax, and yielding the `r` parameter at the end:
 
 ```tut
 val rate = for {
