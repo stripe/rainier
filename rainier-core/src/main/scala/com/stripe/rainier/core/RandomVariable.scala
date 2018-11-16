@@ -127,6 +127,25 @@ class RandomVariable[+T](val value: T, val targets: Set[Target]) {
       def gradient(index: Int) = outputs(index + 1)
     }
 
+  def densityValue(values: Map[Variable, Double] = Map.empty): Real = {
+    val rvVars = targetGroup.variables.sortBy(_.toString)
+    val (inputVars, inputVals) = values.toList.sortBy(_._1.toString).unzip
+    (rvVars, inputVars) match {
+      case (Nil, _) => targetGroup.base
+      case (rVs, iVs) if rVs == iVs =>
+        val den = density()
+        den.update(inputVals.toArray)
+        den.density
+      case _ => 0.0
+    }
+  }
+
+  def densityValue(value: Double): Real =
+    targetGroup.variables.headOption match {
+      case Some(v) => densityValue(Map(v -> value))
+      case _       => 0.0
+    }
+
   //this is really just here to allow destructuring in for{}
   def withFilter(fn: T => Boolean): RandomVariable[T] =
     if (fn(value))

@@ -110,17 +110,17 @@ val poisson9: RandomVariable[_] = Poisson(9).fit(sales)
 val poisson10: RandomVariable[_] = Poisson(10).fit(sales)
 ```
 
-A `RandomVariable`'s density is a rather opaque object and, since it is almost never necessary to reach into a `RandomVariable` and get its current probability `density`, Rainier makes this hard to do. Taking on faith momentarily that
-
-```tut:silent
-val poisson9density = -18.03523006575617
-val poisson10density = -19.135041188917896
-```
-
-we can find the likelihood ratio of these two hypotheses. Since the density is stored in log space, the best way to do this numerically is to subtract the logs first before exponentiating:
+Although it's almost never necessary, we can reach into any `RandomVariable` and get its current probability `density`:
 
 ```tut
-val lr = math.exp(poisson9density - poisson10density)
+poisson9.densityValue()
+poisson10.densityValue()
+```
+
+We can use this to find the likelihood ratio of these two hypotheses. Since the density is stored in log space, the best way to do this numerically is to subtract the logs first before exponentiating:
+
+```tut
+val lr = (poisson9.densityValue() - poisson10.densityValue()).exp
 ```
 
 We can see here that our data is about 3x as likely to have come from a `Poisson(9)` as it is to have come from a `Poisson(10)`. We could keep doing this with a large number of values to build up a sense of the rate distribution, but it would be tedious, and we'd be ignoring any prior we had on the rate. Instead, the right way to do this in Rainier is to make the rate a parameter, and let the library do the hard work of exploring the space. Specifically, we can use `flatMap` to chain the creation of the parameter with the creation and fit of the `Poisson` distribution. Since we want our rate to be a positive number, and expect it to be more likely to be on the small side than the large side, the log-normal parameter we created earlier as `e_x` seems like a reasonable choice.
