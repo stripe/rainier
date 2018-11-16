@@ -99,11 +99,43 @@ Just like every Rainier model has one more more parameters with priors, every Ra
 
 Let's say that we have some data that represents the last week's worth of sales on a website, at (we believe) a constant daily rate, and we'd like to know how many sales we might get tomorrow. Here's our data:
 
-```tut:silent
+```tut
 val sales = List(4, 4, 7, 11, 8, 12, 10)
 ```
 
-We can model the number of sales we get on each day as a Poisson distribution parameterized by the underlying rate. Looking at the data, we might guess that it came from a `Poisson(9)` or `Poisson(10)`. In Rainier, we define our model and it fit to the observed data. Since we want our rate to be a positive number, and expect it to be more likely to be on the small side than the large side, the log-normal parameter we created earlier as `e_x` seems like a reasonable choice. We use `flatMap` to chain the creation of the parameter with the creation and fit of the `Poisson` distribution. Although we _can_ do this with explicit `flatMaps` and `maps`, it's much neater with `for{...}` syntax.
+We can model the number of sales we get on each day as a poisson distribution parameterized by the underlying rate. For example, looking at that data, we might guess that it came from a `Poisson(9)` or `Poisson(10)`. We can test those hypotheses by using the `fit` method available on all `Distribution` objects. Since `Poisson` is a `Distribution[Int]`, its `fit` will accept either `Int` or `Seq[Int]`, and return a `RandomVariable` which encodes the likelihood of the provided data being produced by that distribution. (We're not going to worry right now about what *kind* of `RandomVariable` it is, since we're only really interested in the likelihood).
+
+```tut
+val poisson9: RandomVariable[_] = Poisson(9).fit(sales)
+val poisson10: RandomVariable[_] = Poisson(10).fit(sales)
+```
+
+Since it is almost never necessary to can reach into a `RandomVariable` and get its current probability `density`, Rainier makes this hard to do. Taking on faith momentarily that
+
+```tut
+val poisson9density = -18.03523006575617
+val poisson10density = -19.135041188917896
+```
+
+we can find the likelihood ratio of these two hypotheses. Since the density is stored in log space, the best way to do this numerically is to subtract the logs first before exponentiating:
+
+```
+val lr = (poisson9density - poisson10density).exp
+```
+
+We can see here that our data is about 3x as likely to have come from a `Poisson(9)` as it is to have come from a `Poisson(10)`. We could keep doing this with a large number of values to build up a sense of the rate distribution, but it would be tedious, and we'd be ignoring any prior we had on the rate. Instead, the right way to do this in Rainier is to make the rate a parameter, and let the library do the hard work of exploring the space. Specifically, we can use `flatMap` to chain the creation of the parameter with the creation and fit of the `Poisson` distribution. Since we want our rate to be a positive number, and expect it to be more likely to be on the small side than the large side, the log-normal parameter we created earlier as `e_x` seems like a reasonable choice.
+
+```tut
+val poisson: RandomVariable[_] = e_x.flatMap{r => Poisson(r).fit(sales)}
+```
+
+By the way: before, when we looked at `poisson9.density`, the model had no parameters and so we got a constant value back. Now, since the model's density is a function of the parameter value, we get something more opaque back. This is why inspecting `density` is not normally useful.
+
+```
+poisson.density
+```
+
+Instead, we can sample the quantity we're actually interested in. To start with, let's try to sample the rate parameter of the Poisson, conditioned by our observed data. Here's almost the same thing we had above, recreated with the slightly friendlier `for` syntax, and yielding the `r` parameter at the end:
 
 ```tut
 val rate = for {
@@ -112,7 +144,7 @@ val rate = for {
 } yield r
 ```
 
-This is our first "full" model: we have a parameter with a log-normal prior bundled into the `RandomVariable` named `e_x`; we use that parameter to initialize a `Poisson` noise distribution which we fit to our observations; and at the end, we output the same parameter (referenced by `r`) as the quantity we're interested in sampling from the posterior.
+This is our first "full" model: we have a parameter with a log-normal prior, bundled into the `RandomVariable` named `e_x`; we use that parameter to initialize a `Poisson` noise distribution which we fit to our observations; and at the end, we output the same parameter (referenced by `r`) as the quantity we're interested in sampling from the posterior.
 
 Let's plot the results!
 
@@ -120,8 +152,7 @@ Let's plot the results!
 plot1D(rate.sample())
 ```
 
-Looks like our daily rate is probably somewhere between 6 and 9, and is in fact much more likely to be around 9 than 10.
-
+Looks like our daily rate is probably somewhere between 6 and 9, which corresponds well to the steep 3x dropoff we saw before between 9 and 10.
 ## A mathematical digression
 
 Please feel free to skip this section if it's not helping you.
