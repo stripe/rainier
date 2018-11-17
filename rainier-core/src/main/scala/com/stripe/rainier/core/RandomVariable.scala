@@ -127,6 +127,8 @@ class RandomVariable[+T](val value: T, val targets: Set[Target]) {
       def gradient(index: Int) = outputs(index + 1)
     }
 
+  lazy val densityValue: Real = targetGroup.base
+
   //this is really just here to allow destructuring in for{}
   def withFilter(fn: T => Boolean): RandomVariable[T] =
     if (fn(value))
