@@ -126,7 +126,7 @@ object Mapping extends LowPriMappings {
           case (a, m) => a ++ m.keys.toSet
         }
         new Placeholder[Map[K, T], Map[K, U]] {
-          val tuPlaceholders = keys.map { k =>
+          val tuPlaceholders = keys.toList.map { k =>
             k -> tu.placeholder(seq.collect { m =>
               m.get(k) match {
                 case Some(t) => t
