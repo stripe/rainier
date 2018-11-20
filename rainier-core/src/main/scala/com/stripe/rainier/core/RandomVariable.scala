@@ -178,6 +178,9 @@ object RandomVariable {
   def fromDensity(density: Real): RandomVariable[Unit] =
     apply((), density)
 
+  def fromTarget(target: Target): RandomVariable[Unit] = 
+    new RandomVariable((), Set(target))
+
   def traverse[A](rvs: Seq[RandomVariable[A]]): RandomVariable[Seq[A]] = {
 
     def go(accum: RandomVariable[Seq[A]], rv: RandomVariable[A]) = {
@@ -197,11 +200,6 @@ object RandomVariable {
   def fill[A](k: Int)(fn: => RandomVariable[A]): RandomVariable[Seq[A]] =
     traverse(List.fill(k)(fn))
 
-  def fit[T, L](lh: L, value: T)(
-      implicit ev: L <:< Likelihood[T]): RandomVariable[L] =
-    new RandomVariable(lh, Set(ev(lh).target(value)))
-
-  def fit[T, L](lh: L, seq: Seq[T])(
-      implicit ev: L <:< Likelihood[T]): RandomVariable[L] =
-    new RandomVariable(lh, Set(ev(lh).sequence(seq)))
+  def fit[T, P](seq: Seq[T])(fn: P => Real)(implicit wrapping: Wrapping[T,P]): RandomVariable[Unit] =
+    fromTarget(wrapping.target(seq)(fn))
 }

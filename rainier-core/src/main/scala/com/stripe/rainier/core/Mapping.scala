@@ -6,6 +6,28 @@ import com.stripe.rainier.unused
 trait Wrapping[T, U] {
   def wrap(t: T): U
   def placeholder(seq: Seq[T]): Placeholder[T, U]
+
+  def target(t: T)(fn: U => Real): Target =
+    Target(fn(wrap(t)))
+
+  def target(seq: Seq[T])(fn: U => Real): Target = {
+    val ph = placeholder(seq)
+    val real = fn(ph.value)
+    val variables = ph.variables
+    val arrayBufs =
+      variables.map { _ =>
+        new ArrayBuffer[Double]
+      }
+    seq.foreach { t =>
+      val doubles = ph.extract(t, Nil)
+      arrayBufs.zip(doubles).foreach {
+        case (a, d) => a += d
+      }
+    }
+    val placeholdersMap =
+      variables.zip(arrayBufs.map(_.toArray)).toMap
+    new Target(real, placeholdersMap)
+  }
 }
 
 object Wrapping {
