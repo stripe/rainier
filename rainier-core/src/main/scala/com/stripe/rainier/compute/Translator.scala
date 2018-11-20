@@ -191,15 +191,29 @@ private class Translator {
     result
   }
 
-  // First, kahanSum chunks of size k, then straight sum those
-  // Next, kahanSum the chunks and kahanSum them together
-  private def combineSumTerms(terms: Seq[(Real, BigDecimal)]): Expr = {
-    val lazyExprs = makeLazyExprs(terms, multiplyRing)
-    val ksums = lazyExprs.grouped(5).toList.map(kahanSum)
-    ksums.tail.foldLeft(ksums.head) {
-      case (accum, ksum) => binaryExpr(accum, ksum, AddOp)
+  private def combineSumTree(terms: Seq[() => Expr]): Expr = {
+    val k = 1
+    if (terms.size < k) { kahanSum(terms) }
+    else {
+      combineSumTree(
+        terms.grouped(k).toList.map(ts => () => kahanSum(ts))
+      )
     }
   }
+
+  private def combineSumTerms(terms: Seq[(Real, BigDecimal)]): Expr = {
+    val lazyExprs = makeLazyExprs(terms, multiplyRing)
+    combineSumTree(lazyExprs)
+  }
+  // First, kahanSum chunks of size k, then straight sum those
+  // Next, kahanSum the chunks and kahanSum them together
+//  private def combineSumTerms(terms: Seq[(Real, BigDecimal)]): Expr = {
+//    val lazyExprs = makeLazyExprs(terms, multiplyRing)
+//    val ksums = lazyExprs.grouped(5).toList.map(kahanSum)
+//    ksums.tail.foldLeft(ksums.head) {
+//      case (accum, ksum) => binaryExpr(accum, ksum, AddOp)
+//    }
+//  }
 
   // This is straigt summing, no Kahan
 //  private def combineSumTerms(terms: Seq[(Real, Double)]): Expr = {
