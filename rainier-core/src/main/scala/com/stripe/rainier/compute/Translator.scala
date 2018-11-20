@@ -184,15 +184,30 @@ private class Translator {
     (newAccumulator, newCompensation)
   }
 
-  private def combineSumTerms(terms: Seq[(Real, BigDecimal)]): Expr = {
-    val lazyExprs = makeLazyExprs(terms, multiplyRing)
-    val initialAccumulator = (lazyExprs.head(), toExpr(0.0))
-    val (accumulator, _) =
-      lazyExprs.tail.foldLeft(initialAccumulator) {
-        case ((accum, comp), t) => kahanSumUpdate(accum, comp, t())
-      }
-    accumulator
+  private def kahanSum(terms: Seq[() => Expr]): Expr = {
+    val (result, _) = terms.tail.foldLeft((terms.head(), Const(0))) {
+      case ((accum, comp), t) => kahanSumUpdate(accum, comp, t())
+    }
+    result
   }
+
+  // First, kahanSum chunks of size k, then straight sum those
+  // Next, kahanSum the chunks and kahanSum them together
+  private def combineSumTerms(terms: Seq[(Real, Double)]): Expr = {
+    val lazyExprs = makeLazyExprs(terms, multiplyRing)
+    val ksums = lazyExprs.grouped(10).toList.map( kahanSum )
+    ksums.tail.foldLeft(ksums.head) {
+      case (accum, ksum) => binaryExpr(accum, ksum, AddOp)
+    }
+  }
+
+  // This is straigt summing, no Kahan
+//  private def combineSumTerms(terms: Seq[(Real, Double)]): Expr = {
+//    val lazyExprs = makeLazyExprs(terms, multiplyRing)
+//    lazyExprs.tail.foldLeft(lazyExprs.head()) {
+//      case (accum, t) => binaryExpr(accum, t(), AddOp)
+//    }
+//  }
 
   private def combineTree(terms: Seq[() => Expr], ring: Ring): Expr =
     terms match {
