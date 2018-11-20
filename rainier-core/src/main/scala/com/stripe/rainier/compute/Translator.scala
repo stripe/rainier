@@ -192,9 +192,8 @@ private class Translator {
   }
 
   private def combineSumTree(terms: Seq[() => Expr]): Expr = {
-    val k = 1
-    if (terms.size < k) { kahanSum(terms) }
-    else {
+    val k = 5
+    if (terms.size < k) { kahanSum(terms) } else {
       combineSumTree(
         terms.grouped(k).toList.map(ts => () => kahanSum(ts))
       )
