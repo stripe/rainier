@@ -14,7 +14,7 @@ trait Likelihood[T] {
   def sequence(seq: Seq[T]): Target = {
     val ph = wrapping.placeholder(seq)
     val real = logDensity(ph.value)
-    val variables = ph.variables
+    val variables = ph.variables(Nil)
     val arrayBufs =
       variables.map { _ =>
         new ArrayBuffer[Double]
