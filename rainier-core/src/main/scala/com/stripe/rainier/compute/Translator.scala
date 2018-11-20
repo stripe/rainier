@@ -195,7 +195,7 @@ private class Translator {
   // Next, kahanSum the chunks and kahanSum them together
   private def combineSumTerms(terms: Seq[(Real, BigDecimal)]): Expr = {
     val lazyExprs = makeLazyExprs(terms, multiplyRing)
-    val ksums = lazyExprs.grouped(1).toList.map( kahanSum )
+    val ksums = lazyExprs.grouped(5).toList.map(kahanSum)
     ksums.tail.foldLeft(ksums.head) {
       case (accum, ksum) => binaryExpr(accum, ksum, AddOp)
     }
