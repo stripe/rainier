@@ -69,6 +69,7 @@ lazy val unpublished = Seq(publish := {}, publishLocal := {}, publishArtifact :=
 lazy val V = new {
   val asm = "6.0"
   val cats = "1.1.0"
+  val dagon = "0.3.1"
   val evilplot = "0.6.0"
   val scalacheck = "1.14.0"
   val scalatest = "3.0.5"
@@ -89,7 +90,9 @@ lazy val rainierCore = project.
       BazelDep("//.rainier-shaded-asm", "shadedAsm"),
     libraryDependencies ++= Seq(
       "com.google.flogger" % "flogger" % V.flogger,
-      "com.google.flogger" % "flogger-system-backend" % V.flogger)
+      "com.google.flogger" % "flogger-system-backend" % V.flogger,
+      "com.stripe" %% "dagon-core" % V.dagon
+      )
   )
 
 lazy val rainierPlot = project.

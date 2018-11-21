@@ -28,7 +28,10 @@ object Coefficients {
       Many(filtered.toMap, filtered.map(_._1).toList)
   }
 
-  val Empty: Coefficients = new Coefficients {
+  val Empty: Coefficients = EmptyCoeff
+
+  // this makes match completeness easier if we only have named classes
+  case object EmptyCoeff extends Coefficients {
     val isEmpty = true
     val size = 0
     val coefficients = Nil
