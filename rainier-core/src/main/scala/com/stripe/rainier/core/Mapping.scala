@@ -2,6 +2,7 @@ package com.stripe.rainier.core
 
 import com.stripe.rainier.compute._
 import com.stripe.rainier.unused
+import scala.collection.mutable.ArrayBuffer
 
 trait Wrapping[T, U] {
   def wrap(t: T): U

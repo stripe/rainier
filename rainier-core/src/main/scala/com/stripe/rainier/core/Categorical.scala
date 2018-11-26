@@ -8,9 +8,6 @@ import com.stripe.rainier.compute.Real
   * @param pmf A map with keys corresponding to the possible outcomes and values corresponding to the probabilities of those outcomes
   */
 final case class Categorical[T](pmf: Map[T, Real]) extends Distribution[T] {
-  type P = Map[T, Real]
-  val wrapping = Mapping.item[T]
-
   def logDensity(value: Map[T, Real]) =
     Real
       .sum(value.toList.map {
@@ -52,7 +49,9 @@ final case class Categorical[T](pmf: Map[T, Real]) extends Distribution[T] {
   def toMixture[V](implicit ev: T <:< Continuous): Mixture =
     Mixture(pmf.map { case (k, v) => (ev(k), v) })
 
-  def toMultinomial = Predictor.fromInt(Multinomial(pmf, _))
+  def toMultinomial = Predictor.fromInt { i =>
+    Multinomial(pmf, i)
+  }
 }
 
 object Categorical {
@@ -71,6 +70,12 @@ object Categorical {
     normalize(seq.groupBy(identity).mapValues { l =>
       Real(l.size)
     })
+
+  implicit def likelihood[T] = new Likelihood[Categorical[T], T] {
+    type P = Map[T, Real]
+    def wrapping(c: Categorical[T]) = Mapping.item[T]
+    def logDensity(c: Categorical[T], v: Map[T, Real]) = c.logDensity(v)
+  }
 }
 
 /**
@@ -81,9 +86,6 @@ object Categorical {
   */
 final case class Multinomial[T](pmf: Map[T, Real], k: Real)
     extends Distribution[Map[T, Int]] {
-  type P = Map[T, Real]
-  val wrapping = Mapping.map[T, Int, Real]
-
   def logDensity(value: Map[T, Real]) =
     Multinomial.logDensity(this, value)
 
@@ -103,4 +105,10 @@ object Multinomial {
           Real.eq(i, Real.zero, Real.zero, i * p.log)
         pTerm - Combinatorics.factorial(i)
     })
+
+  implicit def likelihood[T] = new Likelihood[Multinomial[T], Map[T, Int]] {
+    type P = Map[T, Real]
+    def wrapping(m: Multinomial[T]) = Mapping.map[T, Int, Real]
+    def logDensity(m: Multinomial[T], v: Map[T, Real]) = m.logDensity(v)
+  }
 }

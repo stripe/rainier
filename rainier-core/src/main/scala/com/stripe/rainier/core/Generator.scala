@@ -76,10 +76,14 @@ trait Generator[T] { self =>
   * Generator object, for posterior predictive distributions to be forwards sampled during sampling
   */
 object Generator {
-  def apply[T](t: T): Generator[T] = new Generator[T] {
-    val requirements: Set[Real] = Set.empty
-    def get(implicit r: RNG, n: Numeric[Real]): T = t
-  }
+  def apply[L, T](l: L)(implicit gen: ToGenerator[L, T]): Generator[T] =
+    gen(l)
+
+  def constant[T](t: T): Generator[T] =
+    new Generator[T] {
+      val requirements: Set[Real] = Set.empty
+      def get(implicit r: RNG, n: Numeric[Real]): T = t
+    }
 
   def from[T](fn: (RNG, Numeric[Real]) => T): Generator[T] =
     new Generator[T] {

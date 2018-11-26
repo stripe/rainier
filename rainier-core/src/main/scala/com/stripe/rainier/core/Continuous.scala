@@ -10,15 +10,21 @@ import scala.annotation.tailrec
 trait Continuous extends Distribution[Double] {
   private[rainier] val support: Support
 
-  type P = Real
-  val wrapping = Mapping.double
-
   def param: RandomVariable[Real]
   def logDensity(v: Real): Real
 
   def scale(a: Real): Continuous = Scale(a).transform(this)
   def translate(b: Real): Continuous = Translate(b).transform(this)
   def exp: Continuous = Exp.transform(this)
+}
+
+object Continuous {
+  implicit def likelihood[C <: Continuous] =
+    new Likelihood[C, Double] {
+      type P = Real
+      def wrapping(c: C): Wrapping[Double, Real] = implicitly
+      def logDensity(c: C, v: Real) = c.logDensity(v)
+    }
 }
 
 /**

@@ -1,12 +1,20 @@
 package com.stripe.rainier.core
 
-/**
-  * Basic probability distribution trait
-  */
-trait Distribution[T] extends Likelihood[T] {
+trait Distribution[T] {
   def generator: Generator[T]
 }
 
 object Distribution {
-  private[core] type Aux[T, U] = Distribution[T] { type P = U }
+  implicit def gen[T, D <: Distribution[T]] =
+    new ToGenerator[D, T] {
+      def apply(d: D) = d.generator
+    }
+
+  implicit class Ops[T, D <: Distribution[T]](d: D)(
+      implicit lh: Likelihood[D, T]) {
+    def fit(value: T): RandomVariable[D] =
+      RandomVariable.fit(d, value)
+    def fit(seq: Seq[T]): RandomVariable[D] =
+      RandomVariable.fit(d, seq)
+  }
 }
