@@ -6,18 +6,17 @@ import com.stripe.rainier.compute._
   * Predictor class, for fitting data with covariates
   */
 sealed trait Predictor[L, X] { self =>
-  private[core] type P
-
-  private[core] def create(p: P): L
-  private[core] def xp: Wrapping[X, P]
+  type P
+  protected def xp: Placeholder[X, P]
+  protected def create(p: P): L
 
   def fit[Y](values: Seq[(X, Y)])(
-      implicit lh: Likelihood[Predictor[L, X] { type P = self.P }, (X, Y)])
+      implicit lh: Likelihood[Predictor[L, X], (X, Y)])
     : RandomVariable[Predictor[L, X]] =
-    RandomVariable.fit(this: Predictor[L, X] { type P = self.P }, values)(lh)
+    RandomVariable.fit(this, values)
 
   def predict[Y](x: X)(implicit gen: ToGenerator[L, Y]): Generator[Y] =
-    gen(create(xp.wrap(x)))
+    ??? //gen(create(wrap(x))
 
   def predict[Y](seq: Seq[X])(
       implicit gen: ToGenerator[L, Y]): Generator[Seq[(X, Y)]] =
@@ -29,41 +28,33 @@ sealed trait Predictor[L, X] { self =>
 }
 
 object Predictor {
-  implicit def likelihood[X, Y, Q, L](implicit lh: Likelihood[L, Y])
-    : Likelihood[Predictor[L, X] { type P = Q }, (X, Y)] =
-    new Likelihood[Predictor[L, X] { type P = Q }, (X, Y)] {
-      type P = (Q, lh.P)
-      def wrapping(l: Predictor[L, X] { type P = Q }) =
-        new Wrapping[(X, Y), P] {
-          def wrap(value: (X, Y)) = {
-            val q = l.xp.wrap(value._1)
-            val qr = lh.wrapping(l.create(q))
-            (q, qr.wrap(value._2))
-          }
-          def placeholder(seq: Seq[(X, Y)]) = {
-            val qph = l.xp.placeholder(seq.map(_._1))
-            val z = l.create(qph.value)
-            qph.zip(lh.wrapping(z).placeholder(seq.map(_._2)))
-          }
+  implicit def likelihood[L, X, Y](
+      implicit lh: Likelihood[L, Y]): Likelihood[Predictor[L, X], (X, Y)] =
+    new Likelihood[Predictor[L, X], (X, Y)] {
+      def apply(l: Predictor[L, X]) = {
+        val u = l.xp.create()
+        val z = l.create(u)
+        val (r, ex) = lh(z)
+        val newEx = new Likelihood.Extractor[(X, Y)] {
+          val variables = l.xp.variables(u, ex.variables)
+          def extract(t: (X, Y)) =
+            l.xp.extract(t._1, ex.extract(t._2))
         }
-
-      def logDensity(l: Predictor[L, X] { type P = Q }, value: P) =
-        lh.logDensity(l.create(value._1), value._2)
+        (r, newEx)
+      }
     }
 
-  class Maker[X, A](xa: Wrapping[X, A]) {
-    def apply[B](fn: A => B): Predictor[B, X] { type P = A } =
+  class Maker[X, A](xa: Placeholder[X, A]) {
+    def apply[B](fn: A => B): Predictor[B, X] =
       new Predictor[B, X] {
         type P = A
-
         val xp = xa
         def create(p: P) = fn(p)
       }
   }
 
-  def from[X, A](implicit xa: Wrapping[X, A]) = new Maker(xa)
-  def fromInt = from[Int, Real]
-  def fromIntPair = from[(Int, Int), (Real, Real)]
-  def fromDouble = from[Double, Real]
-  def fromDoubleVector = from[Seq[Double], Seq[Real]]
+  def from[X, A](implicit xa: Placeholder[X, A]) = new Maker(xa)
+  def fromInt = from[Int, Variable]
+  def fromIntPair = from[(Int, Int), (Variable, Variable)]
+  def fromDouble = from[Double, Variable]
 }

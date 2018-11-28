@@ -1,6 +1,6 @@
 package com.stripe.rainier.core
 
-import com.stripe.rainier.compute.Real
+import com.stripe.rainier.compute._
 
 trait Discrete extends Distribution[Int] { self: Discrete =>
   def logDensity(v: Real): Real
@@ -14,10 +14,8 @@ trait Discrete extends Distribution[Int] { self: Discrete =>
 
 object Discrete {
   implicit def likelihood[D <: Discrete] =
-    new Likelihood[D, Int] {
-      type P = Real
-      def wrapping(d: D): Wrapping[Int, Real] = implicitly
-      def logDensity(d: D, v: Real) = d.logDensity(v)
+    Likelihood.from[D, Int, Variable] { (d, v) =>
+      d.logDensity(v)
     }
 }
 
@@ -171,7 +169,7 @@ final case class Binomial(p: Real, k: Real) extends Discrete {
   }
 
   def logDensity(v: Real): Real =
-    Multinomial.logDensity(multi, Map(true -> v, false -> (k - v)))
+    Multinomial.logDensity(multi, List((true -> v), (false -> (k - v))))
 }
 
 /**

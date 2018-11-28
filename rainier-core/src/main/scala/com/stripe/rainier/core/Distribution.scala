@@ -12,8 +12,7 @@ object Distribution {
 
   implicit class Ops[T, D <: Distribution[T]](d: D)(
       implicit lh: Likelihood[D, T]) {
-    def fit(value: T): RandomVariable[D] =
-      RandomVariable.fit(d, value)
+    def fit(value: T): RandomVariable[D] = fit(List(value))
     def fit(seq: Seq[T]): RandomVariable[D] =
       RandomVariable.fit(d, seq)
   }

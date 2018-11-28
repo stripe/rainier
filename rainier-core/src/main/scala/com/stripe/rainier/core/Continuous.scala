@@ -20,10 +20,8 @@ trait Continuous extends Distribution[Double] {
 
 object Continuous {
   implicit def likelihood[C <: Continuous] =
-    new Likelihood[C, Double] {
-      type P = Real
-      def wrapping(c: C): Wrapping[Double, Real] = implicitly
-      def logDensity(c: C, v: Real) = c.logDensity(v)
+    Likelihood.from[C, Double, Variable] { (c, v) =>
+      c.logDensity(v)
     }
 }
 
