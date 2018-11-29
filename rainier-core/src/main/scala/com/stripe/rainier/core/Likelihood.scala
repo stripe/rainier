@@ -26,8 +26,44 @@ trait Likelihood[T] {
   }
 }
 
-object Likelihood {
-  //
+trait LikelihoodMaker {
+  type M[T, P]
+
+  def maker[T, P](implicit ph: Placeholder[T, P]): M[T, P]
+  def fromInt = maker[Int, Variable]
+  def fromDouble = maker[Double, Variable]
+  def fromIntPair = maker[(Int, Int), (Variable, Variable)]
+  def fromDoublePair = maker[(Double, Double), (Variable, Variable)]
+  def fromIntVector(size: Int) =
+    maker[Seq[Int], Seq[Variable]](Placeholder.vector(size))
+  def fromDoubleVector(size: Int) =
+    maker[Seq[Double], Seq[Variable]](Placeholder.vector(size))
+}
+
+object Likelihood extends LikelihoodMaker {
+  class Maker[T, P](ph: Placeholder[T, P]) {
+    def apply(fn: P => Real): Likelihood[T] = {
+      val p = ph.create()
+      new Likelihood[T] {
+        val real = fn(p)
+        val variables = ph.variables(p, Nil)
+        def extract(t: T) = ph.extract(t, Nil)
+      }
+    }
+  }
+
+  type M[T, P] = Maker[T, P]
+  def maker[T, P](implicit ph: Placeholder[T, P]) =
+    new Maker[T, P](ph)
+
+  class Fitter[T, P](seq: Seq[T], ph: Placeholder[T, P]) {
+    val m = maker(ph)
+    def to(fn: P => Real): RandomVariable[Unit] =
+      m(fn).fit(seq)
+  }
+
+  def fit[T, P](seq: Seq[T])(implicit ph: Placeholder[T, P]) =
+    new Fitter(seq, ph)
 }
 
 trait ToLikelihood[L, T] {

@@ -1,7 +1,5 @@
 package com.stripe.rainier.core
 
-import com.stripe.rainier.compute._
-
 /**
   * Predictor class, for fitting data with covariates
   */
@@ -31,7 +29,7 @@ sealed trait Predictor[L, X] { self =>
     })
 }
 
-object Predictor {
+object Predictor extends LikelihoodMaker {
   def likelihood[L, X, Y](pred: Predictor[L, X])(
       implicit lh: ToLikelihood[L, Y]): Likelihood[(X, Y)] = {
     val p = pred.xp.create()
@@ -45,16 +43,6 @@ object Predictor {
     }
   }
 
-  class Fitter[X, A, Y](seq: Seq[(X, Y)], xa: Placeholder[X, A]) {
-    val maker = new Maker(xa)
-    def to[B](fn: A => B)(
-        implicit lh: ToLikelihood[B, Y]): RandomVariable[Predictor[B, X]] =
-      maker(fn).fit(seq)
-  }
-
-  def fit[X, Y, A, B](seq: Seq[(X, Y)])(implicit xa: Placeholder[X, A]) =
-    new Fitter(seq, xa)
-
   class Maker[X, A](xa: Placeholder[X, A]) {
     def apply[B](fn: A => B): Predictor[B, X] =
       new Predictor[B, X] {
@@ -64,13 +52,16 @@ object Predictor {
       }
   }
 
-  def from[X, A](implicit xa: Placeholder[X, A]) = new Maker(xa)
-  def fromInt = from[Int, Variable]
-  def fromDouble = from[Double, Variable]
-  def fromIntPair = from[(Int, Int), (Variable, Variable)]
-  def fromDoublePair = from[(Double, Double), (Variable, Variable)]
-  def fromIntVector(size: Int) =
-    from[Seq[Int], Seq[Variable]](Placeholder.vector(size))
-  def fromDoubleVector(size: Int) =
-    from[Seq[Double], Seq[Variable]](Placeholder.vector(size))
+  type M[X, A] = Maker[X, A]
+  def maker[X, A](implicit xa: Placeholder[X, A]) = new Maker(xa)
+
+  class Fitter[X, A, Y](seq: Seq[(X, Y)], xa: Placeholder[X, A]) {
+    val m = maker(xa)
+    def to[B](fn: A => B)(
+        implicit lh: ToLikelihood[B, Y]): RandomVariable[Predictor[B, X]] =
+      m(fn).fit(seq)
+  }
+
+  def fit[X, Y, A, B](seq: Seq[(X, Y)])(implicit xa: Placeholder[X, A]) =
+    new Fitter(seq, xa)
 }
