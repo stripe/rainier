@@ -11,8 +11,13 @@ sealed trait Predictor[L, X] { self =>
   protected def create(p: P): L
 
   def fit[Y](values: Seq[(X, Y)])(
-    implicit lh: Likelihood[L, Y]): RandomVariable[Predictor[L, X]] =
-    RandomVariable.fit(this, values)
+      implicit lh: ToLikelihood[L, Y]): RandomVariable[Predictor[L, X]] =
+    Predictor
+      .likelihood[L, X, Y](this)
+      .fit(values)
+      .map { _ =>
+        this
+      }
 
   def predict[Y](x: X)(implicit gen: ToGenerator[L, Y]): Generator[Y] =
     ??? //gen(create(wrap(x))
@@ -27,21 +32,22 @@ sealed trait Predictor[L, X] { self =>
 }
 
 object Predictor {
-  implicit def likelihood[L, X, Y](
-      implicit lh: Likelihood[L, Y]): Likelihood[Predictor[L, X], (X, Y)] =
-    new Likelihood[Predictor[L, X], (X, Y)] {
-      def apply(l: Predictor[L, X]) = {
-        val u = l.xp.create()
-        val z = l.create(u)
-        val (r, ex) = lh(z)
-        val newEx = new Likelihood.Extractor[(X, Y)] {
-          val variables = l.xp.variables(u, ex.variables)
-          def extract(t: (X, Y)) =
-            l.xp.extract(t._1, ex.extract(t._2))
-        }
-        (r, newEx)
-      }
+  def likelihood[L, X, Y](pred: Predictor[L, X])(
+      implicit lh: ToLikelihood[L, Y]): Likelihood[(X, Y)] = {
+    val p = pred.xp.create()
+    val l = pred.create(p)
+    val inner = lh(l)
+    new Likelihood[(X, Y)] {
+      val real = inner.real
+      val variables = pred.xp.variables(p, inner.variables)
+      def extract(t: (X, Y)) =
+        pred.xp.extract(t._1, inner.extract(t._2))
     }
+  }
+
+  def fit[X, Y, A, B](seq: Seq[(X, Y)])(
+      fn: A => B)(implicit xa: Placeholder[X, A], lh: ToLikelihood[B, Y]) =
+    from[X, A](xa)(fn).fit(seq)
 
   class Maker[X, A](xa: Placeholder[X, A]) {
     def apply[B](fn: A => B): Predictor[B, X] =
@@ -54,8 +60,11 @@ object Predictor {
 
   def from[X, A](implicit xa: Placeholder[X, A]) = new Maker(xa)
   def fromInt = from[Int, Variable]
-  def fromIntPair = from[(Int, Int), (Variable, Variable)]
   def fromDouble = from[Double, Variable]
+  def fromIntPair = from[(Int, Int), (Variable, Variable)]
+  def fromDoublePair = from[(Double, Double), (Variable, Variable)]
+  def fromIntVector(size: Int) =
+    from[Seq[Int], Seq[Variable]](Placeholder.vector(size))
   def fromDoubleVector(size: Int) =
     from[Seq[Double], Seq[Variable]](Placeholder.vector(size))
 }

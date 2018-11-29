@@ -13,7 +13,7 @@ and returns a (Distribution[T], Real) which is a pair of values:
 2) the parameter value or summary stat we're calibrating on
  */
 final case class SBC[T, L](priors: Seq[Continuous], fn: Seq[Real] => (L, Real))(
-    implicit lh: Likelihood[L, T],
+    implicit lh: ToLikelihood[L, T],
     gen: ToGenerator[L, T]) {
 
   import SBC._
@@ -75,8 +75,8 @@ final case class SBC[T, L](priors: Seq[Continuous], fn: Seq[Real] => (L, Real))(
       .traverse(priors.map(_.param))
       .flatMap { priorParams =>
         val (d, r) = fn(priorParams)
-        RandomVariable
-          .fit(d, values)
+        lh(d)
+          .fit(values)
           .map { _ =>
             r
           }
@@ -220,7 +220,7 @@ object SBC {
   val emptyEvaluator = new Evaluator(Map.empty)
 
   def apply[T, L](prior: Continuous)(fn: Real => L)(
-      implicit lh: Likelihood[L, T],
+      implicit lh: ToLikelihood[L, T],
       gen: ToGenerator[L, T]): SBC[T, L] =
     apply(List(prior), { l =>
       (fn(l.head), l.head)

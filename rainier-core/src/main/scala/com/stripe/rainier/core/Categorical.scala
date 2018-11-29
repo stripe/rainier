@@ -8,11 +8,6 @@ import com.stripe.rainier.compute._
   * @param pmf A map with keys corresponding to the possible outcomes and values corresponding to the probabilities of those outcomes
   */
 final case class Categorical[T](pmf: Map[T, Real]) extends Distribution[T] {
-  type P = List[(T, Variable)]
-  val placeholder = Placeholder.item(pmf.keys.toList)
-  def logLikelihood(p: List[(T, Variable)]) =
-    Categorical.logDensity(this, p)
-
   def map[U](fn: T => U): Categorical[U] =
     flatMap { t =>
       Categorical(Map(fn(t) -> Real.one))
@@ -49,6 +44,8 @@ final case class Categorical[T](pmf: Map[T, Real]) extends Distribution[T] {
   def toMultinomial = Predictor.fromInt { i =>
     Multinomial(pmf, i)
   }
+
+  val likelihood = ???
 }
 
 object Categorical {
@@ -84,15 +81,12 @@ object Categorical {
   */
 final case class Multinomial[T](pmf: Map[T, Real], k: Real)
     extends Distribution[Map[T, Int]] {
-  type P = List[(T, Variable)]
-  val placeholder = Placeholder.map[T, Int, Variable](pmf.keys.toList)
-  def logLikelihood(p: List[(T, Variable)]) =
-    Multinomial.logDensity(this, p)
-
   def generator: Generator[Map[T, Int]] =
     Categorical(pmf).generator.repeat(k).map { seq =>
       seq.groupBy(identity).map { case (t, ts) => (t, ts.size) }
     }
+  val likelihood = ???
+
 }
 
 object Multinomial {
@@ -105,3 +99,49 @@ object Multinomial {
         pTerm - Combinatorics.factorial(i)
     })
 }
+/*
+
+
+  implicit def likelihood[T] =
+    new Likelihood[Multinomial[T], Map[T, Int]] {
+      def apply(multi: Multinomial[T]) = {
+        val choices = multi.pmf.keys.toList
+        val u = choices.map { k =>
+          k -> new Variable
+        }
+        val r = logDensity(multi, u)
+        val ex = new Likelihood.Extractor[Map[T, Int]] {
+          val variables = u.map(_._2)
+          def extract(t: Map[T, Int]) =
+            choices.map { k =>
+              t.getOrElse(k, 0).toDouble
+            }
+        }
+        (r, ex)
+      }
+    }
+
+
+  implicit def likelihood[T] =
+    new Likelihood[Categorical[T], T] {
+      def apply(c: Categorical[T]) = {
+        val choices = c.pmf.keys.toList
+        val u = choices.map { k =>
+          k -> new Variable
+        }
+        val r = c.logDensity(u)
+        val ex = new Likelihood.Extractor[T] {
+          val variables = u.map(_._2)
+          def extract(t: T) =
+            choices.map { k =>
+              if (t == k)
+                1.0
+              else
+                0.0
+            }
+        }
+        (r, ex)
+      }
+    }
+}
+ */
