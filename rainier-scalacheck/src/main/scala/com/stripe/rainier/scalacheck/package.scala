@@ -33,7 +33,7 @@ object `package` {
       Cogen(_.getClass.hashCode.toLong)
 
     Gen.oneOf(
-      arbitrary[A].map(Generator(_)),
+      arbitrary[A].map(Generator.constant(_)),
       arbitrary[(RNG, Numeric[Real]) => A].map(Generator.from(_)),
       for {
         req <- arbitrary[Set[Real]]

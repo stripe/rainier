@@ -10,19 +10,16 @@ import scala.annotation.tailrec
 trait Continuous extends Distribution[Double] {
   private[rainier] val support: Support
 
+  type P = Variable
+  val placeholder = Placeholder.double
+
   def param: RandomVariable[Real]
+  def logLikelihood(p: Variable) = logDensity(p)
   def logDensity(v: Real): Real
 
   def scale(a: Real): Continuous = Scale(a).transform(this)
   def translate(b: Real): Continuous = Translate(b).transform(this)
   def exp: Continuous = Exp.transform(this)
-}
-
-object Continuous {
-  implicit def likelihood[C <: Continuous] =
-    Likelihood.from[C, Double, Variable] { (c, v) =>
-      c.logDensity(v)
-    }
 }
 
 /**

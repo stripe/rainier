@@ -3,6 +3,9 @@ package com.stripe.rainier.core
 import com.stripe.rainier.compute._
 
 trait Discrete extends Distribution[Int] { self: Discrete =>
+  type P = Variable
+  val placeholder = Placeholder.int
+  def logLikelihood(p: Variable) = logDensity(p)
   def logDensity(v: Real): Real
 
   def zeroInflated(psi: Real) =
@@ -10,13 +13,6 @@ trait Discrete extends Distribution[Int] { self: Discrete =>
 
   def constantInflated(constant: Real, psi: Real) =
     DiscreteMixture(Map(DiscreteConstant(constant) -> psi, self -> (1 - psi)))
-}
-
-object Discrete {
-  implicit def likelihood[D <: Discrete] =
-    Likelihood.from[D, Int, Variable] { (d, v) =>
-      d.logDensity(v)
-    }
 }
 
 /**

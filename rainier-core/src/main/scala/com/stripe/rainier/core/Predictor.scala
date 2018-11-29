@@ -57,4 +57,6 @@ object Predictor {
   def fromInt = from[Int, Variable]
   def fromIntPair = from[(Int, Int), (Variable, Variable)]
   def fromDouble = from[Double, Variable]
+  def fromDoubleVector(size: Int) =
+    from[Seq[Double], Seq[Variable]](Placeholder.vector(size))
 }

@@ -28,18 +28,4 @@ object Likelihood {
     def variables: List[Variable]
     def extract(t: T): List[Double]
   }
-
-  def from[L, T, U](fn: (L, U) => Real)(
-      implicit ph: Placeholder[T, U]): Likelihood[L, T] =
-    new Likelihood[L, T] {
-      def apply(l: L) = {
-        val u = ph.create()
-        val r = fn(l, u)
-        val ex = new Extractor[T] {
-          val variables = ph.variables(u, Nil)
-          def extract(t: T) = ph.extract(t, Nil)
-        }
-        (r, ex)
-      }
-    }
 }

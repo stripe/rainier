@@ -1,7 +1,17 @@
 package com.stripe.rainier.core
 
+import com.stripe.rainier.compute._
+
 trait Distribution[T] {
+  type P
   def generator: Generator[T]
+  def placeholder: Placeholder[T, P]
+  def logLikelihood(p: P): Real
+
+  def fit(value: T): RandomVariable[Distribution[T]] =
+    fit(List(value))
+  def fit(seq: Seq[T]): RandomVariable[Distribution[T]] =
+    RandomVariable.fit(this, seq)
 }
 
 object Distribution {
@@ -10,10 +20,16 @@ object Distribution {
       def apply(d: D) = d.generator
     }
 
-  implicit class Ops[T, D <: Distribution[T]](d: D)(
-      implicit lh: Likelihood[D, T]) {
-    def fit(value: T): RandomVariable[D] = fit(List(value))
-    def fit(seq: Seq[T]): RandomVariable[D] =
-      RandomVariable.fit(d, seq)
-  }
+  implicit def lh[T, D <: Distribution[T]] =
+    new Likelihood[D, T] {
+      def apply(d: D) = {
+        val p = d.placeholder.create()
+        val r = d.logLikelihood(p)
+        val ex = new Likelihood.Extractor[T] {
+          val variables = d.placeholder.variables(p, Nil)
+          def extract(t: T) = d.placeholder.extract(t, Nil)
+        }
+        (r, ex)
+      }
+    }
 }
