@@ -45,9 +45,15 @@ object Predictor {
     }
   }
 
-  def fit[X, Y, A, B](seq: Seq[(X, Y)])(
-      fn: A => B)(implicit xa: Placeholder[X, A], lh: ToLikelihood[B, Y]) =
-    from[X, A](xa)(fn).fit(seq)
+  class Fitter[X, A, Y](seq: Seq[(X, Y)], xa: Placeholder[X, A]) {
+    val maker = new Maker(xa)
+    def to[B](fn: A => B)(
+        implicit lh: ToLikelihood[B, Y]): RandomVariable[Predictor[B, X]] =
+      maker(fn).fit(seq)
+  }
+
+  def fit[X, Y, A, B](seq: Seq[(X, Y)])(implicit xa: Placeholder[X, A]) =
+    new Fitter(seq, xa)
 
   class Maker[X, A](xa: Placeholder[X, A]) {
     def apply[B](fn: A => B): Predictor[B, X] =
