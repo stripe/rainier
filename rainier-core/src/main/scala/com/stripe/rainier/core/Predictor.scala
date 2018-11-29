@@ -11,8 +11,7 @@ sealed trait Predictor[L, X] { self =>
   protected def create(p: P): L
 
   def fit[Y](values: Seq[(X, Y)])(
-      implicit lh: Likelihood[Predictor[L, X], (X, Y)])
-    : RandomVariable[Predictor[L, X]] =
+    implicit lh: Likelihood[L, Y]): RandomVariable[Predictor[L, X]] =
     RandomVariable.fit(this, values)
 
   def predict[Y](x: X)(implicit gen: ToGenerator[L, Y]): Generator[Y] =

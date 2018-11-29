@@ -4,7 +4,6 @@ import com.stripe.rainier.compute._
 
 trait Distribution[T] {
   type P
-  def generator: Generator[T]
   def placeholder: Placeholder[T, P]
   def logLikelihood(p: P): Real
 
@@ -12,6 +11,8 @@ trait Distribution[T] {
     fit(List(value))
   def fit(seq: Seq[T]): RandomVariable[Distribution[T]] =
     RandomVariable.fit(this, seq)
+
+  def generator: Generator[T]
 }
 
 object Distribution {
