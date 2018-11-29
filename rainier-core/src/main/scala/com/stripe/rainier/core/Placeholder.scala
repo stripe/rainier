@@ -49,4 +49,17 @@ object Placeholder extends LowPriPlaceholders {
       def extract(t: Seq[T], acc: List[Double]) =
         t.foldLeft(acc) { case (a, x) => ph.extract(x, a) }
     }
+
+  def record2[T, A, A1, B, B1](unapply: T => Option[(A, B)])(
+      implicit a: Placeholder[A, A1],
+      b: Placeholder[B, B1]): Placeholder[T, (A1, B1)] = 
+    new Placeholder[T, (A1, B1)] {
+      def create() = (a.create(), b.create())
+      def variables(u: (A1, B1), acc: List[Variable]) =
+        a.variables(u._1, b.variables(u._2, acc))
+      def extract(t: T, acc: List[Double]) = {
+        val (ta, tb) = unapply(t).get
+        a.extract(ta, b.extract(tb, acc))
+      }
+    }
 }
