@@ -18,7 +18,7 @@ sealed trait Predictor[L, X] { self =>
       }
 
   def predict[Y](x: X)(implicit gen: ToGenerator[L, Y]): Generator[Y] =
-    ??? //gen(create(wrap(x))
+    gen(create(xp.wrap(x)))
 
   def predict[Y](seq: Seq[X])(
       implicit gen: ToGenerator[L, Y]): Generator[Seq[(X, Y)]] =
@@ -32,14 +32,14 @@ sealed trait Predictor[L, X] { self =>
 object Predictor extends LikelihoodMaker {
   def likelihood[L, X, Y](pred: Predictor[L, X])(
       implicit lh: ToLikelihood[L, Y]): Likelihood[(X, Y)] = {
-    val p = pred.xp.create()
+    val (p, v) = pred.xp.create(Nil)
     val l = pred.create(p)
     val inner = lh(l)
     new Likelihood[(X, Y)] {
       val real = inner.real
-      val variables = pred.xp.variables(p, inner.variables)
+      val variables = v ++ inner.variables
       def extract(t: (X, Y)) =
-        pred.xp.extract(t._1, inner.extract(t._2))
+        pred.xp.extract(t._1, Nil) ++ inner.extract(t._2)
     }
   }
 

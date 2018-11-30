@@ -30,23 +30,23 @@ trait LikelihoodMaker {
   type M[T, P]
 
   def maker[T, P](implicit ph: Placeholder[T, P]): M[T, P]
-  def fromInt = maker[Int, Variable]
-  def fromDouble = maker[Double, Variable]
-  def fromIntPair = maker[(Int, Int), (Variable, Variable)]
-  def fromDoublePair = maker[(Double, Double), (Variable, Variable)]
+  def fromInt = maker[Int, Real]
+  def fromDouble = maker[Double, Real]
+  def fromIntPair = maker[(Int, Int), (Real, Real)]
+  def fromDoublePair = maker[(Double, Double), (Real, Real)]
   def fromIntVector(size: Int) =
-    maker[Seq[Int], Seq[Variable]](Placeholder.vector(size))
+    maker[Seq[Int], Seq[Real]](Placeholder.vector(size))
   def fromDoubleVector(size: Int) =
-    maker[Seq[Double], Seq[Variable]](Placeholder.vector(size))
+    maker[Seq[Double], Seq[Real]](Placeholder.vector(size))
 }
 
 object Likelihood extends LikelihoodMaker {
   class Maker[T, P](ph: Placeholder[T, P]) {
     def apply(fn: P => Real): Likelihood[T] = {
-      val p = ph.create()
+      val (p, v) = ph.create(Nil)
       new Likelihood[T] {
         val real = fn(p)
-        val variables = ph.variables(p, Nil)
+        val variables = v
         def extract(t: T) = ph.extract(t, Nil)
       }
     }

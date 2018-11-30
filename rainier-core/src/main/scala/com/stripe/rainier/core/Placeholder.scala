@@ -3,28 +3,30 @@ package com.stripe.rainier.core
 import com.stripe.rainier.compute._
 
 trait Placeholder[T, U] {
-  def create(): U
-  def variables(u: U, acc: List[Variable]): List[Variable]
+  def wrap(t: T): U
+  def create(acc: List[Variable]): (U, List[Variable])
   def extract(t: T, acc: List[Double]): List[Double]
 }
 
-trait LowPriPlaceholders {
-  implicit val int: Placeholder[Int, Variable] =
-    new Placeholder[Int, Variable] {
-      def create() = new Variable
-      def variables(u: Variable, acc: List[Variable]) =
-        u :: acc
+object Placeholder {
+  implicit val int: Placeholder[Int, Real] =
+    new Placeholder[Int, Real] {
+      def wrap(t: Int) = Real(t)
+      def create(acc: List[Variable]) = {
+        val u = new Variable
+        (u, u :: acc)
+      }
       def extract(t: Int, acc: List[Double]) =
         t.toDouble :: acc
     }
-}
 
-object Placeholder extends LowPriPlaceholders {
-  implicit val double: Placeholder[Double, Variable] =
-    new Placeholder[Double, Variable] {
-      def create() = new Variable
-      def variables(u: Variable, acc: List[Variable]) =
-        u :: acc
+  implicit val double: Placeholder[Double, Real] =
+    new Placeholder[Double, Real] {
+      def wrap(t: Double) = Real(t)
+      def create(acc: List[Variable]) = {
+        val u = new Variable
+        (u, u :: acc)
+      }
       def extract(t: Double, acc: List[Double]) =
         t :: acc
     }
@@ -33,9 +35,12 @@ object Placeholder extends LowPriPlaceholders {
       implicit a: Placeholder[A, X],
       b: Placeholder[B, Y]): Placeholder[(A, B), (X, Y)] =
     new Placeholder[(A, B), (X, Y)] {
-      def create() = (a.create(), b.create())
-      def variables(u: (X, Y), acc: List[Variable]) =
-        a.variables(u._1, b.variables(u._2, acc))
+      def wrap(t: (A, B)) = (a.wrap(t._1), b.wrap(t._2))
+      def create(acc: List[Variable]) = {
+        val (av, acc1) = a.create(acc)
+        val (bv, acc2) = b.create(acc1)
+        ((av, bv), acc2)
+      }
       def extract(t: (A, B), acc: List[Double]) =
         a.extract(t._1, b.extract(t._2, acc))
     }
@@ -43,23 +48,16 @@ object Placeholder extends LowPriPlaceholders {
   def vector[T, U](size: Int)(
       implicit ph: Placeholder[T, U]): Placeholder[Seq[T], Seq[U]] =
     new Placeholder[Seq[T], Seq[U]] {
-      def create() = List.fill(size)(ph.create())
-      def variables(u: Seq[U], acc: List[Variable]) =
-        u.foldLeft(acc) { case (a, v) => ph.variables(v, a) }
-      def extract(t: Seq[T], acc: List[Double]) =
-        t.foldLeft(acc) { case (a, x) => ph.extract(x, a) }
-    }
-
-  def record2[T, A, A1, B, B1](unapply: T => Option[(A, B)])(
-      implicit a: Placeholder[A, A1],
-      b: Placeholder[B, B1]): Placeholder[T, (A1, B1)] = 
-    new Placeholder[T, (A1, B1)] {
-      def create() = (a.create(), b.create())
-      def variables(u: (A1, B1), acc: List[Variable]) =
-        a.variables(u._1, b.variables(u._2, acc))
-      def extract(t: T, acc: List[Double]) = {
-        val (ta, tb) = unapply(t).get
-        a.extract(ta, b.extract(tb, acc))
+      def wrap(t: Seq[T]) = t.map { x =>
+        ph.wrap(x)
       }
+      def create(acc: List[Variable]) =
+        1.to(size).foldLeft((List.empty[U], acc)) {
+          case ((us, a), _) =>
+            val (u, a2) = ph.create(a)
+            (u :: us, a2)
+        }
+      def extract(t: Seq[T], acc: List[Double]) =
+        t.foldRight(acc) { case (x, a) => ph.extract(x, a) }
     }
 }
