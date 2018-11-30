@@ -19,6 +19,13 @@ trait Discrete extends Distribution[Int] { self: Discrete =>
     DiscreteMixture(Map(DiscreteConstant(constant) -> psi, self -> (1 - psi)))
 }
 
+object Discrete {
+  implicit def gen[D <: Discrete]: ToGenerator[D, Int] =
+    new ToGenerator[D, Int] {
+      def apply(d: D) = d.generator
+    }
+}
+
 /**
   * Discrete Constant (point mass) with expecation `constant`
   *

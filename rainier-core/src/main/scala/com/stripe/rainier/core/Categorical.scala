@@ -88,6 +88,11 @@ object Categorical {
     normalize(seq.groupBy(identity).mapValues { l =>
       Real(l.size)
     })
+
+  implicit def gen[T]: ToGenerator[Categorical[T], T] =
+    new ToGenerator[Categorical[T], T] {
+      def apply(c: Categorical[T]) = c.generator
+    }
 }
 
 /**
@@ -128,4 +133,9 @@ object Multinomial {
           Real.eq(i, Real.zero, Real.zero, i * p.log)
         pTerm - Combinatorics.factorial(i)
     })
+
+  implicit def gen[T]: ToGenerator[Multinomial[T], Map[T, Int]] =
+    new ToGenerator[Multinomial[T], Map[T, Int]] {
+      def apply(m: Multinomial[T]) = m.generator
+    }
 }
