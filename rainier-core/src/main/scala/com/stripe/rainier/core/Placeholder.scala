@@ -37,8 +37,8 @@ object Placeholder {
     new Placeholder[(A, B), (X, Y)] {
       def wrap(t: (A, B)) = (a.wrap(t._1), b.wrap(t._2))
       def create(acc: List[Variable]) = {
-        val (av, acc1) = a.create(acc)
-        val (bv, acc2) = b.create(acc1)
+        val (bv, acc1) = b.create(acc)
+        val (av, acc2) = a.create(acc1)
         ((av, bv), acc2)
       }
       def extract(t: (A, B), acc: List[Double]) =
