@@ -5,7 +5,7 @@ import com.stripe.rainier.compute._
 trait Discrete extends Distribution[Int] { self: Discrete =>
   def likelihood = new Likelihood[Int] {
     val x = new Variable
-    val variables = List(x)
+    val placeholders = List(x)
     val real = logDensity(x)
     def extract(t: Int) = List(t.toDouble)
   }

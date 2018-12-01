@@ -12,7 +12,7 @@ trait Continuous extends Distribution[Double] {
 
   def likelihood = new Likelihood[Double] {
     val x = new Variable
-    val variables = List(x)
+    val placeholders = List(x)
     val real = logDensity(x)
     def extract(t: Double) = List(t)
   }

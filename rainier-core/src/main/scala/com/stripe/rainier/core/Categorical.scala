@@ -53,7 +53,7 @@ final case class Categorical[T](pmf: Map[T, Real]) extends Distribution[T] {
         k -> new Variable
       }
       val real = Categorical.logDensity(self, u)
-      val variables = u.map(_._2)
+      val placeholders = u.map(_._2)
 
       def extract(t: T) =
         choices.map { k =>
@@ -115,7 +115,7 @@ final case class Multinomial[T](pmf: Map[T, Real], k: Real)
         k -> new Variable
       }
       val real = Multinomial.logDensity(self, u)
-      val variables = u.map(_._2)
+      val placeholders = u.map(_._2)
 
       def extract(t: Map[T, Int]) =
         choices.map { k =>

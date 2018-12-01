@@ -1,16 +1,14 @@
-package com.stripe.rainier.core
+package com.stripe.rainier.compute
 
-import com.stripe.rainier.compute._
-
-trait Placeholder[T, U] {
+trait Encoder[T, U] {
   def wrap(t: T): U
   def create(acc: List[Variable]): (U, List[Variable])
   def extract(t: T, acc: List[Double]): List[Double]
 }
 
-object Placeholder {
-  implicit val int: Placeholder[Int, Real] =
-    new Placeholder[Int, Real] {
+object Encoder {
+  implicit val int: Encoder[Int, Real] =
+    new Encoder[Int, Real] {
       def wrap(t: Int) = Real(t)
       def create(acc: List[Variable]) = {
         val u = new Variable
@@ -20,8 +18,8 @@ object Placeholder {
         t.toDouble :: acc
     }
 
-  implicit val double: Placeholder[Double, Real] =
-    new Placeholder[Double, Real] {
+  implicit val double: Encoder[Double, Real] =
+    new Encoder[Double, Real] {
       def wrap(t: Double) = Real(t)
       def create(acc: List[Variable]) = {
         val u = new Variable
@@ -31,10 +29,9 @@ object Placeholder {
         t :: acc
     }
 
-  implicit def zip[A, B, X, Y](
-      implicit a: Placeholder[A, X],
-      b: Placeholder[B, Y]): Placeholder[(A, B), (X, Y)] =
-    new Placeholder[(A, B), (X, Y)] {
+  implicit def zip[A, B, X, Y](implicit a: Encoder[A, X],
+                               b: Encoder[B, Y]): Encoder[(A, B), (X, Y)] =
+    new Encoder[(A, B), (X, Y)] {
       def wrap(t: (A, B)) = (a.wrap(t._1), b.wrap(t._2))
       def create(acc: List[Variable]) = {
         val (bv, acc1) = b.create(acc)
@@ -46,8 +43,8 @@ object Placeholder {
     }
 
   def vector[T, U](size: Int)(
-      implicit ph: Placeholder[T, U]): Placeholder[Seq[T], Seq[U]] =
-    new Placeholder[Seq[T], Seq[U]] {
+      implicit ph: Encoder[T, U]): Encoder[Seq[T], Seq[U]] =
+    new Encoder[Seq[T], Seq[U]] {
       def wrap(t: Seq[T]) = t.map { x =>
         ph.wrap(x)
       }

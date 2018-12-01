@@ -1,11 +1,13 @@
 package com.stripe.rainier.core
 
+import com.stripe.rainier.compute._
+
 /**
   * Predictor class, for fitting data with covariates
   */
 sealed trait Predictor[L, X] { self =>
   type P
-  protected def xp: Placeholder[X, P]
+  protected def xp: Encoder[X, P]
   protected def create(p: P): L
 
   def fit[Y](values: Seq[(X, Y)])(
@@ -37,13 +39,13 @@ object Predictor extends LikelihoodMaker {
     val inner = lh(l)
     new Likelihood[(X, Y)] {
       val real = inner.real
-      val variables = v ++ inner.variables
+      val placeholders = v ++ inner.placeholders
       def extract(t: (X, Y)) =
         pred.xp.extract(t._1, Nil) ++ inner.extract(t._2)
     }
   }
 
-  class Maker[X, A](xa: Placeholder[X, A]) {
+  class Maker[X, A](xa: Encoder[X, A]) {
     def apply[B](fn: A => B): Predictor[B, X] =
       new Predictor[B, X] {
         type P = A
@@ -53,15 +55,15 @@ object Predictor extends LikelihoodMaker {
   }
 
   type M[X, A] = Maker[X, A]
-  def maker[X, A](implicit xa: Placeholder[X, A]) = new Maker(xa)
+  def maker[X, A](implicit xa: Encoder[X, A]) = new Maker(xa)
 
-  class Fitter[X, A, Y](seq: Seq[(X, Y)], xa: Placeholder[X, A]) {
+  class Fitter[X, A, Y](seq: Seq[(X, Y)], xa: Encoder[X, A]) {
     val m = maker(xa)
     def to[B](fn: A => B)(
         implicit lh: ToLikelihood[B, Y]): RandomVariable[Predictor[B, X]] =
       m(fn).fit(seq)
   }
 
-  def fit[X, Y, A, B](seq: Seq[(X, Y)])(implicit xa: Placeholder[X, A]) =
+  def fit[X, Y, A, B](seq: Seq[(X, Y)])(implicit xa: Encoder[X, A]) =
     new Fitter(seq, xa)
 }
