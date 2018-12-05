@@ -73,6 +73,7 @@ lazy val V = new {
   val scalacheck = "1.14.0"
   val scalatest = "3.0.5"
   val flogger = "0.3.1"
+  val shapeless = "2.3.3"
 }
 
 // primary modules
@@ -109,6 +110,14 @@ lazy val rainierCats = project.
   settings(commonSettings).
   settings(libraryDependencies ++= Seq(
     "org.typelevel" %% "cats-core" % V.cats))
+
+lazy val rainierShapeless = project.
+  in(file("rainier-shapeless")).
+  settings(name := "rainier-shapeless").
+  dependsOn(rainierCore).
+  settings(commonSettings).
+  settings(libraryDependencies ++= Seq(
+     "com.chuusai" %% "shapeless" % V.shapeless))
 
 lazy val rainierScalacheck = project.
   in(file("rainier-scalacheck")).
