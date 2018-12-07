@@ -55,7 +55,7 @@ object Predictor {
       def from[L](fn: enc.U => L) =
         new Predictor[X, L] {
           type P = enc.U
-          val encoder = enc
+          val encoder: Encoder.Aux[X, enc.U] = enc
           def create(p: P) = fn(p)
         }
       def fromVector[L](k: Int)(fn: IndexedSeq[enc.U] => L) = {
