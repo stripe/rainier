@@ -7,7 +7,7 @@ import com.stripe.rainier.compute._
   */
 sealed trait Predictor[X, L] { self =>
   type P
-  protected def encoder: Encoder[X, P]
+  protected def encoder: Encoder[X] { type U = P }
   protected def create(p: P): L
 
   def fit[Y](values: Seq[(X, Y)])(
@@ -31,7 +31,7 @@ sealed trait Predictor[X, L] { self =>
     })
 }
 
-object Predictor extends LikelihoodMaker {
+object Predictor {
   def likelihood[L, X, Y](pred: Predictor[X, L])(
       implicit lh: ToLikelihood[L, Y]): Likelihood[(X, Y)] = {
     val (p, vs) = pred.encoder.create(Nil)
@@ -45,25 +45,26 @@ object Predictor extends LikelihoodMaker {
     }
   }
 
-  class Maker[X, A](enc: Encoder[X, A]) {
-    def apply[B](fn: A => B): Predictor[X, B] =
-      new Predictor[X, B] {
-        type P = A
-        val encoder = enc
-        def create(p: P) = fn(p)
+  trait From[X, U] {
+    def from[L](fn: U => L): Predictor[X, L]
+    def fromVector[L](k: Int)(fn: IndexedSeq[U] => L): Predictor[Seq[X], L]
+  }
+
+  def apply[X](implicit enc: Encoder[X]) =
+    new From[X, enc.U] {
+      def from[L](fn: enc.U => L) =
+        new Predictor[X, L] {
+          type P = enc.U
+          val encoder = enc
+          def create(p: P) = fn(p)
+        }
+      def fromVector[L](k: Int)(fn: IndexedSeq[enc.U] => L) = {
+        val vecEnc = Encoder.vector[X](k)
+        new Predictor[Seq[X], L] {
+          type P = vecEnc.U
+          val encoder = vecEnc
+          def create(p: P) = fn(p)
+        }
       }
-  }
-
-  type M[X, A] = Maker[X, A]
-  def maker[X, A](implicit enc: Encoder[X, A]) = new Maker(enc)
-
-  class Fitter[X, A, Y](seq: Seq[(X, Y)], enc: Encoder[X, A]) {
-    val m = maker(enc)
-    def to[B](fn: A => B)(
-        implicit lh: ToLikelihood[B, Y]): RandomVariable[Predictor[X, B]] =
-      m(fn).fit(seq)
-  }
-
-  def fit[X, Y, A, B](seq: Seq[(X, Y)])(implicit enc: Encoder[X, A]) =
-    new Fitter(seq, enc)
+    }
 }

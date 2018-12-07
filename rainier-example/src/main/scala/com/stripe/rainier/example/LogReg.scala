@@ -36,8 +36,8 @@ object LogReg {
     val model = for {
       beta0 <- Normal(0, 5).param
       beta1 <- Normal(0, 5).param
-      _ <- Predictor
-        .fromDouble { x =>
+      _ <- Predictor[Double]
+        .from { x =>
           {
             val theta = beta0 + beta1 * x
             val p = Real(1.0) / (Real(1.0) + (Real(0.0) - theta).exp)

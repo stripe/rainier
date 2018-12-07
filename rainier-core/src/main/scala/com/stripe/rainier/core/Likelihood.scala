@@ -26,44 +26,37 @@ trait Likelihood[T] {
   }
 }
 
-trait LikelihoodMaker {
-  type M[T, P]
+object Likelihood {
+  implicit def toLikelihood[T, L <: Likelihood[T]]: ToLikelihood[L, T] =
+    new ToLikelihood[L, T] {
+      def apply(l: L) = l
+    }
 
-  def maker[T, P](implicit ph: Encoder[T, P]): M[T, P]
-  def fromInt = maker[Int, Real]
-  def fromDouble = maker[Double, Real]
-  def fromIntPair = maker[(Int, Int), (Real, Real)]
-  def fromDoublePair = maker[(Double, Double), (Real, Real)]
-  def fromIntVector(size: Int) =
-    maker[Seq[Int], Seq[Real]](Encoder.vector(size))
-  def fromDoubleVector(size: Int) =
-    maker[Seq[Double], Seq[Real]](Encoder.vector(size))
-}
+  trait From[T, U] {
+    def from(fn: U => Real): Likelihood[T]
+    def fromVector(k: Int)(fn: IndexedSeq[U] => Real): Likelihood[Seq[T]]
+  }
 
-object Likelihood extends LikelihoodMaker {
-  class Maker[T, P](ph: Encoder[T, P]) {
-    def apply(fn: P => Real): Likelihood[T] = {
-      val (p, v) = ph.create(Nil)
-      new Likelihood[T] {
-        val real = fn(p)
-        val placeholders = v
-        def extract(t: T) = ph.extract(t, Nil)
+  def apply[T](implicit enc: Encoder[T]) =
+    new From[T, enc.U] {
+      def from(fn: enc.U => Real) = {
+        val (p, vs) = enc.create(Nil)
+        new Likelihood[T] {
+          val real = fn(p)
+          val placeholders = vs
+          def extract(t: T) = enc.extract(t, Nil)
+        }
+      }
+      def fromVector(k: Int)(fn: IndexedSeq[enc.U] => Real) = {
+        val vecEnc = Encoder.vector[T](k)
+        val (p, vs) = vecEnc.create(Nil)
+        new Likelihood[Seq[T]] {
+          val real = fn(p)
+          val placeholders = vs
+          def extract(t: Seq[T]) = vecEnc.extract(t, Nil)
+        }
       }
     }
-  }
-
-  type M[T, P] = Maker[T, P]
-  def maker[T, P](implicit ph: Encoder[T, P]) =
-    new Maker[T, P](ph)
-
-  class Fitter[T, P](seq: Seq[T], ph: Encoder[T, P]) {
-    val m = maker(ph)
-    def to(fn: P => Real): RandomVariable[Unit] =
-      m(fn).fit(seq)
-  }
-
-  def fit[T, P](seq: Seq[T])(implicit ph: Encoder[T, P]) =
-    new Fitter(seq, ph)
 }
 
 trait ToLikelihood[L, T] {

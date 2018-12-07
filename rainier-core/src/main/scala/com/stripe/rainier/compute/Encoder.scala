@@ -1,14 +1,17 @@
 package com.stripe.rainier.compute
 
-trait Encoder[T, U] {
+trait Encoder[T] {
+  type U
   def wrap(t: T): U
   def create(acc: List[Variable]): (U, List[Variable])
   def extract(t: T, acc: List[Double]): List[Double]
 }
 
 object Encoder {
-  implicit val int: Encoder[Int, Real] =
-    new Encoder[Int, Real] {
+  type Aux[X, Y] = Encoder[X] { type U = Y }
+  implicit val int: Aux[Int, Real] =
+    new Encoder[Int] {
+      type U = Real
       def wrap(t: Int) = Real(t)
       def create(acc: List[Variable]) = {
         val u = new Variable
@@ -18,8 +21,9 @@ object Encoder {
         t.toDouble :: acc
     }
 
-  implicit val double: Encoder[Double, Real] =
-    new Encoder[Double, Real] {
+  implicit val double: Aux[Double, Real] =
+    new Encoder[Double] {
+      type U = Real
       def wrap(t: Double) = Real(t)
       def create(acc: List[Variable]) = {
         val u = new Variable
@@ -29,9 +33,10 @@ object Encoder {
         t :: acc
     }
 
-  implicit def zip[A, B, X, Y](implicit a: Encoder[A, X],
-                               b: Encoder[B, Y]): Encoder[(A, B), (X, Y)] =
-    new Encoder[(A, B), (X, Y)] {
+  implicit def zip[A, B](implicit a: Encoder[A],
+                         b: Encoder[B]): Aux[(A, B), (a.U, b.U)] =
+    new Encoder[(A, B)] {
+      type U = (a.U, b.U)
       def wrap(t: (A, B)) = (a.wrap(t._1), b.wrap(t._2))
       def create(acc: List[Variable]) = {
         val (bv, acc1) = b.create(acc)
@@ -42,19 +47,24 @@ object Encoder {
         a.extract(t._1, b.extract(t._2, acc))
     }
 
-  def vector[T, U](size: Int)(
-      implicit ph: Encoder[T, U]): Encoder[Seq[T], Seq[U]] =
-    new Encoder[Seq[T], Seq[U]] {
-      def wrap(t: Seq[T]) = t.map { x =>
-        ph.wrap(x)
+  def vector[T](size: Int)(
+      implicit enc: Encoder[T]): Aux[Seq[T], IndexedSeq[enc.U]] =
+    new Encoder[Seq[T]] {
+      type U = IndexedSeq[enc.U]
+      def wrap(t: Seq[T]) =
+        t.map { x =>
+          enc.wrap(x)
+        }.toVector
+      def create(acc: List[Variable]) = {
+        val (us, vs) =
+          1.to(size).foldLeft((List.empty[enc.U], acc)) {
+            case ((us, a), _) =>
+              val (u, a2) = enc.create(a)
+              (u :: us, a2)
+          }
+        (us.toVector, vs)
       }
-      def create(acc: List[Variable]) =
-        1.to(size).foldLeft((List.empty[U], acc)) {
-          case ((us, a), _) =>
-            val (u, a2) = ph.create(a)
-            (u :: us, a2)
-        }
       def extract(t: Seq[T], acc: List[Double]) =
-        t.foldRight(acc) { case (x, a) => ph.extract(x, a) }
+        t.foldRight(acc) { case (x, a) => enc.extract(x, a) }
     }
 }
