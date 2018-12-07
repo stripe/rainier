@@ -16,7 +16,7 @@ object `package` {
 }
 
 private[cats] class MonadGenerator extends Monad[Generator] {
-  def pure[A](x: A): Generator[A] = Generator(x)
+  def pure[A](x: A): Generator[A] = Generator.constant(x)
 
   override def map[A, B](fa: Generator[A])(f: A => B): Generator[B] =
     fa.map(f)

@@ -1,16 +1,29 @@
 package com.stripe.rainier.core
 
-import com.stripe.rainier.compute.Real
+import com.stripe.rainier.compute._
 
 trait Discrete extends Distribution[Int] { self: Discrete =>
-  type P = Real
-  val wrapping = Mapping.int
+  def likelihood = new Likelihood[Int] {
+    val x = new Variable
+    val placeholders = List(x)
+    val real = logDensity(x)
+    def extract(t: Int) = List(t.toDouble)
+  }
+
+  def logDensity(v: Real): Real
 
   def zeroInflated(psi: Real) =
     constantInflated(0.0, psi)
 
   def constantInflated(constant: Real, psi: Real) =
     DiscreteMixture(Map(DiscreteConstant(constant) -> psi, self -> (1 - psi)))
+}
+
+object Discrete {
+  implicit def gen[D <: Discrete]: ToGenerator[D, Int] =
+    new ToGenerator[D, Int] {
+      def apply(d: D) = d.generator
+    }
 }
 
 /**
@@ -163,7 +176,7 @@ final case class Binomial(p: Real, k: Real) extends Discrete {
   }
 
   def logDensity(v: Real): Real =
-    Multinomial.logDensity(multi, Map(true -> v, false -> (k - v)))
+    Multinomial.logDensity(multi, List((true -> v), (false -> (k - v))))
 }
 
 /**

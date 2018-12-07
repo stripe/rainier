@@ -76,10 +76,14 @@ trait Generator[T] { self =>
   * Generator object, for posterior predictive distributions to be forwards sampled during sampling
   */
 object Generator {
-  def apply[T](t: T): Generator[T] = new Generator[T] {
-    val requirements: Set[Real] = Set.empty
-    def get(implicit r: RNG, n: Numeric[Real]): T = t
-  }
+  def apply[L, T](l: L)(implicit gen: ToGenerator[L, T]): Generator[T] =
+    gen(l)
+
+  def constant[T](t: T): Generator[T] =
+    new Generator[T] {
+      val requirements: Set[Real] = Set.empty
+      def get(implicit r: RNG, n: Numeric[Real]): T = t
+    }
 
   def from[T](fn: (RNG, Numeric[Real]) => T): Generator[T] =
     new Generator[T] {
@@ -118,11 +122,42 @@ object ToGenerator {
       def apply(t: Generator[T]) = t
     }
 
-  implicit def mapping[T, U](implicit m: Mapping[U, T]): ToGenerator[T, U] =
-    new ToGenerator[T, U] {
-      def apply(t: T) = new Generator[U] {
-        val requirements = m.requirements(t)
-        def get(implicit r: RNG, n: Numeric[Real]) = m.get(t)
+  implicit val double: ToGenerator[Real, Double] =
+    new ToGenerator[Real, Double] {
+      def apply(t: Real) = new Generator[Double] {
+        def get(implicit r: RNG, n: Numeric[Real]): Double =
+          n.toDouble(t)
+        val requirements = Set(t)
       }
+    }
+
+  implicit def zip[A, B, X, Y](
+      implicit ab: ToGenerator[A, B],
+      xy: ToGenerator[X, Y]): ToGenerator[(A, X), (B, Y)] =
+    new ToGenerator[(A, X), (B, Y)] {
+      def apply(t: (A, X)) = ab(t._1).zip(xy(t._2))
+    }
+
+  implicit def seq[T, U](
+      implicit tu: ToGenerator[T, U]): ToGenerator[Seq[T], Seq[U]] =
+    new ToGenerator[Seq[T], Seq[U]] {
+      def apply(t: Seq[T]) =
+        Generator.traverse(t.map { x =>
+          tu(x)
+        })
+    }
+
+  implicit def map[K, T, U](
+      implicit tu: ToGenerator[T, U]): ToGenerator[Map[K, T], Map[K, U]] =
+    new ToGenerator[Map[K, T], Map[K, U]] {
+      def apply(t: Map[K, T]) =
+        Generator
+          .traverse(t.toList.map {
+            case (k, x) =>
+              tu(x).map { v =>
+                k -> v
+              }
+          })
+          .map(_.toMap)
     }
 }

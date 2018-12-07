@@ -12,8 +12,9 @@ and returns a (Distribution[T], Real) which is a pair of values:
 1) a distribution describing the likelihood of the observed data, given the parameter values,
 2) the parameter value or summary stat we're calibrating on
  */
-final case class SBC[T, L <: Distribution[T]](priors: Seq[Continuous],
-                                              fn: Seq[Real] => (L, Real)) {
+final case class SBC[T, L](priors: Seq[Continuous], fn: Seq[Real] => (L, Real))(
+    implicit lh: ToLikelihood[L, T],
+    gen: ToGenerator[L, T]) {
 
   import SBC._
 
@@ -63,7 +64,7 @@ final case class SBC[T, L <: Distribution[T]](priors: Seq[Continuous],
     priorGenerator
       .flatMap { priorParams =>
         val (d, r) = fn(Real.seq(priorParams))
-        d.generator
+        Generator(d)
           .repeat(samples)
           .zip(Generator.real(r))
       }
@@ -74,8 +75,8 @@ final case class SBC[T, L <: Distribution[T]](priors: Seq[Continuous],
       .traverse(priors.map(_.param))
       .flatMap { priorParams =>
         val (d, r) = fn(priorParams)
-        RandomVariable
-          .fit(d, values)
+        lh(d)
+          .fit(values)
           .map { _ =>
             r
           }
@@ -218,8 +219,9 @@ final case class SBC[T, L <: Distribution[T]](priors: Seq[Continuous],
 object SBC {
   val emptyEvaluator = new Evaluator(Map.empty)
 
-  def apply[T, L <: Distribution[T]](prior: Continuous)(
-      fn: Real => L): SBC[T, L] =
+  def apply[T, L](prior: Continuous)(fn: Real => L)(
+      implicit lh: ToLikelihood[L, T],
+      gen: ToGenerator[L, T]): SBC[T, L] =
     apply(List(prior), { l =>
       (fn(l.head), l.head)
     })

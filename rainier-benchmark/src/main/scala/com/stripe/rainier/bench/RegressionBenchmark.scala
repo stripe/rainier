@@ -44,8 +44,8 @@ class RegressionBenchmark {
     for {
       betas <- RandomVariable.fill(k)(Normal(0, 1).param)
       sigma <- Uniform(0, 10).param
-      _ <- Predictor
-        .fromDoubleVector { vec =>
+      _ <- Predictor[Double]
+        .fromVector(k) { vec =>
           val mean = Real.dot(betas, vec)
           Normal(mean, sigma)
         }

@@ -243,7 +243,7 @@ Like `Distribution`, `Predictor` implements `fit` (in fact, they both extend the
 ```tut
 val regr = for {
     (slope, intercept) <- prior
-    predictor <- Predictor.fromInt{i =>
+    predictor <- Predictor[Int].from{i =>
                     Poisson(intercept + slope*i)
                 }.fit(data)
 } yield (slope, intercept)
@@ -262,7 +262,7 @@ Alternatively, as in the earlier example, we could try to predict what will happ
 val regr2 = for {
     slope <- LogNormal(0,1).param
     intercept <- LogNormal(0,1).param
-    predictor <- Predictor.fromInt{i =>
+    predictor <- Predictor[Int].from{i =>
                     Poisson(intercept + slope*i)
                 }.fit(data)
 } yield predictor.predict(21)
@@ -287,8 +287,8 @@ val regr3 =  for {
     slope0 <- LogNormal(0,1).param
     slope1 <- LogNormal(0,1).param
     intercept <- LogNormal(0,1).param
-    _ <- Predictor.fromInt{ i => Poisson(intercept + slope0 * i) }.fit(data)
-    _ <- Predictor.fromInt{ i => Poisson(intercept + slope1 * i) }.fit(data2)
+    _ <- Predictor[Int].from{ i => Poisson(intercept + slope0 * i) }.fit(data)
+    _ <- Predictor[Int].from{ i => Poisson(intercept + slope1 * i) }.fit(data2)
 } yield (slope0, intercept)
 ```
 
@@ -299,7 +299,7 @@ val allData = data.map{ case (x,y) => ((0, x), y) } ++ data2.map{ case (x, y) =>
 val regr4 = for {
   slopes <- RandomVariable.fill(2)(LogNormal(0,1).param).map(Lookup(_))
   intercept <- LogNormal(0,1).param
-  _ <- Predictor.fromIntPair{ case (index, x) => Poisson(intercept + slopes(index) * x) }.fit(allData)
+  _ <- Predictor[(Int,Int)].from{ case (index, x) => Poisson(intercept + slopes(index) * x) }.fit(allData)
 } yield (slopes(0), intercept)
 ```
 

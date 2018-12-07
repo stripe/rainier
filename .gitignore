@@ -3,3 +3,5 @@ bazel-*
 project/target
 target/
 .DS_Store
+.bloop/
+.metals/

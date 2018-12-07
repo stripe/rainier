@@ -12,8 +12,8 @@ object LookupNormal {
         .fill(k)(Normal(globalMean, 1).param)
         .map(Lookup(_))
       stddev <- Uniform(0, 10).param
-      _ <- Predictor
-        .fromInt { i =>
+      _ <- Predictor[Int]
+        .from { i =>
           Normal(means(i), stddev)
         }
         .fit(synthesize(k, n))

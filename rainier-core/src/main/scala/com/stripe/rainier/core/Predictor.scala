@@ -5,33 +5,25 @@ import com.stripe.rainier.compute._
 /**
   * Predictor class, for fitting data with covariates
   */
-trait Predictor[X, Y] extends Likelihood[(X, Y)] {
-  private[core] type Q
-  private[core] type R
-  type P = (Q, R)
-  private[core] def create(q: Q): Distribution.Aux[Y, R]
-  private[core] def xq: Wrapping[X, Q]
+sealed trait Predictor[X, L] { self =>
+  type P
+  protected def encoder: Encoder[X] { type U = P }
+  protected def create(p: P): L
 
-  lazy val wrapping = new Wrapping[(X, Y), (Q, R)] {
-    def wrap(value: (X, Y)) = {
-      val q = xq.wrap(value._1)
-      val qr = create(q).wrapping
-      (q, qr.wrap(value._2))
-    }
-    def placeholder(seq: Seq[(X, Y)]) = {
-      val qph = xq.placeholder(seq.map(_._1))
-      val z = create(qph.value)
-      qph.zip(z.wrapping.placeholder(seq.map(_._2)))
-    }
-  }
+  def fit[Y](values: Seq[(X, Y)])(
+      implicit lh: ToLikelihood[L, Y]): RandomVariable[Predictor[X, L]] =
+    Predictor
+      .likelihood[L, X, Y](this)
+      .fit(values)
+      .map { _ =>
+        this
+      }
 
-  def logDensity(value: P) =
-    create(value._1).logDensity(value._2)
+  def predict[Y](x: X)(implicit gen: ToGenerator[L, Y]): Generator[Y] =
+    gen(create(encoder.wrap(x)))
 
-  def predict(x: X): Generator[Y] =
-    create(xq.wrap(x)).generator
-
-  def predict(seq: Seq[X]): Generator[Seq[(X, Y)]] =
+  def predict[Y](seq: Seq[X])(
+      implicit gen: ToGenerator[L, Y]): Generator[Seq[(X, Y)]] =
     Generator.traverse(seq.map { x =>
       predict(x).map { y =>
         (x, y)
@@ -39,32 +31,40 @@ trait Predictor[X, Y] extends Likelihood[(X, Y)] {
     })
 }
 
-/**
-  * Predictor object, for fitting data with covariates
-  */
 object Predictor {
-  def from[X, Y, A, B](fn: A => Distribution.Aux[Y, B])(
-      implicit xa: Wrapping[X, A]): Predictor[X, Y] =
-    new Predictor[X, Y] {
-      type Q = A
-      type R = B
-
-      val xq = xa
-      def create(q: Q) = fn(q)
+  def likelihood[L, X, Y](pred: Predictor[X, L])(
+      implicit lh: ToLikelihood[L, Y]): Likelihood[(X, Y)] = {
+    val (p, vs) = pred.encoder.create(Nil)
+    val l = pred.create(p)
+    val inner = lh(l)
+    new Likelihood[(X, Y)] {
+      val real = inner.real
+      val placeholders = vs ++ inner.placeholders
+      def extract(t: (X, Y)) =
+        pred.encoder.extract(t._1, Nil) ++ inner.extract(t._2)
     }
+  }
 
-  def fromInt[Y, B](fn: Real => Distribution.Aux[Y, B]): Predictor[Int, Y] =
-    from[Int, Y, Real, B](fn)
+  trait From[X, U] {
+    def from[L](fn: U => L): Predictor[X, L]
+    def fromVector[L](k: Int)(fn: IndexedSeq[U] => L): Predictor[Seq[X], L]
+  }
 
-  def fromIntPair[Y, B](
-      fn: ((Real, Real)) => Distribution.Aux[Y, B]): Predictor[(Int, Int), Y] =
-    from[(Int, Int), Y, (Real, Real), B](fn)
-
-  def fromDouble[Y, B](
-      fn: Real => Distribution.Aux[Y, B]): Predictor[Double, Y] =
-    from[Double, Y, Real, B](fn)
-
-  def fromDoubleVector[Y, B](
-      fn: Seq[Real] => Distribution.Aux[Y, B]): Predictor[Seq[Double], Y] =
-    from[Seq[Double], Y, Seq[Real], B](fn)
+  def apply[X](implicit enc: Encoder[X]) =
+    new From[X, enc.U] {
+      def from[L](fn: enc.U => L) =
+        new Predictor[X, L] {
+          type P = enc.U
+          val encoder: Encoder.Aux[X, enc.U] = enc
+          def create(p: P) = fn(p)
+        }
+      def fromVector[L](k: Int)(fn: IndexedSeq[enc.U] => L) = {
+        val vecEnc = Encoder.vector[X](k)
+        new Predictor[Seq[X], L] {
+          type P = IndexedSeq[enc.U]
+          val encoder = vecEnc
+          def create(p: P) = fn(p)
+        }
+      }
+    }
 }

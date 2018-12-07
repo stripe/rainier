@@ -10,8 +10,12 @@ import scala.annotation.tailrec
 trait Continuous extends Distribution[Double] {
   private[rainier] val support: Support
 
-  type P = Real
-  val wrapping = Mapping.double
+  def likelihood = new Likelihood[Double] {
+    val x = new Variable
+    val placeholders = List(x)
+    val real = logDensity(x)
+    def extract(t: Double) = List(t)
+  }
 
   def param: RandomVariable[Real]
   def logDensity(v: Real): Real
@@ -19,6 +23,13 @@ trait Continuous extends Distribution[Double] {
   def scale(a: Real): Continuous = Scale(a).transform(this)
   def translate(b: Real): Continuous = Translate(b).transform(this)
   def exp: Continuous = Exp.transform(this)
+}
+
+object Continuous {
+  implicit def gen[C <: Continuous]: ToGenerator[C, Double] =
+    new ToGenerator[C, Double] {
+      def apply(c: C) = c.generator
+    }
 }
 
 /**
@@ -171,7 +182,7 @@ final case class Beta(a: Real, b: Real) extends StandardContinuous {
       u.log + (b - 1) *
       (1 - u).log - Combinatorics.beta(a, b)
 
-  def binomial = Predictor.fromInt(BetaBinomial(a, b, _))
+  def binomial = Predictor[Int].from(BetaBinomial(a, b, _))
 }
 
 object Beta {
