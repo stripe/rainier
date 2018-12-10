@@ -45,6 +45,24 @@ object Predictor {
     }
   }
 
+  def lookup[K,L](map: Map[K,Real])(fn: Real => L): Predictor[K,L] =
+    new Predictor[K,L] {
+      type P = Real
+      val keys = map.keys.toList
+      val encoder = new Encoder[K] {
+        type U = Real
+        def wrap(t: K) = map(t)
+        def create(acc: List[Variable]): (Real, List[Variable]) = {
+          val v = new Variable
+          val r = Lookup(v, keys.map{k => map(k)})
+          (r, v :: acc)
+        }
+        def extract(t: K, acc: List[Double]): List[Double] = 
+          keys.indexOf(t).toDouble :: acc
+      }
+      def create(p: Real) = fn(p)
+    }
+
   trait From[X, U] {
     def from[L](fn: U => L): Predictor[X, L]
     def fromVector[L](k: Int)(fn: IndexedSeq[U] => L): Predictor[Seq[X], L]
