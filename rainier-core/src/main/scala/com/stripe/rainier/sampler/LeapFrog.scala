@@ -60,6 +60,26 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
     pqBuf(potentialIndex) = density.density * -1
   }
 
+  /**
+    * Perform l leapfrog steps starting at position q and momentum p
+    * @param l the total number of leapfrog steps
+    * @param stepSize the current step size
+    * @param pq an array containing the momentum, parameters and log-density
+    * @return the new value of the parameters and momentum
+    * array with updated density
+    */
+  def leapfrogs(l: Int, stepSize: Double, pq: Array[Double]): Array[Double] = {
+    copy(pq, pqBuf)
+    initialHalfThenFullStep(stepSize)
+    var i = 1
+    while (i < l) {
+      twoFullSteps(stepSize)
+      i += 1
+    }
+    finalHalfStep(stepSize)
+    pqBuf
+  }
+
   private def copy(sourceArray: Array[Double],
                    targetArray: Array[Double]): Unit =
     System.arraycopy(sourceArray, 0, targetArray, 0, inputOutputSize)
@@ -97,11 +117,23 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
     p
   }
 
+  // extract q
   def variables(array: Array[Double]): Array[Double] = {
     val newArray = new Array[Double](nVars)
     var i = 0
     while (i < nVars) {
       newArray(i) = array(i + nVars)
+      i += 1
+    }
+    newArray
+  }
+
+  // extract p
+  def momentum(array: Array[Double]): Array[Double] = {
+    val newArray = new Array[Double](nVars)
+    var i = 0
+    while (i < nVars) {
+      newArray(i) = array(i)
       i += 1
     }
     newArray
@@ -144,14 +176,13 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
     k / 2.0
   }
 
-  private def logAcceptanceProb(from: Array[Double],
-                                to: Array[Double]): Double = {
+  def logAcceptanceProb(from: Array[Double], to: Array[Double]): Double = {
     val deltaH = kinetic(to) + to(potentialIndex) - kinetic(from) - from(
       potentialIndex)
     if (deltaH.isNaN) { Math.log(0.0) } else { (-deltaH).min(0.0) }
   }
 
-  private def initializePs(array: Array[Double])(implicit rng: RNG): Unit = {
+  def initializePs(array: Array[Double])(implicit rng: RNG): Unit = {
     var i = 0
     while (i < nVars) {
       array(i) = rng.standardNormal
