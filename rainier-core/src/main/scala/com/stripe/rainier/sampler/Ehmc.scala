@@ -3,12 +3,12 @@ package com.stripe.rainier.sampler
 import scala.collection.mutable.ListBuffer
 
 /**
-  * Empirical HMC - automiating tuning of step size and number of leapfrog steps
+  * Empirical HMC - automated tuning of step size and number of leapfrog steps
   * @param l0 the initial number of leapfrog steps to use during the dual averaging phase
   * @param k the number of iterations to use when determining the
   * empirical distribution of the total number of leapfrog steps until a u-turn
   */
-final case class EHMC(l0: Int, k: Int) extends Sampler {
+final case class EHMC(l0: Int, k: Int = 2000) extends Sampler {
   def sample(density: DensityFunction,
              warmupIterations: Int,
              iterations: Int,
@@ -18,7 +18,13 @@ final case class EHMC(l0: Int, k: Int) extends Sampler {
     val params = lf.initialize
     val stepSize =
       DualAvg.findStepSize(lf, params, 0.65, l0, warmupIterations)
-    val empiricalL = LongestBatch.run(l0, stepSize, k, lf, params)
+
+    val empiricalL: Vector[Int] = lf.longestBatch(l0, k, stepSize)
+
+    def discreteUniform(min: Int, max: Int)(implicit rng: RNG) = {
+      math.floor(rng.standardUniform * (max - min) + min).toInt
+    }
+
     if (stepSize == 0.0)
       List(lf.variables(params))
     else {
@@ -27,7 +33,7 @@ final case class EHMC(l0: Int, k: Int) extends Sampler {
 
       while (i < iterations) {
 
-        val j = LongestBatch.discreteUniform(0, k)
+        val j = discreteUniform(0, k)
         val nSteps = empiricalL(j)
 
         lf.step(params, nSteps, stepSize)
