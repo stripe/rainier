@@ -76,7 +76,7 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
     finalHalfStep(stepSize)
   }
 
-  def isUTurn(theta: Array[Double], pqP: Array[Double]): Boolean = {
+  private def isUTurn(theta: Array[Double], pqP: Array[Double]): Boolean = {
 
     var out = 0.0
     var i = 0
@@ -94,7 +94,7 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
   /**
     * Calculate the longest-step size until a u-turn
     */
-  def longestStep(l0: Int, stepSize: Double): Int = {
+  private def longestStepUntilUTurn(l0: Int, stepSize: Double): Int = {
 
     val initTheta = variables(pqBuf)
     var out = pqBuf
@@ -113,35 +113,30 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
   /**
     * Perform a single step of the longest batch step algorithm
     */
-  def longestBatchStep(l0: Int, params: Array[Double], stepSize: Double)(
-      implicit rng: RNG): (Array[Double], Int) = {
+  private def longestBatchStep(l0: Int, stepSize: Double)(
+      implicit rng: RNG): Int = {
 
+    val params = pqBuf
     initializePs(params)
-    val l = longestStep(l0, stepSize)
+    val l = longestStepUntilUTurn(l0, stepSize)
     if (l < l0)
       steps(l0 - l, stepSize)
     val u = rng.standardUniform
     val a = logAcceptanceProb(params, pqBuf)
     if (math.log(u) < a) {
-      (pqBuf, l)
-    } else {
-      (params, l)
+      copy(pqBuf, params)
     }
+    l
   }
 
   /**
     * Calculate a vector representing the empirical distribution
     * of the steps taken until a u-turn
     */
-  def longestBatch(l0: Int, k: Int, stepSize: Double)(
+  def empiricalLongestSteps(l0: Int, k: Int, stepSize: Double)(
       implicit rng: RNG): Vector[Int] = {
 
-    Vector
-      .iterate((pqBuf, l0), k) {
-        case (p, _) =>
-          longestBatchStep(l0, p, stepSize)
-      }
-      .map(_._2)
+    Vector.fill(k)(longestBatchStep(l0, stepSize))
   }
 
   private def copy(sourceArray: Array[Double],
