@@ -59,6 +59,7 @@ scala_library(
     'src/main/scala/com/stripe/rainier/compute/Compiler.scala',
     'src/main/scala/com/stripe/rainier/compute/Gradient.scala',
     'src/main/scala/com/stripe/rainier/compute/LineOps.scala',
+    'src/main/scala/com/stripe/rainier/compute/ToMap.scala',
     'src/main/scala/com/stripe/rainier/compute/ToReal.scala',
     'src/main/scala/com/stripe/rainier/sampler/DualAvg.scala',
     'src/main/scala/com/stripe/rainier/sampler/Walkers.scala',
