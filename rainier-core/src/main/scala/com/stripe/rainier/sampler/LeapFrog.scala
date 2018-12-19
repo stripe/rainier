@@ -1,4 +1,5 @@
 package com.stripe.rainier.sampler
+import scala.collection.mutable.ArrayBuffer
 
 private[sampler] case class LeapFrog(density: DensityFunction) {
   /*
@@ -61,10 +62,9 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
   }
 
   /**
-    * Perform l leapfrog steps starting at position q and momentum p
+    * Perform l leapfrog steps updating pqBuf
     * @param l the total number of leapfrog steps to perform
-    * @return the new value of the parameters and momentum
-    * array with updated density
+    * @param stepSize the current step size
     */
   private def steps(l: Int, stepSize: Double): Unit = {
     initialHalfThenFullStep(stepSize)
@@ -76,12 +76,16 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
     finalHalfStep(stepSize)
   }
 
-  private def isUTurn(theta: Array[Double], pqP: Array[Double]): Boolean = {
+  /**
+    * Determine if a u-turn has been performed by checking the initial
+    * parameters against pqBuf
+    */
+  private def isUTurn(params: Array[Double]): Boolean = {
 
     var out = 0.0
     var i = 0
-    while (i < theta.size) {
-      out += (pqP(i + nVars) - theta(i)) * pqP(i)
+    while (i < nVars) {
+      out += (pqBuf(i + nVars) - params(i + nVars)) * pqBuf(i)
       i += 1
     }
 
@@ -92,19 +96,24 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
   }
 
   /**
-    * Calculate the longest-step size until a u-turn
+    * Advance l0 steps and return the value
+    * of the longest-step size until a u-turn
     */
-  private def longestStepUntilUTurn(l0: Int, stepSize: Double): Int = {
+  private def longestStepUntilUTurn(params: Array[Double],
+                                    l0: Int,
+                                    stepSize: Double): Int = {
 
-    val initTheta = variables(pqBuf)
-    var out = pqBuf
+    val out = params
     var l = 0
-    while (!isUTurn(initTheta, pqBuf)) {
+    while (!isUTurn(params)) {
       l += 1
       steps(1, stepSize)
-
       if (l == l0)
-        out = pqBuf
+        copy(pqBuf, out)
+    }
+    if (l < l0) {
+      steps(l0 - l, stepSize)
+      copy(pqBuf, out)
     }
     copy(out, pqBuf)
     l
@@ -112,20 +121,21 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
 
   /**
     * Perform a single step of the longest batch step algorithm
+    * @param params the current value of the parameters
+    * @param l0 the initial number of steps
+    * @param stepSize the current value of the leapfrog step size
     */
-  private def longestBatchStep(l0: Int, stepSize: Double)(
-      implicit rng: RNG): Int = {
+  private def longestBatchStep(params: Array[Double],
+                               l0: Int,
+                               stepSize: Double)(implicit rng: RNG): Int = {
 
-    val params = pqBuf
     initializePs(params)
-    val l = longestStepUntilUTurn(l0, stepSize)
-    if (l < l0)
-      steps(l0 - l, stepSize)
+    copy(params, pqBuf)
+    val l = longestStepUntilUTurn(params, l0, stepSize)
     val u = rng.standardUniform
     val a = logAcceptanceProb(params, pqBuf)
-    if (math.log(u) < a) {
+    if (math.log(u) < a)
       copy(pqBuf, params)
-    }
     l
   }
 
@@ -133,10 +143,19 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
     * Calculate a vector representing the empirical distribution
     * of the steps taken until a u-turn
     */
-  def empiricalLongestSteps(l0: Int, k: Int, stepSize: Double)(
-      implicit rng: RNG): Vector[Int] = {
+  def empiricalLongestSteps(
+      params: Array[Double],
+      l0: Int,
+      k: Int,
+      stepSize: Double)(implicit rng: RNG): Vector[Int] = {
 
-    Vector.fill(k)(longestBatchStep(l0, stepSize))
+    var i = 0
+    val buf = new ArrayBuffer[Int]
+    while (i < k) {
+      buf += longestBatchStep(params, l0, stepSize)
+      i += 1
+    }
+    buf.toVector
   }
 
   private def copy(sourceArray: Array[Double],

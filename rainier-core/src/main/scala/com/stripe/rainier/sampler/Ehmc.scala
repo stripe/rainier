@@ -1,8 +1,6 @@
 package com.stripe.rainier.sampler
 
 import scala.collection.mutable.ListBuffer
-import com.stripe.rainier.compute._
-import com.stripe.rainier.core._
 
 /**
   * Empirical HMC - automated tuning of step size and number of leapfrog steps
@@ -21,11 +19,8 @@ final case class EHMC(l0: Int, k: Int = 2000) extends Sampler {
     val stepSize =
       DualAvg.findStepSize(lf, params, 0.65, l0, warmupIterations)
 
-    val empiricalL: Vector[Int] = lf.empiricalLongestSteps(l0, k, stepSize)
-
-    def discreteUniform(min: Int, max: Int)(implicit rng: RNG) = {
-      math.floor(rng.standardUniform * (max - min) + min).toInt
-    }
+    val empiricalL: Vector[Int] =
+      lf.empiricalLongestSteps(params, l0, k, stepSize)
 
     if (stepSize == 0.0)
       List(lf.variables(params))
@@ -35,8 +30,7 @@ final case class EHMC(l0: Int, k: Int = 2000) extends Sampler {
 
       while (i < iterations) {
 
-        // val j: Int = Categorical.list(Seq.fill(k)(1.0 / k)).generator.get
-        val j = discreteUniform(0, k)
+        val j = rng.int(k)
         val nSteps = empiricalL(j)
 
         lf.step(params, nSteps, stepSize)
