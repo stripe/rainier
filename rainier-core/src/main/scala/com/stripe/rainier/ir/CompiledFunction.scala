@@ -1,5 +1,7 @@
 package com.stripe.rainier.ir
 
+import Log._
+
 trait CompiledFunction {
   def numInputs: Int
   def numGlobals: Int
@@ -12,16 +14,34 @@ object CompiledFunction {
             exprs: Seq[(String, Expr)],
             methodSizeLimit: Int,
             classSizeLimit: Int): CompiledFunction = {
+    FINE.log("Compiling %d inputs, %d outputs, methodSizeLimit %s, classSizeLimit %d",
+      inputs.size,
+      exprs.size,
+      methodSizeLimit,
+      classSizeLimit)
+
     val outputClassName = ClassGenerator.freshName
+
     val methodGroups = exprs.map {
       case (name, expr) =>
         val packer = new Packer(methodSizeLimit)
+
+        FINE.log("Packing expression for %s", name)
         val outputRef = packer.pack(expr)
+        FINE.log("Packed %s into %d methods", name, packer.methods.size)
+
         (outputClassName + "$" + name, outputRef, packer.methods)
     }
     val allMeths = methodGroups.flatMap(_._3)
-    val varTypes = VarTypes.methods(allMeths.toList)
 
+    FINE.log("Scanning var types")
+    val varTypes = VarTypes.methods(allMeths.toList)
+    FINE.log("Found references for %d vars, %d globals, %d locals",
+      varTypes.numReferences.size,
+      varTypes.globals.size,
+      varTypes.locals.size)
+
+    FINE.log("Generating method nodes")
     val methodNodes = methodGroups.flatMap {
       case (classPrefix, _, methods) =>
         methods.map { meth =>
@@ -50,6 +70,7 @@ object CompiledFunction {
                                        numGlobals,
                                        numOutputs)
 
+    FINE.log("Generating class nodes")
     val ecgs = methodNodes
       .groupBy(_._1)
       .map {
@@ -60,6 +81,8 @@ object CompiledFunction {
 
     val parentClassLoader = this.getClass.getClassLoader
     val classLoader = new GeneratedClassLoader(ocg, ecgs, parentClassLoader)
+    val bytecodeSize = classLoader.bytecode.map(_.size).sum
+    FINE.log("Creating new instance of %s, total bytecode size %d", outputClassName, bytecodeSize)
     classLoader.newInstance
   }
 
