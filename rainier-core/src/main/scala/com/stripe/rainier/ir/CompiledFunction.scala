@@ -14,7 +14,8 @@ object CompiledFunction {
             exprs: Seq[(String, Expr)],
             methodSizeLimit: Int,
             classSizeLimit: Int): CompiledFunction = {
-    FINE.log("Compiling %d inputs, %d outputs, methodSizeLimit %s, classSizeLimit %d",
+    FINE.log(
+      "Compiling %d inputs, %d outputs, methodSizeLimit %s, classSizeLimit %d",
       inputs.size,
       exprs.size,
       methodSizeLimit,
@@ -36,10 +37,7 @@ object CompiledFunction {
 
     FINE.log("Scanning var types")
     val varTypes = VarTypes.methods(allMeths.toList)
-    FINE.log("Found references for %d vars, %d globals, %d locals",
-      varTypes.numReferences.size,
-      varTypes.globals.size,
-      varTypes.locals.size)
+    FINE.log("Found references for %d symbols", varTypes.numReferences.size)
 
     FINE.log("Generating method nodes")
     val methodNodes = methodGroups.flatMap {
@@ -57,6 +55,10 @@ object CompiledFunction {
     val numInputs = inputs.size
     val numGlobals = varTypes.globals.size
     val numOutputs = methodGroups.size
+
+    FINE.log("Found %d locals and %d globals",
+             varTypes.locals.size,
+             varTypes.globals.size)
 
     val outputIDs = methodGroups.map {
       case (classPrefix, outputRef, _) =>
@@ -82,7 +84,9 @@ object CompiledFunction {
     val parentClassLoader = this.getClass.getClassLoader
     val classLoader = new GeneratedClassLoader(ocg, ecgs, parentClassLoader)
     val bytecodeSize = classLoader.bytecode.map(_.size).sum
-    FINE.log("Creating new instance of %s, total bytecode size %d", outputClassName, bytecodeSize)
+    FINE.log("Creating new instance of %s, total bytecode size %d",
+             outputClassName,
+             bytecodeSize)
     classLoader.newInstance
   }
 
