@@ -1,5 +1,8 @@
 package com.stripe.rainier.sampler
 
+import Log._
+import java.util.concurrent.TimeUnit._
+
 final private class DualAvg(
     delta: Double,
     var logStepSize: Double,
@@ -33,6 +36,11 @@ final private class DualAvg(
 
     logStepSizeBar = (stepSizeMultiplier * logStepSize
       + (1.0 - stepSizeMultiplier) * logStepSizeBar)
+
+    FINEST.log("warmup iteration %d, avgAcceptanceProb %f, logStepSize %f",
+               iteration,
+               avgAcceptanceProb,
+               logStepSize)
   }
 }
 
@@ -52,7 +60,10 @@ private object DualAvg {
                    delta: Double,
                    nSteps: Int,
                    iterations: Int)(implicit rng: RNG): Double = {
+    FINE.log("Finding reasonable initial step size")
     val stepSize0 = findReasonableStepSize(lf, params)
+    FINE.log("Found initial step size of %f", stepSize0)
+
     if (stepSize0 == 0.0)
       0.0
     else {
@@ -61,6 +72,15 @@ private object DualAvg {
       while (i < iterations) {
         val logAcceptanceProb = lf.step(params, nSteps, dualAvg.stepSize)
         dualAvg.update(logAcceptanceProb)
+
+        FINER
+          .atMostEvery(1, SECONDS)
+          .log("Warmup iteration %d of %d, stepSize %f, acceptance prob %f",
+               i,
+               iterations,
+               dualAvg.stepSize,
+               Math.exp(logAcceptanceProb))
+
         i += 1
       }
       dualAvg.finalStepSize
@@ -83,6 +103,12 @@ private object DualAvg {
     while (continueTuningStepSize(logAcceptanceProb, exponent)) {
       stepSize *= doubleOrHalf
       logAcceptanceProb = lf.tryStepping(params, stepSize)
+
+      FINER
+        .atMostEvery(1, SECONDS)
+        .log("stepSize %f, acceptance prob %f",
+             stepSize,
+             Math.exp(logAcceptanceProb))
     }
     stepSize
   }
