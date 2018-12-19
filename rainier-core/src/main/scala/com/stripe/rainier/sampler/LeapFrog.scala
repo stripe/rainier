@@ -69,6 +69,15 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
   private def copyQsAndUpdateDensity(): Unit = {
     System.arraycopy(pqBuf, nVars, qBuf, 0, nVars)
     density.update(qBuf)
+    if (FINEST.isEnabled) {
+      FINEST.log("Log density: %f", density.density)
+      var i = 0
+      val j = nVars
+      while (i < j) {
+        FINEST.log("Gradient for parameter %d: %f", i, density.gradient(i))
+        i += 1
+      }
+    }
   }
   //Compute the acceptance probability for a single step at this stepSize without
   //re-initializing the ps, or modifying params
