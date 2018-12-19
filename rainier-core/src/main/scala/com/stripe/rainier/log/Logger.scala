@@ -31,8 +31,8 @@ trait Logger {
 
   def showInfo(): Unit = setConsoleLevel(Level.INFO)
   def showFine(): Unit = setConsoleLevel(Level.FINE)
-  def showFiner(): Unit = setConsoleLevel(Level.FINE)
-  def showFinest(): Unit = setConsoleLevel(Level.FINE)
+  def showFiner(): Unit = setConsoleLevel(Level.FINER)
+  def showFinest(): Unit = setConsoleLevel(Level.FINEST)
 
   protected def init: FluentLogger = {
     val cons = classOf[FluentLogger].getDeclaredConstructors.head
