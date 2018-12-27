@@ -22,8 +22,7 @@ final case class Categorical[T](pmf: Map[T, Real]) extends Distribution[T] {
             fn(t).pmf.toList.map { case (u, p2) => (u, p * p2) }
         }
         .groupBy(_._1)
-        .map { case (u, ups) => u -> Real.sum(ups.map(_._2)) }
-        .toMap)
+        .map { case (u, ups) => u -> Real.sum(ups.map(_._2)) })
 
   def generator: Generator[T] = {
     val cdf =
@@ -90,9 +89,7 @@ object Categorical {
     })
 
   implicit def gen[T]: ToGenerator[Categorical[T], T] =
-    new ToGenerator[Categorical[T], T] {
-      def apply(c: Categorical[T]) = c.generator
-    }
+    (c: Categorical[T]) => c.generator
 }
 
 /**
@@ -135,7 +132,5 @@ object Multinomial {
     })
 
   implicit def gen[T]: ToGenerator[Multinomial[T], Map[T, Int]] =
-    new ToGenerator[Multinomial[T], Map[T, Int]] {
-      def apply(m: Multinomial[T]) = m.generator
-    }
+    (m: Multinomial[T]) => m.generator
 }

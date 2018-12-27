@@ -118,46 +118,38 @@ trait ToGenerator[-T, U] {
 
 object ToGenerator {
   implicit def generator[T]: ToGenerator[Generator[T], T] =
-    new ToGenerator[Generator[T], T] {
-      def apply(t: Generator[T]) = t
-    }
+    (t: Generator[T]) => t
 
-  implicit val double: ToGenerator[Real, Double] =
-    new ToGenerator[Real, Double] {
-      def apply(t: Real) = new Generator[Double] {
-        def get(implicit r: RNG, n: Numeric[Real]): Double =
-          n.toDouble(t)
-        val requirements = Set(t)
-      }
+  implicit val double: ToGenerator[Real, Double] = { (t: Real) =>
+    new Generator[Double] {
+      def get(implicit r: RNG, n: Numeric[Real]): Double = n.toDouble(t)
+      val requirements = Set(t)
     }
+  }
 
   implicit def zip[A, B, X, Y](
       implicit ab: ToGenerator[A, B],
-      xy: ToGenerator[X, Y]): ToGenerator[(A, X), (B, Y)] =
-    new ToGenerator[(A, X), (B, Y)] {
-      def apply(t: (A, X)) = ab(t._1).zip(xy(t._2))
-    }
+      xy: ToGenerator[X, Y]): ToGenerator[(A, X), (B, Y)] = { (t: (A, X)) =>
+    ab(t._1).zip(xy(t._2))
+  }
 
   implicit def seq[T, U](
-      implicit tu: ToGenerator[T, U]): ToGenerator[Seq[T], Seq[U]] =
-    new ToGenerator[Seq[T], Seq[U]] {
-      def apply(t: Seq[T]) =
-        Generator.traverse(t.map { x =>
-          tu(x)
-        })
-    }
+      implicit tu: ToGenerator[T, U]): ToGenerator[Seq[T], Seq[U]] = {
+    (t: Seq[T]) =>
+      Generator.traverse(t.map(tu(_)))
+  }
 
   implicit def map[K, T, U](
-      implicit tu: ToGenerator[T, U]): ToGenerator[Map[K, T], Map[K, U]] =
-    new ToGenerator[Map[K, T], Map[K, U]] {
-      def apply(t: Map[K, T]) =
-        Generator
-          .traverse(t.toList.map {
-            case (k, x) =>
-              tu(x).map { v =>
-                k -> v
-              }
-          })
-          .map(_.toMap)
-    }
+      implicit tu: ToGenerator[T, U]): ToGenerator[Map[K, T], Map[K, U]] = {
+    (t: Map[K, T]) =>
+      Generator
+        .traverse(t.toList.map {
+          case (k, x) =>
+            tu(x).map { v =>
+              k -> v
+            }
+        })
+        .map(_.toMap)
+  }
+
 }

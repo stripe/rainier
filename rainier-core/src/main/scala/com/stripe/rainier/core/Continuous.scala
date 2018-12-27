@@ -27,9 +27,7 @@ trait Continuous extends Distribution[Double] {
 
 object Continuous {
   implicit def gen[C <: Continuous]: ToGenerator[C, Double] =
-    new ToGenerator[C, Double] {
-      def apply(c: C) = c.generator
-    }
+    (c: C) => c.generator
 }
 
 /**
