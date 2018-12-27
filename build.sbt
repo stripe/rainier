@@ -34,7 +34,7 @@ scalafmtOnCompile in ThisBuild := true
 
 lazy val commonSettings = Seq(
   organization:= "com.stripe",
-  scalaVersion := "2.12.7",
+  scalaVersion := "2.12.8",
   crossScalaVersions := List("2.11.12", scalaVersion.value),
   releaseCrossBuild := true,
   releasePublishArtifactsAction := PgpKeys.publishSigned.value,
