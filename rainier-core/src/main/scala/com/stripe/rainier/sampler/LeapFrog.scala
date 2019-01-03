@@ -1,5 +1,4 @@
 package com.stripe.rainier.sampler
-import scala.collection.mutable.ArrayBuffer
 
 private[sampler] case class LeapFrog(density: DensityFunction) {
   /*
@@ -13,6 +12,9 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
   private val inputOutputSize = potentialIndex + 1
   private val pqBuf = new Array[Double](inputOutputSize)
   private val qBuf = new Array[Double](nVars)
+
+  // instance of parameters used in longestStepUntilUTurn
+  private val isUturnBuf = new Array[Double](inputOutputSize)
 
   def newQs(stepSize: Double): Unit = {
     var i = nVars
@@ -102,21 +104,20 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
   private def longestStepUntilUTurn(params: Array[Double],
                                     l0: Int,
                                     stepSize: Double): Int = {
-
-    val out = params
     var l = 0
     while (!isUTurn(params)) {
       l += 1
       steps(1, stepSize)
       if (l == l0)
-        copy(pqBuf, out)
+        copy(pqBuf, isUturnBuf)
     }
     if (l < l0) {
       steps(l0 - l, stepSize)
-      copy(pqBuf, out)
+      l
+    } else {
+      copy(isUturnBuf, pqBuf)
+      l
     }
-    copy(out, pqBuf)
-    l
   }
 
   /**
@@ -143,20 +144,11 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
     * Calculate a vector representing the empirical distribution
     * of the steps taken until a u-turn
     */
-  def empiricalLongestSteps(
-      params: Array[Double],
-      l0: Int,
-      k: Int,
-      stepSize: Double)(implicit rng: RNG): Vector[Int] = {
-
-    var i = 0
-    val buf = new ArrayBuffer[Int]
-    while (i < k) {
-      buf += longestBatchStep(params, l0, stepSize)
-      i += 1
-    }
-    buf.toVector
-  }
+  def empiricalLongestSteps(params: Array[Double],
+                            l0: Int,
+                            k: Int,
+                            stepSize: Double)(implicit rng: RNG): Vector[Int] =
+    Vector.fill(k)(longestBatchStep(params, l0, stepSize))
 
   private def copy(sourceArray: Array[Double],
                    targetArray: Array[Double]): Unit =
