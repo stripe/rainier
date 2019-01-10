@@ -113,11 +113,10 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
     }
     if (l < l0) {
       steps(l0 - l, stepSize)
-      l
     } else {
       copy(isUturnBuf, pqBuf)
-      l
     }
+    l
   }
 
   /**
