@@ -109,7 +109,7 @@ class RandomVariable[+T](val value: T, val targets: Set[Target]) {
     (allSamples, diagnostics)
   }
 
-  lazy val targetGroup = TargetGroup(targets)
+  lazy val targetGroup = TargetGroup(targets, 500)
   lazy val dataFn =
     Compiler.default.compileTargets(targetGroup, true, 4)
 
