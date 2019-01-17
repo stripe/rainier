@@ -41,7 +41,7 @@ abstract class SBCBenchmark {
 
   @Benchmark
   def compile() =
-    Compiler.default.compileTargets(TargetGroup(model.targets), true, 4)
+    Compiler.default.compileTargets(TargetGroup(model.targets, 0), true, 4)
 
   @Benchmark
   def run() =
