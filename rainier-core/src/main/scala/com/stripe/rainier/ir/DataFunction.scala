@@ -15,7 +15,7 @@ Output layout:
 - numOutputs data-less outputs
 - for 0 <= i < data.size:
    - numOutputs first-run outputs
-   - for 0 <= j <= batchBits:
+   - for batchBits >= j >= 0:
       - numOutputs batch outputs
  */
 case class DataFunction(cf: CompiledFunction,
@@ -25,6 +25,10 @@ case class DataFunction(cf: CompiledFunction,
                         data: Array[Array[Array[Double]]]) {
   val numInputs = cf.numInputs
   val numGlobals = cf.numGlobals
+
+  require(data.isEmpty || DataFunction.logTwo(data.map { a =>
+    a.head.size
+  }.min) >= batchBits)
 
   private val inputMultiplier = (1 << (batchBits + 1))
   private val inputStartIndices =
@@ -104,8 +108,7 @@ case class DataFunction(cf: CompiledFunction,
                            inputStartIndex: Int,
                            outputStartIndex: Int): Unit =
     if (n > 0) {
-      val bit =
-        Math.floor(Math.log(n.toDouble) / Math.log(2)).toInt.min(batchBits)
+      val bit = DataFunction.logTwo(n).min(batchBits)
       val newN = initBatchInputs(inputs, inputStartIndex, d, n, bit)
       computeBatchOutputs(inputs, globals, outputs, outputStartIndex, bit)
       computeBatch(inputs,
@@ -147,9 +150,13 @@ case class DataFunction(cf: CompiledFunction,
                                   bit: Int): Unit = {
     var o = 0
     while (o < numOutputs) {
-      val outputIndex = startIndex + ((bit + 1) * numOutputs) + o
+      val outputIndex = startIndex + ((batchBits - bit + 1) * numOutputs) + o
       outputs(o) += cf.output(inputs, globals, outputIndex)
       o += 1
     }
   }
+}
+
+object DataFunction {
+  def logTwo(n: Int): Int = Math.floor(Math.log(n.toDouble) / Math.log(2)).toInt
 }

@@ -47,7 +47,7 @@ class Target(val real: Real, val placeholders: Map[Variable, Array[Double]]) {
     }
 
   def batched(batchBits: Int): (List[Variable], List[Real]) = {
-    val (variables, outputs) =
+    val (batchVariables, outputs) =
       0.to(batchBits)
         .toList
         .map { i =>
@@ -55,7 +55,8 @@ class Target(val real: Real, val placeholders: Map[Variable, Array[Double]]) {
         }
         .unzip
 
-    (placeholderVariables ++ variables.flatMap(_.flatten), real :: outputs)
+    (placeholderVariables ++ batchVariables.flatMap(_.flatten),
+     real :: outputs.reverse)
   }
 
   private def batch(bit: Int): (List[List[Variable]], Real) = {
