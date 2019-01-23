@@ -28,8 +28,7 @@ class Target(val real: Real, val placeholders: Map[Variable, Array[Double]]) {
       Real.sum(inlinedRows.toList)
     }
 
-  val MAX_INLINE_TERMS = 500
-  def maybeInlined: Option[Real] =
+  def maybeInlined(maxInlineTerms: Int): Option[Real] =
     if (placeholders.isEmpty)
       Some(real)
     else {
@@ -39,7 +38,7 @@ class Target(val real: Real, val placeholders: Map[Variable, Array[Double]]) {
         result += inlineRow(i)
         i += 1
         result match {
-          case l: Line if (l.ax.size > MAX_INLINE_TERMS) =>
+          case l: Line if (l.ax.size > maxInlineTerms) =>
             return None
           case _ => ()
         }
@@ -48,7 +47,7 @@ class Target(val real: Real, val placeholders: Map[Variable, Array[Double]]) {
     }
 
   def batched(batchBits: Int): (List[Variable], List[Real]) = {
-    val (variables, outputs) =
+    val (batchVariables, outputs) =
       0.to(batchBits)
         .toList
         .map { i =>
@@ -56,7 +55,8 @@ class Target(val real: Real, val placeholders: Map[Variable, Array[Double]]) {
         }
         .unzip
 
-    (placeholderVariables ++ variables.flatMap(_.flatten), real :: outputs)
+    (placeholderVariables ++ batchVariables.flatMap(_.flatten),
+     real :: outputs.reverse)
   }
 
   private def batch(bit: Int): (List[List[Variable]], Real) = {
@@ -95,10 +95,10 @@ case class TargetGroup(base: Real,
                        variables: List[Variable])
 
 object TargetGroup {
-  def apply(targets: Iterable[Target]): TargetGroup = {
+  def apply(targets: Iterable[Target], maxInlineTerms: Int): TargetGroup = {
     val (base, batched) = targets.foldLeft((Real.zero, List.empty[Target])) {
       case ((b, l), t) =>
-        t.maybeInlined match {
+        t.maybeInlined(maxInlineTerms) match {
           case Some(r) => ((b + r), l)
           case None    => (b, t :: l)
         }

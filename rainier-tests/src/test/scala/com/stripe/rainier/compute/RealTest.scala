@@ -28,7 +28,7 @@ class RealTest extends FunSuite {
   }
 
   def assertWithinEpsilon(x: Double, y: Double, clue: String): Unit = {
-    val relativeError = ((x - y).abs / x)
+    val relativeError = ((x - y) / x).abs
     if (!(x.isNaN && y.isNaN || relativeError < 0.001))
       assert(x == y, clue)
     ()
@@ -96,5 +96,11 @@ class RealTest extends FunSuite {
 
   run("pow") { x =>
     x.pow(x)
+  }
+
+  run("gamma fit") { x =>
+    Real.sum(List(1d, 2d, 3d).map { y =>
+      Gamma.standard(x.abs).logDensity(y)
+    })
   }
 }
