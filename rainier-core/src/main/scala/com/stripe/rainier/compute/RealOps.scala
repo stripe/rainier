@@ -195,4 +195,11 @@ private[compute] object RealOps {
 
     vars.toSet
   }
+
+  def distribute(real: Real, maxTerms: Int): Option[Line] =
+    real match {
+      case l: Line => LineOps.distribute(l, maxTerms)
+      case l: LogLine => LogLineOps.distribute(l, maxTerms)
+      case _ => None
+    }
 }

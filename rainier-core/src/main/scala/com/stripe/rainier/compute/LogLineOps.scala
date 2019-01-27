@@ -40,8 +40,7 @@ private[compute] object LogLineOps {
    * we want to do this because we hope that the non-constant (x_0_0...) parts of these terms may be in
       common with something in t (or some later thing we will add s+t to), and we can combine the constants
    */
-  val DistributeToMaxTerms = 20
-  def distribute(line: LogLine): Option[Line] = {
+  def distribute(line: LogLine, maxTerms: Int): Option[Line] = {
 
     def nTerms(l: Line): Int =
       if (l.b == 0.0)
@@ -56,16 +55,16 @@ private[compute] object LogLineOps {
     val initial = (List.empty[(NonConstant, BigDecimal)], Option.empty[Line])
     val (factors, terms) = line.ax.toList.foldLeft(initial) {
       case ((f, None), (l: Line, Real.BigOne))
-          if (nTerms(l) < DistributeToMaxTerms) =>
+          if (nTerms(l) < maxTerms) =>
         (f, Some(l))
       case ((f, Some(t)), (l: Line, Real.BigOne))
-          if ((nTerms(t) * nTerms(l)) < DistributeToMaxTerms) =>
+          if ((nTerms(t) * nTerms(l)) < maxTerms) =>
         (f, Some(LineOps.multiply(t, l)))
       case ((f, None), (l: Line, Real.BigTwo))
-          if (nTerms2(l) < DistributeToMaxTerms) =>
+          if (nTerms2(l) < maxTerms) =>
         (f, Some(LineOps.multiply(l, l)))
       case ((f, Some(t)), (l: Line, Real.BigTwo))
-          if (nTerms(t) * nTerms2(l) < DistributeToMaxTerms) =>
+          if (nTerms(t) * nTerms2(l) < maxTerms) =>
         (f, Some(LineOps.multiply(t, LineOps.multiply(l, l))))
       case ((f, opt), xa) =>
         (xa :: f, opt)

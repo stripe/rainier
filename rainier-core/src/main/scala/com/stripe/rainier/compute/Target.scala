@@ -36,6 +36,7 @@ class Target(val real: Real, val placeholders: Map[Variable, Array[Double]]) {
       var result = Real.zero
       var i = 0
       while (i < nRows) {
+        val iRow = inlineRow(i)
         result += inlineRow(i)
         i += 1
         result match {

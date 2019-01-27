@@ -132,10 +132,6 @@ private object Line {
   def apply(nc: NonConstant): Line =
     nc match {
       case l: Line => l
-      case l: LogLine =>
-        LogLineOps
-          .distribute(l)
-          .getOrElse(Line(Coefficients(l -> Real.BigOne), Real.BigZero))
       case _ => Line(Coefficients(nc -> Real.BigOne), Real.BigZero)
     }
 }

@@ -92,6 +92,15 @@ private[compute] object LineOps {
       (line, Real.BigOne)
   }
 
+  def distribute(line: Line, maxTerms: Int): Option[Line] = ???
+  
+  /*{
+    val l = line.ax.toList
+    l.tail.foldLeft(RealOps.distribute(l.head._1) * l.head._2){
+      case (acc, t) => acc + (RealOps.distribute(t._1) * t._2)
+    }
+  }*/
+
   private def simplify(ax: Coefficients, b: BigDecimal): NonConstant =
     ax match {
       case Coefficients.One(x, Real.BigOne) if b == Real.BigZero =>
