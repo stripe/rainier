@@ -8,7 +8,10 @@ load(
 scala_library(
   name = 'rainierDocs',
   deps = [
+    '//external:jar/com/google/code/findbugs/jsr305',
+    '//external:jar/com/google/flogger/flogger',
     '//rainier-core:rainierCore',
+    '//rainier-trace:rainierTrace',
   ],
   runtime_deps = [],
   exports = [],
