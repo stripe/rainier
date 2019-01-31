@@ -10,6 +10,8 @@ scala_library(
   deps = [
     '//external:jar/com/chuusai/shapeless_2_12',
     '//external:jar/com/cibo/evilplot_2_12',
+    '//external:jar/com/google/code/findbugs/jsr305',
+    '//external:jar/com/google/flogger/flogger',
     '//external:jar/io/circe/circe_core_2_12',
     '//external:jar/io/circe/circe_generic_2_12',
     '//external:jar/io/circe/circe_generic_extras_2_12',

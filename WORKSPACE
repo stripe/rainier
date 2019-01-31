@@ -36,7 +36,7 @@ bind(
 )
 scala_maven_import_external(
   name = 'com_cibo_evilplot_2_12',
-  artifact = 'com.cibo:evilplot_2.12:0.2.0',
+  artifact = 'com.cibo:evilplot_2.12:0.6.0',
   licenses = [],
   server_urls = [
     'https://repo1.maven.org/maven2/',
@@ -47,6 +47,34 @@ scala_maven_import_external(
 bind(
   name = 'jar/com/cibo/evilplot_2_12',
   actual = '@com_cibo_evilplot_2_12//jar'
+)
+scala_maven_import_external(
+  name = 'com_google_code_findbugs_jsr305',
+  artifact = 'com.google.code.findbugs:jsr305:3.0.1',
+  licenses = [],
+  server_urls = [
+    'https://repo1.maven.org/maven2/',
+    'https://dl.bintray.com/cibotech/public/',
+    'http://dl.bintray.com/tpolecat/maven',
+  ]
+)
+bind(
+  name = 'jar/com/google/code/findbugs/jsr305',
+  actual = '@com_google_code_findbugs_jsr305//jar'
+)
+scala_maven_import_external(
+  name = 'com_google_flogger_flogger',
+  artifact = 'com.google.flogger:flogger:0.3.1',
+  licenses = [],
+  server_urls = [
+    'https://repo1.maven.org/maven2/',
+    'https://dl.bintray.com/cibotech/public/',
+    'http://dl.bintray.com/tpolecat/maven',
+  ]
+)
+bind(
+  name = 'jar/com/google/flogger/flogger',
+  actual = '@com_google_flogger_flogger//jar'
 )
 scala_maven_import_external(
   name = 'io_circe_circe_core_2_12',
@@ -260,7 +288,7 @@ bind(
 )
 scala_maven_import_external(
   name = 'org_scala_lang_scala_reflect',
-  artifact = 'org.scala-lang:scala-reflect:2.12.4',
+  artifact = 'org.scala-lang:scala-reflect:2.12.8',
   licenses = [],
   server_urls = [
     'https://repo1.maven.org/maven2/',

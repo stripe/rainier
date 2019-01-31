@@ -8,6 +8,8 @@ load(
 scala_library(
   name = 'rainierTests',
   deps = [
+    '//external:jar/com/google/code/findbugs/jsr305',
+    '//external:jar/com/google/flogger/flogger',
     '//external:jar/org/scala/lang/modules/scala_xml_2_12',
     '//external:jar/org/scala/lang/scala_reflect',
     '//external:jar/org/scala/sbt/test_interface',
@@ -34,5 +36,7 @@ scala_library(
   visibility = [
     '//visibility:public',
   ],
-  srcs = []
+  srcs = [
+    'src/main/scala/com/stripe/rainier/core/SBCModel.scala',
+  ]
 )

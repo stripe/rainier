@@ -8,6 +8,8 @@ load(
 scala_library(
   name = 'rainierBenchmark',
   deps = [
+    '//external:jar/com/google/code/findbugs/jsr305',
+    '//external:jar/com/google/flogger/flogger',
     '//external:jar/net/sf/jopt/simple/jopt_simple',
     '//external:jar/org/apache/commons/commons_math3',
     '//external:jar/org/openjdk/jmh/jmh_core',
@@ -24,6 +26,7 @@ scala_library(
     '//visibility:public',
   ],
   srcs = [
-    'src/main/scala/com/stripe/rainier/bench/RealBenchmark.scala',
+    'src/main/scala/com/stripe/rainier/bench/SBCBenchmark.scala',
+    'src/main/scala/com/stripe/rainier/bench/RegressionBenchmark.scala',
   ]
 )
