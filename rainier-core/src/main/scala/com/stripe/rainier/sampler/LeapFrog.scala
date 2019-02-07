@@ -1,6 +1,7 @@
 package com.stripe.rainier.sampler
 
 import Log._
+import java.util.concurrent.TimeUnit._
 
 private[sampler] case class LeapFrog(density: DensityFunction) {
   /*
@@ -118,6 +119,10 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
     } else {
       copy(isUturnBuf, pqBuf)
     }
+
+    FINER
+      .atMostEvery(1, SECONDS)
+      .log("%d steps until u-turn", l)
     l
   }
 
@@ -127,9 +132,8 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
     * @param l0 the initial number of steps
     * @param stepSize the current value of the leapfrog step size
     */
-  private def longestBatchStep(params: Array[Double],
-                               l0: Int,
-                               stepSize: Double)(implicit rng: RNG): Int = {
+  def longestBatchStep(params: Array[Double], l0: Int, stepSize: Double)(
+      implicit rng: RNG): (Double, Int) = {
 
     initializePs(params)
     copy(params, pqBuf)
@@ -138,18 +142,8 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
     val a = logAcceptanceProb(params, pqBuf)
     if (math.log(u) < a)
       copy(pqBuf, params)
-    l
+    (a, l)
   }
-
-  /**
-    * Calculate a vector representing the empirical distribution
-    * of the steps taken until a u-turn
-    */
-  def empiricalLongestSteps(params: Array[Double],
-                            l0: Int,
-                            k: Int,
-                            stepSize: Double)(implicit rng: RNG): Vector[Int] =
-    Vector.fill(k)(longestBatchStep(params, l0, stepSize))
 
   private def copy(sourceArray: Array[Double],
                    targetArray: Array[Double]): Unit =

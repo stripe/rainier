@@ -7,7 +7,7 @@ final private class DualAvg(
     delta: Double,
     var logStepSize: Double,
     var logStepSizeBar: Double,
-    var avgAcceptanceProb: Double,
+    var avgError: Double,
     var iteration: Int,
     shrinkageTarget: Double,
     stepSizeUpdateDenom: Double = 0.05,
@@ -20,27 +20,22 @@ final private class DualAvg(
   def update(logAcceptanceProb: Double): Unit = {
     val newAcceptanceProb = Math.exp(logAcceptanceProb)
     iteration = iteration + 1
-    val avgAcceptanceProbMultiplier =
+    val avgErrorMultiplier =
       1.0 / (iteration.toDouble + acceptanceProbUpdateDenom)
     val stepSizeMultiplier = Math.pow(iteration.toDouble, -decayRate)
 
-    avgAcceptanceProb = (
-      (1.0 - avgAcceptanceProbMultiplier) * avgAcceptanceProb
-        + (avgAcceptanceProbMultiplier * (delta - newAcceptanceProb))
+    avgError = (
+      (1.0 - avgErrorMultiplier) * avgError
+        + (avgErrorMultiplier * (delta - newAcceptanceProb))
     )
 
     logStepSize = (
       shrinkageTarget
-        - (avgAcceptanceProb * Math.sqrt(iteration.toDouble) / stepSizeUpdateDenom)
+        - (avgError * Math.sqrt(iteration.toDouble) / stepSizeUpdateDenom)
     )
 
     logStepSizeBar = (stepSizeMultiplier * logStepSize
       + (1.0 - stepSizeMultiplier) * logStepSizeBar)
-
-    FINEST.log("warmup iteration %d, avgAcceptanceProb %f, logStepSize %f",
-               iteration,
-               avgAcceptanceProb,
-               logStepSize)
   }
 }
 
@@ -50,38 +45,34 @@ private object DualAvg {
       delta = delta,
       logStepSize = Math.log(stepSize),
       logStepSizeBar = 0.0,
-      avgAcceptanceProb = 0.0,
+      avgError = 0.0,
       iteration = 0,
       shrinkageTarget = Math.log(10 * stepSize)
     )
 
-  def findStepSize(lf: LeapFrog,
-                   params: Array[Double],
-                   delta: Double,
-                   nSteps: Int,
-                   iterations: Int)(implicit rng: RNG): Double = {
-    FINE.log("Finding reasonable initial step size")
-    val stepSize0 = findReasonableStepSize(lf, params)
-    FINE.log("Found initial step size of %f", stepSize0)
-
+  def findStepSize(delta: Double, stepSize0: Double, iterations: Int)(
+      fn: Double => Double): Double = {
     if (stepSize0 == 0.0)
       0.0
     else {
       val dualAvg = DualAvg(delta, stepSize0)
       var i = 0
       while (i < iterations) {
-        val logAcceptanceProb = lf.step(params, nSteps, dualAvg.stepSize)
+        val logAcceptanceProb = fn(dualAvg.stepSize)
         dualAvg.update(logAcceptanceProb)
+        i += 1
 
         FINER
           .atMostEvery(1, SECONDS)
-          .log("Warmup iteration %d of %d, stepSize %f, acceptance prob %f",
-               i,
-               iterations,
-               dualAvg.stepSize,
-               Math.exp(logAcceptanceProb))
+          .log(
+            "iteration %d of %d, stepSize %f, acceptance %f, error %f",
+            i,
+            iterations,
+            dualAvg.stepSize,
+            Math.exp(logAcceptanceProb),
+            dualAvg.avgError
+          )
 
-        i += 1
       }
       dualAvg.finalStepSize
     }
@@ -94,8 +85,7 @@ private object DualAvg {
                                      exponent: Double): Boolean =
     exponent * logAcceptanceProb > -exponent * Math.log(2)
 
-  private def findReasonableStepSize(lf: LeapFrog,
-                                     params: Array[Double]): Double = {
+  def findReasonableStepSize(lf: LeapFrog, params: Array[Double]): Double = {
     var stepSize = 1.0
     var logAcceptanceProb = lf.tryStepping(params, stepSize)
     val exponent = computeExponent(logAcceptanceProb)
