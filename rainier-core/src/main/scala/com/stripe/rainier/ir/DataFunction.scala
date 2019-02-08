@@ -23,6 +23,7 @@ case class DataFunction(cf: CompiledFunction,
                         numParamInputs: Int,
                         numOutputs: Int,
                         data: Array[Array[Array[Double]]]) {
+  println("Data.size " + data.size)
   val numInputs = cf.numInputs
   val numGlobals = cf.numGlobals
 
