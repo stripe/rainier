@@ -56,7 +56,7 @@ final case class EHMC(l0: Int, k: Int) extends Sampler {
           .log("Sampling iteration %d of %d for %d steps, acceptance rate %f",
                i,
                iterations,
-               nSteps, 
+               nSteps,
                (acceptSum / i))
 
         val logAccept = lf.step(params, nSteps, stepSize)

@@ -127,6 +127,14 @@ class RandomVariable[+T](val value: T, val targets: Set[Target]) {
       def gradient(index: Int) = outputs(index + 1)
     }
 
+  def densityAtOrigin: Double = {
+    val inputs = new Array[Double](dataFn.numInputs)
+    val globals = new Array[Double](dataFn.numGlobals)
+    val outputs = new Array[Double](dataFn.numOutputs)
+    dataFn(inputs, globals, outputs)
+    outputs(0)
+  }
+
   lazy val densityValue: Real = targetGroup.base
 
   //this is really just here to allow destructuring in for{}
@@ -196,4 +204,8 @@ object RandomVariable {
 
   def fill[A](k: Int)(fn: => RandomVariable[A]): RandomVariable[Seq[A]] =
     traverse(List.fill(k)(fn))
+
+  def fit[L, T](l: L, seq: Seq[T])(
+      implicit toLH: ToLikelihood[L, T]): RandomVariable[Unit] =
+    toLH(l).fit(seq)
 }

@@ -78,9 +78,9 @@ object Encoder {
 
       def create(acc: List[Variable]): (Map[String, Real], List[Variable]) =
         toMap.fields.foldRight((Map[String, Real](), acc)) {
-          case (field, (map, _)) =>
+          case (field, (map, a)) =>
             val v = new Variable
-            (map + (field -> v), v :: acc)
+            (map + (field -> v), v :: a)
         }
 
       def extract(t: T, acc: List[Double]): List[Double] = {
