@@ -12,9 +12,15 @@ final case class HMC(nSteps: Int) extends Sampler {
     val lf = LeapFrog(density)
     val params = lf.initialize
 
+    FINE.log("Finding reasonable initial step size")
+    val stepSize0 = DualAvg.findReasonableStepSize(lf, params)
+    FINE.log("Found initial step size of %f", stepSize0)
+
     FINE.log("Finding step size using %d warmup iterations", warmupIterations)
     val stepSize =
-      DualAvg.findStepSize(lf, params, 0.65, nSteps, warmupIterations)
+      DualAvg.findStepSize(0.65, stepSize0, warmupIterations) { ss =>
+        lf.step(params, nSteps, ss)
+      }
     FINE.log("Found step size of %f", stepSize)
 
     if (stepSize == 0.0) {
@@ -25,16 +31,21 @@ final case class HMC(nSteps: Int) extends Sampler {
       var i = 0
       FINE.log("Sampling for %d iterations", iterations)
 
+      var acceptSum = 0.0
       while (i < iterations) {
-        FINER
-          .atMostEvery(1, SECONDS)
-          .log("Sampling iteration %d of %d", i, iterations)
-        lf.step(params, nSteps, stepSize)
+        val logAccept = lf.step(params, nSteps, stepSize)
+        acceptSum += Math.exp(logAccept)
         if (i % keepEvery == 0)
           buf += lf.variables(params)
         i += 1
+        FINER
+          .atMostEvery(1, SECONDS)
+          .log("Sampling iteration %d of %d, acceptance rate %f",
+               i,
+               iterations,
+               (acceptSum / i))
       }
-      FINE.log("Finished sampling")
+      FINE.log("Finished sampling, acceptance rate %f", (acceptSum / i))
 
       buf.toList
     }
