@@ -204,4 +204,8 @@ object RandomVariable {
 
   def fill[A](k: Int)(fn: => RandomVariable[A]): RandomVariable[Seq[A]] =
     traverse(List.fill(k)(fn))
+
+  def fit[L, T](l: L, seq: Seq[T])(
+      implicit toLH: ToLikelihood[L, T]): RandomVariable[Unit] =
+    toLH(l).fit(seq)
 }
