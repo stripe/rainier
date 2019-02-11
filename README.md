@@ -40,7 +40,7 @@ Within those constraints, however, it is extremely fast. Rainier takes advantage
 
 For example, on a MacBook Pro, gradient evaluation for [Neal's funnel](/rainier-example/src/main/scala/com/stripe/rainier/example/Funnel.scala) takes under a microsecond, and end-to-end compilation and sampling for 10,000 iterations of HMC with 5 leapfrog steps each takes around 50ms.
 
-Depending on the model, our benchmarking shows Rainier runningg anywhere from 0.1x to 10x the speed of Stan. Please keep in mind that benchmarking is hard,  micro-benchmarks are often meaningless, and raw performance aside, Stan's sampler implementation is much more sophisticated and much, much, much better tested than Rainier's!
+Depending on the model, our benchmarking shows Rainier running anywhere from 0.1x to 10x the speed of Stan. Please keep in mind that benchmarking is hard,  micro-benchmarks are often meaningless, and raw performance aside, Stan's sampler implementation is much more sophisticated and much, much, much better tested than Rainier's!
 
 ## Documentation
 
