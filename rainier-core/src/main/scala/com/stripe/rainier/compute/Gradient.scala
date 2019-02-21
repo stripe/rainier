@@ -103,10 +103,10 @@ private object Gradient {
       case LogOp => gradient.toReal * (Real.one / child.original)
       case ExpOp => gradient.toReal * child
       case AbsOp =>
-        Real.lt(child.original,
+        Real.eq(child.original,
                 Real.zero,
-                gradient.toReal * child.original / child,
-                Real.zero)
+                Real.zero,
+                gradient.toReal * child.original / child)
       case NoOp => gradient.toReal
     }
   }
