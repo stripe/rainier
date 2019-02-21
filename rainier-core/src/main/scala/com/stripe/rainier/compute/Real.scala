@@ -30,6 +30,9 @@ sealed trait Real {
   def exp: Real = RealOps.unary(this, ir.ExpOp)
   def log: Real = RealOps.unary(this, ir.LogOp)
 
+  def sin: Real = RealOps.unary(this, ir.SinOp)
+  def cos: Real = RealOps.unary(this, ir.CosOp)
+
   //because abs does not have a smooth derivative, try to avoid using it
   def abs: Real = RealOps.unary(this, ir.AbsOp)
 

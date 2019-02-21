@@ -27,3 +27,5 @@ case object ExpOp extends UnaryOp
 case object LogOp extends UnaryOp
 case object AbsOp extends UnaryOp
 case object NoOp extends UnaryOp
+case object CosOp extends UnaryOp
+case object SinOp extends UnaryOp

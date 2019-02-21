@@ -142,6 +142,8 @@ object IRViz {
       case ExpOp => "exp"
       case LogOp => "ln"
       case AbsOp => "abs"
+      case SinOp => "sin"
+      case CosOp => "cos"
       case NoOp  => "nop"
     }
 

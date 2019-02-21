@@ -70,6 +70,15 @@ class RealTest extends FunSuite {
   run("log") { x =>
     x.abs.log
   }
+  run("sin") { x =>
+    x.sin
+  }
+  run("cos") { x =>
+    x.cos
+  }
+  run("cos(x^2") { x =>
+    (x * x).cos
+  }
   run("temp") { x =>
     val t = x * 3
     t + t

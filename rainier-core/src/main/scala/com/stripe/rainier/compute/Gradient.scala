@@ -107,7 +107,9 @@ private object Gradient {
                 Real.zero,
                 Real.zero,
                 gradient.toReal * child.original / child)
-      case NoOp => gradient.toReal
+      case NoOp  => gradient.toReal
+      case SinOp => gradient.toReal * child.original.cos
+      case CosOp => gradient.toReal * (Real.zero - child.original.sin)
     }
   }
 

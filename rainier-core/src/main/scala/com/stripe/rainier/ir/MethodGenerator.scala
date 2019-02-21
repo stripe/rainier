@@ -76,6 +76,8 @@ private trait MethodGenerator {
       case LogOp => Some(("java/lang/Math", "log"))
       case ExpOp => Some(("java/lang/Math", "exp"))
       case AbsOp => Some(("java/lang/Math", "abs"))
+      case CosOp => Some(("java/lang/Math", "cos"))
+      case SinOp => Some(("java/lang/Math", "sin"))
       case NoOp  => None
     }).foreach {
       case (className, methodName) =>
