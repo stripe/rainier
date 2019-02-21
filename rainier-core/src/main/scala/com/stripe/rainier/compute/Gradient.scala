@@ -54,7 +54,7 @@ private object Gradient {
           case l: Lookup =>
             l.table.zipWithIndex.foreach {
               case (x, i) =>
-                diff(x).register(LookupDiff(l, diff(l), i))
+                diff(x).register(LookupDiff(l, diff(l), i + l.low))
                 visit(x)
             }
             visit(l.index)
