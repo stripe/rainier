@@ -28,7 +28,7 @@ val data: List[(Int,Int)] = ???
 val model = for {
     slope <- LogNormal(0,1).param
     intercept <- LogNormal(0,1).param
-    regression <- Predictor.fromInt{x => Poisson(x*slope + intercept)}.fit(data)
+    regression <- Predictor[Int].from{ x => Poisson(x*slope + intercept)}.fit(data)
 } yield regression
 ```
 

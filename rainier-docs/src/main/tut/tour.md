@@ -18,7 +18,7 @@ val data =  List((0,8), (1,12), (2,16), (3,20), (4,21), (5,31), (6,23), (7,33), 
 val model = for {
   slope <- LogNormal(0,1).param
   intercept <- LogNormal(0,1).param
-  regression <- Predictor.fromInt{ x => Poisson(x*slope + intercept) }.fit(data)
+  regression <- Predictor[Int].from{ x => Poisson(x*slope + intercept) }.fit(data)
 } yield regression.predict(21)
 ```
 
