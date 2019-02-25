@@ -13,8 +13,9 @@ class SBCTest extends FunSuite {
   /** Continuous **/
   check(SBCUniformNormal)
   check(SBCLogNormal)
-//  check(SBCExponential)
-//  check(SBCLaplace)
+  check(SBCExponential)
+  check(SBCLaplace)
+  check(SBCGamma)
 
   /** Discrete **/
   check(SBCBernoulli)
