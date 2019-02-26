@@ -27,5 +27,11 @@ case object ExpOp extends UnaryOp
 case object LogOp extends UnaryOp
 case object AbsOp extends UnaryOp
 case object NoOp extends UnaryOp
-case object CosOp extends UnaryOp
+
 case object SinOp extends UnaryOp
+case object CosOp extends UnaryOp
+case object TanOp extends UnaryOp
+
+case object AsinOp extends UnaryOp
+case object AcosOp extends UnaryOp
+case object AtanOp extends UnaryOp

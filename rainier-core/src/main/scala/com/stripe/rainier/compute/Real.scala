@@ -19,7 +19,8 @@ sealed trait Real {
   def +(other: Real): Real = RealOps.add(this, other)
   def *(other: Real): Real = RealOps.multiply(this, other)
 
-  def -(other: Real): Real = this + (other * -1)
+  def unary_- : Real = this * (-1)
+  def -(other: Real): Real = this + (-other)
   def /(other: Real): Real = RealOps.divide(this, other)
 
   def min(other: Real): Real = RealOps.min(this, other)
@@ -32,6 +33,15 @@ sealed trait Real {
 
   def sin: Real = RealOps.unary(this, ir.SinOp)
   def cos: Real = RealOps.unary(this, ir.CosOp)
+  def tan: Real = RealOps.unary(this, ir.TanOp)
+
+  def asin: Real = RealOps.unary(this, ir.AsinOp)
+  def acos: Real = RealOps.unary(this, ir.AcosOp)
+  def atan: Real = RealOps.unary(this, ir.AtanOp)
+
+  def sinh: Real = (this.exp - (-this).exp) / 2
+  def cosh: Real = (this.exp + (-this).exp) / 2
+  def tanh: Real = this.sinh / this.cosh
 
   //because abs does not have a smooth derivative, try to avoid using it
   def abs: Real = RealOps.unary(this, ir.AbsOp)
@@ -92,9 +102,11 @@ object Real {
   private[compute] val BigZero = BigDecimal(0.0)
   private[compute] val BigOne = BigDecimal(1.0)
   private[compute] val BigTwo = BigDecimal(2.0)
+  private[compute] val BigPi = BigDecimal(math.Pi)
   val zero: Real = Constant(BigZero)
   val one: Real = Constant(BigOne)
   val two: Real = Constant(BigTwo)
+  val Pi: Real = Constant(BigPi)
   val infinity: Real = Infinity
   val negInfinity: Real = NegInfinity
 }
