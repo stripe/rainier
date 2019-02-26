@@ -20,8 +20,8 @@ private[compute] object RealOps {
           case TanOp =>
             throw new ArithmeticException(
               "No limit for 'tan' at positive infinity")
-          case AcosOp => throw new ArithmeticException("Acos undefined above 1")
-          case AsinOp => throw new ArithmeticException("Asin undefined above 1")
+          case AcosOp => throw new ArithmeticException("acos undefined above 1")
+          case AsinOp => throw new ArithmeticException("asin undefined above 1")
           case AtanOp => Real.Pi / 2
           case NoOp   => Infinity
         }
@@ -42,9 +42,9 @@ private[compute] object RealOps {
             throw new ArithmeticException(
               "No limit for 'tan' at negative infinity")
           case AcosOp =>
-            throw new ArithmeticException("Acos undefined below -1")
+            throw new ArithmeticException("acos undefined below -1")
           case AsinOp =>
-            throw new ArithmeticException("Asin undefined below -1")
+            throw new ArithmeticException("asin undefined below -1")
           case AtanOp => -Real.Pi / 2
           case NoOp   => original
         }
