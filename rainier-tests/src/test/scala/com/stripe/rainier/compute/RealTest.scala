@@ -94,6 +94,15 @@ class RealTest extends FunSuite {
   run("atan", reference = math.atan) { x =>
     x.atan
   }
+  run("sinh", reference = math.sinh) { x =>
+    x.sinh
+  }
+  run("cosh", reference = math.cosh) { x =>
+    x.cosh
+  }
+  run("tanh", reference = math.tanh) { x =>
+    x.tanh
+  }
   run("cos(x^2)") { x =>
     (x * x).cos
   }
