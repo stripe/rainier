@@ -4,8 +4,10 @@ import org.scalatest._
 import com.stripe.rainier.core._
 import scala.util.{Try, Success, Failure}
 class RealTest extends FunSuite {
-  def run(description: String, testDeriv: Double => Boolean = _ => true)(
-      fn: Real => Real): Unit = {
+  def run(description: String,
+          defined: Double => Boolean = _ => true,
+          derivable: Double => Boolean = _ => true,
+          reference: Double => Double = null)(fn: Real => Real): Unit = {
     test(description) {
       val x = new Variable
       val result = fn(x)
@@ -17,13 +19,17 @@ class RealTest extends FunSuite {
         case Success(Constant(bd))             => bd.toDouble
         case Failure(_: ArithmeticException)   => 0.0 / 0.0
         case Failure(_: NumberFormatException) => 0.0 / 0.0
+        case Failure(e)                        => throw e
         case x                                 => sys.error("Non-constant value " + x)
       }
 
       val c = Compiler(200, 100).compile(List(x), result)
       val dc = Compiler(200, 100).compile(List(x), deriv)
-      List(1.0, 0.0, -1.0, 2.0, -2.0, 0.5, -0.5).foreach { n =>
+      List(1.0, 0.0, -1.0, 2.0, -2.0, 0.5, -0.5).filter(defined).foreach { n =>
         val constant = evalAt(n)
+        if (reference != null) {
+          assertWithinEpsilon(constant, reference(n), s"[c/ref, n=$n]")
+        }
         val eval = new Evaluator(Map(x -> n))
         val withVar = eval.toDouble(result)
         assertWithinEpsilon(constant, withVar, s"[c/ev, n=$n]")
@@ -31,7 +37,7 @@ class RealTest extends FunSuite {
         assertWithinEpsilon(withVar, compiled, s"[ev/ir, n=$n]")
 
         // derivatives of automated differentiation vs numeric differentiation
-        if (testDeriv(n)) {
+        if (derivable(n)) {
           val dx = 10E-6
           val numDiff = (evalAt(n + dx) - evalAt(n - dx)) / (dx * 2)
           val diffWithVar = eval.toDouble(deriv)
@@ -70,6 +76,36 @@ class RealTest extends FunSuite {
   run("log") { x =>
     x.abs.log
   }
+  run("sin", reference = math.sin) { x =>
+    x.sin
+  }
+  run("cos", reference = math.cos) { x =>
+    x.cos
+  }
+  run("tan", reference = math.tan) { x =>
+    x.tan
+  }
+  run("asin", defined = x => x > -1 && x < 1, reference = math.asin) { x =>
+    x.asin
+  }
+  run("acos", defined = x => x > -1 && x < 1, reference = math.acos) { x =>
+    x.acos
+  }
+  run("atan", reference = math.atan) { x =>
+    x.atan
+  }
+  run("sinh", reference = math.sinh) { x =>
+    x.sinh
+  }
+  run("cosh", reference = math.cosh) { x =>
+    x.cosh
+  }
+  run("tanh", reference = math.tanh) { x =>
+    x.tanh
+  }
+  run("cos(x^2)") { x =>
+    (x * x).cos
+  }
   run("temp") { x =>
     val t = x * 3
     t + t
@@ -77,19 +113,19 @@ class RealTest extends FunSuite {
   run("abs") { x =>
     x.abs
   }
-  run("max(x, 0)", testDeriv = _ != 0) { x =>
+  run("max(x, 0)", derivable = _ != 0) { x =>
     x.max(0)
   }
   run("max(x, x)") { x =>
     x.max(x)
   }
-  run("x > 0 ? x^2 : 1", testDeriv = _ != 0) { x =>
+  run("x > 0 ? x^2 : 1", derivable = _ != 0) { x =>
     Real.gt(x, 0, x * x, 1)
   }
-  run("x > 0 ? 1 : x + 1", testDeriv = _ != 0) { x =>
+  run("x > 0 ? 1 : x + 1", derivable = _ != 0) { x =>
     Real.gt(x, 0, 1, x + 1)
   }
-  run("x > 0 ? x^2 : x + 1", _ != 0) { x =>
+  run("x > 0 ? x^2 : x + 1", derivable = _ != 0) { x =>
     Real.gt(x, 0, x * x, x + 1)
   }
 
@@ -108,7 +144,7 @@ class RealTest extends FunSuite {
     Real.one / (x.exp + 1)
   }
 
-  run("log x^2", testDeriv = _ != 0) { x =>
+  run("log x^2", derivable = _ != 0) { x =>
     x.pow(2).log
   }
 
@@ -124,20 +160,20 @@ class RealTest extends FunSuite {
       (x * x * x))
   }
 
-  run("lookup", testDeriv = _ => false) { x => // not derivable
+  run("lookup", derivable = _ => false) { x => // not derivable
     val i = x.abs * 2 //should be a non-negative whole number
     Lookup(i, Real.seq(List(0, 1, 2, 3, 4)))
   }
 
   val exponents = scala.util.Random.shuffle(-40.to(40))
-  run("exponent sums", testDeriv = _ != 0) { x =>
+  run("exponent sums", derivable = _ != 0) { x =>
     exponents.foldLeft(x) {
       case (a, e) =>
         (a + x.pow(e)) * x
     }
   }
 
-  run("pow", testDeriv = _ >= 0) { x =>
+  run("pow", derivable = _ >= 0) { x =>
     x.pow(x)
   }
 

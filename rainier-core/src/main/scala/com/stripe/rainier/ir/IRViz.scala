@@ -139,10 +139,16 @@ object IRViz {
 
   def opLabel(op: UnaryOp): String =
     op match {
-      case ExpOp => "exp"
-      case LogOp => "ln"
-      case AbsOp => "abs"
-      case NoOp  => "nop"
+      case ExpOp  => "exp"
+      case LogOp  => "ln"
+      case AbsOp  => "abs"
+      case SinOp  => "sin"
+      case CosOp  => "cos"
+      case TanOp  => "tan"
+      case AsinOp => "asin"
+      case AcosOp => "acos"
+      case AtanOp => "atan"
+      case NoOp   => "nop"
     }
 
   def opLabel(op: BinaryOp): String =

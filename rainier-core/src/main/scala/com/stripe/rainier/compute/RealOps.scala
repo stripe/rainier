@@ -6,7 +6,25 @@ private[compute] object RealOps {
 
   def unary(original: Real, op: UnaryOp): Real =
     original match {
-      case Infinity => Infinity
+      case Infinity =>
+        op match {
+          case ExpOp => Infinity
+          case LogOp => Infinity
+          case AbsOp => Infinity
+          case SinOp =>
+            throw new ArithmeticException(
+              "No limit for 'sin' at positive infinity")
+          case CosOp =>
+            throw new ArithmeticException(
+              "No limit for 'cos' at positive infinity")
+          case TanOp =>
+            throw new ArithmeticException(
+              "No limit for 'tan' at positive infinity")
+          case AcosOp => throw new ArithmeticException("acos undefined above 1")
+          case AsinOp => throw new ArithmeticException("asin undefined above 1")
+          case AtanOp => Real.Pi / 2
+          case NoOp   => Infinity
+        }
       case NegInfinity =>
         op match {
           case ExpOp => Real.zero
@@ -14,14 +32,34 @@ private[compute] object RealOps {
             throw new ArithmeticException(
               "Cannot take the log of a negative number")
           case AbsOp => Infinity
-          case NoOp  => original
+          case SinOp =>
+            throw new ArithmeticException(
+              "No limit for 'sin' at negative infinity")
+          case CosOp =>
+            throw new ArithmeticException(
+              "No limit for 'cos' at negative infinity")
+          case TanOp =>
+            throw new ArithmeticException(
+              "No limit for 'tan' at negative infinity")
+          case AcosOp =>
+            throw new ArithmeticException("acos undefined below -1")
+          case AsinOp =>
+            throw new ArithmeticException("asin undefined below -1")
+          case AtanOp => -Real.Pi / 2
+          case NoOp   => original
         }
       case Constant(Real.BigZero) =>
         op match {
-          case ExpOp => Real.one
-          case LogOp => NegInfinity
-          case AbsOp => Real.zero
-          case NoOp  => original
+          case ExpOp  => Real.one
+          case LogOp  => NegInfinity
+          case AbsOp  => Real.zero
+          case SinOp  => Real.zero
+          case CosOp  => Real.one
+          case TanOp  => Real.zero
+          case AsinOp => Real.zero
+          case AcosOp => Real.Pi / 2
+          case AtanOp => Real.zero
+          case NoOp   => original
         }
       case Constant(value) =>
         op match {
@@ -32,8 +70,14 @@ private[compute] object RealOps {
                 "Cannot take the log of " + value.toDouble)
             else
               Real(Math.log(value.toDouble))
-          case AbsOp => Real(value.abs)
-          case NoOp  => original
+          case AbsOp  => Real(value.abs)
+          case SinOp  => Real(Math.sin(value.toDouble))
+          case CosOp  => Real(Math.cos(value.toDouble))
+          case TanOp  => Real(Math.tan(value.toDouble))
+          case AsinOp => Real(Math.asin(value.toDouble))
+          case AcosOp => Real(Math.acos(value.toDouble))
+          case AtanOp => Real(Math.atan(value.toDouble))
+          case NoOp   => original
         }
       case nc: NonConstant =>
         val opt = (op, nc) match {
