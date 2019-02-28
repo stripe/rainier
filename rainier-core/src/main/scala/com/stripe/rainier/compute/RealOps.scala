@@ -190,6 +190,8 @@ private[compute] object RealOps {
   def pow(a: BigDecimal, b: BigDecimal): BigDecimal =
     if (b.isValidInt)
       a.pow(b.toInt)
+    else if (a < Real.BigZero)
+      throw new ArithmeticException(s"Undefined: $a ^ $b")
     else
       BigDecimal(Math.pow(a.toDouble, b.toDouble))
 

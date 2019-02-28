@@ -18,6 +18,8 @@ trait LowPriToReal {
           Real.negInfinity
         else if (double.isInfinity)
           Real.infinity
+        else if (double.isNaN)
+          throw new ArithmeticException("Trying to convert NaN to Real")
         else
           Constant(BigDecimal(double))
       }

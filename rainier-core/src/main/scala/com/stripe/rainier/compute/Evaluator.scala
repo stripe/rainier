@@ -4,6 +4,8 @@ class Evaluator(var cache: Map[Real, Double]) extends Numeric[Real] {
 
   def toDouble(x: Real): Double = x match {
     case Constant(v) => v.toDouble
+    case Infinity    => Double.PositiveInfinity
+    case NegInfinity => Double.NegativeInfinity
     case _ =>
       cache.get(x) match {
         case Some(v) => v
@@ -22,14 +24,16 @@ class Evaluator(var cache: Map[Real, Double]) extends Numeric[Real] {
     case l: Line =>
       l.ax.toList.map { case (r, d) => toDouble(r) * d.toDouble }.sum + l.b.toDouble
     case l: LogLine =>
-      l.ax.toList
-        .map { case (r, d) => Math.pow(toDouble(r), d.toDouble) }
-        .reduce(_ * _)
+      l.ax.toList.map { case (r, d) => Math.pow(toDouble(r), d.toDouble) }.product
     case Unary(original, op) =>
-      eval(RealOps.unary(Constant(toDouble(original)), op))
+      // must use Real(_) constructor since Constant(_) constructor would result in undesirable errors
+      // at infinities and unhelpful NumberFormatException on NaN, all due to conversion to BigDecimal
+      val ev = Real(toDouble(original))
+      eval(RealOps.unary(ev, op))
     case Compare(left, right) =>
       eval(RealOps.compare(toDouble(left), toDouble(right)))
     case Pow(base, exponent) =>
+      // note: result can be NaN when base < 0 && exponent is negative and not an int
       Math.pow(toDouble(base), toDouble(exponent))
     case l: Lookup =>
       toDouble(l.table(toDouble(l.index).toInt - l.low))
