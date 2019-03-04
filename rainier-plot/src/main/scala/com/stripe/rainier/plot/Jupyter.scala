@@ -10,7 +10,8 @@ object Jupyter {
     DisplayData
       .png(
         EvilTracePlot.renderBytes(
-          EvilTracePlot.traces(out, truth, lagMax, numBars)))
+          EvilTracePlot.traces(out, truth, lagMax, numBars),
+          com.cibo.evilplot.geometry.Extent(1200, out.head.keys.size * 300)))
       .show()
 
   def pairs(out: Seq[Map[String, Double]],
@@ -19,8 +20,7 @@ object Jupyter {
     DisplayData
       .png(
         EvilTracePlot.renderBytes(
-          EvilTracePlot.traces(out, truth, numBars)
-        )
-      )
+          EvilTracePlot.pairs(out, truth, numBars),
+          com.cibo.evilplot.geometry.Extent(out.head.keys.size * 300, out.head.keys.size * 300)))
       .show()
 }
