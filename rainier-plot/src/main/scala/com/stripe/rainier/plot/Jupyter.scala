@@ -1,6 +1,7 @@
 package com.stripe.rainier.plot
 
 import almond.interpreter.api._
+import com.cibo.evilplot.geometry._
 
 object Jupyter {
   def traces(out: Seq[Map[String, Double]],
@@ -11,7 +12,7 @@ object Jupyter {
       .png(
         EvilTracePlot.renderBytes(
           EvilTracePlot.traces(out, truth, lagMax, numBars),
-          com.cibo.evilplot.geometry.Extent(1200, out.head.keys.size * 300)))
+          Extent(1200, out.head.keys.size * 300.0)))
       .show()
 
   def pairs(out: Seq[Map[String, Double]],
@@ -21,6 +22,6 @@ object Jupyter {
       .png(
         EvilTracePlot.renderBytes(
           EvilTracePlot.pairs(out, truth, numBars),
-          com.cibo.evilplot.geometry.Extent(out.head.keys.size * 300, out.head.keys.size * 300)))
+          Extent(out.head.keys.size * 300.0, out.head.keys.size * 300.0)))
       .show()
 }
