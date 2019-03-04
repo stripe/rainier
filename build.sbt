@@ -107,7 +107,7 @@ lazy val rainierPlot = project.
     libraryDependencies ++= 
       Seq(
         "com.cibo" %% "evilplot" % V.evilplot,
-        "sh.almond" % "interpreter-api" % V.almond)
+        "sh.almond" %% "interpreter-api" % V.almond)
   )
 
 lazy val rainierCats = project.
