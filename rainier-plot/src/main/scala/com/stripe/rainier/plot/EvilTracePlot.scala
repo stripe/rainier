@@ -33,6 +33,23 @@ object EvilTracePlot {
   }
 
   /**
+    * Render plots to a PNG byte array
+    *
+    * @param plots A collection of plots, possibly produced by `traces` or `pairs`
+    * @param path A file path as a string giving the name of a file to be written
+    * @param extent The size of the image to be rendered
+    */
+  def renderBytes(plots: List[List[Plot]],
+                  extent: Extent = Extent(600, 600)): Array[Byte] = {
+    val baos = new java.io.ByteArrayOutputStream
+    javax.imageio.ImageIO
+      .write(Facets(plots).render(extent).asBufferedImage, "png", baos)
+    val array = baos.toByteArray
+    baos.close
+    array
+  }
+
+  /**
     * Autocorrelation function
     *
     * @param x Input data
