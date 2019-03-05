@@ -38,15 +38,18 @@ object EvilTracePlot {
     * @param plots A collection of plots, possibly produced by `traces` or `pairs`
     * @param extent The size of the image to be rendered
     */
-    def renderBytes(plots: List[List[com.cibo.evilplot.plot.Plot]],
-    extent: com.cibo.evilplot.geometry.Extent): Array[Byte] = {
-val baos = new java.io.ByteArrayOutputStream
-javax.imageio.ImageIO
-.write(com.cibo.evilplot.plot.Facets(plots).render(extent).asBufferedImage, "png", baos)
-val array = baos.toByteArray
-baos.close
-array
-}
+  def renderBytes(plots: List[List[com.cibo.evilplot.plot.Plot]],
+                  extent: com.cibo.evilplot.geometry.Extent): Array[Byte] = {
+    val baos = new java.io.ByteArrayOutputStream
+    javax.imageio.ImageIO
+      .write(
+        com.cibo.evilplot.plot.Facets(plots).render(extent).asBufferedImage,
+        "png",
+        baos)
+    val array = baos.toByteArray
+    baos.close
+    array
+  }
 
   /**
     * Autocorrelation function

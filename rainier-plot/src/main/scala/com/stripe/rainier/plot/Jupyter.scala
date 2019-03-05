@@ -20,8 +20,8 @@ object Jupyter {
             numBars: Int = 30)(implicit outputHandler: OutputHandler): Unit =
     DisplayData
       .png(
-        EvilTracePlot.renderBytes(
-          EvilTracePlot.pairs(out, truth, numBars),
-          Extent(out.head.keys.size * 300.0, out.head.keys.size * 300.0)))
+        EvilTracePlot.renderBytes(EvilTracePlot.pairs(out, truth, numBars),
+                                  Extent(out.head.keys.size * 300.0,
+                                         out.head.keys.size * 300.0)))
       .show()
 }
