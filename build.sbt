@@ -73,6 +73,7 @@ lazy val V = new {
   val scalacheck = "1.14.0"
   val scalatest = "3.0.5"
   val flogger = "0.3.1"
+  val shadedAsm = "0.2.1"
 }
 
 // primary modules
@@ -80,16 +81,12 @@ lazy val V = new {
 lazy val rainierCore = project.
   in(file("rainier-core")).
   settings(name := "rainier-core").
-  dependsOn(shadedAsm).
   settings(commonSettings).
   settings(
-    bazelRuleDeps := (Deps(Compile) - ScalaLib(Compile)) +
-      BazelDep("//.rainier-shaded-asm", "asmTreeShaded") +
-      BazelDep("//.rainier-shaded-asm", "asmShaded") -
-      BazelDep("//.rainier-shaded-asm", "shadedAsm"),
     libraryDependencies ++= Seq(
       "com.google.flogger" % "flogger" % V.flogger,
-      "com.google.flogger" % "flogger-system-backend" % V.flogger)
+      "com.google.flogger" % "flogger-system-backend" % V.flogger,
+      "com.stripe" % "rainier-shaded-asm_6.0" % V.shadedAsm)
   )
 
 lazy val rainierPlot = project.
