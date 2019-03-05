@@ -96,7 +96,7 @@ You can enable fatal warnings locally by either setting
 Rainier is published on sonatype. To use it in your SBT project, you can add the following to your build.sbt:
 
 ```scala
-libraryDependencies += "com.stripe" %% "rainier-core" % "0.2.1"
+libraryDependencies += "com.stripe" %% "rainier-core" % "0.2.2"
 ```
 
 ## Authors
@@ -104,6 +104,7 @@ libraryDependencies += "com.stripe" %% "rainier-core" % "0.2.1"
 Rainier's primary author is [Avi Bryant](http://twitter.com/avibryant) with major contributions from [Mio Alter](https://twitter.com/mioalter). Many thanks also for contributions and support from:
  * Christian Anderson
  * Alex Beal
+ * Arthur Bit-Monnot
  * Travis Brown
  * Peadar Coyle
  * Mike Heaton
