@@ -75,6 +75,7 @@ lazy val V = new {
   val flogger = "0.3.1"
   val almond = "0.3.0"
   val scala = "2.12.8"
+  val shadedAsm = "0.2.1"
 }
 
 // primary modules
@@ -82,16 +83,12 @@ lazy val V = new {
 lazy val rainierCore = project.
   in(file("rainier-core")).
   settings(name := "rainier-core").
-  dependsOn(shadedAsm).
   settings(commonSettings).
   settings(
-    bazelRuleDeps := (Deps(Compile) - ScalaLib(Compile)) +
-      BazelDep("//.rainier-shaded-asm", "asmTreeShaded") +
-      BazelDep("//.rainier-shaded-asm", "asmShaded") -
-      BazelDep("//.rainier-shaded-asm", "shadedAsm"),
     libraryDependencies ++= Seq(
       "com.google.flogger" % "flogger" % V.flogger,
-      "com.google.flogger" % "flogger-system-backend" % V.flogger)
+      "com.google.flogger" % "flogger-system-backend" % V.flogger,
+      "com.stripe" % "rainier-shaded-asm_6.0" % V.shadedAsm)
   )
 
 lazy val rainierPlot = project.
@@ -143,8 +140,7 @@ lazy val rainierDocs = project.
     scalacOptions in Tut ~= {
       _.filterNot(sc => sc.contains("-Ywarn-unused") || sc == "-Yno-predef" )
     },
-    // todo: uncomment once docs generation is deterministic
-    // tutTargetDirectory := (baseDirectory in LocalRootProject).value / "docs"
+    tutTargetDirectory := (baseDirectory in LocalRootProject).value / "docs"
   ).
   settings(unpublished)
 
