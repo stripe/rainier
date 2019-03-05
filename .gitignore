@@ -5,3 +5,4 @@ target/
 .DS_Store
 .bloop/
 .metals/
+.ipynb_checkpoints/

@@ -73,6 +73,8 @@ lazy val V = new {
   val scalacheck = "1.14.0"
   val scalatest = "3.0.5"
   val flogger = "0.3.1"
+  val almond = "0.3.0"
+  val scala = "2.12.8"
   val shadedAsm = "0.2.1"
 }
 
@@ -95,8 +97,15 @@ lazy val rainierPlot = project.
   dependsOn(rainierCore).
   settings(commonSettings).
   settings(
-    resolvers += Resolver.bintrayRepo("cibotech", "public"),
-    libraryDependencies += "com.cibo" %% "evilplot" % V.evilplot)
+    resolvers ++= 
+      Seq(
+        Resolver.bintrayRepo("cibotech", "public"),
+        "jitpack" at "https://jitpack.io"),
+    libraryDependencies ++= 
+      Seq(
+        "com.cibo" %% "evilplot" % V.evilplot,
+        "sh.almond" %% "interpreter-api" % V.almond)
+  )
 
 lazy val rainierCats = project.
   in(file("rainier-cats")).
