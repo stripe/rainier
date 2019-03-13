@@ -20,9 +20,9 @@ class SBCTest extends FunSuite {
   /** Discrete **/
   check(SBCBernoulli)
   check(SBCBinomial)
-//  check(SBCBinomialNormalApproximation)
+  //check(SBCBinomialNormalApproximation)
   check(SBCBinomialPoissonApproximation)
   check(SBCGeometric)
-//  check(SBCGeometricZeroInflated)
+  //check(SBCGeometricZeroInflated)
   check(SBCNegativeBinomial)
 }
