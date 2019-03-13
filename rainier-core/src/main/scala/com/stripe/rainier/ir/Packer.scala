@@ -1,46 +1,72 @@
 package com.stripe.rainier.ir
 
-import scala.collection.mutable
+import scala.util.control.TailCalls
+import TailCalls.TailRec
 
 private class Packer(methodSizeLimit: Int) {
-  private val methodDefs: mutable.Map[Sym, MethodDef] = mutable.Map.empty
-  def methods: Set[MethodDef] = methodDefs.values.toSet
+  private var methodDefs: List[MethodDef] = Nil
+  def methods = methodDefs
 
-  def pack(p: IR): MethodRef = {
-    val (pIR, _) = traverse(p)
-    createMethod(pIR)
+  def pack(p: Expr): MethodRef = {
+    val (pExpr, _) = traverse(p, 0).result
+    createMethod(UnaryIR(pExpr, NoOp))
   }
 
-  private def traverse(p: IR): (IR, Int) = p match {
-    case v: VarDef =>
-      val (rhsIR, rhsSize) =
-        traverseAndMaybePack(v.rhs, methodSizeLimit - 1)
-      (new VarDef(v.sym, rhsIR), rhsSize + 1)
-    case b: BinaryIR =>
-      val (leftIR, leftSize) =
-        traverseAndMaybePack(b.left, methodSizeLimit / 2)
-      val (rightIR, rightSize) =
-        traverseAndMaybePack(b.right, methodSizeLimit / 2)
-      (new BinaryIR(leftIR, rightIR, b.op), leftSize + rightSize + 1)
-    case u: UnaryIR =>
-      val (originalIR, irSize) =
-        traverseAndMaybePack(u.original, methodSizeLimit - 1)
-      (new UnaryIR(originalIR, u.op), irSize + 1)
-    case _ => (p, 1)
-  }
+  private def traverse(p: Expr, parentSize: Int): TailRec[(Expr, Int)] =
+    p match {
+      case v: VarDef => traverseVarDef(v, parentSize)
+      case _: Ref    => TailCalls.done((p, 1))
+    }
 
-  private def traverseAndMaybePack(p: IR, localSizeLimit: Int): (IR, Int) = {
-    val (pt, size) = traverse(p)
-    if (size >= localSizeLimit)
-      (createMethod(pt), 1)
-    else
-      (pt, size)
-  }
+  private def traverseVarDef(v: VarDef,
+                             parentSize: Int): TailRec[(VarDef, Int)] =
+    TailCalls.tailcall(traverseIR(v.rhs).map {
+      case (ir, irSize) =>
+        val (newIR, newSize) =
+          if ((irSize + parentSize) > methodSizeLimit)
+            (createMethod(ir), 1)
+          else
+            (ir, irSize)
+        (new VarDef(v.sym, newIR), newSize + 1)
+    })
+
+  private def traverseIR(p: IR): TailRec[(IR, Int)] =
+    p match {
+      case b: BinaryIR =>
+        traverse(b.left, 2).flatMap {
+          case (leftExpr, leftSize) =>
+            traverse(b.right, leftSize + 1).map {
+              case (rightExpr, rightSize) =>
+                (new BinaryIR(leftExpr, rightExpr, b.op),
+                 leftSize + rightSize + 1)
+            }
+        }
+      case u: UnaryIR =>
+        traverse(u.original, 1).map {
+          case (expr, exprSize) =>
+            (new UnaryIR(expr, u.op), exprSize + 1)
+        }
+      case l: LookupIR =>
+        traverse(l.index, l.table.size).map {
+          case (indexExpr, indexSize) =>
+            (new LookupIR(indexExpr, l.table, l.low), indexSize + l.table.size)
+        }
+      case s: SeqIR =>
+        traverseVarDef(s.first, 1).flatMap {
+          case (firstDef, firstSize) =>
+            traverseVarDef(s.second, firstSize + 1).map {
+              case (secondDef, secondSize) =>
+                (SeqIR(firstDef, secondDef), firstSize + secondSize + 1)
+            }
+        }
+      case _: MethodRef =>
+        sys.error("there shouldn't be any method refs yet")
+    }
 
   private def createMethod(rhs: IR): MethodRef = {
     val s = Sym.freshSym()
     val md = new MethodDef(s, rhs)
-    methodDefs(s) = md
+    methodDefs = md :: methodDefs
     MethodRef(s)
   }
 }

@@ -19,7 +19,8 @@ sealed trait Real {
   def +(other: Real): Real = RealOps.add(this, other)
   def *(other: Real): Real = RealOps.multiply(this, other)
 
-  def -(other: Real): Real = this + (other * -1)
+  def unary_- : Real = this * (-1)
+  def -(other: Real): Real = this + (-other)
   def /(other: Real): Real = RealOps.divide(this, other)
 
   def min(other: Real): Real = RealOps.min(this, other)
@@ -30,17 +31,33 @@ sealed trait Real {
   def exp: Real = RealOps.unary(this, ir.ExpOp)
   def log: Real = RealOps.unary(this, ir.LogOp)
 
-  //because abs a does not have a smooth derivative, try to avoid using it
-  def abs: Real = RealOps.unary(this, ir.AbsOp)
-  def rectifier: Real = RealOps.unary(this, ir.RectifierOp)
+  def sin: Real = RealOps.unary(this, ir.SinOp)
+  def cos: Real = RealOps.unary(this, ir.CosOp)
+  def tan: Real = RealOps.unary(this, ir.TanOp)
 
-  def >(other: Real): Real = (this - other).rectifier
-  def <(other: Real): Real = (other - this).rectifier
-  def >=(other: Real): Real = If(this - other, this > other, Real.one)
-  def <=(other: Real): Real = If(this - other, this < other, Real.one)
+  def asin: Real = RealOps.unary(this, ir.AsinOp)
+  def acos: Real = RealOps.unary(this, ir.AcosOp)
+  def atan: Real = RealOps.unary(this, ir.AtanOp)
+
+  def sinh: Real = (this.exp - (-this).exp) / 2
+  def cosh: Real = (this.exp + (-this).exp) / 2
+  def tanh: Real = this.sinh / this.cosh
+
+  //because abs does not have a smooth derivative, try to avoid using it
+  def abs: Real = RealOps.unary(this, ir.AbsOp)
 
   lazy val variables: List[Variable] = RealOps.variables(this).toList
   lazy val gradient: List[Real] = Gradient.derive(variables, this)
+
+  def writeGraph(path: String): Unit = {
+    RealViz("output" -> this).write(path)
+  }
+
+  def writeIRGraph(path: String, methodSizeLimit: Option[Int] = None): Unit = {
+    RealViz
+      .ir(List(("output", this)), variables, false, methodSizeLimit)
+      .write(path)
+  }
 }
 
 object Real {
@@ -52,6 +69,9 @@ object Real {
   def sum(seq: Iterable[Real]): Real =
     seq.foldLeft(Real.zero)(_ + _)
 
+  def dot(left: Iterable[Real], right: Iterable[Real]): Real =
+    sum(left.zip(right).map { case (a, b) => a * b })
+
   def logSumExp(seq: Iterable[Real]): Real = {
     val max = seq.reduce(_ max _)
     val shifted = seq.map { x =>
@@ -61,21 +81,32 @@ object Real {
     summed.log + max
   }
 
-  //print out Scala code that is equivalent to what the Compiler
-  //would produce as JVM bytecode
-  def trace(real: Real): Unit = {
-    val translator = new Translator
-    val irs = List(translator.toIR(real))
-    val params = RealOps.variables(real).toList.map(_.param)
-    ir.Tracer.trace(params, irs)
-  }
+  def eq(left: Real, right: Real, ifTrue: Real, ifFalse: Real): Real =
+    lookupCompare(left, right, ifFalse, ifTrue, ifFalse)
+  def lt(left: Real, right: Real, ifTrue: Real, ifFalse: Real): Real =
+    lookupCompare(left, right, ifFalse, ifFalse, ifTrue)
+  def gt(left: Real, right: Real, ifTrue: Real, ifFalse: Real): Real =
+    lookupCompare(left, right, ifTrue, ifFalse, ifFalse)
+  def lte(left: Real, right: Real, ifTrue: Real, ifFalse: Real): Real =
+    lookupCompare(left, right, ifFalse, ifTrue, ifTrue)
+  def gte(left: Real, right: Real, ifTrue: Real, ifFalse: Real): Real =
+    lookupCompare(left, right, ifTrue, ifTrue, ifFalse)
+
+  private def lookupCompare(left: Real,
+                            right: Real,
+                            gt: Real,
+                            eq: Real,
+                            lt: Real) =
+    Lookup(RealOps.compare(left, right), List(lt, eq, gt), -1)
 
   private[compute] val BigZero = BigDecimal(0.0)
   private[compute] val BigOne = BigDecimal(1.0)
   private[compute] val BigTwo = BigDecimal(2.0)
+  private[compute] val BigPi = BigDecimal(math.Pi)
   val zero: Real = Constant(BigZero)
   val one: Real = Constant(BigOne)
   val two: Real = Constant(BigTwo)
+  val Pi: Real = Constant(BigPi)
   val infinity: Real = Infinity
   val negInfinity: Real = NegInfinity
 }
@@ -104,13 +135,12 @@ Because it is common for ax to have a large number of terms, this is deliberatel
 as equality comparisons would be too expensive. The impact of this is subtle, see [0] at the bottom of this file
 for an example.
  */
-private final class Line private (val ax: Map[NonConstant, BigDecimal],
-                                  val b: BigDecimal)
+private final class Line private (val ax: Coefficients, val b: BigDecimal)
     extends NonConstant
 
 private object Line {
-  def apply(ax: Map[NonConstant, BigDecimal], b: BigDecimal): Line = {
-    require(ax.size > 0)
+  def apply(ax: Coefficients, b: BigDecimal): Line = {
+    require(!ax.isEmpty)
     new Line(ax, b)
   }
 
@@ -120,8 +150,8 @@ private object Line {
       case l: LogLine =>
         LogLineOps
           .distribute(l)
-          .getOrElse(Line(Map(l -> Real.BigOne), Real.BigZero))
-      case _ => Line(Map(nc -> Real.BigOne), Real.BigZero)
+          .getOrElse(Line(Coefficients(l -> Real.BigOne), Real.BigZero))
+      case _ => Line(Coefficients(nc -> Real.BigOne), Real.BigZero)
     }
 }
 
@@ -135,41 +165,54 @@ Luckily, this aligns well with the demands of numerical stability: if you have t
 together, you are better off adding their logs.
  */
 private final case class LogLine(
-    ax: Map[NonConstant, BigDecimal]
+    ax: Coefficients
 ) extends NonConstant {
-  require(ax.size > 0)
+  require(!ax.isEmpty)
 }
 
 private object LogLine {
   def apply(nc: NonConstant): LogLine =
     nc match {
       case l: LogLine => l
-      case _          => LogLine(Map(nc -> Real.BigOne))
+      case _          => LogLine(Coefficients(nc -> Real.BigOne))
     }
 }
 
 /*
-This node type represents an expression which is equal to `whenZero` when
-test is equal to zero, and `whenNotZero` otherwise. Because this expression
-does not have a smooth derivative, it is not recommended that you use this
-unless absolutely necessary.
+Evaluates to 0 if left and right are equal, 1 if left > right, and
+-1 if left < right.
  */
-final case class If private (test: NonConstant,
-                             whenNonZero: Real,
-                             whenZero: Real)
+private final case class Compare private (left: Real, right: Real)
     extends NonConstant
-
-object If {
-  def apply(test: Real, whenNonZero: => Real, whenZero: => Real): Real =
-    test match {
-      case Constant(Real.BigZero)               => whenZero
-      case Constant(_) | Infinity | NegInfinity => whenNonZero
-      case nc: NonConstant                      => new If(nc, whenNonZero, whenZero)
-    }
-}
 
 private final case class Pow private (base: Real, exponent: NonConstant)
     extends NonConstant
+
+/*
+Evaluates to the (index-low)'th element of table.
+ */
+private final class Lookup(val index: NonConstant,
+                           val table: Array[Real],
+                           val low: Int)
+    extends NonConstant
+
+object Lookup {
+  def apply(table: Seq[Real]): Real => Real =
+    apply(_, table)
+
+  def apply(index: Real, table: Seq[Real], low: Int = 0): Real =
+    index match {
+      case Infinity | NegInfinity =>
+        throw new ArithmeticException("Cannot lookup an infinite number")
+      case Constant(v) =>
+        if (v.isWhole)
+          table(v.toInt - low)
+        else
+          throw new ArithmeticException("Cannot lookup a non-integral number")
+      case nc: NonConstant =>
+        new Lookup(nc, table.toArray, low)
+    }
+}
 
 /*
 [0] For example, of the following four ways of computing the same result, only the first two will have the most efficient

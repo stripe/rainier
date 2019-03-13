@@ -16,7 +16,7 @@ object FitHLL {
 
   def compare(scale: Int): RandomVariable[Real] = {
     println("Generating a set with max size " + scale)
-    val data = 1.to(scale).map { i =>
+    val data = 1.to(scale).map { _ =>
       rand.nextInt
     }
     println("True size: " + data.toSet.size)

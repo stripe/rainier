@@ -3,3 +3,6 @@ bazel-*
 project/target
 target/
 .DS_Store
+.bloop/
+.metals/
+.ipynb_checkpoints/

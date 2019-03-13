@@ -33,6 +33,25 @@ object EvilTracePlot {
   }
 
   /**
+    * Render plots to a PNG byte array
+    *
+    * @param plots A collection of plots, possibly produced by `traces` or `pairs`
+    * @param extent The size of the image to be rendered
+    */
+  def renderBytes(plots: List[List[com.cibo.evilplot.plot.Plot]],
+                  extent: com.cibo.evilplot.geometry.Extent): Array[Byte] = {
+    val baos = new java.io.ByteArrayOutputStream
+    javax.imageio.ImageIO
+      .write(
+        com.cibo.evilplot.plot.Facets(plots).render(extent).asBufferedImage,
+        "png",
+        baos)
+    val array = baos.toByteArray
+    baos.close
+    array
+  }
+
+  /**
     * Autocorrelation function
     *
     * @param x Input data
@@ -119,9 +138,10 @@ object EvilTracePlot {
           }
         } else if (k1 < k2) {
           val scat =
-            ScatterPlot(out.map(p => Point(p(k1), p(k2))),
-                        pointRenderer =
-                          Some(PointRenderer.default(Some(HSL(210, 100, 56)))))
+            ScatterPlot(
+              out.map(p => Point(p(k1), p(k2))),
+              pointRenderer =
+                Some(PointRenderer.default[Point](Some(HSL(210, 100, 56)))))
               .xAxis()
               .yAxis()
               .frame()

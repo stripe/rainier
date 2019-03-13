@@ -1,77 +1,194 @@
-build                Bernoulli                          42.000
-build                DLM                              8000.000
-build                ElOne1000Error                   2800.000
-build                ElOne100Error                     280.000
-build                ElTwo1000Error                   8000.000
-build                ElTwo100Error                    1600.000
-build                FullNormal                     120000.000
-build                Funnel                            240.000
-build                Normal                          80000.000
-build                Poisson                           240.000
-build                Trivial                             0.200
-compileGradient      Bernoulli                        1600.000
-compileGradient      DLM                            400000.000
-compileGradient      ElOne1000Error                  60000.000
-compileGradient      ElOne100Error                    8000.000
-compileGradient      ElTwo1000Error                    400.000
-compileGradient      ElTwo100Error                     400.000
-compileGradient      FullNormal                       2800.000
-compileGradient      Funnel                            800.000
-compileGradient      Normal                            800.000
-compileGradient      Poisson                           400.000
-compileGradient      Trivial                           144.000
-eval                 Bernoulli                          32.000
-eval                 DLM                              1020.000
-eval                 ElOne1000Error                   2400.000
-eval                 ElOne100Error                     234.000
-eval                 ElTwo1000Error                      2.000
-eval                 ElTwo100Error                       2.000
-eval                 FullNormal                         72.000
-eval                 Funnel                              8.000
-eval                 Normal                              2.000
-eval                 Poisson                             4.000
-eval                 Trivial                             0.040
-evalGradient         Bernoulli                          36.000
-evalGradient         DLM                             20000.000
-evalGradient         ElOne1000Error                   6000.000
-evalGradient         ElOne100Error                     480.000
-evalGradient         ElTwo1000Error                      2.000
-evalGradient         ElTwo100Error                       0.800
-evalGradient         FullNormal                         84.000
-evalGradient         Funnel                              6.000
-evalGradient         Normal                              0.600
-evalGradient         Poisson                             0.600
-evalGradient         Trivial                             0.040
-gradient             Bernoulli                          96.000
-gradient             DLM                             60000.000
-gradient             ElOne1000Error                   6400.000
-gradient             ElOne100Error                     600.000
-gradient             ElTwo1000Error                      4.000
-gradient             ElTwo100Error                       4.000
-gradient             FullNormal                        400.000
-gradient             Funnel                             30.000
-gradient             Normal                              8.000
-gradient             Poisson                             6.000
-gradient             Trivial                             0.600
-run                  Bernoulli                           0.400
-run                  DLM                                30.000
-run                  ElOne1000Error                      4.000
-run                  ElOne100Error                       0.400
-run                  ElTwo1000Error                      0.600
-run                  ElTwo100Error                       0.600
-run                  FullNormal                          2.000
-run                  Funnel                              6.000
-run                  Normal                              0.600
-run                  Poisson                             0.400
-run                  Trivial                             0.040
-runGradient          Bernoulli                           0.400
-runGradient          DLM                                16.000
-runGradient          ElOne1000Error                      2.600
-runGradient          ElOne100Error                       0.600
-runGradient          ElTwo1000Error                      0.600
-runGradient          ElTwo100Error                       0.600
-runGradient          FullNormal                          2.000
-runGradient          Funnel                              6.000
-runGradient          Normal                              0.600
-runGradient          Poisson                             0.600
-runGradient          Trivial                             0.040
+build                Bernoulli                 100                          100.000
+build                Bernoulli                 1000                        1000.000
+build                Bernoulli                 10000                      10000.000
+build                Bernoulli                 100000                    100000.000
+build                Binomial                  100                         1000.000
+build                Binomial                  1000                       10000.000
+build                Binomial                  10000                     100000.000
+build                Binomial                  100000                   1000000.000
+build                BinomialPoissonApproximation 100                          400.000
+build                BinomialPoissonApproximation 1000                        3000.000
+build                BinomialPoissonApproximation 10000                      30000.000
+build                BinomialPoissonApproximation 100000                    300000.000
+build                Exponential               100                          200.000
+build                Exponential               1000                        2000.000
+build                Exponential               10000                      20000.000
+build                Exponential               100000                    200000.000
+build                GaussianMixture           100                          200.000
+build                GaussianMixture           1000                        2000.000
+build                GaussianMixture           10000                      20000.000
+build                GaussianMixture           100000                    200000.000
+build                Geometric                 100                          100.000
+build                Geometric                 1000                        1000.000
+build                Geometric                 10000                      10000.000
+build                Geometric                 100000                    100000.000
+build                GeometricZeroInflated     100                          200.000
+build                GeometricZeroInflated     1000                        1000.000
+build                GeometricZeroInflated     10000                      10000.000
+build                GeometricZeroInflated     100000                    100000.000
+build                Laplace                   100                          100.000
+build                Laplace                   1000                        1000.000
+build                Laplace                   10000                      10000.000
+build                Laplace                   100000                    100000.000
+build                LogNormal                 100                          200.000
+build                LogNormal                 1000                        2000.000
+build                LogNormal                 10000                      20000.000
+build                LogNormal                 100000                    200000.000
+build                NegativeBinomial          100                         2000.000
+build                NegativeBinomial          1000                       20000.000
+build                NegativeBinomial          10000                     100000.000
+build                NegativeBinomial          100000                   1000000.000
+build                Normal                    100                          200.000
+build                Normal                    1000                        1000.000
+build                Normal                    10000                      10000.000
+build                Normal                    100000                    100000.000
+build                Regression                100:10                      3000.000
+build                Regression                100:10000                1000000.000
+build                Regression                10:10                        400.000
+build                Regression                10:10000                   30000.000
+build                Regression                1:10                         200.000
+build                Regression                1:10000                    10000.000
+compile              Bernoulli                 100                         1000.000
+compile              Bernoulli                 1000                        5000.000
+compile              Bernoulli                 10000                      40000.000
+compile              Bernoulli                 100000                    400000.000
+compile              Binomial                  100                        10000.000
+compile              Binomial                  1000                      100000.000
+compile              Binomial                  10000                    1000000.000
+compile              Binomial                  100000                  10000000.000
+compile              BinomialPoissonApproximation 100                        10000.000
+compile              BinomialPoissonApproximation 1000                      100000.000
+compile              BinomialPoissonApproximation 10000                    1000000.000
+compile              BinomialPoissonApproximation 100000                  10000000.000
+compile              Exponential               100                        10000.000
+compile              Exponential               1000                       10000.000
+compile              Exponential               10000                      10000.000
+compile              Exponential               100000                     10000.000
+compile              GaussianMixture           100                        30000.000
+compile              GaussianMixture           1000                       20000.000
+compile              GaussianMixture           10000                      20000.000
+compile              GaussianMixture           100000                     20000.000
+compile              Geometric                 100                         1000.000
+compile              Geometric                 1000                       10000.000
+compile              Geometric                 10000                     100000.000
+compile              Geometric                 100000                   1000000.000
+compile              GeometricZeroInflated     100                        20000.000
+compile              GeometricZeroInflated     1000                       30000.000
+compile              GeometricZeroInflated     10000                      20000.000
+compile              GeometricZeroInflated     100000                     20000.000
+compile              Laplace                   100                        20000.000
+compile              Laplace                   1000                       10000.000
+compile              Laplace                   10000                      10000.000
+compile              Laplace                   100000                     10000.000
+compile              LogNormal                 100                         3000.000
+compile              LogNormal                 1000                       30000.000
+compile              LogNormal                 10000                     200000.000
+compile              LogNormal                 100000                   3000000.000
+compile              NegativeBinomial          100                        10000.000
+compile              NegativeBinomial          1000                      100000.000
+compile              NegativeBinomial          10000                    1000000.000
+compile              NegativeBinomial          100000                  10000000.000
+compile              Normal                    100                         2000.000
+compile              Normal                    1000                       20000.000
+compile              Normal                    10000                     200000.000
+compile              Normal                    100000                   2000000.000
+compile              Regression                100:10                         1.000
+compile              Regression                100:10000                     10.000
+compile              Regression                10:10                          1.000
+compile              Regression                10:10000                       2.000
+compile              Regression                1:10                           1.000
+compile              Regression                1:10000                        1.000
+run                  Bernoulli                 100                            1.000
+run                  Bernoulli                 1000                           1.000
+run                  Bernoulli                 10000                          1.000
+run                  Bernoulli                 100000                         1.000
+run                  Binomial                  100                            1.000
+run                  Binomial                  1000                           1.000
+run                  Binomial                  10000                          1.000
+run                  Binomial                  100000                         1.000
+run                  BinomialPoissonApproximation 100                            1.000
+run                  BinomialPoissonApproximation 1000                           1.000
+run                  BinomialPoissonApproximation 10000                          1.000
+run                  BinomialPoissonApproximation 100000                         1.000
+run                  Exponential               100                            2.000
+run                  Exponential               1000                          40.000
+run                  Exponential               10000                        400.000
+run                  Exponential               100000                      4000.000
+run                  GaussianMixture           100                           20.000
+run                  GaussianMixture           1000                         300.000
+run                  GaussianMixture           10000                       3000.000
+run                  GaussianMixture           100000                     30000.000
+run                  Geometric                 100                            1.000
+run                  Geometric                 1000                           1.000
+run                  Geometric                 10000                          1.000
+run                  Geometric                 100000                         1.000
+run                  GeometricZeroInflated     100                           10.000
+run                  GeometricZeroInflated     1000                        1000.000
+run                  GeometricZeroInflated     10000                       4000.000
+run                  GeometricZeroInflated     100000                     30000.000
+run                  Laplace                   100                           10.000
+run                  Laplace                   1000                         100.000
+run                  Laplace                   10000                       1000.000
+run                  Laplace                   100000                     10000.000
+run                  LogNormal                 100                            1.000
+run                  LogNormal                 1000                           1.000
+run                  LogNormal                 10000                          1.000
+run                  LogNormal                 100000                         1.000
+run                  NegativeBinomial          100                            1.000
+run                  NegativeBinomial          1000                           1.000
+run                  NegativeBinomial          10000                          1.000
+run                  NegativeBinomial          100000                         1.000
+run                  Normal                    100                            1.000
+run                  Normal                    1000                           1.000
+run                  Normal                    10000                          1.000
+run                  Normal                    100000                         1.000
+run                  Regression                100:10                       100.000
+run                  Regression                100:10000                  30000.000
+run                  Regression                10:10                         10.000
+run                  Regression                10:10000                    3000.000
+run                  Regression                1:10                           2.000
+run                  Regression                1:10000                        2.000
+synthesize           Bernoulli                 100                          100.000
+synthesize           Bernoulli                 1000                        1000.000
+synthesize           Bernoulli                 10000                      10000.000
+synthesize           Bernoulli                 100000                    100000.000
+synthesize           Binomial                  100                         1000.000
+synthesize           Binomial                  1000                       10000.000
+synthesize           Binomial                  10000                     100000.000
+synthesize           Binomial                  100000                   1000000.000
+synthesize           BinomialPoissonApproximation 100                          300.000
+synthesize           BinomialPoissonApproximation 1000                        3000.000
+synthesize           BinomialPoissonApproximation 10000                      30000.000
+synthesize           BinomialPoissonApproximation 100000                    300000.000
+synthesize           Exponential               100                          200.000
+synthesize           Exponential               1000                        2000.000
+synthesize           Exponential               10000                      20000.000
+synthesize           Exponential               100000                    200000.000
+synthesize           GaussianMixture           100                          200.000
+synthesize           GaussianMixture           1000                        2000.000
+synthesize           GaussianMixture           10000                      20000.000
+synthesize           GaussianMixture           100000                    200000.000
+synthesize           Geometric                 100                          100.000
+synthesize           Geometric                 1000                        1000.000
+synthesize           Geometric                 10000                      10000.000
+synthesize           Geometric                 100000                    100000.000
+synthesize           GeometricZeroInflated     100                          100.000
+synthesize           GeometricZeroInflated     1000                        1000.000
+synthesize           GeometricZeroInflated     10000                      10000.000
+synthesize           GeometricZeroInflated     100000                    100000.000
+synthesize           Laplace                   100                          100.000
+synthesize           Laplace                   1000                        1000.000
+synthesize           Laplace                   10000                      10000.000
+synthesize           Laplace                   100000                    100000.000
+synthesize           LogNormal                 100                          100.000
+synthesize           LogNormal                 1000                        1000.000
+synthesize           LogNormal                 10000                      10000.000
+synthesize           LogNormal                 100000                    100000.000
+synthesize           NegativeBinomial          100                         1000.000
+synthesize           NegativeBinomial          1000                       10000.000
+synthesize           NegativeBinomial          10000                     100000.000
+synthesize           NegativeBinomial          100000                   1000000.000
+synthesize           Normal                    100                          100.000
+synthesize           Normal                    1000                        1000.000
+synthesize           Normal                    10000                      10000.000
+synthesize           Normal                    100000                    100000.000

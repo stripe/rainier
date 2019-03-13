@@ -6,22 +6,60 @@ private[compute] object RealOps {
 
   def unary(original: Real, op: UnaryOp): Real =
     original match {
-      case Infinity => Infinity
+      case Infinity =>
+        op match {
+          case ExpOp => Infinity
+          case LogOp => Infinity
+          case AbsOp => Infinity
+          case SinOp =>
+            throw new ArithmeticException(
+              "No limit for 'sin' at positive infinity")
+          case CosOp =>
+            throw new ArithmeticException(
+              "No limit for 'cos' at positive infinity")
+          case TanOp =>
+            throw new ArithmeticException(
+              "No limit for 'tan' at positive infinity")
+          case AcosOp => throw new ArithmeticException("acos undefined above 1")
+          case AsinOp => throw new ArithmeticException("asin undefined above 1")
+          case AtanOp => Real.Pi / 2
+          case NoOp   => Infinity
+        }
       case NegInfinity =>
         op match {
           case ExpOp => Real.zero
           case LogOp =>
             throw new ArithmeticException(
               "Cannot take the log of a negative number")
-          case AbsOp       => Infinity
-          case RectifierOp => Real.zero
+          case AbsOp => Infinity
+          case SinOp =>
+            throw new ArithmeticException(
+              "No limit for 'sin' at negative infinity")
+          case CosOp =>
+            throw new ArithmeticException(
+              "No limit for 'cos' at negative infinity")
+          case TanOp =>
+            throw new ArithmeticException(
+              "No limit for 'tan' at negative infinity")
+          case AcosOp =>
+            throw new ArithmeticException("acos undefined below -1")
+          case AsinOp =>
+            throw new ArithmeticException("asin undefined below -1")
+          case AtanOp => -Real.Pi / 2
+          case NoOp   => original
         }
       case Constant(Real.BigZero) =>
         op match {
-          case ExpOp       => Real.one
-          case LogOp       => NegInfinity
-          case AbsOp       => Real.zero
-          case RectifierOp => Real.zero
+          case ExpOp  => Real.one
+          case LogOp  => NegInfinity
+          case AbsOp  => Real.zero
+          case SinOp  => Real.zero
+          case CosOp  => Real.one
+          case TanOp  => Real.zero
+          case AsinOp => Real.zero
+          case AcosOp => Real.Pi / 2
+          case AtanOp => Real.zero
+          case NoOp   => original
         }
       case Constant(value) =>
         op match {
@@ -32,12 +70,14 @@ private[compute] object RealOps {
                 "Cannot take the log of " + value.toDouble)
             else
               Real(Math.log(value.toDouble))
-          case AbsOp => Real(value.abs)
-          case RectifierOp =>
-            if (value.toDouble < 0)
-              Real.zero
-            else
-              original
+          case AbsOp  => Real(value.abs)
+          case SinOp  => Real(Math.sin(value.toDouble))
+          case CosOp  => Real(Math.cos(value.toDouble))
+          case TanOp  => Real(Math.tan(value.toDouble))
+          case AsinOp => Real(Math.asin(value.toDouble))
+          case AcosOp => Real(Math.acos(value.toDouble))
+          case AtanOp => Real(Math.atan(value.toDouble))
+          case NoOp   => original
         }
       case nc: NonConstant =>
         val opt = (op, nc) match {
@@ -82,10 +122,10 @@ private[compute] object RealOps {
         throw new ArithmeticException("Cannot multiply -inf by zero")
       case (Constant(Real.BigZero), Infinity) =>
         throw new ArithmeticException("Cannot multiply +inf by zero")
-      case (NegInfinity, r)               => If(r > 0, NegInfinity, Infinity)
-      case (r, NegInfinity)               => If(r > 0, NegInfinity, Infinity)
-      case (Infinity, r)                  => If(r > 0, Infinity, NegInfinity)
-      case (r, Infinity)                  => If(r > 0, Infinity, NegInfinity)
+      case (NegInfinity, r)               => Real.gt(r, Real.zero, NegInfinity, Infinity)
+      case (r, NegInfinity)               => Real.gt(r, Real.zero, NegInfinity, Infinity)
+      case (Infinity, r)                  => Real.gt(r, 0, Infinity, NegInfinity)
+      case (r, Infinity)                  => Real.gt(r, 0, Infinity, NegInfinity)
       case (_, Constant(Real.BigZero))    => Real.zero
       case (Constant(Real.BigZero), _)    => Real.zero
       case (_, Constant(Real.BigOne))     => left
@@ -107,10 +147,10 @@ private[compute] object RealOps {
     }
 
   def min(left: Real, right: Real): Real =
-    If(left < right, left, right)
+    Real.lt(left, right, left, right)
 
   def max(left: Real, right: Real): Real =
-    If(left > right, left, right)
+    Real.gt(left, right, left, right)
 
   def pow(original: Real, exponent: Real): Real =
     exponent match {
@@ -150,8 +190,28 @@ private[compute] object RealOps {
   def pow(a: BigDecimal, b: BigDecimal): BigDecimal =
     if (b.isValidInt)
       a.pow(b.toInt)
+    else if (a < Real.BigZero)
+      throw new ArithmeticException(s"Undefined: $a ^ $b")
     else
       BigDecimal(Math.pow(a.toDouble, b.toDouble))
+
+  def compare(left: Real, right: Real): Real =
+    (left, right) match {
+      case (Infinity, Infinity)       => Real.zero
+      case (Infinity, _)              => Real.one
+      case (_, Infinity)              => Constant(-1)
+      case (NegInfinity, NegInfinity) => Real.zero
+      case (NegInfinity, _)           => Constant(-1)
+      case (_, NegInfinity)           => Real.one
+      case (Constant(a), Constant(b)) =>
+        if (a == b)
+          Real.zero
+        else if (a > b)
+          Real.one
+        else
+          Constant(-1)
+      case _ => Compare(left, right)
+    }
 
   def variables(real: Real): Set[Variable] = {
     var seen = Set.empty[Real]
@@ -163,15 +223,17 @@ private[compute] object RealOps {
           case Constant(_) | Infinity | NegInfinity => ()
           case v: Variable                          => vars = v :: vars
           case u: Unary                             => loop(u.original)
-          case l: Line                              => l.ax.keys.foreach(loop)
-          case l: LogLine                           => l.ax.keys.foreach(loop)
-          case If(test, nz, z) =>
-            loop(test)
-            loop(nz)
-            loop(z)
+          case l: Line                              => l.ax.terms.foreach(loop)
+          case l: LogLine                           => l.ax.terms.foreach(loop)
+          case Compare(left, right) =>
+            loop(left)
+            loop(right)
           case Pow(base, exponent) =>
             loop(base)
             loop(exponent)
+          case l: Lookup =>
+            loop(l.index)
+            l.table.foreach(loop)
         }
       }
 

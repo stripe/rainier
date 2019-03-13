@@ -7,7 +7,7 @@ import org.scalatest.FunSuite
 class RandomVariableTest extends FunSuite {
 
   def assertEquiv[S, T](x: RandomVariable[S], y: RandomVariable[S])(
-      implicit s: Sampleable[S, T]): Unit = {
+      implicit s: ToGenerator[S, T]): Unit = {
     List(0.0, 1.0, -1.0).foreach { paramValue =>
       val (xValue, xDensity) = sampleOnce(x, paramValue)
       val (yValue, yDensity) = sampleOnce(y, paramValue)
@@ -18,17 +18,18 @@ class RandomVariableTest extends FunSuite {
   }
 
   def sampleOnce[S, T](x: RandomVariable[S], paramValue: Double)(
-      implicit s: Sampleable[S, T]): (T, Double) = {
-    val variables = Context(x.density).variables
+      implicit s: ToGenerator[S, T]): (T, Double) = {
+    val variables = x.targetGroup.variables
     implicit val num: Evaluator =
       new Evaluator(variables.map { v =>
         v -> paramValue
       }.toMap)
     implicit val rng: RNG = RNG.default
+    val value = x.toGenerator.value.get
 
-    val density = num.toDouble(x.density)
-    val value = x.get(rng, s, num)
-    (value, density)
+    val df = x.density
+    df.update(Array.fill(variables.size)(paramValue))
+    (value, df.density)
   }
 
   def testMonadLaws[A, B, F, G, H, A1, B1, F1, G1, H1](
@@ -38,11 +39,11 @@ class RandomVariableTest extends FunSuite {
       f: A => F,
       g: A => RandomVariable[G],
       h: G => RandomVariable[H])(
-      implicit a1: Sampleable[A, A1],
-      b1: Sampleable[B, B1],
-      f1: Sampleable[F, F1],
-      g1: Sampleable[G, G1],
-      h1: Sampleable[H, H1]
+      implicit a1: ToGenerator[A, A1],
+      b1: ToGenerator[B, B1],
+      f1: ToGenerator[F, F1],
+      g1: ToGenerator[G, G1],
+      h1: ToGenerator[H, H1]
   ): Unit = {
 
     assertEquiv(a.map(f), a.flatMap { x =>

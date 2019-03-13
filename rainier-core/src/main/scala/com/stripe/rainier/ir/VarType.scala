@@ -73,26 +73,33 @@ private object VarTypes {
 
   private def references(meth: MethodDef): Map[Sym, Int] = {
     val map = mutable.Map.empty[Sym, Int].withDefaultValue(0)
-    def traverse(ir: IR): Unit =
+    def traverseIR(ir: IR): Unit =
       ir match {
-        case _: MethodDef => sys.error("Should not have nested defs")
-        case v: VarDef =>
-          map(v.sym) += 1
-          traverse(v.rhs)
-        case VarRef(sym) =>
-          map(sym) += 1
         case b: BinaryIR =>
           traverse(b.left)
           traverse(b.right)
-        case i: IfIR =>
-          traverse(i.whenNonZero)
-          traverse(i.whenZero)
-          traverse(i.test)
         case u: UnaryIR =>
           traverse(u.original)
+        case l: LookupIR =>
+          traverse(l.index)
+          l.table.foreach(traverse)
+        case s: SeqIR =>
+          traverse(s.first)
+          traverse(s.second)
+        case _: MethodRef => ()
+      }
+
+    def traverse(expr: Expr): Unit =
+      expr match {
+        case v: VarDef =>
+          map(v.sym) += 1
+          traverseIR(v.rhs)
+        case VarRef(sym) =>
+          map(sym) += 1
         case _ => ()
       }
-    traverse(meth.rhs)
+
+    traverseIR(meth.rhs)
     map.toMap
   }
 }

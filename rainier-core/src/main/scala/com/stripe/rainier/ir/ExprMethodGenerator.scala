@@ -8,7 +8,7 @@ final private case class ExprMethodGenerator(method: MethodDef,
     extends MethodGenerator {
   val isStatic: Boolean = true
   val methodName: String = exprMethodName(method.sym.id)
-  val className: String = classNameForMethod(method.sym.id)
+  val className: String = classNameForMethod(classPrefix, method.sym.id)
   val methodDesc: String = "([D[D)D"
 
   private val varIndices = inputs.zipWithIndex.toMap
@@ -16,25 +16,12 @@ final private case class ExprMethodGenerator(method: MethodDef,
   traverse(method.rhs)
   returnDouble()
 
-  def traverse(ir: IR): Unit = {
-    ir match {
+  def traverse(expr: Expr): Unit =
+    expr match {
       case Const(value) =>
         constant(value)
       case p: Parameter =>
         loadParameter(varIndices(p))
-      case b: BinaryIR =>
-        traverse(b.left)
-        traverse(b.right)
-        binaryOp(b.op)
-      case u: UnaryIR =>
-        traverse(u.original)
-        unaryOp(u.op)
-      case i: IfIR =>
-        traverse(i.whenNonZero)
-        traverse(i.whenZero)
-        traverse(i.test)
-        constant(0.0)
-        swapIfEqThenPop()
       case v: VarDef =>
         varTypes(v.sym) match {
           case Inline =>
@@ -56,10 +43,29 @@ final private case class ExprMethodGenerator(method: MethodDef,
           case Global(i) =>
             loadGlobalVar(i)
         }
-      case MethodRef(sym) =>
-        callExprMethod(sym.id)
-      case _: MethodDef =>
-        sys.error("Should not have nested method defs")
     }
-  }
+
+  def traverse(ir: IR): Unit =
+    ir match {
+      case b: BinaryIR =>
+        traverse(b.left)
+        traverse(b.right)
+        binaryOp(b.op)
+      case u: UnaryIR =>
+        traverse(u.original)
+        unaryOp(u.op)
+      case l: LookupIR =>
+        traverse(l.index)
+        doubleToInt()
+        tableSwitch(l.table, l.low) {
+          case Some(r) => traverse(r)
+          case None    => throwNPE()
+        }
+      case s: SeqIR =>
+        traverse(s.first)
+        pop()
+        traverse(s.second)
+      case m: MethodRef =>
+        callExprMethod(classPrefix, m.sym.id)
+    }
 }

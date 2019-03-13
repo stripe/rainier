@@ -38,25 +38,31 @@ private object Gradient {
             visit(u.original)
 
           case l: Line =>
-            l.ax.foreach {
+            l.ax.toList.foreach {
               case (x, a) =>
                 diff(x).register(ProductDiff(a, diff(l)))
+                visit(x)
             }
-            l.ax.foreach { case (x, _) => visit(x) }
 
           case l: LogLine =>
-            l.ax.foreach {
-              case (x, _) =>
-                diff(x).register(LogLineDiff(l, diff(l), x))
+            l.ax.withComplements.foreach {
+              case (x, a, c) =>
+                diff(x).register(LogLineDiff(diff(l), x, a, c))
+                visit(x)
             }
-            l.ax.foreach { case (x, _) => visit(x) }
 
-          case f: If =>
-            diff(f.whenNonZero).register(IfDiff(f, diff(f), true))
-            diff(f.whenZero).register(IfDiff(f, diff(f), false))
-            visit(f.test)
-            visit(f.whenNonZero)
-            visit(f.whenZero)
+          case l: Lookup =>
+            l.table.zipWithIndex.foreach {
+              case (x, i) =>
+                diff(x).register(LookupDiff(l, diff(l), i + l.low))
+                visit(x)
+            }
+            visit(l.index)
+
+          case c: Compare =>
+            //no gradient
+            visit(c.left)
+            visit(c.right)
         }
       }
     }
@@ -97,19 +103,21 @@ private object Gradient {
       case LogOp => gradient.toReal * (Real.one / child.original)
       case ExpOp => gradient.toReal * child
       case AbsOp =>
-        If(child.original, gradient.toReal * child.original / child, Real.zero)
-      case RectifierOp =>
-        If(child.original < 0, Real.zero, gradient.toReal)
+        Real.eq(child.original,
+                Real.zero,
+                Real.zero,
+                gradient.toReal * child.original / child)
+      case NoOp  => gradient.toReal
+      case SinOp => gradient.toReal * child.original.cos
+      case CosOp => gradient.toReal * (Real.zero - child.original.sin)
+      case TanOp => gradient.toReal / child.original.cos.pow(2)
+      case AsinOp =>
+        gradient.toReal / (Real.one - child.original.pow(2)).pow(0.5)
+      case AcosOp =>
+        -gradient.toReal / (Real.one - child.original.pow(2)).pow(0.5)
+      case AtanOp =>
+        gradient.toReal / (Real.one + child.original.pow(2))
     }
-  }
-
-  private final case class IfDiff(child: If, gradient: Diff, nzBranch: Boolean)
-      extends Diff {
-    def toReal: Real =
-      if (nzBranch)
-        If(child.test, gradient.toReal, Real.zero)
-      else
-        If(child.test, Real.zero, gradient.toReal)
   }
 
   private final case class PowDiff(child: Pow,
@@ -119,26 +127,33 @@ private object Gradient {
 
     def toReal: Real =
       if (isExponent)
-        gradient.toReal * child * If(child.base, child.base, Real.one).log
+        gradient.toReal * child *
+          Real.eq(child.base, Real.zero, Real.one, child.base).log
       else
         gradient.toReal * child.exponent * child.base.pow(child.exponent - 1)
   }
 
-  private final case class LogLineDiff(child: LogLine,
-                                       gradient: Diff,
-                                       term: NonConstant)
+  private final case class LogLineDiff(gradient: Diff,
+                                       term: NonConstant,
+                                       exponent: BigDecimal,
+                                       complement: Coefficients)
       extends Diff {
     def toReal: Real = {
-      val exponent = child.ax(term)
       val otherTerms =
-        if (child.ax.size == 1)
+        if (complement.isEmpty)
           Real.one
         else
-          LogLine(child.ax - term)
+          LogLine(complement)
       gradient.toReal *
         exponent *
         term.pow(exponent - 1) *
         otherTerms
     }
+  }
+
+  private final case class LookupDiff(child: Lookup, gradient: Diff, index: Int)
+      extends Diff {
+    def toReal: Real =
+      Real.eq(child.index, index, gradient.toReal, Real.zero)
   }
 }

@@ -2,12 +2,11 @@ package com.stripe.rainier.core
 
 import com.stripe.rainier.compute._
 import com.stripe.rainier.sampler._
-import com.stripe.rainier.unused
 
 /**
   * The main probability monad used in Rainier for constructing probabilistic programs which can be sampled
   */
-class RandomVariable[+T](val value: T, private val targets: Set[Target]) {
+class RandomVariable[+T](val value: T, val targets: Set[Target]) {
 
   def flatMap[U](fn: T => RandomVariable[U]): RandomVariable[U] = {
     val rv = fn(value)
@@ -29,11 +28,6 @@ class RandomVariable[+T](val value: T, private val targets: Set[Target]) {
       _ <- RandomVariable.fromDensity(fn(t))
     } yield t
 
-  def get[V](implicit rng: RNG,
-             sampleable: Sampleable[T, V],
-             num: Numeric[Real]): V =
-    sampleable.get(value)(rng, num)
-
   def record()(implicit rng: RNG): Recording =
     record(Sampler.Default.iterations)
 
@@ -45,53 +39,44 @@ class RandomVariable[+T](val value: T, private val targets: Set[Target]) {
   def record(sampler: Sampler,
              warmupIterations: Int,
              iterations: Int,
-             @unused batches: Int = 1,
              keepEvery: Int = 1)(implicit rng: RNG): Recording = {
     val posteriorParams = Sampler
-      .sample(Context(density),
-              sampler,
-              warmupIterations,
-              iterations,
-              keepEvery)
+      .sample(density, sampler, warmupIterations, iterations, keepEvery)
     Recording(posteriorParams.map(_.toList))
   }
 
   def replay[V](recording: Recording)(implicit rng: RNG,
-                                      sampleable: Sampleable[T, V]): List[V] = {
-    val context = Context(density)
-    val fn = sampleable.prepare(value, context)
+                                      tg: ToGenerator[T, V]): List[V] = {
+    val fn = tg(value).prepare(targetGroup.variables)
     recording.samples.map(fn)
   }
 
   def replay[V](recording: Recording, iterations: Int)(
       implicit rng: RNG,
-      sampleable: Sampleable[T, V]): List[V] = {
-    val context = Context(density)
-    val fn = sampleable.prepare(value, context)
+      tg: ToGenerator[T, V]): List[V] = {
+    val fn = tg(value).prepare(targetGroup.variables)
     val sampledParams = RandomVariable(
       Categorical.list(recording.samples).generator).sample(iterations)
     sampledParams.map(fn)
   }
 
-  def sample[V]()(implicit rng: RNG, sampleable: Sampleable[T, V]): List[V] =
+  def sample[V]()(implicit rng: RNG, tg: ToGenerator[T, V]): List[V] =
     sample(Sampler.Default.iterations)
 
   def sample[V](iterations: Int)(implicit rng: RNG,
-                                 sampleable: Sampleable[T, V]): List[V] =
+                                 tg: ToGenerator[T, V]): List[V] =
     sample(Sampler.Default.sampler,
            Sampler.Default.warmupIterations,
            iterations)
 
-  def sample[V](sampler: Sampler,
-                warmupIterations: Int,
-                iterations: Int,
-                @unused batches: Int = 1,
-                keepEvery: Int = 1)(implicit rng: RNG,
-                                    sampleable: Sampleable[T, V]): List[V] = {
-    val context = Context(density)
-    val fn = sampleable.prepare(value, context)
+  def sample[V](
+      sampler: Sampler,
+      warmupIterations: Int,
+      iterations: Int,
+      keepEvery: Int = 1)(implicit rng: RNG, tg: ToGenerator[T, V]): List[V] = {
+    val fn = tg(value).prepare(targetGroup.variables)
     Sampler
-      .sample(context, sampler, warmupIterations, iterations, keepEvery)
+      .sample(density, sampler, warmupIterations, iterations, keepEvery)
       .map { array =>
         fn(array)
       }
@@ -102,17 +87,15 @@ class RandomVariable[+T](val value: T, private val targets: Set[Target]) {
                                warmupIterations: Int,
                                iterations: Int,
                                parallel: Boolean = true,
-                               @unused batches: Int = 1,
                                keepEvery: Int = 1)(
       implicit rng: RNG,
-      sampleable: Sampleable[T, V]): (List[V], List[Diagnostics]) = {
-    val context = Context(density)
-    val fn = sampleable.prepare(value, context)
+      tg: ToGenerator[T, V]): (List[V], List[Diagnostics]) = {
+    val fn = tg(value).prepare(targetGroup.variables)
     val range = if (parallel) 1.to(chains).par else 1.to(chains)
     val samples =
       range.map { _ =>
         Sampler
-          .sample(context, sampler, warmupIterations, iterations, keepEvery)
+          .sample(density(), sampler, warmupIterations, iterations, keepEvery)
           .map { array =>
             (array, fn(array))
           }
@@ -126,8 +109,33 @@ class RandomVariable[+T](val value: T, private val targets: Set[Target]) {
     (allSamples, diagnostics)
   }
 
-  lazy val density: Real =
-    Real.sum(targets.toList.map(_.toReal))
+  lazy val targetGroup = TargetGroup(targets, 500)
+  lazy val dataFn =
+    Compiler.default.compileTargets(targetGroup, true, 4)
+
+  def density() =
+    new DensityFunction {
+      val nVars = targetGroup.variables.size
+      val inputs = new Array[Double](dataFn.numInputs)
+      val globals = new Array[Double](dataFn.numGlobals)
+      val outputs = new Array[Double](dataFn.numOutputs)
+      def update(vars: Array[Double]): Unit = {
+        System.arraycopy(vars, 0, inputs, 0, nVars)
+        dataFn(inputs, globals, outputs)
+      }
+      def density = outputs(0)
+      def gradient(index: Int) = outputs(index + 1)
+    }
+
+  def densityAtOrigin: Double = {
+    val inputs = new Array[Double](dataFn.numInputs)
+    val globals = new Array[Double](dataFn.numGlobals)
+    val outputs = new Array[Double](dataFn.numOutputs)
+    dataFn(inputs, globals, outputs)
+    outputs(0)
+  }
+
+  lazy val densityValue: Real = targetGroup.base
 
   //this is really just here to allow destructuring in for{}
   def withFilter(fn: T => Boolean): RandomVariable[T] =
@@ -135,6 +143,34 @@ class RandomVariable[+T](val value: T, private val targets: Set[Target]) {
       this
     else
       RandomVariable(value, Real.zero.log)
+
+  def toGenerator[U](
+      implicit tg: ToGenerator[T, U]): RandomVariable[Generator[U]] =
+    new RandomVariable(tg(value), targets)
+
+  def writeGraph(path: String, gradient: Boolean = false): Unit = {
+    val gradVars = if (gradient) targetGroup.variables else Nil
+    val tuples = ("base", targetGroup.base, Map.empty[Variable, Array[Double]]) ::
+      targetGroup.batched.zipWithIndex.map {
+      case (b, i) =>
+        (s"target$i", b.real, b.placeholders)
+    }
+    RealViz(tuples, gradVars).write(path)
+  }
+
+  def writeIRGraph(path: String,
+                   gradient: Boolean = false,
+                   methodSizeLimit: Option[Int] = None): Unit = {
+    val tuples =
+      (("base", targetGroup.base) ::
+        targetGroup.batched.zipWithIndex.map {
+        case (b, i) => (s"target$i" -> b.real)
+      })
+
+    RealViz
+      .ir(tuples, targetGroup.variables, gradient, methodSizeLimit)
+      .write(path)
+  }
 }
 
 /**
@@ -142,7 +178,7 @@ class RandomVariable[+T](val value: T, private val targets: Set[Target]) {
   */
 object RandomVariable {
   def apply[A](a: A, density: Real): RandomVariable[A] =
-    new RandomVariable(a, Set(new Target(density)))
+    new RandomVariable(a, Set(Target(density)))
 
   def apply[A](a: A): RandomVariable[A] =
     apply(a, Real.zero)
@@ -166,11 +202,10 @@ object RandomVariable {
       .map(_.reverse)
   }
 
-  def fit[L, T](pdf: L, value: T)(
-      implicit lh: Likelihood[L, T]): RandomVariable[L] =
-    new RandomVariable(pdf, Set(lh.target(pdf, value)))
+  def fill[A](k: Int)(fn: => RandomVariable[A]): RandomVariable[Seq[A]] =
+    traverse(List.fill(k)(fn))
 
-  def fit[L, T](pdf: L, seq: Seq[T])(
-      implicit lh: Likelihood[L, T]): RandomVariable[L] =
-    new RandomVariable(pdf, Set(lh.sequence(pdf, seq)))
+  def fit[L, T](l: L, seq: Seq[T])(
+      implicit toLH: ToLikelihood[L, T]): RandomVariable[Unit] =
+    toLH(l).fit(seq)
 }

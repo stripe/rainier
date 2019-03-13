@@ -9,7 +9,7 @@ object FitNormal {
     val r = new scala.util.Random
     val trueMean = 3.0
     val trueStddev = 2.0
-    val data = 1.to(k).map { i =>
+    val data = 1.to(k).map { _ =>
       (r.nextGaussian * trueStddev) + trueMean
     }
 

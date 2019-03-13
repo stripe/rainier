@@ -16,10 +16,14 @@ object `package` {
 }
 
 private[cats] class MonadGenerator extends Monad[Generator] {
-  def pure[A](x: A): Generator[A] = Generator(x)
+  def pure[A](x: A): Generator[A] = Generator.constant(x)
 
   override def map[A, B](fa: Generator[A])(f: A => B): Generator[B] =
     fa.map(f)
+
+  override def product[A, B](fa: Generator[A],
+                             fb: Generator[B]): Generator[(A, B)] =
+    fa.zip(fb)
 
   def flatMap[A, B](fa: Generator[A])(f: A => Generator[B]): Generator[B] =
     fa.flatMap(f)
@@ -46,6 +50,10 @@ private[cats] class MonadRandomVariable extends Monad[RandomVariable] {
   def flatMap[A, B](fa: RandomVariable[A])(
       f: A => RandomVariable[B]): RandomVariable[B] =
     fa.flatMap(f)
+
+  override def product[A, B](fa: RandomVariable[A],
+                             fb: RandomVariable[B]): RandomVariable[(A, B)] =
+    fa.zip(fb)
 
   @tailrec final def tailRecM[A, B](a: A)(
       f: A => RandomVariable[Either[A, B]]): RandomVariable[B] =

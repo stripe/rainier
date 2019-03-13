@@ -41,8 +41,6 @@ private[rainier] sealed trait Support {
     case (BoundedSupport(thisMin, thisMax), BoundedSupport(thatMin, thatMax)) =>
       BoundedSupport(thisMin.min(thatMin), thisMax.max(thatMax))
   }
-
-  def isDefinedAt(real: Real): Real
 }
 
 object Support {
@@ -59,8 +57,6 @@ object UnboundedSupport extends Support {
   def transform(v: Variable): Real = v
 
   def logJacobian(v: Variable): Real = Real.zero
-
-  def isDefinedAt(real: Real): Real = Real.one
 }
 
 /**
@@ -75,8 +71,6 @@ case class BoundedSupport(min: Real, max: Real) extends Support {
 
   def logJacobian(v: Variable): Real =
     logistic(v).log + (1 - logistic(v)).log + (max - min).log
-
-  def isDefinedAt(real: Real): Real = (real > min) * (real < max)
 }
 
 /**
@@ -88,8 +82,6 @@ case class BoundedBelowSupport(min: Real = Real.zero) extends Support {
     v.exp + min
 
   def logJacobian(v: Variable): Real = v
-
-  def isDefinedAt(real: Real): Real = (real > min)
 }
 
 /**
@@ -101,6 +93,4 @@ case class BoundedAboveSupport(max: Real = Real.zero) extends Support {
     max - (-1 * v).exp
 
   def logJacobian(v: Variable): Real = v * -1
-
-  def isDefinedAt(real: Real): Real = (real < max)
 }

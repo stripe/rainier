@@ -14,7 +14,7 @@ class PartialEvaluator(var cache: Map[Real, (Real, Boolean)]) {
   private def eval(real: Real): (Real, Boolean) = real match {
     case Infinity | NegInfinity | Constant(_) => (real, false)
     case l: Line =>
-      val terms = l.ax.map { case (r, d) => (apply(r), d) }
+      val terms = l.ax.toList.map { case (r, d) => (apply(r), d) }
       val anyModified =
         terms.exists { case ((_, modified), _) => modified }
       if (anyModified) {
@@ -24,7 +24,7 @@ class PartialEvaluator(var cache: Map[Real, (Real, Boolean)]) {
         (real, false)
       }
     case l: LogLine =>
-      val terms = l.ax.map { case (r, d) => (apply(r), d) }
+      val terms = l.ax.toList.map { case (r, d) => (apply(r), d) }
       val anyModified =
         terms.exists { case ((_, modified), _) => modified }
       if (anyModified) {
@@ -42,12 +42,11 @@ class PartialEvaluator(var cache: Map[Real, (Real, Boolean)]) {
         (RealOps.unary(r, op), true)
       else
         (real, false)
-    case If(test, nz, z) =>
-      val (newTest, testModified) = apply(test)
-      val (newNz, nzModified) = apply(nz)
-      val (newZ, zModified) = apply(z)
-      if (testModified || nzModified || zModified)
-        (If(newTest, newNz, newZ), true)
+    case Compare(left, right) =>
+      val (newLeft, leftModified) = apply(left)
+      val (newRight, rightModified) = apply(right)
+      if (leftModified || rightModified)
+        (RealOps.compare(newLeft, newRight), true)
       else
         (real, false)
     case Pow(base, exponent) =>
@@ -57,6 +56,15 @@ class PartialEvaluator(var cache: Map[Real, (Real, Boolean)]) {
         (newBase.pow(newExponent), true)
       else
         (real, false)
+    case l: Lookup =>
+      val (newIndex, indexModified) = apply(l.index)
+      val newTable = l.table.map(apply)
+      val anyModified =
+        newTable.exists { case (_, modified) => modified }
+      if (indexModified || anyModified)
+        (Lookup(newIndex, newTable.map(_._1), l.low), true)
+      else
+        (l, false)
     case v: Variable =>
       (v, false)
   }

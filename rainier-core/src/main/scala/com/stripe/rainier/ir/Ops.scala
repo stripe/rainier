@@ -18,9 +18,20 @@ object DivideOp extends BinaryOp {
 object PowOp extends BinaryOp {
   val isCommutative: Boolean = false
 }
+object CompareOp extends BinaryOp {
+  val isCommutative: Boolean = false
+}
 
 sealed trait UnaryOp
 case object ExpOp extends UnaryOp
 case object LogOp extends UnaryOp
 case object AbsOp extends UnaryOp
-case object RectifierOp extends UnaryOp
+case object NoOp extends UnaryOp
+
+case object SinOp extends UnaryOp
+case object CosOp extends UnaryOp
+case object TanOp extends UnaryOp
+
+case object AsinOp extends UnaryOp
+case object AcosOp extends UnaryOp
+case object AtanOp extends UnaryOp

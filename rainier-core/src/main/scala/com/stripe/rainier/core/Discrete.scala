@@ -1,8 +1,15 @@
 package com.stripe.rainier.core
 
-import com.stripe.rainier.compute.{If, Real}
+import com.stripe.rainier.compute._
 
 trait Discrete extends Distribution[Int] { self: Discrete =>
+  def likelihood = new Likelihood[Int] {
+    val x = new Variable
+    val placeholders = List(x)
+    val real = logDensity(x)
+    def extract(t: Int) = List(t.toDouble)
+  }
+
   def logDensity(v: Real): Real
 
   def zeroInflated(psi: Real) =
@@ -13,9 +20,9 @@ trait Discrete extends Distribution[Int] { self: Discrete =>
 }
 
 object Discrete {
-  implicit val likelihood =
-    Likelihood.from[Discrete, Int, Real] {
-      case (d, v) => d.logDensity(v)
+  implicit def gen[D <: Discrete]: ToGenerator[D, Int] =
+    new ToGenerator[D, Int] {
+      def apply(d: D) = d.generator
     }
 }
 
@@ -26,12 +33,12 @@ object Discrete {
   */
 final case class DiscreteConstant(constant: Real) extends Discrete {
   val generator: Generator[Int] =
-    Generator.require(Set(constant)) { (c, n) =>
+    Generator.require(Set(constant)) { (_, n) =>
       n.toInt(constant)
     }
 
   def logDensity(v: Real): Real =
-    If(v - constant, Real.negInfinity, 0)
+    Real.eq(v, constant, 0, Real.negInfinity)
 }
 
 /**
@@ -48,7 +55,7 @@ final case class Bernoulli(p: Real) extends Discrete {
     }
 
   def logDensity(v: Real) =
-    If(v, p.log, (1 - p).log)
+    Real.eq(v, Real.zero, (1 - p).log, p.log)
 }
 
 /**
@@ -74,11 +81,11 @@ final case class Geometric(p: Real) extends Discrete {
   * @param n Total number of failures
   * @param p Probability of success
   */
-final case class NegativeBinomial(n: Real, p: Real) extends Discrete {
+final case class NegativeBinomial(p: Real, n: Real) extends Discrete {
   val generator: Generator[Int] = {
     val nbGenerator = Generator.require(Set(n, p)) { (r, m) =>
       (1 to m.toInt(n))
-        .map({ x =>
+        .map({ _ =>
           Geometric(1 - p).generator.get(r, m)
         })
         .sum
@@ -155,7 +162,7 @@ final case class Binomial(p: Real, k: Real) extends Discrete {
       m.getOrElse(true, 0)
     }
 
-    Generator.from {
+    Generator.require(Set(p, k)) {
       case (r, n) =>
         val pDouble = n.toDouble(p)
         val kDouble = n.toDouble(k)
@@ -169,7 +176,7 @@ final case class Binomial(p: Real, k: Real) extends Discrete {
   }
 
   def logDensity(v: Real): Real =
-    Multinomial.logDensity(multi, Map(true -> v, false -> (k - v)))
+    Multinomial.logDensity(multi, List((true -> v), (false -> (k - v))))
 }
 
 /**

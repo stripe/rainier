@@ -1,22 +1,44 @@
 package com.stripe.rainier.ir
 
-sealed trait IR
-
-sealed trait Ref extends IR
+sealed trait Expr
+sealed trait Ref extends Expr
 final class Parameter extends Ref {
   val sym = Sym.freshSym
 }
 final case class Const(value: Double) extends Ref
 final case class VarRef(sym: Sym) extends Ref
 
-final case class BinaryIR(left: IR, right: IR, op: BinaryOp) extends IR
-final case class UnaryIR(original: IR, op: UnaryOp) extends IR
-final case class IfIR(test: IR, whenNonZero: IR, whenZero: IR) extends IR
+final case class VarDef(sym: Sym, rhs: IR) extends Expr
 
-final case class VarDef(sym: Sym, rhs: IR) extends IR
+object VarDef {
+  def apply(ir: IR): VarDef =
+    VarDef(Sym.freshSym, ir)
+}
 
-final case class MethodDef(sym: Sym, rhs: IR) extends IR
+sealed trait IR
+final case class BinaryIR(left: Expr, right: Expr, op: BinaryOp) extends IR
+final case class UnaryIR(original: Expr, op: UnaryOp) extends IR
+final case class LookupIR(index: Expr, table: List[Ref], low: Int) extends IR
 final case class MethodRef(sym: Sym) extends IR
+final case class SeqIR(first: VarDef, second: VarDef) extends IR
+
+object SeqIR {
+  def apply(seq: Seq[VarDef]): VarDef =
+    tree(seq.toList, seq.size)
+
+  private def tree(list: List[VarDef], size: Int): VarDef =
+    size match {
+      case 1 => list.head
+      case 2 => VarDef(SeqIR(list.head, list.tail.head))
+      case _ =>
+        val leftSize = size / 2
+        val left = tree(list, leftSize)
+        val right = tree(list.drop(leftSize), size - leftSize)
+        VarDef(SeqIR(left, right))
+    }
+}
+
+final case class MethodDef(sym: Sym, rhs: IR)
 
 final case class Sym private (id: Int)
 object Sym {

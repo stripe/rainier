@@ -1,3 +1,5 @@
+ThisBuild / bazelScalaRulesVersion := "8359fc6781cf3102e918c84cb1638a1b1e050ce0"
+
 lazy val root = project.
   in(file(".")).
   aggregate(rainierCore, rainierPlot, rainierCats, rainierScalacheck).
@@ -5,14 +7,35 @@ lazy val root = project.
   aggregate(rainierBenchmark, rainierTests).
   aggregate(shadedAsm).
   settings(commonSettings).
-  settings(unpublished)
+  settings(unpublished).
+  settings(
+    bazelWorkspaceGenerate := true,
+    bazelBuildGenerate := false,
+    bazelCustomWorkspace :=
+      WorkspacePrelude +:
+        MavenBindings +:
+        BazelString(
+          """
+          |git_repository(
+          |    name = "com_github_johnynek_bazel_jar_jar",
+          |    commit = "258c7288db8a034e087b4d65a52546830633a4f1",
+          |    remote = "git://github.com/johnynek/bazel_jar_jar.git",
+          |)
+          |load(
+          |    "@com_github_johnynek_bazel_jar_jar//:jar_jar.bzl",
+          |    "jar_jar_repositories",
+          |)
+          |jar_jar_repositories()
+          |""".stripMargin
+        )
+  )
 
 scalafmtOnCompile in ThisBuild := true
 
 lazy val commonSettings = Seq(
   organization:= "com.stripe",
-  scalaVersion := "2.12.4",
-  crossScalaVersions := List("2.11.12", "2.12.4"),
+  scalaVersion := "2.12.8",
+  crossScalaVersions := List("2.11.12", scalaVersion.value),
   releaseCrossBuild := true,
   releasePublishArtifactsAction := PgpKeys.publishSigned.value,
   homepage := Some(url("https://github.com/stripe/rainier")),
@@ -42,18 +65,17 @@ lazy val commonSettings = Seq(
 
 lazy val unpublished = Seq(publish := {}, publishLocal := {}, publishArtifact := false)
 
-// evilplot is 2.12 only, so these settings are needed for projects
-// depending on evilplot
-lazy val evilPlotCrossSettings = Seq(
-  crossScalaVersions ~= { _.filter(_.startsWith("2.12")) })
-
 /* dependency versions */
 lazy val V = new {
   val asm = "6.0"
   val cats = "1.1.0"
-  val evilplot = "0.2.0"
+  val evilplot = "0.6.0"
   val scalacheck = "1.14.0"
   val scalatest = "3.0.5"
+  val flogger = "0.3.1"
+  val almond = "0.3.0"
+  val scala = "2.12.8"
+  val shadedAsm = "0.2.1"
 }
 
 // primary modules
@@ -61,18 +83,29 @@ lazy val V = new {
 lazy val rainierCore = project.
   in(file("rainier-core")).
   settings(name := "rainier-core").
-  dependsOn(shadedAsm).
-  settings(commonSettings)
+  settings(commonSettings).
+  settings(
+    libraryDependencies ++= Seq(
+      "com.google.flogger" % "flogger" % V.flogger,
+      "com.google.flogger" % "flogger-system-backend" % V.flogger,
+      "com.stripe" % "rainier-shaded-asm_6.0" % V.shadedAsm)
+  )
 
 lazy val rainierPlot = project.
   in(file("rainier-plot")).
   settings(name := "rainier-plot").
   dependsOn(rainierCore).
   settings(commonSettings).
-  settings(evilPlotCrossSettings).
   settings(
-    resolvers += Resolver.bintrayRepo("cibotech", "public"),
-    libraryDependencies += "com.cibo" %% "evilplot" % V.evilplot)
+    resolvers ++= 
+      Seq(
+        Resolver.bintrayRepo("cibotech", "public"),
+        "jitpack" at "https://jitpack.io"),
+    libraryDependencies ++= 
+      Seq(
+        "com.cibo" %% "evilplot" % V.evilplot,
+        "sh.almond" %% "interpreter-api" % V.almond)
+  )
 
 lazy val rainierCats = project.
   in(file("rainier-cats")).
@@ -98,14 +131,16 @@ lazy val rainierDocs = project.
   in(file("rainier-docs")).
   settings(name := "rainier-docs").
   enablePlugins(TutPlugin).
-  dependsOn(rainierCore).
+  dependsOn(
+    rainierCore,
+    rainierTrace,
+  ).
   settings(commonSettings).
   settings(
     scalacOptions in Tut ~= {
-      _.filterNot(Set("-Ywarn-unused-import", "-Yno-predef", "-Ywarn-unused:imports"))
+      _.filterNot(sc => sc.contains("-Ywarn-unused") || sc == "-Yno-predef" )
     },
-    // todo: uncomment once docs generation is deterministic
-    // tutTargetDirectory := (baseDirectory in LocalRootProject).value / "docs"
+    tutTargetDirectory := (baseDirectory in LocalRootProject).value / "docs"
   ).
   settings(unpublished)
 
@@ -117,8 +152,21 @@ lazy val rainierExample = project.
     rainierPlot,
   ).
   settings(commonSettings).
-  settings(evilPlotCrossSettings).
-  settings(unpublished)
+  settings(unpublished).
+  settings(bazelCustomBuild := BuildPrelude +: BuildTargets +: BazelString(
+    """
+      |scala_binary(
+      |    name = 'logNormal',
+      |    deps = [
+      |        ':rainierExample',
+      |    ],
+      |    visibility = [
+      |        '//visibility:public',
+      |    ],
+      |    main_class = 'com.stripe.rainier.example.FitNormal'
+      |)
+    """.stripMargin
+  ))
 
 // test modules
 
@@ -149,22 +197,61 @@ lazy val rainierTests = project.
     "org.typelevel" %% "cats-testkit" % V.cats)).
   settings(unpublished)
 
+lazy val rainierTrace = project.
+  in(file("rainier-trace")).
+  settings(name := "rainier-trace").
+  dependsOn(rainierCore).
+  settings(commonSettings).
+  settings(unpublished)
+
 // shaded asm dep trickery
 
 /* publishable project with the shaded deps */
 lazy val shadedAsm = project.
   in(file(".rainier-shaded-asm")).
-  settings(name := "rainier-shaded-asm").
+  // note: bump version suffix when the shaded asm jar needs to be
+  // republished for a particular version of the underlying asm lib
+  settings(name := "rainier-shaded-asm_6.0").
+  settings(moduleName := "rainier-shaded-asm_6.0").
   settings(commonSettings).
   settings(
-    // note: bump version suffix when the shaded asm jar needs to be
-    // republished for a particular version of the underlying asm lib
-    version := s"${V.asm}_0",
     crossPaths := false,
     autoScalaLibrary := false,
     exportJars := true,
     packageBin in Compile := (assembly in asmDeps).value,
-    releaseVersion := { ver => ver }
+    releaseVersion := { ver => ver },
+    bazelCustomBuild := BazelString(
+      """
+        |load(
+        |  '@io_bazel_rules_scala//scala:scala.bzl',
+        |  'scala_binary',
+        |  'scala_library',
+        |  'scala_test'
+        |)
+        |
+        |load(
+        |    "@com_github_johnynek_bazel_jar_jar//:jar_jar.bzl",
+        |    "jar_jar"
+        |)
+        |
+        |jar_jar(
+        |    name = "asmShaded",
+        |    input_jar = "@org_ow2_asm_asm//jar",
+        |    rules = "shade_rule",
+        |    visibility = [
+        |      '//visibility:public',
+        |    ]
+        |)
+        |
+        |jar_jar(
+        |    name = "asmTreeShaded",
+        |    input_jar = "@org_ow2_asm_asm_tree//jar",
+        |    rules = "shade_rule",
+        |    visibility = [
+        |      '//visibility:public',
+        |    ],
+        |)
+      """.stripMargin)
   )
 
 /* phantom project to bundle deps for shading */

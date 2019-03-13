@@ -1,20 +1,64 @@
 package com.stripe.rainier.core
 
 import com.stripe.rainier.compute._
+import scala.collection.mutable.ArrayBuffer
 
-trait Likelihood[-L, -T] {
-  def target(pdf: L, value: T): Target
-  def sequence(pdf: L, seq: Seq[T]) =
-    new Target(Real.sum(seq.map { t =>
-      target(pdf, t).toReal
-    }))
+trait Likelihood[T] {
+  def real: Real
+  def placeholders: List[Variable]
+  def extract(t: T): List[Double]
+
+  def fit(seq: Seq[T]): RandomVariable[Unit] = {
+    val arrayBufs =
+      placeholders.map { _ =>
+        new ArrayBuffer[Double]
+      }
+    seq.foreach { t =>
+      val doubles = extract(t)
+      arrayBufs.zip(doubles).foreach {
+        case (a, d) => a += d
+      }
+    }
+    val placeholdersMap =
+      placeholders.zip(arrayBufs.map(_.toArray)).toMap
+    val target = new Target(real, placeholdersMap)
+    new RandomVariable((), Set(target))
+  }
 }
 
 object Likelihood {
-  def from[L, T, U](f: (L, U) => Real)(
-      implicit ph: Placeholder[T, U]): Likelihood[L, T] =
-    new Likelihood[L, T] {
-      def target(likelihood: L, value: T) =
-        new Target(f(likelihood, ph.wrap(value)))
+  implicit def toLikelihood[T, L <: Likelihood[T]]: ToLikelihood[L, T] =
+    new ToLikelihood[L, T] {
+      def apply(l: L) = l
     }
+
+  trait From[T, U] {
+    def from(fn: U => Real): Likelihood[T]
+    def fromVector(k: Int)(fn: IndexedSeq[U] => Real): Likelihood[Seq[T]]
+  }
+
+  def apply[T](implicit enc: Encoder[T]) =
+    new From[T, enc.U] {
+      def from(fn: enc.U => Real) = {
+        val (p, vs) = enc.create(Nil)
+        new Likelihood[T] {
+          val real = fn(p)
+          val placeholders = vs
+          def extract(t: T) = enc.extract(t, Nil)
+        }
+      }
+      def fromVector(k: Int)(fn: IndexedSeq[enc.U] => Real) = {
+        val vecEnc = Encoder.vector[T](k)
+        val (p, vs) = vecEnc.create(Nil)
+        new Likelihood[Seq[T]] {
+          val real = fn(p)
+          val placeholders = vs
+          def extract(t: Seq[T]) = vecEnc.extract(t, Nil)
+        }
+      }
+    }
+}
+
+trait ToLikelihood[L, T] {
+  def apply(l: L): Likelihood[T]
 }

@@ -10,6 +10,13 @@ import scala.annotation.tailrec
 trait Continuous extends Distribution[Double] {
   private[rainier] val support: Support
 
+  def likelihood = new Likelihood[Double] {
+    val x = new Variable
+    val placeholders = List(x)
+    val real = logDensity(x)
+    def extract(t: Double) = List(t)
+  }
+
   def param: RandomVariable[Real]
   def logDensity(v: Real): Real
 
@@ -19,9 +26,9 @@ trait Continuous extends Distribution[Double] {
 }
 
 object Continuous {
-  implicit val likelihood =
-    Likelihood.from[Continuous, Double, Real] { (c, v) =>
-      c.logDensity(v)
+  implicit def gen[C <: Continuous]: ToGenerator[C, Double] =
+    new ToGenerator[C, Double] {
+      def apply(c: C) = c.generator
     }
 }
 
@@ -51,7 +58,7 @@ trait LocationScaleFamily { self =>
     val support: Support = UnboundedSupport
 
     val generator: Generator[Double] =
-      Generator.from { (r, n) =>
+      Generator.from { (r, _) =>
         generate(r)
       }
     def logDensity(real: Real): Real =
@@ -104,10 +111,11 @@ object Gamma {
     val support = BoundedBelowSupport(Real.zero)
 
     def logDensity(real: Real): Real =
-      If(real > 0,
-         (shape - 1) * real.log -
-           Combinatorics.gamma(shape) - real,
-         Real.zero.log)
+      Real.gt(real,
+              Real.zero,
+              (shape - 1) * real.log -
+                Combinatorics.gamma(shape) - real,
+              Real.zero.log)
 
     def generator: Generator[Double] = Generator.require(Set(shape)) { (r, n) =>
       val a = n.toDouble(shape)
@@ -158,9 +166,10 @@ final case class Beta(a: Real, b: Real) extends StandardContinuous {
   val support = new BoundedSupport(Real.zero, Real.one)
 
   def logDensity(real: Real): Real =
-    If(real >= 0,
-       If(real <= 1, betaDensity(real), Real.negInfinity),
-       Real.negInfinity)
+    Real.gte(real,
+             Real.zero,
+             Real.lte(real, Real.one, betaDensity(real), Real.negInfinity),
+             Real.negInfinity)
 
   val generator: Generator[Double] =
     Gamma(a, 1).generator.zip(Gamma(b, 1).generator).map {
@@ -173,9 +182,7 @@ final case class Beta(a: Real, b: Real) extends StandardContinuous {
       u.log + (b - 1) *
       (1 - u).log - Combinatorics.beta(a, b)
 
-  def binomial = Predictor.from[Int] { k: Real =>
-    BetaBinomial(a, b, k)
-  }
+  def binomial = Predictor[Int].from(BetaBinomial(a, b, _))
 }
 
 object Beta {
@@ -203,7 +210,7 @@ object Uniform {
 
     def logDensity(real: Real): Real = beta11.logDensity(real)
     val generator: Generator[Double] =
-      Generator.from { (r, n) =>
+      Generator.from { (r, _) =>
         r.standardUniform
       }
   }

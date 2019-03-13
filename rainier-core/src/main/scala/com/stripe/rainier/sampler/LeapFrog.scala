@@ -1,39 +1,174 @@
 package com.stripe.rainier.sampler
 
-import com.stripe.rainier.compute._
-import com.stripe.rainier.ir.CompiledFunction
+import Log._
+import java.util.concurrent.TimeUnit._
 
-private[sampler] case class LeapFrog(nVars: Int,
-                                     initialHalfThenFullStep: CompiledFunction,
-                                     twoFullSteps: CompiledFunction,
-                                     finalHalfStep: CompiledFunction) {
+private[sampler] case class LeapFrog(density: DensityFunction) {
   /*
   Params layout:
   array(0..(n-1)) == ps
   array(n..(n*2-1)) == qs
   array(n*2) == potential
-  array(n*2+1) == stepSize
    */
+  private val nVars = density.nVars
   private val potentialIndex = nVars * 2
-  private val stepSizeIndex = potentialIndex + 1
-  private val inputOutputSize = stepSizeIndex + 1
-  private val buf1 = new Array[Double](inputOutputSize)
-  private val buf2 = new Array[Double](inputOutputSize)
+  private val inputOutputSize = potentialIndex + 1
+  private val pqBuf = new Array[Double](inputOutputSize)
+  private val qBuf = new Array[Double](nVars)
 
-  private val globalsSize =
-    List(initialHalfThenFullStep, twoFullSteps, finalHalfStep)
-      .map(_.numGlobals)
-      .max
-  private val globals = new Array[Double](globalsSize)
+  // instance of parameters used in longestStepUntilUTurn
+  private val isUturnBuf = new Array[Double](inputOutputSize)
 
+  def newQs(stepSize: Double): Unit = {
+    var i = nVars
+    val j = nVars * 2
+    while (i < j) {
+      pqBuf(i) += (stepSize * pqBuf(i - nVars))
+      i += 1
+    }
+  }
+
+  def halfPsNewQs(stepSize: Double): Unit = {
+    fullPs(stepSize / 2.0)
+    newQs(stepSize)
+  }
+
+  def initialHalfThenFullStep(stepSize: Double): Unit = {
+    halfPsNewQs(stepSize)
+    copyQsAndUpdateDensity()
+    pqBuf(potentialIndex) = density.density * -1
+  }
+
+  def fullPs(stepSize: Double): Unit = {
+    copyQsAndUpdateDensity()
+    var i = 0
+    val j = nVars
+    while (i < j) {
+      pqBuf(i) += stepSize * density.gradient(i)
+      i += 1
+    }
+  }
+
+  def fullPsNewQs(stepSize: Double): Unit = {
+    fullPs(stepSize)
+    newQs(stepSize)
+  }
+
+  def twoFullSteps(stepSize: Double): Unit = {
+    fullPsNewQs(stepSize: Double)
+    copyQsAndUpdateDensity()
+    pqBuf(potentialIndex) = density.density * -1
+  }
+
+  def finalHalfStep(stepSize: Double): Unit = {
+    fullPs(stepSize / 2.0)
+    copyQsAndUpdateDensity()
+    pqBuf(potentialIndex) = density.density * -1
+  }
+
+  /**
+    * Perform l leapfrog steps updating pqBuf
+    * @param l the total number of leapfrog steps to perform
+    * @param stepSize the current step size
+    */
+  private def steps(l: Int, stepSize: Double): Unit = {
+    initialHalfThenFullStep(stepSize)
+    var i = 1
+    while (i < l) {
+      twoFullSteps(stepSize)
+      i += 1
+    }
+    finalHalfStep(stepSize)
+  }
+
+  /**
+    * Determine if a u-turn has been performed by checking the initial
+    * parameters against pqBuf
+    */
+  private def isUTurn(params: Array[Double]): Boolean = {
+
+    var out = 0.0
+    var i = 0
+    while (i < nVars) {
+      out += (pqBuf(i + nVars) - params(i + nVars)) * pqBuf(i)
+      i += 1
+    }
+
+    if (out.isNaN)
+      true
+    else
+      out < 0
+  }
+
+  /**
+    * Advance l0 steps and return the value
+    * of the longest-step size until a u-turn
+    */
+  private def longestStepUntilUTurn(params: Array[Double],
+                                    l0: Int,
+                                    stepSize: Double): Int = {
+    var l = 0
+    while (!isUTurn(params)) {
+      l += 1
+      steps(1, stepSize)
+      if (l == l0)
+        copy(pqBuf, isUturnBuf)
+    }
+    if (l < l0) {
+      steps(l0 - l, stepSize)
+    } else {
+      copy(isUturnBuf, pqBuf)
+    }
+
+    FINER
+      .atMostEvery(1, SECONDS)
+      .log("%d steps until u-turn", l)
+    l
+  }
+
+  /**
+    * Perform a single step of the longest batch step algorithm
+    * @param params the current value of the parameters
+    * @param l0 the initial number of steps
+    * @param stepSize the current value of the leapfrog step size
+    */
+  def longestBatchStep(params: Array[Double], l0: Int, stepSize: Double)(
+      implicit rng: RNG): (Double, Int) = {
+
+    initializePs(params)
+    copy(params, pqBuf)
+    val l = longestStepUntilUTurn(params, l0, stepSize)
+    val u = rng.standardUniform
+    val a = logAcceptanceProb(params, pqBuf)
+    if (math.log(u) < a)
+      copy(pqBuf, params)
+    (a, l)
+  }
+
+  private def copy(sourceArray: Array[Double],
+                   targetArray: Array[Double]): Unit =
+    System.arraycopy(sourceArray, 0, targetArray, 0, inputOutputSize)
+
+  private def copyQsAndUpdateDensity(): Unit = {
+    System.arraycopy(pqBuf, nVars, qBuf, 0, nVars)
+    density.update(qBuf)
+    if (FINEST.isEnabled) {
+      FINEST.log("Log density: %f", density.density)
+      var i = 0
+      val j = nVars
+      while (i < j) {
+        FINEST.log("Gradient for parameter %d: %f", i, density.gradient(i))
+        i += 1
+      }
+    }
+  }
   //Compute the acceptance probability for a single step at this stepSize without
   //re-initializing the ps, or modifying params
   def tryStepping(params: Array[Double], stepSize: Double): Double = {
-    System.arraycopy(params, 0, buf1, 0, inputOutputSize)
-    buf1(stepSizeIndex) = stepSize
-    initialHalfThenFullStep(buf1, globals, buf2)
-    finalHalfStep(buf2, globals, buf1)
-    logAcceptanceProb(params, buf1)
+    copy(params, pqBuf)
+    initialHalfThenFullStep(stepSize)
+    finalHalfStep(stepSize)
+    logAcceptanceProb(params, pqBuf)
   }
 
   //attempt to take N steps
@@ -42,23 +177,19 @@ private[sampler] case class LeapFrog(nVars: Int,
   def step(params: Array[Double], n: Int, stepSize: Double)(
       implicit rng: RNG): Double = {
     initializePs(params)
-    params(stepSizeIndex) = stepSize
-    initialHalfThenFullStep(params, globals, buf2)
-    var i = 1
-    var in = buf2
-    var out = buf1
-    while (i < n) {
-      twoFullSteps(in, globals, out)
-      val tmp = in; in = out; out = tmp
-      i += 1
+    copy(params, pqBuf)
+    steps(n, stepSize)
+    val p = logAcceptanceProb(params, pqBuf)
+    if (p > Math.log(rng.standardUniform)) {
+      FINEST.log("Accepting proposal")
+      copy(pqBuf, params)
+    } else {
+      FINEST.log("REJECTING proposal")
     }
-    finalHalfStep(in, globals, out)
-    val p = logAcceptanceProb(params, out)
-    if (p > Math.log(rng.standardUniform))
-      System.arraycopy(out, 0, params, 0, inputOutputSize)
     p
   }
 
+  // extract q
   def variables(array: Array[Double]): Array[Double] = {
     val newArray = new Array[Double](nVars)
     var i = 0
@@ -71,18 +202,19 @@ private[sampler] case class LeapFrog(nVars: Int,
 
   //we want the invariant that a params array always has the potential which
   //matches the qs. That means when we initialize a new one
-  //we need to compute the potential. We can do that (slightly wastefully)
-  //by using initialHalfThenFullStep with a stepSize of 0.0
+  //we need to compute the potential.
   def initialize(implicit rng: RNG): Array[Double] = {
-    java.util.Arrays.fill(buf1, 0.0)
+    java.util.Arrays.fill(pqBuf, 0.0)
     var i = nVars
     val j = nVars * 2
     while (i < j) {
-      buf1(i) = rng.standardNormal
+      pqBuf(i) = rng.standardNormal
       i += 1
     }
     val array = new Array[Double](inputOutputSize)
-    initialHalfThenFullStep(buf1, globals, array)
+    copyQsAndUpdateDensity()
+    pqBuf(potentialIndex) = density.density * -1
+    copy(pqBuf, array)
     initializePs(array)
     array
   }
@@ -109,7 +241,14 @@ private[sampler] case class LeapFrog(nVars: Int,
                                 to: Array[Double]): Double = {
     val deltaH = kinetic(to) + to(potentialIndex) - kinetic(from) - from(
       potentialIndex)
-    if (deltaH.isNaN) { Math.log(0.0) } else { (-deltaH).min(0.0) }
+    if (deltaH.isNaN) {
+      FINEST.log("deltaH = NaN, setting acceptance prob to 0.0")
+      Math.log(0.0)
+    } else {
+      val lap = (-deltaH).min(0.0)
+      FINEST.log("logAcceptanceProb %f", lap)
+      lap
+    }
   }
 
   private def initializePs(array: Array[Double])(implicit rng: RNG): Unit = {
@@ -118,51 +257,5 @@ private[sampler] case class LeapFrog(nVars: Int,
       array(i) = rng.standardNormal
       i += 1
     }
-  }
-}
-
-private[sampler] object LeapFrog {
-  def apply(context: Context): LeapFrog = {
-    val qs = context.variables
-    val ps = qs.map { _ =>
-      new Variable
-    }
-    val potential = new Variable
-    val stepSize = new Variable
-    val inputs: List[Variable] = (ps ++ qs) :+ potential :+ stepSize
-
-    val newPotential = context.density * -1
-    val grad = context.gradient.map { g =>
-      g * -1
-    }
-
-    val halfPs =
-      ps.zip(grad).map {
-        case (p, g) => p - (stepSize / 2) * g
-      }
-    val halfPsNewQs =
-      qs.zip(halfPs).map { case (q, p) => q + (stepSize * p) }
-
-    val initialHalfThenFullStep =
-      (halfPs ++ halfPsNewQs) :+ newPotential :+ stepSize
-
-    val fullPs =
-      ps.zip(grad).map { case (p, g) => p - stepSize * g }
-
-    val fullPsNewQs =
-      qs.zip(fullPs).map { case (q, p) => q + (stepSize * p) }
-
-    val twoFullSteps =
-      (fullPs ++ fullPsNewQs) :+ newPotential :+ stepSize
-
-    val finalHalfStep =
-      (halfPs ++ qs) :+ newPotential :+ stepSize
-
-    new LeapFrog(
-      qs.size,
-      context.compiler.compileUnsafe(inputs, initialHalfThenFullStep),
-      context.compiler.compileUnsafe(inputs, twoFullSteps),
-      context.compiler.compileUnsafe(inputs, finalHalfStep)
-    )
   }
 }
