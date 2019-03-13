@@ -78,14 +78,14 @@ class DiscreteTest extends FunSuite {
 
   /** Negative Binomial test **/
   checkMeanVariance("NegativeBinomial(10, x), x = 0.1, 0.5, 0.8")(
-    x => NegativeBinomial(10, x),
+    x => NegativeBinomial(x, 10),
     p => 10 * p / (1.0 - p),
     p => 10 * p / math.pow(1.0 - p, 2),
     List(0.1, 0.5, 0.8))
 
   /** Negative Binomial test, Normal Approximation **/
   checkMeanVariance("NegativeBinomial(300, x), x = 0.2, 0.4, 0.6")(
-    x => NegativeBinomial(300, x),
+    x => NegativeBinomial(x, 300),
     p => 300 * p / (1.0 - p),
     p => 300 * p / math.pow(1.0 - p, 2),
     List(0.2, 0.4, 0.6))
