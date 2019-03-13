@@ -146,7 +146,7 @@ final case class Binomial(p: Real, k: Real) extends Discrete {
         .zip(kGenerator)
         .map { case (x, kd) => x.min(kd.toInt) }
     val normalGenerator =
-      Normal(k * p, k * p * (1 - p)).generator
+      Normal(k * p, (k * p * (1 - p)).pow(0.5)).generator
         .zip(kGenerator)
         .map {
           case (x, kd) => x.toInt.max(0).min(kd.toInt)
