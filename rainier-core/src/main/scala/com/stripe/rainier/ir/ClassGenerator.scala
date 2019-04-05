@@ -3,6 +3,8 @@ package com.stripe.rainier.ir
 import com.stripe.rainier.internal.asm.Opcodes._
 import com.stripe.rainier.internal.asm.tree.{ClassNode, MethodNode}
 import com.stripe.rainier.internal.asm.ClassWriter
+import com.stripe.rainier.internal.asm.MethodSizer
+import Log._
 
 private[ir] trait ClassGenerator {
 
@@ -49,6 +51,14 @@ private[ir] trait ClassGenerator {
     val cw = new ClassWriter(
       ClassWriter.COMPUTE_FRAMES + ClassWriter.COMPUTE_MAXS)
     classNode.accept(cw)
+
+    val maxMethodSize = MethodSizer.methodSizes(cw).max
+    FINE.log("%s maximum method size: %d", name, maxMethodSize)
+    if (maxMethodSize > 8000)
+      SEVERE.log("%s produced method of size %d which will likely not JIT",
+                 name,
+                 maxMethodSize)
+                 
     cw.toByteArray
   }
 }
