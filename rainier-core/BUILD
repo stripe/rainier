@@ -11,7 +11,6 @@ scala_library(
     '//.rainier-shaded-asm:asmShaded',
     '//.rainier-shaded-asm:asmTreeShaded',
     '//external:jar/com/google/flogger/flogger',
-    
   ],
   runtime_deps = [
     '//external:jar/com/google/flogger/flogger_system_backend',
@@ -53,6 +52,7 @@ scala_library(
     'src/main/scala/com/stripe/rainier/ir/Packer.scala',
     'src/main/scala/com/stripe/rainier/repl/DensityPlot.scala',
     'src/main/scala/com/stripe/rainier/repl/package.scala',
+    'src/main/scala/com/stripe/rainier/internal/asm/MethodSizer.scala',
     'src/main/scala/com/stripe/rainier/compute/PartialEvaluator.scala',
     'src/main/scala/com/stripe/rainier/compute/Coefficients.scala',
     'src/main/scala/com/stripe/rainier/compute/Evaluator.scala',
