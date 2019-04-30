@@ -12,8 +12,6 @@ scala_library(
     '//external:jar/com/cibo/evilplot_2_12',
     '//external:jar/com/google/code/findbugs/jsr305',
     '//external:jar/com/google/flogger/flogger',
-    '//external:jar/com/google/flogger/flogger_system_backend',
-    '//external:jar/com/stripe/rainier_shaded_asm_6_0',
     '//external:jar/io/circe/circe_core_2_12',
     '//external:jar/io/circe/circe_generic_2_12',
     '//external:jar/io/circe/circe_generic_extras_2_12',
