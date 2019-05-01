@@ -26,8 +26,9 @@ scala_maven_import_external(
   licenses = [],
   server_urls = [
     'https://repo1.maven.org/maven2/',
-    'https://dl.bintray.com/cibotech/public/',
     'http://dl.bintray.com/tpolecat/maven',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
   ]
 )
 bind(
@@ -40,8 +41,9 @@ scala_maven_import_external(
   licenses = [],
   server_urls = [
     'https://repo1.maven.org/maven2/',
-    'https://dl.bintray.com/cibotech/public/',
     'http://dl.bintray.com/tpolecat/maven',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
   ]
 )
 bind(
@@ -54,8 +56,9 @@ scala_maven_import_external(
   licenses = [],
   server_urls = [
     'https://repo1.maven.org/maven2/',
-    'https://dl.bintray.com/cibotech/public/',
     'http://dl.bintray.com/tpolecat/maven',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
   ]
 )
 bind(
@@ -68,8 +71,9 @@ scala_maven_import_external(
   licenses = [],
   server_urls = [
     'https://repo1.maven.org/maven2/',
-    'https://dl.bintray.com/cibotech/public/',
     'http://dl.bintray.com/tpolecat/maven',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
   ]
 )
 bind(
@@ -77,13 +81,44 @@ bind(
   actual = '@com_google_flogger_flogger//jar'
 )
 scala_maven_import_external(
+  name = 'com_google_flogger_flogger_system_backend',
+  artifact = 'com.google.flogger:flogger-system-backend:0.3.1',
+  licenses = [],
+  server_urls = [
+    'https://repo1.maven.org/maven2/',
+    'http://dl.bintray.com/tpolecat/maven',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
+  ]
+)
+bind(
+  name = 'jar/com/google/flogger/flogger_system_backend',
+  actual = '@com_google_flogger_flogger_system_backend//jar'
+)
+scala_maven_import_external(
+  name = 'com_stripe_rainier_shaded_asm_6_0',
+  artifact = 'com.stripe:rainier-shaded-asm_6.0:0.2.1',
+  licenses = [],
+  server_urls = [
+    'https://repo1.maven.org/maven2/',
+    'http://dl.bintray.com/tpolecat/maven',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
+  ]
+)
+bind(
+  name = 'jar/com/stripe/rainier_shaded_asm_6_0',
+  actual = '@com_stripe_rainier_shaded_asm_6_0//jar'
+)
+scala_maven_import_external(
   name = 'io_circe_circe_core_2_12',
   artifact = 'io.circe:circe-core_2.12:0.9.0',
   licenses = [],
   server_urls = [
     'https://repo1.maven.org/maven2/',
-    'https://dl.bintray.com/cibotech/public/',
     'http://dl.bintray.com/tpolecat/maven',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
   ]
 )
 bind(
@@ -96,8 +131,9 @@ scala_maven_import_external(
   licenses = [],
   server_urls = [
     'https://repo1.maven.org/maven2/',
-    'https://dl.bintray.com/cibotech/public/',
     'http://dl.bintray.com/tpolecat/maven',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
   ]
 )
 bind(
@@ -110,8 +146,9 @@ scala_maven_import_external(
   licenses = [],
   server_urls = [
     'https://repo1.maven.org/maven2/',
-    'https://dl.bintray.com/cibotech/public/',
     'http://dl.bintray.com/tpolecat/maven',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
   ]
 )
 bind(
@@ -124,8 +161,9 @@ scala_maven_import_external(
   licenses = [],
   server_urls = [
     'https://repo1.maven.org/maven2/',
-    'https://dl.bintray.com/cibotech/public/',
     'http://dl.bintray.com/tpolecat/maven',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
   ]
 )
 bind(
@@ -138,8 +176,9 @@ scala_maven_import_external(
   licenses = [],
   server_urls = [
     'https://repo1.maven.org/maven2/',
-    'https://dl.bintray.com/cibotech/public/',
     'http://dl.bintray.com/tpolecat/maven',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
   ]
 )
 bind(
@@ -152,8 +191,9 @@ scala_maven_import_external(
   licenses = [],
   server_urls = [
     'https://repo1.maven.org/maven2/',
-    'https://dl.bintray.com/cibotech/public/',
     'http://dl.bintray.com/tpolecat/maven',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
   ]
 )
 bind(
@@ -166,8 +206,9 @@ scala_maven_import_external(
   licenses = [],
   server_urls = [
     'https://repo1.maven.org/maven2/',
-    'https://dl.bintray.com/cibotech/public/',
     'http://dl.bintray.com/tpolecat/maven',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
   ]
 )
 bind(
@@ -180,8 +221,9 @@ scala_maven_import_external(
   licenses = [],
   server_urls = [
     'https://repo1.maven.org/maven2/',
-    'https://dl.bintray.com/cibotech/public/',
     'http://dl.bintray.com/tpolecat/maven',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
   ]
 )
 bind(
@@ -194,8 +236,9 @@ scala_maven_import_external(
   licenses = [],
   server_urls = [
     'https://repo1.maven.org/maven2/',
-    'https://dl.bintray.com/cibotech/public/',
     'http://dl.bintray.com/tpolecat/maven',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
   ]
 )
 bind(
@@ -208,8 +251,9 @@ scala_maven_import_external(
   licenses = [],
   server_urls = [
     'https://repo1.maven.org/maven2/',
-    'https://dl.bintray.com/cibotech/public/',
     'http://dl.bintray.com/tpolecat/maven',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
   ]
 )
 bind(
@@ -222,8 +266,9 @@ scala_maven_import_external(
   licenses = [],
   server_urls = [
     'https://repo1.maven.org/maven2/',
-    'https://dl.bintray.com/cibotech/public/',
     'http://dl.bintray.com/tpolecat/maven',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
   ]
 )
 bind(
@@ -236,8 +281,9 @@ scala_maven_import_external(
   licenses = [],
   server_urls = [
     'https://repo1.maven.org/maven2/',
-    'https://dl.bintray.com/cibotech/public/',
     'http://dl.bintray.com/tpolecat/maven',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
   ]
 )
 bind(
@@ -250,8 +296,9 @@ scala_maven_import_external(
   licenses = [],
   server_urls = [
     'https://repo1.maven.org/maven2/',
-    'https://dl.bintray.com/cibotech/public/',
     'http://dl.bintray.com/tpolecat/maven',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
   ]
 )
 bind(
@@ -264,8 +311,9 @@ scala_maven_import_external(
   licenses = [],
   server_urls = [
     'https://repo1.maven.org/maven2/',
-    'https://dl.bintray.com/cibotech/public/',
     'http://dl.bintray.com/tpolecat/maven',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
   ]
 )
 bind(
@@ -278,8 +326,9 @@ scala_maven_import_external(
   licenses = [],
   server_urls = [
     'https://repo1.maven.org/maven2/',
-    'https://dl.bintray.com/cibotech/public/',
     'http://dl.bintray.com/tpolecat/maven',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
   ]
 )
 bind(
@@ -292,8 +341,9 @@ scala_maven_import_external(
   licenses = [],
   server_urls = [
     'https://repo1.maven.org/maven2/',
-    'https://dl.bintray.com/cibotech/public/',
     'http://dl.bintray.com/tpolecat/maven',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
   ]
 )
 bind(
@@ -306,8 +356,9 @@ scala_maven_import_external(
   licenses = [],
   server_urls = [
     'https://repo1.maven.org/maven2/',
-    'https://dl.bintray.com/cibotech/public/',
     'http://dl.bintray.com/tpolecat/maven',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
   ]
 )
 bind(
@@ -320,8 +371,9 @@ scala_maven_import_external(
   licenses = [],
   server_urls = [
     'https://repo1.maven.org/maven2/',
-    'https://dl.bintray.com/cibotech/public/',
     'http://dl.bintray.com/tpolecat/maven',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
   ]
 )
 bind(
@@ -334,8 +386,9 @@ scala_maven_import_external(
   licenses = [],
   server_urls = [
     'https://repo1.maven.org/maven2/',
-    'https://dl.bintray.com/cibotech/public/',
     'http://dl.bintray.com/tpolecat/maven',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
   ]
 )
 bind(
@@ -348,8 +401,9 @@ scala_maven_import_external(
   licenses = [],
   server_urls = [
     'https://repo1.maven.org/maven2/',
-    'https://dl.bintray.com/cibotech/public/',
     'http://dl.bintray.com/tpolecat/maven',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
   ]
 )
 bind(
@@ -362,8 +416,9 @@ scala_maven_import_external(
   licenses = [],
   server_urls = [
     'https://repo1.maven.org/maven2/',
-    'https://dl.bintray.com/cibotech/public/',
     'http://dl.bintray.com/tpolecat/maven',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
   ]
 )
 bind(
@@ -376,8 +431,9 @@ scala_maven_import_external(
   licenses = [],
   server_urls = [
     'https://repo1.maven.org/maven2/',
-    'https://dl.bintray.com/cibotech/public/',
     'http://dl.bintray.com/tpolecat/maven',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
   ]
 )
 bind(
@@ -390,8 +446,9 @@ scala_maven_import_external(
   licenses = [],
   server_urls = [
     'https://repo1.maven.org/maven2/',
-    'https://dl.bintray.com/cibotech/public/',
     'http://dl.bintray.com/tpolecat/maven',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
   ]
 )
 bind(
@@ -404,8 +461,9 @@ scala_maven_import_external(
   licenses = [],
   server_urls = [
     'https://repo1.maven.org/maven2/',
-    'https://dl.bintray.com/cibotech/public/',
     'http://dl.bintray.com/tpolecat/maven',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
   ]
 )
 bind(
@@ -418,8 +476,9 @@ scala_maven_import_external(
   licenses = [],
   server_urls = [
     'https://repo1.maven.org/maven2/',
-    'https://dl.bintray.com/cibotech/public/',
     'http://dl.bintray.com/tpolecat/maven',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
   ]
 )
 bind(
@@ -432,8 +491,9 @@ scala_maven_import_external(
   licenses = [],
   server_urls = [
     'https://repo1.maven.org/maven2/',
-    'https://dl.bintray.com/cibotech/public/',
     'http://dl.bintray.com/tpolecat/maven',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
   ]
 )
 bind(
@@ -446,8 +506,9 @@ scala_maven_import_external(
   licenses = [],
   server_urls = [
     'https://repo1.maven.org/maven2/',
-    'https://dl.bintray.com/cibotech/public/',
     'http://dl.bintray.com/tpolecat/maven',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
   ]
 )
 bind(
@@ -460,8 +521,9 @@ scala_maven_import_external(
   licenses = [],
   server_urls = [
     'https://repo1.maven.org/maven2/',
-    'https://dl.bintray.com/cibotech/public/',
     'http://dl.bintray.com/tpolecat/maven',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
   ]
 )
 bind(
@@ -474,8 +536,9 @@ scala_maven_import_external(
   licenses = [],
   server_urls = [
     'https://repo1.maven.org/maven2/',
-    'https://dl.bintray.com/cibotech/public/',
     'http://dl.bintray.com/tpolecat/maven',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
   ]
 )
 bind(
@@ -488,8 +551,9 @@ scala_maven_import_external(
   licenses = [],
   server_urls = [
     'https://repo1.maven.org/maven2/',
-    'https://dl.bintray.com/cibotech/public/',
     'http://dl.bintray.com/tpolecat/maven',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
   ]
 )
 bind(
@@ -502,8 +566,9 @@ scala_maven_import_external(
   licenses = [],
   server_urls = [
     'https://repo1.maven.org/maven2/',
-    'https://dl.bintray.com/cibotech/public/',
     'http://dl.bintray.com/tpolecat/maven',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
   ]
 )
 bind(
@@ -516,8 +581,9 @@ scala_maven_import_external(
   licenses = [],
   server_urls = [
     'https://repo1.maven.org/maven2/',
-    'https://dl.bintray.com/cibotech/public/',
     'http://dl.bintray.com/tpolecat/maven',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
   ]
 )
 bind(
@@ -530,8 +596,9 @@ scala_maven_import_external(
   licenses = [],
   server_urls = [
     'https://repo1.maven.org/maven2/',
-    'https://dl.bintray.com/cibotech/public/',
     'http://dl.bintray.com/tpolecat/maven',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
   ]
 )
 bind(
@@ -544,8 +611,9 @@ scala_maven_import_external(
   licenses = [],
   server_urls = [
     'https://repo1.maven.org/maven2/',
-    'https://dl.bintray.com/cibotech/public/',
     'http://dl.bintray.com/tpolecat/maven',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
   ]
 )
 bind(
@@ -558,8 +626,9 @@ scala_maven_import_external(
   licenses = [],
   server_urls = [
     'https://repo1.maven.org/maven2/',
-    'https://dl.bintray.com/cibotech/public/',
     'http://dl.bintray.com/tpolecat/maven',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
   ]
 )
 bind(
@@ -572,8 +641,9 @@ scala_maven_import_external(
   licenses = [],
   server_urls = [
     'https://repo1.maven.org/maven2/',
-    'https://dl.bintray.com/cibotech/public/',
     'http://dl.bintray.com/tpolecat/maven',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
   ]
 )
 bind(
@@ -586,8 +656,9 @@ scala_maven_import_external(
   licenses = [],
   server_urls = [
     'https://repo1.maven.org/maven2/',
-    'https://dl.bintray.com/cibotech/public/',
     'http://dl.bintray.com/tpolecat/maven',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
   ]
 )
 bind(
@@ -600,13 +671,29 @@ scala_maven_import_external(
   licenses = [],
   server_urls = [
     'https://repo1.maven.org/maven2/',
-    'https://dl.bintray.com/cibotech/public/',
     'http://dl.bintray.com/tpolecat/maven',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
   ]
 )
 bind(
   name = 'jar/pl/project13/scala/sbt_jmh_extras',
   actual = '@pl_project13_scala_sbt_jmh_extras//jar'
+)
+scala_maven_import_external(
+  name = 'sh_almond_interpreter_api_2_12',
+  artifact = 'sh.almond:interpreter-api_2.12:0.3.0',
+  licenses = [],
+  server_urls = [
+    'https://repo1.maven.org/maven2/',
+    'http://dl.bintray.com/tpolecat/maven',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
+  ]
+)
+bind(
+  name = 'jar/sh/almond/interpreter_api_2_12',
+  actual = '@sh_almond_interpreter_api_2_12//jar'
 )
 
 git_repository(

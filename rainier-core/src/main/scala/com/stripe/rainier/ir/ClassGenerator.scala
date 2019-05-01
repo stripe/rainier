@@ -58,7 +58,7 @@ private[ir] trait ClassGenerator {
       SEVERE.log("%s produced method of size %d which will likely not JIT",
                  name,
                  maxMethodSize)
-                 
+
     cw.toByteArray
   }
 }

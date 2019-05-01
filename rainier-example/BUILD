@@ -26,6 +26,7 @@ scala_library(
     '//external:jar/org/typelevel/cats_macros_2_12',
     '//external:jar/org/typelevel/machinist_2_12',
     '//external:jar/org/typelevel/macro_compat_2_12',
+    '//external:jar/sh/almond/interpreter_api_2_12',
     '//rainier-core:rainierCore',
     '//rainier-plot:rainierPlot',
   ],
