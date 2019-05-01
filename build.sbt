@@ -137,6 +137,7 @@ lazy val rainierDocs = project.
   ).
   settings(commonSettings).
   settings(
+    resolvers := Seq(Resolver.bintrayRepo("tpolecat", "maven")),
     scalacOptions in Tut ~= {
       _.filterNot(sc => sc.contains("-Ywarn-unused") || sc == "-Yno-predef" )
     },
