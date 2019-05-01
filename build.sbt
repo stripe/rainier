@@ -97,11 +97,11 @@ lazy val rainierPlot = project.
   dependsOn(rainierCore).
   settings(commonSettings).
   settings(
-    resolvers ++= 
+    resolvers ++=
       Seq(
         Resolver.bintrayRepo("cibotech", "public"),
         "jitpack" at "https://jitpack.io"),
-    libraryDependencies ++= 
+    libraryDependencies ++=
       Seq(
         "com.cibo" %% "evilplot" % V.evilplot,
         "sh.almond" %% "interpreter-api" % V.almond)
