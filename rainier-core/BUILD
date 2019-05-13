@@ -8,12 +8,14 @@ load(
 scala_library(
   name = 'rainierCore',
   deps = [
-    '//external:jar/com/google/code/findbugs/jsr305',
+    '//.rainier-shaded-asm:asmShaded',
+    '//.rainier-shaded-asm:asmTreeShaded',
     '//external:jar/com/google/flogger/flogger',
-    '//external:jar/com/google/flogger/flogger_system_backend',
-    '//external:jar/com/stripe/rainier_shaded_asm_6_0',
   ],
-  runtime_deps = [],
+  runtime_deps = [
+    '//external:jar/com/google/flogger/flogger_system_backend',
+    '//external:jar/com/google/code/findbugs/jsr305',
+  ],
   exports = [],
   visibility = [
     '//visibility:public',
