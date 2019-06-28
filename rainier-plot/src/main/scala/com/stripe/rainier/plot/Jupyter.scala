@@ -47,7 +47,7 @@ object Jupyter {
         Point(num.toDouble(p._1), num.toDouble(p._2))
       },
       pointRenderer = Some(
-        PointRenderer.default[Point](Some(HSLA(210, 100, 56, 0.3)), Some(2))))
+        PointRenderer.default[Point](Some(HSLA(210, 100, 56, 0.5)), Some(2))))
 
   def scatter[N](seq: Seq[(N, N)], xLabel: String = "x", yLabel: String = "y")(
       implicit num: Numeric[N],
@@ -76,7 +76,7 @@ object Jupyter {
     })
     val functionPlots = fn(0.0).zipWithIndex.toList.map {
       case (_, i) =>
-        FunctionPlot.series(x => fn(x)(i), "", RGB(0,0,0), Some(scatter.xbounds))
+        FunctionPlot.series(x => fn(x)(i), "", HSLA(0, 100, 56, 0.5), Some(scatter.xbounds))
     }
     show(
       Overlay
