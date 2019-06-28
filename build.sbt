@@ -46,16 +46,16 @@ lazy val commonSettings = Seq(
   publishTo := {
     val nexus = "https://oss.sonatype.org/"
     if (isSnapshot.value)
-      Some("snapshots" at nexus + "content/repositories/snapshots")
+      Some("snapshots" at "https://maven.pkg.github.com/avibryant")
     else
-      Some("releases"  at nexus + "service/local/staging/deploy/maven2")
+      Some("releases"  at "https://maven.pkg.github.com/avibryant")
   },
   autoAPIMappings := true,
   apiURL := Some(url("https://stripe.github.io/rainier/api/")),
   scmInfo := Some(
     ScmInfo(
-      url("https://github.com/stripe/rainier"),
-      "scm:git:git@github.com:stripe/rainier.git"
+      url("https://github.com/avibryant/rainier"),
+      "scm:git:git@github.com:avibryant/rainier.git"
     )
   ),
   developers := List(
