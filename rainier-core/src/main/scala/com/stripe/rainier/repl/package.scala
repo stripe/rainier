@@ -31,5 +31,86 @@ package object repl {
     pw.close
   }
 
+  def loadCSV(path: String,
+              delimiter: String = ","): List[Map[String, Double]] = {
+    val (head :: tail) = scala.io.Source.fromFile(path).getLines.toList
+    val headings = head.split(delimiter).map { s =>
+      s.stripPrefix("\"").stripSuffix("\"")
+    }
+    tail.map { line =>
+      headings.zip(line.split(delimiter).map(_.toDouble)).toMap
+    }
+  }
+
+  def hdpi(samples: Seq[Double], prob: Double = 0.89): (Double, Double) = {
+    val sorted = samples.sorted.toArray
+    val idx = math.ceil(prob * sorted.size).toInt
+    if (idx == sorted.size)
+      (sorted.head, sorted.last)
+    else {
+      val cis = 0.until(sorted.size - idx).toList.map { i =>
+        val bottom = sorted(i)
+        val top = sorted(i + idx)
+        val width = top - bottom
+        (width, bottom, top)
+      }
+      val res = cis.minBy(_._1)
+      (res._2, res._3)
+    }
+  }
+
+  def precis(samples: Seq[Map[String, Double]], corr: Boolean = false): Unit = {
+    val keys = samples.head.keys.toList
+
+    val meansSDs = keys.map { k =>
+      val data = samples.map(_(k))
+      val mean = data.sum / data.size
+      val stdDev = math.sqrt(data.map { x =>
+        math.pow(x - mean, 2)
+      }.sum / data.size)
+      (k, (mean, stdDev))
+    }.toMap
+
+    val correlations = keys.flatMap { k =>
+      val diffs = samples.map(_(k) - meansSDs(k)._1)
+      keys.map { j =>
+        val diffs2 = samples.map(_(j) - meansSDs(j)._1)
+        val sumDiffProd = diffs.zip(diffs2).map { case (a, b) => a * b }.sum
+        val r = sumDiffProd / (meansSDs(k)._2 * meansSDs(j)._2 * (samples.size - 1))
+        (k, j) -> r
+      }
+    }.toMap
+
+    val cis = keys.map { k =>
+      val data = samples.map(_(k)).sorted
+      val low = data(math.floor(data.size * 0.055).toInt)
+      val high = data(math.floor(data.size * 0.945).toInt)
+      (k, (low, high))
+    }.toMap
+
+    val maxKeyLength = keys.map(_.size).max
+    val corrKeys = if (corr) keys else Nil
+    println(
+      "".padTo(maxKeyLength, ' ') +
+        "Mean".formatted("%10s") +
+        "StdDev".formatted("%10s") +
+        "5.5%".formatted("%10s") +
+        "94.5%".formatted("%10s") +
+        corrKeys.map(_.formatted("%7s")).mkString(" "))
+
+    keys.foreach { k =>
+      val corrValues = if (corr) keys.map { j =>
+        correlations(k -> j)
+      } else Nil
+      println(
+        k.padTo(maxKeyLength, ' ') +
+          meansSDs(k)._1.formatted("%10.2f") +
+          meansSDs(k)._2.formatted("%10.2f") +
+          cis(k)._1.formatted("%10.2f") +
+          cis(k)._2.formatted("%10.2f") +
+          corrValues.map(_.formatted("%7.2f")).mkString(" "))
+    }
+  }
+
   implicit val rng: RNG = RNG.default
 }
