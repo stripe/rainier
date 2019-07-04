@@ -6,7 +6,10 @@ import com.cibo.evilplot.plot._
 import com.cibo.evilplot.numeric._
 import com.cibo.evilplot.colors._
 import com.cibo.evilplot.plot.renderers._
+import com.cibo.evilplot.plot.renderers.SurfaceRenderer.SurfaceRenderContext
 import com.cibo.evilplot.plot.aesthetics.DefaultTheme._
+import com.cibo.evilplot.plot.aesthetics.Theme
+import com.stripe.rainier.repl.hdpi
 
 object Jupyter {
   implicit val extent = Extent(400, 400)
@@ -88,6 +91,55 @@ object Jupyter {
         .yLabel(yKey))
   }
 
+  private def shadedRenderer(intervals: Seq[(Double, (Double,Double))]) = new PlotRenderer {
+    def render(plot: Plot, plotExtent: Extent)(implicit theme: Theme): Drawable = {
+
+      val xtransformer = plot.xtransform(plot, plotExtent)
+      val ytransformer = plot.ytransform(plot, plotExtent)
+
+      val points = intervals.map{case (x, (y1, _)) => 
+        Point(xtransformer(x), ytransformer(y1))
+      } ++ intervals.reverse.map{case (x, (_, y2)) =>
+        Point(xtransformer(x), ytransformer(y2))
+      }
+      Polygon(points).filled(HSLA(210, 100, 0, 0.2))
+    }
+  }
+
+  private def median(seq: Seq[Double]): Double = {
+    val sorted = seq.toList.sorted
+    sorted(seq.size / 2)
+  }
+
+  def scatterShaded(seq: Seq[Map[String, Double]], xKey: String, yKey: String)(
+    fn: Double => Seq[Double])(implicit oh: OutputHandler,
+                               extent: Extent): Unit = {
+    val xy = seq.map { s => (s(xKey), s(yKey)) }
+    val scatter = scatterPlot(xy)  
+  
+    val minX = BigDecimal(scatter.xbounds.min)
+    val maxX = BigDecimal(scatter.xbounds.max)
+    val grid = (maxX - minX) / 20.0
+    val xVals = (minX - grid).to(maxX+grid).by(grid).map(_.toDouble).toList
+    val intervals = xVals.map{x => (x, hdpi(fn(x)))}
+
+    val shaded = Plot(
+      scatter.xbounds,
+      scatter.ybounds,
+      shadedRenderer(intervals))
+
+    val line = LinePlot.series(intervals.map{case (x, (y1, y2)) => 
+        Point(x, y1 + ((y2 - y1)/2))
+    }, "", HSLA(210, 100, 0, 0.8))
+    
+    show(Overlay(shaded, scatter, line)
+        .xAxis()
+        .yAxis()
+        .frame()
+        .xLabel(xKey)
+        .yLabel(yKey))
+  }
+
   def contour[N](seq: Seq[(N, N)], xLabel: String = "x", yLabel: String = "y")(
       implicit num: Numeric[N],
       oh: OutputHandler,
@@ -142,5 +194,40 @@ object Jupyter {
     val array = baos.toByteArray
     baos.close
     array
+  }
+
+  //copied from private evilplot class
+  private case class SurfacePlotRenderer(
+    data: Seq[Seq[Seq[Point3]]],
+    surfaceRenderer: SurfaceRenderer
+  ) extends PlotRenderer {
+    // Throw away empty levels.
+    private val allLevels = data.flatMap(_.headOption.map(_.headOption.map(_.z).getOrElse(0d)))
+
+    override def legendContext: LegendContext = {
+      surfaceRenderer.legendContext(allLevels)
+    }
+
+    def render(plot: Plot, plotExtent: Extent)(implicit theme: Theme): Drawable = {
+      val xtransformer = plot.xtransform(plot, plotExtent)
+      val ytransformer = plot.ytransform(plot, plotExtent)
+
+      data.zipWithIndex
+        .withFilter(_._1.nonEmpty)
+        .map {
+          case (level, index) =>
+            val transformedAndCulled = level.map { path =>
+              path
+                .withFilter { p =>
+                  plot.xbounds.isInBounds(p.x) && plot.ybounds.isInBounds(p.y)
+                }
+                .map(p => Point(xtransformer(p.x), ytransformer(p.y)))
+            }
+            val levelContext =
+              SurfaceRenderContext(allLevels, transformedAndCulled, allLevels(index))
+            surfaceRenderer.render(plot, plotExtent, levelContext)
+        }
+        .group
+    }
   }
 }
