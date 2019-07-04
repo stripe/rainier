@@ -69,7 +69,7 @@ lazy val unpublished = Seq(publish := {}, publishLocal := {}, publishArtifact :=
 lazy val V = new {
   val asm = "6.0"
   val cats = "1.1.0"
-  val evilplot = "0.6.0"
+  val evilplot = "0.7.0"
   val scalacheck = "1.14.0"
   val scalatest = "3.0.5"
   val flogger = "0.3.1"

@@ -30,19 +30,16 @@ object Jupyter {
     show(EvilTracePlot.pairs(out, truth, numBars))
   }
 
-  def histogram[N](seq: Seq[N], numBars: Int = 40)(implicit num: Numeric[N],
+  def histogram[N](seq: Seq[N], bounds: Option[(Double,Double)] = None)(implicit num: Numeric[N],
                                                    oh: OutputHandler,
-                                                   extent: Extent): Unit = {
+                                                   extent: Extent): Unit =
     show(
       Histogram(seq.map { n =>
         num.toDouble(n)
-      }, numBars)
+      }, binningFunction = Histogram.density,
+      xbounds = bounds.map{case (a,b) => Bounds(a,b)})
         .xAxis()
-        .yAxis()
-        .frame()
-        .xLabel("x")
-        .yLabel("Frequency"))
-  }
+        .frame())
 
   private def scatterPlot[N](seq: Seq[(N, N)])(implicit num: Numeric[N]): Plot =
     ScatterPlot(
