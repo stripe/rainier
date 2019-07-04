@@ -59,6 +59,14 @@ package object repl {
     }
   }
 
+  def stddev[N](seq: Seq[N])(implicit num: Numeric[N]): Double = {
+    val doubles = seq.map{n => num.toDouble(n)}
+    val mean = doubles.sum / doubles.size
+    math.sqrt(doubles.map { x =>
+      math.pow(x - mean, 2)
+    }.sum / doubles.size)
+  }
+
   def precis(samples: Seq[Map[String, Double]], corr: Boolean = false): Unit = {
     val keys = samples.head.keys.toList
 
