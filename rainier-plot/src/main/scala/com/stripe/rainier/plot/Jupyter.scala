@@ -106,11 +106,6 @@ object Jupyter {
     }
   }
 
-  private def median(seq: Seq[Double]): Double = {
-    val sorted = seq.toList.sorted
-    sorted(seq.size / 2)
-  }
-
   def scatterShaded(seq: Seq[Map[String, Double]], xKey: String, yKey: String)(
     fn: Double => Seq[Double])(implicit oh: OutputHandler,
                                extent: Extent): Unit = {
