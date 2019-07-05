@@ -35,7 +35,7 @@ scalafmtOnCompile in ThisBuild := true
 lazy val commonSettings = Seq(
   organization:= "com.stripe",
   scalaVersion := "2.12.8",
-  crossScalaVersions := List("2.11.12", scalaVersion.value),
+  crossScalaVersions := List(scalaVersion.value),
   releaseCrossBuild := true,
   releasePublishArtifactsAction := PgpKeys.publishSigned.value,
   homepage := Some(url("https://github.com/stripe/rainier")),
@@ -97,7 +97,6 @@ lazy val rainierPlot = project.
   dependsOn(rainierCore).
   settings(commonSettings).
   settings(
-    crossScalaVersions := List(scalaVersion.value),
     resolvers ++=
       Seq(
         Resolver.bintrayRepo("cibotech", "public"),
@@ -156,7 +155,6 @@ lazy val rainierExample = project.
   settings(commonSettings).
   settings(unpublished).
   settings(
-    crossScalaVersions := List(scalaVersion.value),    
     bazelCustomBuild := BuildPrelude +: BuildTargets +: BazelString(
     """
       |scala_binary(
