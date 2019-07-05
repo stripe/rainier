@@ -97,6 +97,7 @@ lazy val rainierPlot = project.
   dependsOn(rainierCore).
   settings(commonSettings).
   settings(
+    crossScalaVersions := List(scalaVersion.value),
     resolvers ++=
       Seq(
         Resolver.bintrayRepo("cibotech", "public"),
@@ -154,7 +155,9 @@ lazy val rainierExample = project.
   ).
   settings(commonSettings).
   settings(unpublished).
-  settings(bazelCustomBuild := BuildPrelude +: BuildTargets +: BazelString(
+  settings(
+    crossScalaVersions := List(scalaVersion.value),    
+    bazelCustomBuild := BuildPrelude +: BuildTargets +: BazelString(
     """
       |scala_binary(
       |    name = 'logNormal',
