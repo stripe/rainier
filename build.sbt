@@ -2,7 +2,7 @@ ThisBuild / bazelScalaRulesVersion := "8359fc6781cf3102e918c84cb1638a1b1e050ce0"
 
 lazy val root = project.
   in(file(".")).
-  aggregate(rainierCore, rainierPlot, rainierCats, rainierScalacheck).
+  aggregate(rainierCore, rainierPlot, rainierCats, rainierScalacheck, rainierShapeless).
   aggregate(rainierDocs, rainierExample).
   aggregate(rainierBenchmark, rainierTests).
   aggregate(shadedAsm).
@@ -76,6 +76,7 @@ lazy val V = new {
   val almond = "0.3.0"
   val scala = "2.12.8"
   val shadedAsm = "0.2.1"
+  val shapeless = "2.3.3"
 }
 
 // primary modules
@@ -124,6 +125,17 @@ lazy val rainierScalacheck = project.
   settings(libraryDependencies ++= Seq(
     "org.typelevel" %% "cats-core" % V.cats,
     "org.scalacheck" %% "scalacheck" % V.scalacheck))
+
+lazy val rainierShapeless = project.
+    in(file("rainier-shapeless")).
+    settings(name := "rainier-shapeless").
+    dependsOn(rainierCore).
+    settings(commonSettings).
+    settings(
+      libraryDependencies ++=
+        Seq(
+          "com.chuusai" %% "shapeless" % "2.3.3")
+    )
 
 // documentation modules
 
@@ -189,6 +201,7 @@ lazy val rainierTests = project.
     rainierCore,
     rainierCats,
     rainierScalacheck,
+    rainierShapeless,
   ).
   settings(commonSettings).
   settings(libraryDependencies ++= Seq(
