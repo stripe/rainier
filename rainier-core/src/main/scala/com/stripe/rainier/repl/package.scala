@@ -32,13 +32,13 @@ package object repl {
   }
 
   def loadCSV(path: String,
-              delimiter: String = ","): List[Map[String, Double]] = {
+              delimiter: String = ","): List[Map[String, String]] = {
     val (head :: tail) = scala.io.Source.fromFile(path).getLines.toList
     val headings = head.split(delimiter).map { s =>
       s.stripPrefix("\"").stripSuffix("\"")
     }
     tail.map { line =>
-      headings.zip(line.split(delimiter).map(_.toDouble)).toMap
+      headings.zip(line.split(delimiter)).toMap
     }
   }
 
