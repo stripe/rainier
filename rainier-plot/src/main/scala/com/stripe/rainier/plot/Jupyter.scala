@@ -26,7 +26,9 @@ object Jupyter {
       fill = HSLA(210, 100, 0, 0.2)
     ),
     elements = DefaultTheme.DefaultElements.copy(
-      )
+      strokeWidth = 0.5,
+      pointSize = 3
+    )
   )
 
   def density[N](seq: Seq[N], minX: Double, maxX: Double)(
