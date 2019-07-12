@@ -28,6 +28,12 @@ object Jupyter {
     elements = DefaultTheme.DefaultElements.copy(
       )
   )
+
+  def density[N](seq: Seq[N], minX: Double, maxX: Double)(
+      implicit num: Numeric[N],
+      theme: Theme): Plot =
+    density(seq, "", Some(Bounds(minX, maxX)))
+
   def density[N](seq: Seq[N],
                  xLabel: String = "",
                  bounds: Option[Bounds] = None)(implicit num: Numeric[N],
