@@ -61,6 +61,19 @@ object Jupyter {
       Point(mNum.toDouble(p._1), nNum.toDouble(p._2))
     }, surfaceRenderer = Some(SurfaceRenderer.contours()))
 
+  def line[M, N](seq: Seq[(M, N)])(implicit mNum: Numeric[M],
+                                   nNum: Numeric[N],
+                                   theme: Theme): Plot =
+    LinePlot(seq.map {
+      case (m, n) =>
+        Point(mNum.toDouble(m), nNum.toDouble(n))
+    })
+
+  def line(xbounds: Bounds)(fn: Double => Double)(implicit theme: Theme): Plot =
+    lines(xbounds) { x =>
+      List(fn(x))
+    }
+
   def lines(xbounds: Bounds)(fn: Double => Seq[Double])(
       implicit theme: Theme): Plot =
     Overlay.fromSeq(fn(0.0).zipWithIndex.toList.map {
@@ -71,17 +84,15 @@ object Jupyter {
                             Some(xbounds))
     })
 
-  def line(xbounds: Bounds)(fn: Double => Double)(implicit theme: Theme): Plot =
-    lines(xbounds) { x =>
-      List(fn(x))
-    }
-
   def shade[M, N](intervals: Seq[(M, (N, N))])(implicit mNum: Numeric[M],
                                                nNum: Numeric[N]): Plot = {
-    val doubleTriples = intervals.map {
-      case (m, (n1, n2)) =>
-        (mNum.toDouble(m), nNum.toDouble(n1), nNum.toDouble(n2))
-    }
+    val doubleTriples = intervals
+      .map {
+        case (m, (n1, n2)) =>
+          (mNum.toDouble(m), nNum.toDouble(n1), nNum.toDouble(n2))
+      }
+      .sortBy(_._1)
+
     val minX = doubleTriples.map(_._1).min
     val maxX = doubleTriples.map(_._1).max
     val minY = doubleTriples.map(_._2).min

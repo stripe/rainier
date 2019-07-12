@@ -60,7 +60,9 @@ package object repl {
   }
 
   def mean[N](seq: Seq[N])(implicit num: Numeric[N]): Double =
-    seq.map{ n => num.toDouble(n) }.sum / seq.size
+    seq.map { n =>
+      num.toDouble(n)
+    }.sum / seq.size
 
   def stddev[N](seq: Seq[N])(implicit num: Numeric[N]): Double = {
     val doubles = seq.map { n =>
