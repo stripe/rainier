@@ -6,125 +6,150 @@ import com.cibo.evilplot.plot._
 import com.cibo.evilplot.numeric._
 import com.cibo.evilplot.colors._
 import com.cibo.evilplot.plot.renderers._
-import com.cibo.evilplot.plot.aesthetics.DefaultTheme._
+import com.cibo.evilplot.plot.aesthetics._
 
 object Jupyter {
+  val font =
+    java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment.getAvailableFontFamilyNames
+      .find(_.startsWith("Century Schoolbook"))
+      .getOrElse("Arial")
+
   implicit val extent = Extent(400, 400)
+  implicit val theme = Theme(
+    fonts = DefaultTheme.DefaultFonts.copy(
+      tickLabelSize = 11,
+      labelSize = 12,
+      fontFace = font
+    ),
+    colors = DefaultTheme.DefaultColors.copy(
+      point = HSLA(211, 38, 48, 0.5),
+      fill = HSLA(210, 100, 0, 0.2)
+    ),
+    elements = DefaultTheme.DefaultElements.copy(
+      strokeWidth = 0.5,
+      pointSize = 3
+    )
+  )
 
-  def traces(out: Seq[Map[String, Double]],
-             truth: Map[String, Double] = Map(),
-             lagMax: Int = 40,
-             numBars: Int = 50)(implicit outputHandler: OutputHandler): Unit = {
-    implicit val extent = Extent(1200, out.head.keys.size * 300.0)
-    show(EvilTracePlot.traces(out, truth, lagMax, numBars))
-  }
-
-  def pairs(out: Seq[Map[String, Double]],
-            truth: Map[String, Double] = Map(),
-            numBars: Int = 30)(implicit outputHandler: OutputHandler): Unit = {
-    implicit val extent =
-      Extent(out.head.keys.size * 300.0, out.head.keys.size * 300.0)
-    show(EvilTracePlot.pairs(out, truth, numBars))
-  }
-
-  def histogram[N](seq: Seq[N], numBars: Int = 40)(implicit num: Numeric[N],
-                                                   oh: OutputHandler,
-                                                   extent: Extent): Unit = {
-    show(
-      Histogram(seq.map { n =>
-        num.toDouble(n)
-      }, numBars)
-        .xAxis()
-        .yAxis()
-        .frame()
-        .xLabel("x")
-        .yLabel("Frequency"))
-  }
-
-  private def scatterPlot[N](seq: Seq[(N, N)])(implicit num: Numeric[N]): Plot =
-    ScatterPlot(
-      seq.map { p =>
-        Point(num.toDouble(p._1), num.toDouble(p._2))
-      },
-      pointRenderer = Some(
-        PointRenderer.default[Point](Some(HSLA(210, 100, 56, 0.5)), Some(2))))
-
-  def scatter[N](seq: Seq[(N, N)], xLabel: String = "x", yLabel: String = "y")(
+  def density[N](seq: Seq[N], minX: Double, maxX: Double)(
       implicit num: Numeric[N],
-      oh: OutputHandler,
-      extent: Extent): Unit =
-    show(
-      scatterPlot(seq)
-        .xAxis()
-        .yAxis()
-        .frame()
-        .xLabel(xLabel)
-        .yLabel(yLabel))
+      theme: Theme): Plot =
+    density(seq, Some(Bounds(minX, maxX)))
 
-  def scatter(seq: Seq[Map[String, Double]], xKey: String, yKey: String)(
-      implicit oh: OutputHandler,
-      extent: Extent): Unit =
-    scatter(seq.map { s =>
-      (s(xKey), s(yKey))
-    }, xKey, yKey)
+  def density[N](seq: Seq[N], bounds: Option[Bounds] = None)(implicit num: Numeric[N],
+                                                theme: Theme): Plot =
+    Histogram(seq.map { n =>
+      num.toDouble(n)
+    }, binningFunction = Histogram.density, xbounds = bounds)
 
-  def scatterLines(seq: Seq[Map[String, Double]], xKey: String, yKey: String)(
-      fn: Double => Seq[Double])(implicit oh: OutputHandler,
-                                 extent: Extent): Unit = {
-    val scatter = scatterPlot(seq.map { s =>
-      (s(xKey), s(yKey))
+  def scatter[M, N](seq: Seq[(M, N)])(implicit mNum: Numeric[M],
+                                      nNum: Numeric[N],
+                                      theme: Theme): Plot =
+    ScatterPlot(seq.map { p =>
+      Point(mNum.toDouble(p._1), nNum.toDouble(p._2))
     })
-    val functionPlots = fn(0.0).zipWithIndex.toList.map {
-      case (_, i) =>
-        FunctionPlot.series(x => fn(x)(i), "", HSLA(0, 100, 56, 0.5), Some(scatter.xbounds))
+
+  def contour[M, N](seq: Seq[(M, N)])(implicit mNum: Numeric[M],
+                                      nNum: Numeric[N],
+                                      theme: Theme): Plot =
+    ContourPlot(seq.map { p =>
+      Point(mNum.toDouble(p._1), nNum.toDouble(p._2))
+    }, surfaceRenderer = Some(SurfaceRenderer.contours()))
+
+  def line[M, N](seq: Seq[(M, N)])(implicit mNum: Numeric[M],
+                                   nNum: Numeric[N],
+                                   theme: Theme): Plot =
+    LinePlot(seq.map {
+      case (m, n) =>
+        Point(mNum.toDouble(m), nNum.toDouble(n))
+    })
+
+  def line(xbounds: Bounds)(fn: Double => Double)(implicit theme: Theme): Plot =
+    lines(xbounds) { x =>
+      List(fn(x))
     }
+
+  def lines(xbounds: Bounds)(fn: Double => Seq[Double])(
+      implicit theme: Theme): Plot =
+    Overlay.fromSeq(fn(0.0).zipWithIndex.toList.map {
+      case (_, i) =>
+        FunctionPlot.series(x => fn(x)(i),
+                            "",
+                            theme.colors.trendLine,
+                            Some(xbounds))
+    })
+
+  def shade[M, N](intervals: Seq[(M, (N, N))])(implicit mNum: Numeric[M],
+                                               nNum: Numeric[N]): Plot = {
+    val doubleTriples = intervals
+      .map {
+        case (m, (n1, n2)) =>
+          (mNum.toDouble(m), nNum.toDouble(n1), nNum.toDouble(n2))
+      }
+      .sortBy(_._1)
+
+    val minX = doubleTriples.map(_._1).min
+    val maxX = doubleTriples.map(_._1).max
+    val minY = doubleTriples.map(_._2).min
+    val maxY = doubleTriples.map(_._3).max
+
+    Plot(
+      Bounds(minX, maxX),
+      Bounds(minY, maxY),
+      new PlotRenderer {
+        def render(plot: Plot, plotExtent: Extent)(implicit theme: Theme) = {
+          val xtransformer = plot.xtransform(plot, plotExtent)
+          val ytransformer = plot.ytransform(plot, plotExtent)
+
+          val points = doubleTriples.map {
+            case (x, y1, _) =>
+              Point(xtransformer(x), ytransformer(y1))
+          } ++ doubleTriples.reverse.map {
+            case (x, _, y2) =>
+              Point(xtransformer(x), ytransformer(y2))
+          }
+
+          Polygon(points).filled(theme.colors.fill)
+        }
+      }
+    )
+  }
+
+  def show(xLabel: String, yLabel: String, plots: Plot*)(
+      implicit extent: Extent,
+      theme: Theme,
+      oh: OutputHandler): Unit =
     show(
       Overlay
-        .fromSeq(scatter :: functionPlots)
-        .xAxis()
-        .yAxis()
-        .frame()
-        .xLabel(xKey)
-        .yLabel(yKey))
-  }
-
-  def contour[N](seq: Seq[(N, N)], xLabel: String = "x", yLabel: String = "y")(
-      implicit num: Numeric[N],
-      oh: OutputHandler,
-      extent: Extent): Unit =
-    show(
-      ContourPlot(
-        seq.map { p =>
-          Point(num.toDouble(p._1), num.toDouble(p._2))
-        },
-        surfaceRenderer = Some(
-          SurfaceRenderer.contours(color = Some(HTMLNamedColors.dodgerBlue))))
+        .fromSeq(plots)
         .xAxis()
         .yAxis()
         .frame()
         .xLabel(xLabel)
         .yLabel(yLabel))
 
-  def contour(seq: Seq[Map[String, Double]], xKey: String, yKey: String)(
-      implicit oh: OutputHandler,
-      extent: Extent): Unit =
-    contour(seq.map { s =>
-      (s(xKey), s(yKey))
-    }, xKey, yKey)
+  def show(xLabel: String, plots: Plot*)(
+    implicit extent: Extent,
+    theme: Theme,
+    oh: OutputHandler): Unit =
+    show(
+      Overlay
+        .fromSeq(plots)
+        .xAxis()
+        .frame()
+        .xLabel(xLabel))
 
-  private def show(p: Plot)(implicit oh: OutputHandler, extent: Extent): Unit =
-    show(List(List(p)))
-
-  private def show(plots: List[List[Plot]])(implicit oh: OutputHandler,
-                                            extent: Extent): Unit =
+  def show(plot: Plot)(implicit extent: Extent,
+                       theme: Theme,
+                       oh: OutputHandler): Unit =
     DisplayData
-      .png(renderBytes(plots))
+      .png(renderBytes(plot))
       .show()
 
-  private def renderBytes(plots: List[List[Plot]])(
-      implicit extent: Extent): Array[Byte] = {
+  def renderBytes(plot: Plot)(implicit extent: Extent,
+                              theme: Theme): Array[Byte] = {
     val baos = new java.io.ByteArrayOutputStream
-    val bi = com.cibo.evilplot.plot.Facets(plots).render(extent).asBufferedImage
+    val bi = plot.render(extent).asBufferedImage
     val width = extent.width.toInt
     val height = extent.height.toInt
     //enforce that we actually get the dimensions we asked for
