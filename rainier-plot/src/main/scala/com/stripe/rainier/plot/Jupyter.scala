@@ -137,7 +137,7 @@ object Jupyter {
         .fromSeq(plots)
         .xAxis()
         .frame()
-        .xLabel(xLabel)
+        .xLabel(xLabel))
 
   def show(plot: Plot)(implicit extent: Extent,
                        theme: Theme,
