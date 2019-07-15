@@ -34,20 +34,13 @@ object Jupyter {
   def density[N](seq: Seq[N], minX: Double, maxX: Double)(
       implicit num: Numeric[N],
       theme: Theme): Plot =
-    density(seq, "", Some(Bounds(minX, maxX)))
+    density(seq, Some(Bounds(minX, maxX)))
 
-  def density[N](seq: Seq[N],
-                 xLabel: String = "",
-                 bounds: Option[Bounds] = None)(implicit num: Numeric[N],
+  def density[N](seq: Seq[N], bounds: Option[Bounds] = None)(implicit num: Numeric[N],
                                                 theme: Theme): Plot =
     Histogram(seq.map { n =>
       num.toDouble(n)
     }, binningFunction = Histogram.density, xbounds = bounds)
-      .xLabel(xLabel)
-      .yLabel("Density")
-      .xAxis()
-      .yAxis()
-      .frame()
 
   def scatter[M, N](seq: Seq[(M, N)])(implicit mNum: Numeric[M],
                                       nNum: Numeric[N],
@@ -134,6 +127,17 @@ object Jupyter {
         .frame()
         .xLabel(xLabel)
         .yLabel(yLabel))
+
+  def show(xLabel: String, plots: Plot*)(
+    implicit extent: Extent,
+    theme: Theme,
+    oh: OutputHandler): Unit =
+    show(
+      Overlay
+        .fromSeq(plots)
+        .xAxis()
+        .frame()
+        .xLabel(xLabel)
 
   def show(plot: Plot)(implicit extent: Extent,
                        theme: Theme,
