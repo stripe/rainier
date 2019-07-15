@@ -10,7 +10,8 @@ trait Likelihood[T] {
 
   def fit(value: T): RandomVariable[Unit] = {
     val doubles = extract(value)
-    val map = placeholders.zip(doubles).map{case (p,d) => p -> Array(d)}.toMap
+    val map =
+      placeholders.zip(doubles).map { case (p, d) => p -> Array(d) }.toMap
     val density = new Target(real, map).inlined
     RandomVariable.fromDensity(density)
   }

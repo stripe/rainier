@@ -17,7 +17,7 @@ sealed trait Predictor[X, L] {
 /**
   * Predictor class, for fitting data with covariates
   */
-private[core] trait EncoderPredictor[X, L] extends Predictor[X,L] {
+private[core] trait EncoderPredictor[X, L] extends Predictor[X, L] {
   type P
   protected def encoder: Encoder[X] { type U = P }
   protected def create(p: P): L
@@ -47,10 +47,11 @@ private[core] trait EncoderPredictor[X, L] extends Predictor[X,L] {
 }
 
 object Predictor {
-  def fit[L,X,Z](values: Seq[(X, Z)])(fn: X => L)(implicit lh: ToLikelihood[L, Z]): RandomVariable[Predictor[X,L]] = {
-    val rvs = values.map{case (x, z) => lh(fn(x)).fit(z)}
-    RandomVariable.traverse(rvs).map{_ => 
-      new Predictor[X,L] {
+  def fit[L, X, Z](values: Seq[(X, Z)])(fn: X => L)(
+      implicit lh: ToLikelihood[L, Z]): RandomVariable[Predictor[X, L]] = {
+    val rvs = values.map { case (x, z) => lh(fn(x)).fit(z) }
+    RandomVariable.traverse(rvs).map { _ =>
+      new Predictor[X, L] {
         def predict[Y](x: X)(implicit gen: ToGenerator[L, Y]) =
           gen(fn(x))
       }
