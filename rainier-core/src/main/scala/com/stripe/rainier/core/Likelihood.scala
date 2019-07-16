@@ -8,6 +8,14 @@ trait Likelihood[T] {
   def placeholders: List[Variable]
   def extract(t: T): List[Double]
 
+  def fit(value: T): RandomVariable[Unit] = {
+    val doubles = extract(value)
+    val map =
+      placeholders.zip(doubles).map { case (p, d) => p -> Array(d) }.toMap
+    val density = new Target(real, map).inlined
+    RandomVariable.fromDensity(density)
+  }
+
   def fit(seq: Seq[T]): RandomVariable[Unit] = {
     val arrayBufs =
       placeholders.map { _ =>
