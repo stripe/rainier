@@ -17,7 +17,7 @@ sealed trait Predictor[X, L] {
 /**
   * Predictor class, for fitting data with covariates
   */
-private[core] trait EncoderPredictor[X, L] extends Predictor[X, L] {
+trait EncoderPredictor[X, L] extends Predictor[X, L] {
   type P
   protected def encoder: Encoder[X] { type U = P }
   protected def create(p: P): L
@@ -27,23 +27,33 @@ private[core] trait EncoderPredictor[X, L] extends Predictor[X, L] {
 
   def fit[Y](values: Seq[(X, Y)])(
       implicit lh: ToLikelihood[L, Y]): RandomVariable[Predictor[X, L]] =
-    likelihood(lh)
+    EncoderPredictor
+      .likelihood(this, lh)
       .fit(values)
       .map { _ =>
         this
       }
+}
 
-  private def likelihood[Y](lh: ToLikelihood[L, Y]): Likelihood[(X, Y)] = {
-    val (p, vs) = encoder.create(Nil)
-    val l = create(p)
+object EncoderPredictor {
+  def likelihood[X, L, Y](pred: EncoderPredictor[X, L],
+                          lh: ToLikelihood[L, Y]): Likelihood[(X, Y)] = {
+    val (p, vs) = pred.encoder.create(Nil)
+    val l = pred.create(p)
     val inner = lh(l)
     new Likelihood[(X, Y)] {
       val real = inner.real
       val placeholders = vs ++ inner.placeholders
       def extract(t: (X, Y)) =
-        encoder.extract(t._1, Nil) ++ inner.extract(t._2)
+        pred.encoder.extract(t._1, Nil) ++ inner.extract(t._2)
     }
   }
+
+  implicit def toLikelihood[X, L, Y](implicit lh: ToLikelihood[L, Y])
+    : ToLikelihood[EncoderPredictor[X, L], (X, Y)] =
+    new ToLikelihood[EncoderPredictor[X, L], (X, Y)] {
+      def apply(pred: EncoderPredictor[X, L]) = likelihood(pred, lh)
+    }
 }
 
 object Predictor {
@@ -58,7 +68,7 @@ object Predictor {
     }
   }
 
-  def lookup[K, L](map: Map[K, Real])(fn: Real => L): Predictor[K, L] =
+  def lookup[K, L](map: Map[K, Real])(fn: Real => L): EncoderPredictor[K, L] =
     new EncoderPredictor[K, L] {
       type P = Real
       val keys = map.keys.toList
@@ -85,13 +95,14 @@ object Predictor {
 
   def apply[X](implicit enc: Encoder[X]) =
     new From[X, enc.U] {
-      def from[L](fn: enc.U => L) =
+      def from[L](fn: enc.U => L): EncoderPredictor[X, L] =
         new EncoderPredictor[X, L] {
           type P = enc.U
           val encoder: Encoder.Aux[X, enc.U] = enc
           def create(p: P) = fn(p)
         }
-      def fromVector[L](k: Int)(fn: IndexedSeq[enc.U] => L) = {
+      def fromVector[L](k: Int)(
+          fn: IndexedSeq[enc.U] => L): EncoderPredictor[Seq[X], L] = {
         val vecEnc = Encoder.vector[X](k)
         new EncoderPredictor[Seq[X], L] {
           type P = IndexedSeq[enc.U]
