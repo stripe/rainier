@@ -95,14 +95,14 @@ object Predictor {
 
   def apply[X](implicit enc: Encoder[X]) =
     new From[X, enc.U] {
-      def from[L](fn: enc.U => L): EncoderPredictor[X, L] =
+      def from[L](fn: enc.U => L) =
         new EncoderPredictor[X, L] {
           type P = enc.U
           val encoder: Encoder.Aux[X, enc.U] = enc
           def create(p: P) = fn(p)
         }
       def fromVector[L](k: Int)(
-          fn: IndexedSeq[enc.U] => L): EncoderPredictor[Seq[X], L] = {
+          fn: IndexedSeq[enc.U] => L) = {
         val vecEnc = Encoder.vector[X](k)
         new EncoderPredictor[Seq[X], L] {
           type P = IndexedSeq[enc.U]
