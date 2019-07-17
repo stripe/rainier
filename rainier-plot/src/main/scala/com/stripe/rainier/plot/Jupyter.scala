@@ -36,8 +36,9 @@ object Jupyter {
       theme: Theme): Plot =
     density(seq, Some(Bounds(minX, maxX)))
 
-  def density[N](seq: Seq[N], bounds: Option[Bounds] = None)(implicit num: Numeric[N],
-                                                theme: Theme): Plot =
+  def density[N](seq: Seq[N], bounds: Option[Bounds] = None)(
+      implicit num: Numeric[N],
+      theme: Theme): Plot =
     Histogram(seq.map { n =>
       num.toDouble(n)
     }, binningFunction = Histogram.density, xbounds = bounds)
@@ -46,8 +47,15 @@ object Jupyter {
                                       nNum: Numeric[N],
                                       theme: Theme): Plot =
     ScatterPlot(seq.map { p =>
-      Point(mNum.toDouble(p._1), nNum.toDouble(p._2))
+      Point(mNum.toDouble(p._1), nNum.toDouble(p._2)),
     })
+
+  def scatter[M, N](seq: Seq[(M, N)], color: Color)(implicit mNum: Numeric[M],
+                                                    nNum: Numeric[N],
+                                                    theme: Theme): Plot =
+    ScatterPlot(seq.map { p =>
+      Point(mNum.toDouble(p._1), nNum.toDouble(p._2)),
+    }, Some(PointRenderer.default[Point](Some(color))))
 
   def contour[M, N](seq: Seq[(M, N)])(implicit mNum: Numeric[M],
                                       nNum: Numeric[N],
@@ -128,10 +136,9 @@ object Jupyter {
         .xLabel(xLabel)
         .yLabel(yLabel))
 
-  def show(xLabel: String, plots: Plot*)(
-    implicit extent: Extent,
-    theme: Theme,
-    oh: OutputHandler): Unit =
+  def show(xLabel: String, plots: Plot*)(implicit extent: Extent,
+                                         theme: Theme,
+                                         oh: OutputHandler): Unit =
     show(
       Overlay
         .fromSeq(plots)
