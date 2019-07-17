@@ -81,16 +81,16 @@ private object DualAvg {
   private def computeExponent(logAcceptanceProb: Double): Double =
     if (logAcceptanceProb > Math.log(0.5)) { 1.0 } else { -1.0 }
 
-  private def continueTuningStepSize(logAcceptanceProb: Double,
+  private def continueTuningStepSize(stepSize: Double, logAcceptanceProb: Double,
                                      exponent: Double): Boolean =
-    exponent * logAcceptanceProb > -exponent * Math.log(2)
+    stepSize != 0.0 && (exponent * logAcceptanceProb > -exponent * Math.log(2))
 
   def findReasonableStepSize(lf: LeapFrog, params: Array[Double]): Double = {
     var stepSize = 1.0
     var logAcceptanceProb = lf.tryStepping(params, stepSize)
     val exponent = computeExponent(logAcceptanceProb)
     val doubleOrHalf = Math.pow(2, exponent)
-    while (continueTuningStepSize(logAcceptanceProb, exponent)) {
+    while (continueTuningStepSize(stepSize, logAcceptanceProb, exponent)) {
       stepSize *= doubleOrHalf
       logAcceptanceProb = lf.tryStepping(params, stepSize)
 
