@@ -18,7 +18,7 @@ class GeneratedClassLoader private[ir] (cf: OutputClassGenerator,
       helperClasses(name)
 
   def newInstance: CompiledFunction =
-    cfClass.newInstance.asInstanceOf[CompiledFunction]
+    cfClass.getConstructor.newInstance.asInstanceOf[CompiledFunction]
 
   def bytecode: Seq[Array[Byte]] =
     cf.bytes :: helpers.toList.map(_.bytes)
