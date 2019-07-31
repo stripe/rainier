@@ -36,6 +36,21 @@ bind(
   actual = '@com_chuusai_shapeless_2_12//jar'
 )
 scala_maven_import_external(
+  name = 'com_cibo_evilplot_math_2_12',
+  artifact = 'com.cibo:evilplot-math_2.12:0.7.0',
+  licenses = [],
+  server_urls = [
+    'https://repo1.maven.org/maven2/',
+    'https://dl.bintray.com/tpolecat/maven/',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
+  ]
+)
+bind(
+  name = 'jar/com/cibo/evilplot_math_2_12',
+  actual = '@com_cibo_evilplot_math_2_12//jar'
+)
+scala_maven_import_external(
   name = 'com_cibo_evilplot_2_12',
   artifact = 'com.cibo:evilplot_2.12:0.6.0',
   licenses = [],
@@ -49,6 +64,276 @@ scala_maven_import_external(
 bind(
   name = 'jar/com/cibo/evilplot_2_12',
   actual = '@com_cibo_evilplot_2_12//jar'
+)
+scala_maven_import_external(
+  name = 'com_cibo_evilplot_2_12',
+  artifact = 'com.cibo:evilplot_2.12:0.7.0',
+  licenses = [],
+  server_urls = [
+    'https://repo1.maven.org/maven2/',
+    'https://dl.bintray.com/tpolecat/maven/',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
+  ]
+)
+bind(
+  name = 'jar/com/cibo/evilplot_2_12',
+  actual = '@com_cibo_evilplot_2_12//jar'
+)
+scala_maven_import_external(
+  name = 'com_github_fommil_jniloader',
+  artifact = 'com.github.fommil:jniloader:1.1',
+  licenses = [],
+  server_urls = [
+    'https://repo1.maven.org/maven2/',
+    'https://dl.bintray.com/tpolecat/maven/',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
+  ]
+)
+bind(
+  name = 'jar/com/github/fommil/jniloader',
+  actual = '@com_github_fommil_jniloader//jar'
+)
+scala_maven_import_external(
+  name = 'com_github_fommil_netlib_core',
+  artifact = 'com.github.fommil.netlib:core:1.1.2',
+  licenses = [],
+  server_urls = [
+    'https://repo1.maven.org/maven2/',
+    'https://dl.bintray.com/tpolecat/maven/',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
+  ]
+)
+bind(
+  name = 'jar/com/github/fommil/netlib/core',
+  actual = '@com_github_fommil_netlib_core//jar'
+)
+scala_maven_import_external(
+  name = 'com_github_fommil_netlib_native_ref_java',
+  artifact = 'com.github.fommil.netlib:native_ref-java:1.1',
+  licenses = [],
+  server_urls = [
+    'https://repo1.maven.org/maven2/',
+    'https://dl.bintray.com/tpolecat/maven/',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
+  ]
+)
+bind(
+  name = 'jar/com/github/fommil/netlib/native_ref_java',
+  actual = '@com_github_fommil_netlib_native_ref_java//jar'
+)
+scala_maven_import_external(
+  name = 'com_github_fommil_netlib_native_system_java',
+  artifact = 'com.github.fommil.netlib:native_system-java:1.1',
+  licenses = [],
+  server_urls = [
+    'https://repo1.maven.org/maven2/',
+    'https://dl.bintray.com/tpolecat/maven/',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
+  ]
+)
+bind(
+  name = 'jar/com/github/fommil/netlib/native_system_java',
+  actual = '@com_github_fommil_netlib_native_system_java//jar'
+)
+scala_maven_import_external(
+  name = 'com_github_fommil_netlib_netlib_native_ref_linux_armhf',
+  artifact = 'com.github.fommil.netlib:netlib-native_ref-linux-armhf:1.1',
+  licenses = [],
+  server_urls = [
+    'https://repo1.maven.org/maven2/',
+    'https://dl.bintray.com/tpolecat/maven/',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
+  ]
+)
+bind(
+  name = 'jar/com/github/fommil/netlib/netlib_native_ref_linux_armhf',
+  actual = '@com_github_fommil_netlib_netlib_native_ref_linux_armhf//jar'
+)
+scala_maven_import_external(
+  name = 'com_github_fommil_netlib_netlib_native_ref_linux_i686',
+  artifact = 'com.github.fommil.netlib:netlib-native_ref-linux-i686:1.1',
+  licenses = [],
+  server_urls = [
+    'https://repo1.maven.org/maven2/',
+    'https://dl.bintray.com/tpolecat/maven/',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
+  ]
+)
+bind(
+  name = 'jar/com/github/fommil/netlib/netlib_native_ref_linux_i686',
+  actual = '@com_github_fommil_netlib_netlib_native_ref_linux_i686//jar'
+)
+scala_maven_import_external(
+  name = 'com_github_fommil_netlib_netlib_native_ref_linux_x86_64',
+  artifact = 'com.github.fommil.netlib:netlib-native_ref-linux-x86_64:1.1',
+  licenses = [],
+  server_urls = [
+    'https://repo1.maven.org/maven2/',
+    'https://dl.bintray.com/tpolecat/maven/',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
+  ]
+)
+bind(
+  name = 'jar/com/github/fommil/netlib/netlib_native_ref_linux_x86_64',
+  actual = '@com_github_fommil_netlib_netlib_native_ref_linux_x86_64//jar'
+)
+scala_maven_import_external(
+  name = 'com_github_fommil_netlib_netlib_native_ref_osx_x86_64',
+  artifact = 'com.github.fommil.netlib:netlib-native_ref-osx-x86_64:1.1',
+  licenses = [],
+  server_urls = [
+    'https://repo1.maven.org/maven2/',
+    'https://dl.bintray.com/tpolecat/maven/',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
+  ]
+)
+bind(
+  name = 'jar/com/github/fommil/netlib/netlib_native_ref_osx_x86_64',
+  actual = '@com_github_fommil_netlib_netlib_native_ref_osx_x86_64//jar'
+)
+scala_maven_import_external(
+  name = 'com_github_fommil_netlib_netlib_native_ref_win_i686',
+  artifact = 'com.github.fommil.netlib:netlib-native_ref-win-i686:1.1',
+  licenses = [],
+  server_urls = [
+    'https://repo1.maven.org/maven2/',
+    'https://dl.bintray.com/tpolecat/maven/',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
+  ]
+)
+bind(
+  name = 'jar/com/github/fommil/netlib/netlib_native_ref_win_i686',
+  actual = '@com_github_fommil_netlib_netlib_native_ref_win_i686//jar'
+)
+scala_maven_import_external(
+  name = 'com_github_fommil_netlib_netlib_native_ref_win_x86_64',
+  artifact = 'com.github.fommil.netlib:netlib-native_ref-win-x86_64:1.1',
+  licenses = [],
+  server_urls = [
+    'https://repo1.maven.org/maven2/',
+    'https://dl.bintray.com/tpolecat/maven/',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
+  ]
+)
+bind(
+  name = 'jar/com/github/fommil/netlib/netlib_native_ref_win_x86_64',
+  actual = '@com_github_fommil_netlib_netlib_native_ref_win_x86_64//jar'
+)
+scala_maven_import_external(
+  name = 'com_github_fommil_netlib_netlib_native_system_linux_armhf',
+  artifact = 'com.github.fommil.netlib:netlib-native_system-linux-armhf:1.1',
+  licenses = [],
+  server_urls = [
+    'https://repo1.maven.org/maven2/',
+    'https://dl.bintray.com/tpolecat/maven/',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
+  ]
+)
+bind(
+  name = 'jar/com/github/fommil/netlib/netlib_native_system_linux_armhf',
+  actual = '@com_github_fommil_netlib_netlib_native_system_linux_armhf//jar'
+)
+scala_maven_import_external(
+  name = 'com_github_fommil_netlib_netlib_native_system_linux_i686',
+  artifact = 'com.github.fommil.netlib:netlib-native_system-linux-i686:1.1',
+  licenses = [],
+  server_urls = [
+    'https://repo1.maven.org/maven2/',
+    'https://dl.bintray.com/tpolecat/maven/',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
+  ]
+)
+bind(
+  name = 'jar/com/github/fommil/netlib/netlib_native_system_linux_i686',
+  actual = '@com_github_fommil_netlib_netlib_native_system_linux_i686//jar'
+)
+scala_maven_import_external(
+  name = 'com_github_fommil_netlib_netlib_native_system_linux_x86_64',
+  artifact = 'com.github.fommil.netlib:netlib-native_system-linux-x86_64:1.1',
+  licenses = [],
+  server_urls = [
+    'https://repo1.maven.org/maven2/',
+    'https://dl.bintray.com/tpolecat/maven/',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
+  ]
+)
+bind(
+  name = 'jar/com/github/fommil/netlib/netlib_native_system_linux_x86_64',
+  actual = '@com_github_fommil_netlib_netlib_native_system_linux_x86_64//jar'
+)
+scala_maven_import_external(
+  name = 'com_github_fommil_netlib_netlib_native_system_osx_x86_64',
+  artifact = 'com.github.fommil.netlib:netlib-native_system-osx-x86_64:1.1',
+  licenses = [],
+  server_urls = [
+    'https://repo1.maven.org/maven2/',
+    'https://dl.bintray.com/tpolecat/maven/',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
+  ]
+)
+bind(
+  name = 'jar/com/github/fommil/netlib/netlib_native_system_osx_x86_64',
+  actual = '@com_github_fommil_netlib_netlib_native_system_osx_x86_64//jar'
+)
+scala_maven_import_external(
+  name = 'com_github_fommil_netlib_netlib_native_system_win_i686',
+  artifact = 'com.github.fommil.netlib:netlib-native_system-win-i686:1.1',
+  licenses = [],
+  server_urls = [
+    'https://repo1.maven.org/maven2/',
+    'https://dl.bintray.com/tpolecat/maven/',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
+  ]
+)
+bind(
+  name = 'jar/com/github/fommil/netlib/netlib_native_system_win_i686',
+  actual = '@com_github_fommil_netlib_netlib_native_system_win_i686//jar'
+)
+scala_maven_import_external(
+  name = 'com_github_fommil_netlib_netlib_native_system_win_x86_64',
+  artifact = 'com.github.fommil.netlib:netlib-native_system-win-x86_64:1.1',
+  licenses = [],
+  server_urls = [
+    'https://repo1.maven.org/maven2/',
+    'https://dl.bintray.com/tpolecat/maven/',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
+  ]
+)
+bind(
+  name = 'jar/com/github/fommil/netlib/netlib_native_system_win_x86_64',
+  actual = '@com_github_fommil_netlib_netlib_native_system_win_x86_64//jar'
+)
+scala_maven_import_external(
+  name = 'com_github_rwl_jtransforms',
+  artifact = 'com.github.rwl:jtransforms:2.4.0',
+  licenses = [],
+  server_urls = [
+    'https://repo1.maven.org/maven2/',
+    'https://dl.bintray.com/tpolecat/maven/',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
+  ]
+)
+bind(
+  name = 'jar/com/github/rwl/jtransforms',
+  actual = '@com_github_rwl_jtransforms//jar'
 )
 scala_maven_import_external(
   name = 'com_google_code_findbugs_jsr305',
@@ -201,6 +486,21 @@ bind(
   actual = '@io_circe_circe_parser_2_12//jar'
 )
 scala_maven_import_external(
+  name = 'junit_junit',
+  artifact = 'junit:junit:4.8.2',
+  licenses = [],
+  server_urls = [
+    'https://repo1.maven.org/maven2/',
+    'https://dl.bintray.com/tpolecat/maven/',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
+  ]
+)
+bind(
+  name = 'jar/junit/junit',
+  actual = '@junit_junit//jar'
+)
+scala_maven_import_external(
   name = 'net_sf_jopt_simple_jopt_simple',
   artifact = 'net.sf.jopt-simple:jopt-simple:4.6',
   licenses = [],
@@ -214,6 +514,36 @@ scala_maven_import_external(
 bind(
   name = 'jar/net/sf/jopt/simple/jopt_simple',
   actual = '@net_sf_jopt_simple_jopt_simple//jar'
+)
+scala_maven_import_external(
+  name = 'net_sf_opencsv_opencsv',
+  artifact = 'net.sf.opencsv:opencsv:2.3',
+  licenses = [],
+  server_urls = [
+    'https://repo1.maven.org/maven2/',
+    'https://dl.bintray.com/tpolecat/maven/',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
+  ]
+)
+bind(
+  name = 'jar/net/sf/opencsv/opencsv',
+  actual = '@net_sf_opencsv_opencsv//jar'
+)
+scala_maven_import_external(
+  name = 'net_sourceforge_f2j_arpack_combined_all',
+  artifact = 'net.sourceforge.f2j:arpack_combined_all:0.1',
+  licenses = [],
+  server_urls = [
+    'https://repo1.maven.org/maven2/',
+    'https://dl.bintray.com/tpolecat/maven/',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
+  ]
+)
+bind(
+  name = 'jar/net/sourceforge/f2j/arpack_combined_all',
+  actual = '@net_sourceforge_f2j_arpack_combined_all//jar'
 )
 scala_maven_import_external(
   name = 'org_apache_commons_commons_math3',
@@ -366,6 +696,21 @@ bind(
   actual = '@org_scala_lang_modules_scala_xml_2_12//jar'
 )
 scala_maven_import_external(
+  name = 'org_scala_lang_modules_scala_xml_2_12',
+  artifact = 'org.scala-lang.modules:scala-xml_2.12:1.1.0',
+  licenses = [],
+  server_urls = [
+    'https://repo1.maven.org/maven2/',
+    'https://dl.bintray.com/tpolecat/maven/',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
+  ]
+)
+bind(
+  name = 'jar/org/scala/lang/modules/scala_xml_2_12',
+  actual = '@org_scala_lang_modules_scala_xml_2_12//jar'
+)
+scala_maven_import_external(
   name = 'org_scala_sbt_test_interface',
   artifact = 'org.scala-sbt:test-interface:1.0',
   licenses = [],
@@ -426,6 +771,66 @@ bind(
   actual = '@org_scalactic_scalactic_2_12//jar'
 )
 scala_maven_import_external(
+  name = 'org_scalactic_scalactic_2_12',
+  artifact = 'org.scalactic:scalactic_2.12:3.0.7',
+  licenses = [],
+  server_urls = [
+    'https://repo1.maven.org/maven2/',
+    'https://dl.bintray.com/tpolecat/maven/',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
+  ]
+)
+bind(
+  name = 'jar/org/scalactic/scalactic_2_12',
+  actual = '@org_scalactic_scalactic_2_12//jar'
+)
+scala_maven_import_external(
+  name = 'org_scalanlp_breeze_macros_2_12',
+  artifact = 'org.scalanlp:breeze-macros_2.12:0.13.2',
+  licenses = [],
+  server_urls = [
+    'https://repo1.maven.org/maven2/',
+    'https://dl.bintray.com/tpolecat/maven/',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
+  ]
+)
+bind(
+  name = 'jar/org/scalanlp/breeze_macros_2_12',
+  actual = '@org_scalanlp_breeze_macros_2_12//jar'
+)
+scala_maven_import_external(
+  name = 'org_scalanlp_breeze_natives_2_12',
+  artifact = 'org.scalanlp:breeze-natives_2.12:0.13.2',
+  licenses = [],
+  server_urls = [
+    'https://repo1.maven.org/maven2/',
+    'https://dl.bintray.com/tpolecat/maven/',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
+  ]
+)
+bind(
+  name = 'jar/org/scalanlp/breeze_natives_2_12',
+  actual = '@org_scalanlp_breeze_natives_2_12//jar'
+)
+scala_maven_import_external(
+  name = 'org_scalanlp_breeze_2_12',
+  artifact = 'org.scalanlp:breeze_2.12:0.13.2',
+  licenses = [],
+  server_urls = [
+    'https://repo1.maven.org/maven2/',
+    'https://dl.bintray.com/tpolecat/maven/',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
+  ]
+)
+bind(
+  name = 'jar/org/scalanlp/breeze_2_12',
+  actual = '@org_scalanlp_breeze_2_12//jar'
+)
+scala_maven_import_external(
   name = 'org_scalatest_scalatest_2_12',
   artifact = 'org.scalatest:scalatest_2.12:3.0.5',
   licenses = [],
@@ -441,6 +846,21 @@ bind(
   actual = '@org_scalatest_scalatest_2_12//jar'
 )
 scala_maven_import_external(
+  name = 'org_slf4j_slf4j_api',
+  artifact = 'org.slf4j:slf4j-api:1.7.5',
+  licenses = [],
+  server_urls = [
+    'https://repo1.maven.org/maven2/',
+    'https://dl.bintray.com/tpolecat/maven/',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
+  ]
+)
+bind(
+  name = 'jar/org/slf4j/slf4j_api',
+  actual = '@org_slf4j_slf4j_api//jar'
+)
+scala_maven_import_external(
   name = 'org_spire_math_jawn_parser_2_12',
   artifact = 'org.spire-math:jawn-parser_2.12:0.11.0',
   licenses = [],
@@ -454,6 +874,36 @@ scala_maven_import_external(
 bind(
   name = 'jar/org/spire/math/jawn_parser_2_12',
   actual = '@org_spire_math_jawn_parser_2_12//jar'
+)
+scala_maven_import_external(
+  name = 'org_spire_math_spire_macros_2_12',
+  artifact = 'org.spire-math:spire-macros_2.12:0.13.0',
+  licenses = [],
+  server_urls = [
+    'https://repo1.maven.org/maven2/',
+    'https://dl.bintray.com/tpolecat/maven/',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
+  ]
+)
+bind(
+  name = 'jar/org/spire/math/spire_macros_2_12',
+  actual = '@org_spire_math_spire_macros_2_12//jar'
+)
+scala_maven_import_external(
+  name = 'org_spire_math_spire_2_12',
+  artifact = 'org.spire-math:spire_2.12:0.13.0',
+  licenses = [],
+  server_urls = [
+    'https://repo1.maven.org/maven2/',
+    'https://dl.bintray.com/tpolecat/maven/',
+    'https://dl.bintray.com/cibotech/public/',
+    'https://jitpack.io',
+  ]
+)
+bind(
+  name = 'jar/org/spire/math/spire_2_12',
+  actual = '@org_spire_math_spire_2_12//jar'
 )
 scala_maven_import_external(
   name = 'org_typelevel_catalysts_macros_2_12',

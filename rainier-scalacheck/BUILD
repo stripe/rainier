@@ -10,6 +10,8 @@ scala_library(
   deps = [
     '//external:jar/com/google/code/findbugs/jsr305',
     '//external:jar/com/google/flogger/flogger',
+    '//external:jar/com/google/flogger/flogger_system_backend',
+    '//external:jar/com/stripe/rainier_shaded_asm_6_0',
     '//external:jar/org/scala/lang/scala_reflect',
     '//external:jar/org/scala/sbt/test_interface',
     '//external:jar/org/scalacheck/scalacheck_2_12',
