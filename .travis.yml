@@ -4,7 +4,7 @@ scala:
   - 2.12.8
 
 jdk:
-  - openjdk9
+  - openjdk8
 
 cache:
   directories:
