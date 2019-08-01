@@ -35,7 +35,7 @@ scalafmtOnCompile in ThisBuild := true
 lazy val commonSettings = Seq(
   organization:= "com.stripe",
   scalaVersion := "2.12.8",
-  crossScalaVersions := List(scalaVersion.value),
+  crossScalaVersions := List(scalaVersion.value, "2.11.12"),
   releaseCrossBuild := true,
   releasePublishArtifactsAction := PgpKeys.publishSigned.value,
   homepage := Some(url("https://github.com/stripe/rainier")),
@@ -69,7 +69,7 @@ lazy val unpublished = Seq(publish := {}, publishLocal := {}, publishArtifact :=
 lazy val V = new {
   val asm = "6.0"
   val cats = "1.1.0"
-  val evilplot = "0.7.0"
+  val evilplot = "0.6.0"
   val scalacheck = "1.14.0"
   val scalatest = "3.0.5"
   val flogger = "0.3.1"

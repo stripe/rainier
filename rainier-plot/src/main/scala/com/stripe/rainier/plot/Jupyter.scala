@@ -38,23 +38,27 @@ object Jupyter {
 
   def density[N](seq: Seq[N], bounds: Option[Bounds] = None)(
       implicit num: Numeric[N],
-      theme: Theme): Plot =
-    Histogram(seq.map { n =>
+      theme: Theme): Plot = {
+    val doubles = seq.map { n =>
       num.toDouble(n)
-    }, binningFunction = Histogram.density, xbounds = bounds)
+    }
+    val xbounds = bounds.getOrElse(Bounds(doubles.min, doubles.max))
+    val bins = Binning.histogramBinsWithBounds(doubles, xbounds)
+    Histogram.fromBins(bins)
+  }
 
   def scatter[M, N](seq: Seq[(M, N)])(implicit mNum: Numeric[M],
                                       nNum: Numeric[N],
                                       theme: Theme): Plot =
     ScatterPlot(seq.map { p =>
-      Point(mNum.toDouble(p._1), nNum.toDouble(p._2)),
+      Point(mNum.toDouble(p._1), nNum.toDouble(p._2))
     })
 
   def scatter[M, N](seq: Seq[(M, N)], color: Color)(implicit mNum: Numeric[M],
                                                     nNum: Numeric[N],
                                                     theme: Theme): Plot =
     ScatterPlot(seq.map { p =>
-      Point(mNum.toDouble(p._1), nNum.toDouble(p._2)),
+      Point(mNum.toDouble(p._1), nNum.toDouble(p._2))
     }, Some(PointRenderer.default[Point](Some(color))))
 
   def contour[M, N](seq: Seq[(M, N)])(implicit mNum: Numeric[M],
