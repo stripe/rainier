@@ -63,14 +63,11 @@ object UnboundedSupport extends Support {
   * A support representing a bounded (min, max) interval.
   */
 case class BoundedSupport(min: Real, max: Real) extends Support {
-  private def logistic(v: Variable): Real =
-    (Real.one / (Real.one + (v * -1).exp))
-
   def transform(v: Variable): Real =
-    logistic(v) * (max - min) + min
+    v.logistic * (max - min) + min
 
   def logJacobian(v: Variable): Real =
-    logistic(v).log + (1 - logistic(v)).log + (max - min).log
+    v.logistic.log + (1 - v.logistic).log + (max - min).log
 }
 
 /**

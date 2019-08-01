@@ -46,6 +46,9 @@ sealed trait Real {
   //because abs does not have a smooth derivative, try to avoid using it
   def abs: Real = RealOps.unary(this, ir.AbsOp)
 
+  def logit: Real = -((Real.one / this - 1).log)
+  def logistic: Real = Real.one / (Real.one + (-this).exp)
+
   lazy val variables: List[Variable] = RealOps.variables(this).toList
   lazy val gradient: List[Real] = Gradient.derive(variables, this)
 
