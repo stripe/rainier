@@ -1,5 +1,3 @@
-ThisBuild / bazelScalaRulesVersion := "8359fc6781cf3102e918c84cb1638a1b1e050ce0"
-
 lazy val root = project.
   in(file(".")).
   aggregate(rainierCore, rainierPlot, rainierCats, rainierScalacheck).
@@ -7,30 +5,20 @@ lazy val root = project.
   aggregate(rainierBenchmark, rainierTests).
   aggregate(shadedAsm).
   settings(commonSettings).
-  settings(unpublished).
-  settings(
-    bazelWorkspaceGenerate := true,
-    bazelBuildGenerate := false,
-    bazelCustomWorkspace :=
-      WorkspacePrelude +:
-        MavenBindings +:
-        BazelString(
-          """
-          |git_repository(
-          |    name = "com_github_johnynek_bazel_jar_jar",
-          |    commit = "258c7288db8a034e087b4d65a52546830633a4f1",
-          |    remote = "git://github.com/johnynek/bazel_jar_jar.git",
-          |)
-          |load(
-          |    "@com_github_johnynek_bazel_jar_jar//:jar_jar.bzl",
-          |    "jar_jar_repositories",
-          |)
-          |jar_jar_repositories()
-          |""".stripMargin
-        )
-  )
+  settings(unpublished)
 
 scalafmtOnCompile in ThisBuild := true
+
+def getPublishTo(snapshot: Boolean) = {
+  val nexus = "https://oss.sonatype.org/"
+  if (snapshot) {
+    val url = sys.props.get("publish.snapshots.url").getOrElse(nexus + "content/repositories/snapshots")
+    Some("snapshots" at url)
+  } else {
+    val url = sys.props.get("publish.releases.url").getOrElse(nexus + "service/local/staging/deploy/maven2")
+    Some("releases" at url)
+  }
+}
 
 lazy val commonSettings = Seq(
   organization:= "com.stripe",
@@ -43,13 +31,7 @@ lazy val commonSettings = Seq(
   publishMavenStyle := true,
   publishArtifact in Test := false,
   pomIncludeRepository := { _ => false },
-  publishTo := {
-    val nexus = "https://oss.sonatype.org/"
-    if (isSnapshot.value)
-      Some("snapshots" at nexus + "content/repositories/snapshots")
-    else
-      Some("releases"  at nexus + "service/local/staging/deploy/maven2")
-  },
+  publishTo := getPublishTo(isSnapshot.value),
   autoAPIMappings := true,
   apiURL := Some(url("https://stripe.github.io/rainier/api/")),
   scmInfo := Some(
@@ -153,22 +135,7 @@ lazy val rainierExample = project.
     rainierPlot,
   ).
   settings(commonSettings).
-  settings(unpublished).
-  settings(
-    bazelCustomBuild := BuildPrelude +: BuildTargets +: BazelString(
-    """
-      |scala_binary(
-      |    name = 'logNormal',
-      |    deps = [
-      |        ':rainierExample',
-      |    ],
-      |    visibility = [
-      |        '//visibility:public',
-      |    ],
-      |    main_class = 'com.stripe.rainier.example.FitNormal'
-      |)
-    """.stripMargin
-  ))
+  settings(unpublished)
 
 // test modules
 
@@ -221,39 +188,7 @@ lazy val shadedAsm = project.
     autoScalaLibrary := false,
     exportJars := true,
     packageBin in Compile := (assembly in asmDeps).value,
-    releaseVersion := { ver => ver },
-    bazelCustomBuild := BazelString(
-      """
-        |load(
-        |  '@io_bazel_rules_scala//scala:scala.bzl',
-        |  'scala_binary',
-        |  'scala_library',
-        |  'scala_test'
-        |)
-        |
-        |load(
-        |    "@com_github_johnynek_bazel_jar_jar//:jar_jar.bzl",
-        |    "jar_jar"
-        |)
-        |
-        |jar_jar(
-        |    name = "asmShaded",
-        |    input_jar = "@org_ow2_asm_asm//jar",
-        |    rules = "shade_rule",
-        |    visibility = [
-        |      '//visibility:public',
-        |    ]
-        |)
-        |
-        |jar_jar(
-        |    name = "asmTreeShaded",
-        |    input_jar = "@org_ow2_asm_asm_tree//jar",
-        |    rules = "shade_rule",
-        |    visibility = [
-        |      '//visibility:public',
-        |    ],
-        |)
-      """.stripMargin)
+    releaseVersion := { ver => ver }
   )
 
 /* phantom project to bundle deps for shading */
