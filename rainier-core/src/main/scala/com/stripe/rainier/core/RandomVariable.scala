@@ -202,6 +202,21 @@ object RandomVariable {
       .map(_.reverse)
   }
 
+  def traverse[K, V](
+      rvs: Map[K, RandomVariable[V]]): RandomVariable[Map[K, V]] = {
+    def go(accum: RandomVariable[Map[K, V]], k: K, rv: RandomVariable[V]) = {
+      for {
+        v <- rv
+        vs <- accum
+      } yield vs + (k -> v)
+    }
+
+    rvs
+      .foldLeft[RandomVariable[Map[K, V]]](apply(Map[K, V]())) {
+        case (accum, (k, v)) => go(accum, k, v)
+      }
+  }
+
   def fill[A](k: Int)(fn: => RandomVariable[A]): RandomVariable[Seq[A]] =
     traverse(List.fill(k)(fn))
 

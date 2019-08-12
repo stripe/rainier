@@ -102,12 +102,31 @@ object Generator {
       def get(implicit r: RNG, n: Numeric[Real]): T = fn(r, n)
     }
 
-  def traverse[T](seq: Seq[Generator[T]]): Generator[Seq[T]] =
-    new Generator[Seq[T]] {
-      val requirements: Set[Real] = seq.flatMap(_.requirements).toSet
-      def get(implicit r: RNG, n: Numeric[Real]): Seq[T] =
+  def traverse[T, U](seq: Seq[T])(
+      implicit toGen: ToGenerator[T, U]
+  ): Generator[Seq[U]] =
+    new Generator[Seq[U]] {
+      val requirements: Set[Real] = seq.flatMap(toGen(_).requirements).toSet
+      def get(implicit r: RNG, n: Numeric[Real]): Seq[U] =
         seq.map { g =>
-          g.get
+          toGen(g).get
+        }
+    }
+
+  def traverse[K, V, W](
+      seq: Map[K, V]
+  )(
+      implicit toGen: ToGenerator[V, W]
+  ): Generator[Map[K, W]] =
+    new Generator[Map[K, W]] {
+      val requirements: Set[Real] = seq.flatMap {
+        case (_, v) =>
+          toGen(v).requirements
+      }.toSet
+      def get(implicit r: RNG, n: Numeric[Real]): Map[K, W] =
+        seq.map {
+          case (k, v) =>
+            k -> toGen(v).get
         }
     }
 }
