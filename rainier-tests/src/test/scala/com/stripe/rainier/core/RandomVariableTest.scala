@@ -72,4 +72,23 @@ class RandomVariableTest extends FunSuite {
                   (x: Real) => Uniform(0, x).param,
                   (x: Real) => Exponential(x).param)
   }
+
+  test("traverse a map") {
+    val input = Map(
+      "zero" -> RandomVariable(DiscreteConstant(0)),
+      "one" -> RandomVariable(DiscreteConstant(1))
+    )
+    val expect = Map(
+      "zero" -> 0,
+      "one" -> 1
+    )
+    implicit val rng: RNG = RNG.default
+
+    assert(
+      expect === RandomVariable
+        .traverse(input)
+        .map(Generator.traverse(_))
+        .sample(1)
+        .head)
+  }
 }

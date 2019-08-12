@@ -102,14 +102,28 @@ object Generator {
       def get(implicit r: RNG, n: Numeric[Real]): T = fn(r, n)
     }
 
-  def traverse[T](seq: Seq[Generator[T]]): Generator[Seq[T]] =
-    new Generator[Seq[T]] {
-      val requirements: Set[Real] = seq.flatMap(_.requirements).toSet
-      def get(implicit r: RNG, n: Numeric[Real]): Seq[T] =
-        seq.map { g =>
-          g.get
-        }
+  def traverse[T, U](seq: Seq[T])(
+      implicit toGen: ToGenerator[T, U]
+  ): Generator[Seq[U]] = {
+    val asGen = seq.map(toGen(_))
+    new Generator[Seq[U]] {
+      val requirements: Set[Real] = asGen.flatMap(_.requirements).toSet
+      def get(implicit r: RNG, n: Numeric[Real]): Seq[U] = asGen.map(_.get)
     }
+  }
+
+  def traverse[K, V, W](
+      seq: Map[K, V]
+  )(
+      implicit toGen: ToGenerator[V, W]
+  ): Generator[Map[K, W]] = {
+    val asGen = seq.mapValues(toGen(_))
+    new Generator[Map[K, W]] {
+      val requirements: Set[Real] = asGen.values.flatMap(_.requirements).toSet
+      def get(implicit r: RNG, n: Numeric[Real]): Map[K, W] =
+        asGen.mapValues(_.get)
+    }
+  }
 }
 
 trait ToGenerator[-T, U] {
