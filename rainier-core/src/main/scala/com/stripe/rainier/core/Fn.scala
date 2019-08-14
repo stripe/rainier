@@ -31,7 +31,7 @@ object Fn {
   def encode[A](implicit enc: Encoder[A]) =
     new Fn[A, enc.U] {
       type X = enc.U
-      val encoder = enc
+      val encoder: Encoder[A] { type U = X } = enc
       def xy(x: X) = x
     }
 
