@@ -74,6 +74,14 @@ package object repl {
     }.sum / doubles.size)
   }
 
+  def standardize[N](seq: Seq[N])(implicit num: Numeric[N]): Seq[Double] = {
+    val m = mean(seq)
+    val sd = stddev(seq)
+    seq.map { x =>
+      (num.toDouble(x) - m) / sd
+    }
+  }
+
   def precis(samples: Seq[Map[String, Double]], corr: Boolean = false): Unit = {
     val keys = samples.head.keys.toList
 
