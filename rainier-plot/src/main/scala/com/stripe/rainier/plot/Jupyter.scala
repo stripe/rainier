@@ -91,6 +91,16 @@ object Jupyter {
                             Some(xbounds))
     })
 
+  def whiskers[K, N](samples: Seq[Map[String, Double]]): Plot = {
+    val labels = samples.head.keys.toList.sorted
+    val data = labels.map { k =>
+      samples.map { m =>
+        m(k)
+      }
+    }
+    BoxPlot(data).standard(xLabels = labels)
+  }
+
   def shade[M, N](intervals: Seq[(M, (N, N))])(implicit mNum: Numeric[M],
                                                nNum: Numeric[N]): Plot = {
     val doubleTriples = intervals
