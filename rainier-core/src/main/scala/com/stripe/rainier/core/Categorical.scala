@@ -35,6 +35,7 @@ final case class Categorical[T](pmf: Map[T, Real]) extends Distribution[T] {
 
     Generator.require(cdf.map(_._2).toSet) { (r, n) =>
       val v = r.standardUniform
+      require(Math.abs(n.toDouble(cdf.last._2) - 1.0) < 1e-6)
       cdf.find { case (_, p) => n.toDouble(p) >= v }.getOrElse(cdf.last)._1
     }
   }
@@ -125,6 +126,12 @@ final case class Multinomial[T](pmf: Map[T, Real], k: Real)
 }
 
 object Multinomial {
+  def optional[T](pmf: Map[T,Real], k: Real): Multinomial[Option[T]] = {
+    val total = Real.sum(pmf.values)
+    val newPMF = pmf.map{case (t,p) => Option(t) -> p} + (None -> (Real.one - total))
+    Multinomial(newPMF, k)
+  }
+
   def logDensity[T](multi: Multinomial[T], v: List[(T, Real)]): Real =
     Combinatorics.factorial(multi.k) + Real.sum(v.map {
       case (t, i) =>
