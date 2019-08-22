@@ -8,6 +8,8 @@ import com.cibo.evilplot.colors._
 import com.cibo.evilplot.plot.renderers._
 import com.cibo.evilplot.plot.aesthetics._
 
+import com.stripe.rainier.repl.hdpi
+
 object Jupyter {
   val font =
     java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment.getAvailableFontFamilyNames
@@ -94,11 +96,90 @@ object Jupyter {
   def whiskers[K, N](samples: Seq[Map[String, Double]]): Plot = {
     val labels = samples.head.keys.toList.sorted
     val data = labels.map { k =>
-      samples.map { m =>
+      k -> samples.map { m =>
         m(k)
       }
     }
-    BoxPlot(data).standard(xLabels = labels)
+    whiskers(data, None)
+  }
+
+  def whiskers[K, N](seq: Seq[(K, Seq[N])], ybounds: Option[Bounds])(
+      implicit num: Numeric[N],
+      theme: Theme): Plot = {
+    val data = seq.map { case (_, ns)  => ns.map(num.toDouble) }
+    val labels = seq.map { case (k, _) => k.toString }
+
+    val xb = Bounds(0, seq.size.toDouble)
+    val yb = ybounds.getOrElse(
+      Bounds(
+        data.flatten.reduceOption[Double](math.min).getOrElse(0),
+        data.flatten.reduceOption[Double](math.max).getOrElse(0)
+      ))
+
+    val boxContexts = data.zipWithIndex.map {
+      case (dist, index) =>
+        if (dist.nonEmpty) {
+          val summary = BoxPlotSummaryStatistics(dist, (0.25, 0.50, 0.75))
+          Some(BoxRenderer.BoxRendererContext(summary, index))
+        } else None
+    }
+
+    Plot(
+      xb,
+      yb,
+      BoxPlotRenderer(
+        boxContexts,
+        BoxRenderer.custom { (extent, ctx) =>
+          val stats = ctx.summaryStatistics
+          val mu = stats.allPoints.sum / stats.allPoints.size
+          val (low, high) = hdpi(stats.allPoints)
+          val scale = extent.height / (stats.upperWhisker - stats.lowerWhisker)
+
+          val topDashes = stats.upperWhisker - high
+          val topSolid = high - mu
+          val bottomSolid = mu - low
+          val bottomDashes = low - stats.lowerWhisker
+          val dot = mu - stats.lowerWhisker
+
+          Align
+            .center(
+              StrokeStyle(Line(scale * topDashes, 2), Clear)
+                .rotated(90)
+                .translate(extent.width / 2),
+              StrokeStyle(Line(scale * topSolid, 2), theme.colors.path)
+                .rotated(90)
+                .translate(extent.width / 2 - 1.5),
+              StrokeStyle(Line(scale * bottomSolid, 2), theme.colors.path)
+                .rotated(90)
+                .translate(extent.width / 2 - 1.5),
+              StrokeStyle(Line(scale * bottomDashes, 2), Clear)
+                .rotated(90)
+                .translate(extent.width / 2)
+            )
+            .reduce(_ above _)
+            .behind(Line(5, 2).translate(extent.width / 2.0 - 2.5,
+                                         (dot * scale)))
+        },
+        PointRenderer.empty[BoxPlotPoint],
+        theme.elements.boxSpacing,
+        None
+      )
+    ).xAxis(labels)
+      .yAxis()
+      .hline(0.0, theme.colors.gridLine, 1)
+      .xGrid(
+        lineCount = Some(data.size),
+        lineRenderer = Some(new GridLineRenderer {
+          def render(extent: Extent, label: String): Drawable = {
+            Line(extent.height, theme.elements.gridLineSize)
+              .colored(theme.colors.gridLine)
+              .dashed(5)
+              .rotated(90)
+              .translate(extent.width / data.size)
+          }
+        })
+      )
+      .frame()
   }
 
   def shade[M, N](intervals: Seq[(M, (N, N))])(implicit mNum: Numeric[M],
