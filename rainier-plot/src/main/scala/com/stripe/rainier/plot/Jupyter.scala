@@ -8,7 +8,7 @@ import com.cibo.evilplot.colors._
 import com.cibo.evilplot.plot.renderers._
 import com.cibo.evilplot.plot.aesthetics._
 
-import com.stripe.rainier.repl.hdpi
+import com.stripe.rainier.repl.{hdpi, mean}
 
 object Jupyter {
   val font =
@@ -93,53 +93,56 @@ object Jupyter {
                             Some(xbounds))
     })
 
-  def whiskers[K, N](samples: Seq[Map[String, Double]]): Plot = {
+  def whiskers(samples: Seq[Map[String, Double]]): Plot = {
     val labels = samples.head.keys.toList.sorted
-    val data = labels.map { k =>
-      k -> samples.map { m =>
-        m(k)
-      }
+    val seq = labels.map { k =>
+      val dist = samples.map(_(k))
+      val (low, high) = hdpi(dist)
+      val stats =
+        BoxPlotSummaryStatistics(
+          dist.min,
+          dist.max,
+          dist.min,
+          dist.max,
+          low,
+          mean(dist),
+          high,
+          Nil,
+          dist
+        )
+      k -> stats
     }
-    whiskers(data, None)
+
+    whiskers(seq)
   }
 
-  def whiskers[K, N](seq: Seq[(K, Seq[N])], ybounds: Option[Bounds])(
-      implicit num: Numeric[N],
-      theme: Theme): Plot = {
-    val data = seq.map { case (_, ns)  => ns.map(num.toDouble) }
-    val labels = seq.map { case (k, _) => k.toString }
+  def whiskers[K](seq: Seq[(K, BoxPlotSummaryStatistics)])(
+      implicit theme: Theme): Plot = {
+    val labels = seq.map(_._1.toString)
+    val stats = seq.map(_._2)
 
     val xb = Bounds(0, seq.size.toDouble)
-    val yb = ybounds.getOrElse(
-      Bounds(
-        data.flatten.reduceOption[Double](math.min).getOrElse(0),
-        data.flatten.reduceOption[Double](math.max).getOrElse(0)
-      ))
-
-    val boxContexts = data.zipWithIndex.map {
-      case (dist, index) =>
-        if (dist.nonEmpty) {
-          val summary = BoxPlotSummaryStatistics(dist, (0.25, 0.50, 0.75))
-          Some(BoxRenderer.BoxRendererContext(summary, index))
-        } else None
-    }
+    val yb = Bounds(
+      stats.map(_.min).min,
+      stats.map(_.max).max,
+    )
 
     Plot(
       xb,
       yb,
       BoxPlotRenderer(
-        boxContexts,
+        stats.zipWithIndex.map {
+          case (s, i) => Some(BoxRenderer.BoxRendererContext(s, i))
+        },
         BoxRenderer.custom { (extent, ctx) =>
           val stats = ctx.summaryStatistics
-          val mu = stats.allPoints.sum / stats.allPoints.size
-          val (low, high) = hdpi(stats.allPoints)
           val scale = extent.height / (stats.upperWhisker - stats.lowerWhisker)
 
-          val topDashes = stats.upperWhisker - high
-          val topSolid = high - mu
-          val bottomSolid = mu - low
-          val bottomDashes = low - stats.lowerWhisker
-          val dot = mu - stats.lowerWhisker
+          val topDashes = stats.upperWhisker - stats.upperQuantile
+          val topSolid = stats.upperQuantile - stats.middleQuantile
+          val bottomSolid = stats.middleQuantile - stats.lowerQuantile
+          val bottomDashes = stats.lowerQuantile - stats.lowerWhisker
+          val dot = stats.upperWhisker - stats.middleQuantile
 
           Align
             .center(
@@ -157,8 +160,8 @@ object Jupyter {
                 .translate(extent.width / 2)
             )
             .reduce(_ above _)
-            .behind(Line(5, 2).translate(extent.width / 2.0 - 2.5,
-                                         (dot * scale)))
+            .behind(
+              Disc.centered(3).translate(extent.width / 2.0, (dot * scale)))
         },
         PointRenderer.empty[BoxPlotPoint],
         theme.elements.boxSpacing,
@@ -168,14 +171,14 @@ object Jupyter {
       .yAxis()
       .hline(0.0, theme.colors.gridLine, 1)
       .xGrid(
-        lineCount = Some(data.size),
+        lineCount = Some(seq.size),
         lineRenderer = Some(new GridLineRenderer {
           def render(extent: Extent, label: String): Drawable = {
             Line(extent.height, theme.elements.gridLineSize)
               .colored(theme.colors.gridLine)
               .dashed(5)
               .rotated(90)
-              .translate(extent.width / data.size)
+              .translate(extent.width / seq.size)
           }
         })
       )
