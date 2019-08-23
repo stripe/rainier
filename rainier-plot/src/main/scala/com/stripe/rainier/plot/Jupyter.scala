@@ -124,7 +124,7 @@ object Jupyter {
     val xb = Bounds(0, seq.size.toDouble)
     val yb = Bounds(
       stats.map(_.min).min,
-      stats.map(_.max).max,
+      stats.map(_.max).max
     )
 
     Plot(
