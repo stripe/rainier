@@ -27,6 +27,8 @@ object Optimizer {
                   iflag)
       if (iflag(0) == 0)
         complete = true
+      else if(iflag(0) < 0)
+        sys.error("LBFGS failure")
     }
     return x
   }
