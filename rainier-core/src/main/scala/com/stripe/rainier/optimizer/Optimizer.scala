@@ -6,9 +6,9 @@ object Optimizer {
   def lbfgs(df: DensityFunction): Array[Double] = {
     val x = new Array[Double](df.nVars)
     val g = new Array[Double](df.nVars)
-    val diag = new Array[Double](df.nVars * df.nVars)
     val iflag = Array(0)
     var complete = false
+    val lb = new LBFGS(x, 5, 0.1)
     while (!complete) {
       df.update(x)
       var i = 0
@@ -16,18 +16,10 @@ object Optimizer {
         g(i) = df.gradient(i) * -1
         i += 1
       }
-      LBFGS.lbfgs(df.nVars,
-                  5,
-                  x,
-                  df.density * -1,
-                  g,
-                  false,
-                  diag,
-                  0.1,
-                  iflag)
+      lb(df.density * -1, g, iflag)
       if (iflag(0) == 0)
         complete = true
-      else if(iflag(0) < 0)
+      else if (iflag(0) < 0)
         sys.error("LBFGS failure")
     }
     return x

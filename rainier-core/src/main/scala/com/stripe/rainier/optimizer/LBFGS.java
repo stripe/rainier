@@ -1,4 +1,4 @@
-/* Extracted and adapted from:
+/* Heavily modified from:
  * RISO: an implementation of distributed belief networks. (Copyright 1999, Robert Dodier).
  *
  * License: Apache license, version 2.
@@ -7,226 +7,60 @@ package com.stripe.rainier.optimizer;
 
 class LBFGS
 {
-	private static double xtol = 1e-16;
+	private double gnorm = 0, stp1 = 0, stp[] = new double[1], ys = 0, yy = 0, sq = 0, yr = 0, beta = 0, xnorm = 0;
+	private int iter = 0,  point = 0, ispt = 0, iypt = 0, info[] = new int[1], bound = 0, npt = 0, cp = 0, i = 0, nfev[] = new int[1], inmc = 0, iycn = 0, iscn = 0;
+	private boolean finish = false;
 
-	/** Controls the accuracy of the line search <code>mcsrch</code>. If the
-	  * function and gradient evaluations are inexpensive with respect
-	  * to the cost of the iteration (which is sometimes the case when
-	  * solving very large problems) it may be advantageous to set <code>gtol</code>
-	  * to a small value. A typical small value is 0.1.  Restriction:
-	  * <code>gtol</code> should be greater than 1e-4.
-	  */
-
-	public static double gtol = 0.9;
-
-	/** Specify lower bound for the step in the line search.
-	  * The default value is 1e-20. This value need not be modified unless
-	  * the exponent is too large for the machine being used, or unless
-	  * the problem is extremely badly scaled (in which case the exponent
-	  * should be increased).
-	  */
-
-	public static double stpmin = 1e-20;
-
-	/** Specify upper bound for the step in the line search.
-	  * The default value is 1e20. This value need not be modified unless
-	  * the exponent is too large for the machine being used, or unless
-	  * the problem is extremely badly scaled (in which case the exponent
-	  * should be increased).
-	  */
-
-	public static double stpmax = 1e20;
-
-	/** The solution vector as it was at the end of the most recently
-	  * completed line search. This will usually be different from the
-	  * return value of the parameter <tt>x</tt> of <tt>lbfgs</tt>, which
-	  * is modified by line-search steps. A caller which wants to stop the
-	  * optimization iterations before <tt>LBFGS.lbfgs</tt> automatically stops
-	  * (by reaching a very small gradient) should copy this vector instead
-	  * of using <tt>x</tt>. When <tt>LBFGS.lbfgs</tt> automatically stops,
-	  * then <tt>x</tt> and <tt>solution_cache</tt> are the same.
-	  */
-	public static double[] solution_cache = null;
-
-	private static double gnorm = 0, stp1 = 0, ftol = 0, stp[] = new double[1], ys = 0, yy = 0, sq = 0, yr = 0, beta = 0, xnorm = 0;
-	private static int iter = 0, nfun = 0, point = 0, ispt = 0, iypt = 0, maxfev = 0, info[] = new int[1], bound = 0, npt = 0, cp = 0, i = 0, nfev[] = new int[1], inmc = 0, iycn = 0, iscn = 0;
-	private static boolean finish = false;
-
-	private static double[] w = null;
+	private double[] w;
 	
+	private int m, n;
+	private double eps;
+	private double[] diag;
+	private double[] x;
 
-	/** This subroutine solves the unconstrained minimization problem
-	  * <pre>
-	  *     min f(x),    x = (x1,x2,...,x_n),
-	  * </pre>
-	  * using the limited-memory BFGS method. The routine is especially
-	  * effective on problems involving a large number of variables. In
-	  * a typical iteration of this method an approximation <code>Hk</code> to the
-	  * inverse of the Hessian is obtained by applying <code>m</code> BFGS updates to
-	  * a diagonal matrix <code>Hk0</code>, using information from the previous M steps.
-	  * The user specifies the number <code>m</code>, which determines the amount of
-	  * storage required by the routine. The user may also provide the
-	  * diagonal matrices <code>Hk0</code> if not satisfied with the default choice.
-	  * The algorithm is described in "On the limited memory BFGS method
-	  * for large scale optimization", by D. Liu and J. Nocedal,
-	  * Mathematical Programming B 45 (1989) 503-528.
-	  *
-	  * The user is required to calculate the function value <code>f</code> and its
-	  * gradient <code>g</code>. In order to allow the user complete control over
-	  * these computations, reverse  communication is used. The routine
-	  * must be called repeatedly under the control of the parameter
-	  * <code>iflag</code>. 
-	  *
-	  * The steplength is determined at each iteration by means of the
-	  * line search routine <code>mcsrch</code>, which is a slight modification of
-	  * the routine <code>CSRCH</code> written by More' and Thuente.
-	  *
-	  * The only variables that are machine-dependent are <code>xtol</code>,
-	  * <code>stpmin</code> and <code>stpmax</code>.
-	  *
-	  * @param n The number of variables in the minimization problem.
-	  *		Restriction: <code>n &gt; 0</code>.
-	  *
-	  * @param m The number of corrections used in the BFGS update. 
-	  *		Values of <code>m</code> less than 3 are not recommended;
-	  *		large values of <code>m</code> will result in excessive
-	  *		computing time. <code>3 &lt;= m &lt;= 7</code> is recommended.
-	  *		Restriction: <code>m &gt; 0</code>.
-	  *
-	  * @param x On initial entry this must be set by the user to the values
-	  *		of the initial estimate of the solution vector. On exit with
-	  *		<code>iflag = 0</code>, it contains the values of the variables
-	  *		at the best point found (usually a solution).
-	  *
-	  * @param f Before initial entry and on a re-entry with <code>iflag = 1</code>,
-	  *		it must be set by the user to contain the value of the function
-	  *		<code>f</code> at the point <code>x</code>.
-	  *
-	  * @param g Before initial entry and on a re-entry with <code>iflag = 1</code>,
-	  *		it must be set by the user to contain the components of the
-	  *		gradient <code>g</code> at the point <code>x</code>.
-	  *
-	  * @param diagco  Set this to <code>true</code> if the user  wishes to
-	  *		provide the diagonal matrix <code>Hk0</code> at each iteration.
-	  *		Otherwise it should be set to <code>false</code> in which case
-	  *		<code>lbfgs</code> will use a default value described below. If
-	  *		<code>diagco</code> is set to <code>true</code> the routine will
-	  *		return at each iteration of the algorithm with <code>iflag = 2</code>,
-	  *		and the diagonal matrix <code>Hk0</code> must be provided in
-	  *		the array <code>diag</code>.
-	  *
-	  * @param diag If <code>diagco = true</code>, then on initial entry or on
-	  *		re-entry with <code>iflag = 2</code>, <code>diag</code>
-	  *		must be set by the user to contain the values of the 
-	  *		diagonal matrix <code>Hk0</code>. Restriction: all elements of
-	  *		<code>diag</code> must be positive.
-	  *
-	  *	@param eps Determines the accuracy with which the solution
-	  *		is to be found. The subroutine terminates when
-	  *		<pre>
-	  *            ||G|| &lt; EPS max(1,||X||),
-	  *		</pre>
-	  *		where <code>||.||</code> denotes the Euclidean norm.
-	  *
-	  * @param iflag This must be set to 0 on initial entry to <code>lbfgs</code>.
-	  *		A return with <code>iflag &lt; 0</code> indicates an error,
-	  *		and <code>iflag = 0</code> indicates that the routine has
-	  *		terminated without detecting errors. On a return with
-	  *		<code>iflag = 1</code>, the user must evaluate the function
-	  *		<code>f</code> and gradient <code>g</code>. On a return with
-	  *		<code>iflag = 2</code>, the user must provide the diagonal matrix
-	  *		<code>Hk0</code>.
-	  *
-	  *		The following negative values of <code>iflag</code>, detecting an error,
-	  *		are possible:
-	  *		<ul>
-	  *		<li> <code>iflag = -1</code> The line search routine
-	  *			<code>mcsrch</code> failed. One of the following messages
-	  *			is printed:
-	  *			<ul>
-	  *			<li> Improper input parameters.
-	  *			<li> Relative width of the interval of uncertainty is at
-	  *				most <code>xtol</code>.
-	  *			<li> More than 20 function evaluations were required at the
-	  *				present iteration.
-	  *			<li> The step is too small.
-	  *			<li> The step is too large.
-	  *			<li> Rounding errors prevent further progress. There may not
-	  *				be  a step which satisfies the sufficient decrease and
-	  *				curvature conditions. Tolerances may be too small.
-	  *			</ul>
-	  *		<li><code>iflag = -2</code> The i-th diagonal element of the diagonal inverse
-	  *			Hessian approximation, given in DIAG, is not positive.
-	  *		<li><code>iflag = -3</code> Improper input parameters for LBFGS
-	  *			(<code>n</code> or <code>m</code> are not positive).
-	  *		</ul>
-	  *
-	  */
+	/*  m The number of corrections used in the BFGS update. 
+	*		Values of less than 3 are not recommended;
+	*		large values will result in excessive
+	*		computing time. 3-7 is recommended.
+	*
+	*	 eps Determines the accuracy with which the solution
+	*		is to be found. The subroutine terminates when
+	*       ||G|| < eps * max(1,||X||)
+	*/
 
-	public static void lbfgs ( int n , int m , double[] x , double f , double[] g , boolean diagco , double[] diag , double eps , int[] iflag )
+	public LBFGS(double[] x, int m, double eps) {
+		this.x = x;
+		this.m = m;
+		this.n = x.length;
+		this.eps = eps;
+
+		w = new double[ n*(2*m+1)+2*m ];
+
+		iter = 0;
+		point= 0;
+		finish= false;
+
+		diag = new double[n];
+		for ( i = 0 ; i < n ; i += 1 )
+			diag [i] = 1;
+
+		ispt= n+2*m;
+		iypt= ispt+n*m;
+	}
+
+	public void apply (double f, double[] g, int[] iflag)
 	{
 		boolean execute_entire_while_loop = false;
-
-		if ( w == null || w.length != n*(2*m+1)+2*m )
+		if ( iter == 0 )
 		{
-			w = new double[ n*(2*m+1)+2*m ];
-		}
-
-		if ( iflag[0] == 0 )
-		{
-			// Initialize.
-
-			solution_cache = new double[n];
-			System.arraycopy( x, 0, solution_cache, 0, n );
-
-			iter = 0;
-
-			if ( n <= 0 || m <= 0 )
+			//initialize
+			for (i = 0 ; i < n ; i += 1 )
 			{
-				iflag[0]= -3;
-				return;
+				w [ispt + i] = - g [i] * diag [i];
 			}
-
-			if ( gtol <= 0.0001 )
-			{
-				gtol= 0.9;
-			}
-
-			nfun= 1;
-			point= 0;
-			finish= false;
-
-			if ( diagco )
-			{
-				for ( i = 1 ; i <= n ; i += 1 )
-				{
-					if ( diag [ i -1] <= 0 )
-					{
-						iflag[0]=-2;
-						return;
-					}
-				}
-			}
-			else
-			{
-				for ( i = 1 ; i <= n ; i += 1 )
-				{
-					diag [ i -1] = 1;
-				}
-			}
-			ispt= n+2*m;
-			iypt= ispt+n*m;
-
-			for ( i = 1 ; i <= n ; i += 1 )
-			{
-				w [ ispt + i -1] = - g [ i -1] * diag [ i -1];
-			}
-
+	
 			gnorm = Math.sqrt ( ddot ( n , g , 0, 1 , g , 0, 1 ) );
-			stp1= 1/gnorm;
-			ftol= 0.0001; 
-			maxfev= 20;
-
+			stp1= 1/gnorm;	
 			execute_entire_while_loop = true;
 		}
 
@@ -241,80 +75,61 @@ class LBFGS
 				{
 					if ( iter > m ) bound = m;
 					ys = ddot ( n , w , iypt + npt , 1 , w , ispt + npt , 1 );
-					if ( ! diagco )
-					{
-						yy = ddot ( n , w , iypt + npt , 1 , w , iypt + npt , 1 );
+					yy = ddot ( n , w , iypt + npt , 1 , w , iypt + npt , 1 );
 
-						for ( i = 1 ; i <= n ; i += 1 )
-						{
-							diag [ i -1] = ys / yy;
-						}
-					}
-					else
+					for ( i = 0 ; i < n ; i += 1 )
 					{
-						iflag[0]=2;
-						return;
+						diag [i] = ys / yy;
 					}
 				}
 			}
 
-			if ( execute_entire_while_loop || iflag[0] == 2 )
+			if ( execute_entire_while_loop)
 			{
 				if ( iter != 1 )
 				{
-					if ( diagco )
-					{
-						for ( i = 1 ; i <= n ; i += 1 )
-						{
-							if ( diag [ i -1] <= 0 )
-							{
-								iflag[0]=-2;
-								return;
-							}
-						}
-					}
 					cp= point;
 					if ( point == 0 ) cp = m;
 					w [ n + cp -1] = 1 / ys;
 
-					for ( i = 1 ; i <= n ; i += 1 )
+					for ( i = 0 ; i < n ; i += 1 )
 					{
-						w [ i -1] = - g [ i -1];
+						w[i] = -g[i];
 					}
 
 					cp= point;
 
-					for ( i = 1 ; i <= bound ; i += 1 )
+					for ( i = 0 ; i < bound ; i += 1 )
 					{
 						cp=cp-1;
 						if ( cp == - 1 ) cp = m - 1;
 						sq = ddot ( n , w , ispt + cp * n , 1 , w , 0 , 1 );
-						inmc=n+m+cp+1;
+						inmc=n+m+cp;
 						iycn=iypt+cp*n;
-						w [ inmc -1] = w [ n + cp + 1 -1] * sq;
-						daxpy ( n , - w [ inmc -1] , w , iycn , 1 , w , 0 , 1 );
+						w [inmc] = w [n + cp] * sq;
+						daxpy ( n , -w[inmc] , w , iycn , 1 , w , 0 , 1 );
 					}
 
-					for ( i = 1 ; i <= n ; i += 1 )
+					for ( i = 0 ; i < n ; i += 1 )
 					{
-						w [ i -1] = diag [ i -1] * w [ i -1];
+						w [i] = diag [i] * w[i];
 					}
 
-					for ( i = 1 ; i <= bound ; i += 1 )
+					for ( i = 0 ; i < bound ; i += 1 )
 					{
 						yr = ddot ( n , w , iypt + cp * n , 1 , w , 0 , 1 );
-						beta = w [ n + cp + 1 -1] * yr;
-						inmc=n+m+cp+1;
-						beta = w [ inmc -1] - beta;
+						beta = w [ n + cp] * yr;
+						inmc=n+m+cp;
+						beta = w [inmc] - beta;
 						iscn=ispt+cp*n;
 						daxpy ( n , beta , w , iscn , 1 , w , 0 , 1 );
 						cp=cp+1;
 						if ( cp == m ) cp = 0;
 					}
 
-					for ( i = 1 ; i <= n ; i += 1 )
+					for ( i = 0 ; i < n ; i += 1 )
 					{
-						w [ ispt + point * n + i -1] = w [ i -1];
+						w[ispt + point * n + i] = w[i];
 					}
 				}
 
@@ -322,13 +137,13 @@ class LBFGS
 				stp[0]=1;
 				if ( iter == 1 ) stp[0] = stp1;
 
-				for ( i = 1 ; i <= n ; i += 1 )
+				for (i = 0; i < n; i += 1 )
 				{
-					w [ i -1] = g [ i -1];
+					w [i] = g[i];
 				}
 			}
 
-			Mcsrch.mcsrch ( n , x , f , g , w , ispt + point * n , stp , ftol , xtol , maxfev , info , nfev , diag );
+			Mcsrch.mcsrch ( n , x , f , g , w , ispt + point * n , stp , info , nfev , diag );
 
 			if ( info[0] == - 1 )
 			{
@@ -342,13 +157,12 @@ class LBFGS
 				return;
 			}
 
-			nfun= nfun + nfev[0];
 			npt=point*n;
 
-			for ( i = 1 ; i <= n ; i += 1 )
+			for ( i = 0 ; i < n ; i += 1 )
 			{
-				w [ ispt + npt + i -1] = stp[0] * w [ ispt + npt + i -1];
-				w [ iypt + npt + i -1] = g [ i -1] - w [ i -1];
+				w [ ispt + npt + i] = stp[0] * w [ ispt + npt + i];
+				w [ iypt + npt + i] = g [i] - w[i];
 			}
 
 			point=point+1;
@@ -360,15 +174,6 @@ class LBFGS
 
 			if ( gnorm / xnorm <= eps ) finish = true;
 
-			// Cache the current solution vector. Due to the spaghetti-like
-			// nature of this code, it's not possible to quit here and return;
-			// we need to go back to the top of the loop, and eventually call
-			// mcsrch one more time -- but that will modify the solution vector.
-			// So we need to keep a copy of the solution vector as it was at
-			// the completion (info[0]==1) of the most recent line search.
-
-			System.arraycopy( x, 0, solution_cache, 0, n );
-
 			if ( finish )
 			{
 				iflag[0]=0;
@@ -379,7 +184,7 @@ class LBFGS
 		}
 	}
 
-	/** Compute the sum of a vector times a scalara plus another vector.
+	/** Compute the sum of a vector times a scalar plus another vector.
 	  * Adapted from the subroutine <code>daxpy</code> in <code>lbfgs.f</code>.
 	  * There could well be faster ways to carry out this operation; this
 	  * code is a straight translation from the Fortran.
@@ -484,11 +289,27 @@ class LBFGS
 
 /** This class implements an algorithm for multi-dimensional line search.
   * This file is a translation of Fortran code written by Jorge Nocedal.
-  * It is distributed as part of the RISO project. See comments in the file
-  * <tt>LBFGS.java</tt> for more information.
-  */
-class Mcsrch
+*/
+  class Mcsrch
 {
+	/** Controls the accuracy of the line search <code>mcsrch</code>. If the
+	 * function and gradient evaluations are inexpensive with respect
+	* to the cost of the iteration (which is sometimes the case when
+	* solving very large problems) it may be advantageous to set <code>gtol</code>
+	* to a small value. A typical small value is 0.1.  Restriction:
+	* <code>gtol</code> should be greater than 1e-4.
+	*/
+
+	public static double gtol = 0.9;
+
+	public static double STPMIN = 1e-20;
+	public static double STPMAX = 1e20;
+
+	private static double xtol = 1e-16;
+	private static double ftol= 0.0001; 
+	private static int maxfev= 20;
+
+
 	private static int infoc[] = new int[1], j = 0;
 	private static double dg = 0, dgm = 0, dginit = 0, dgtest = 0, dgx[] = new double[1], dgxm[] = new double[1], dgy[] = new double[1], dgym[] = new double[1], finit = 0, ftest1 = 0, fm = 0, fx[] = new double[1], fxm[] = new double[1], fy[] = new double[1], fym[] = new double[1], p5 = 0, p66 = 0, stx[] = new double[1], sty[] = new double[1], stmin = 0, stmax = 0, width = 0, width1 = 0, xtrapf = 0;
 	private static boolean brackt[] = new boolean[1], stage1 = false;
@@ -564,9 +385,6 @@ class Mcsrch
 	  *
 	  *	@param ftol Tolerance for the sufficient decrease condition.
 	  *
-	  * @param xtol Termination occurs when the relative width of the interval
-	  *		of uncertainty is at most <code>xtol</code>.
-	  *
 	  *	@param maxfev Termination occurs when the number of evaluations of
 	  *		the objective function is at least <code>maxfev</code> by the end
 	  *		of an iteration.
@@ -593,7 +411,7 @@ class Mcsrch
 	  *	@param wa Temporary storage array, of length <code>n</code>.
 	  */
 
-	public static void mcsrch ( int n , double[] x , double f , double[] g , double[] s , int is0 , double[] stp , double ftol , double xtol , int maxfev , int[] info , int[] nfev , double[] wa )
+	public static void mcsrch ( int n , double[] x , double f , double[] g , double[] s , int is0 , double[] stp , int[] info , int[] nfev , double[] wa )
 	{
 		p5 = 0.5;
 		p66 = 0.66;
@@ -602,7 +420,7 @@ class Mcsrch
 		if ( info[0] != - 1 )
 		{
 			infoc[0] = 1;
-			if ( n <= 0 || stp[0] <= 0 || ftol < 0 || LBFGS.gtol < 0 || xtol < 0 || LBFGS.stpmin < 0 || LBFGS.stpmax < LBFGS.stpmin || maxfev <= 0 ) 
+			if ( n <= 0 || stp[0] <= 0 || ftol < 0 || gtol < 0 || xtol < 0 || STPMIN < 0 || STPMAX < STPMIN || maxfev <= 0 ) 
 				return;
 
 			// Compute the initial gradient in the search direction
@@ -626,7 +444,7 @@ class Mcsrch
 			nfev[0] = 0;
 			finit = f;
 			dgtest = ftol*dginit;
-			width = LBFGS.stpmax - LBFGS.stpmin;
+			width = STPMAX - STPMIN;
 			width1 = width/p5;
 
 			for ( j = 1 ; j <= n ; j += 1 )
@@ -670,8 +488,8 @@ class Mcsrch
 
 				// Force the step to be within the bounds stpmax and stpmin.
 
-				stp[0] = Math.max ( stp[0] , LBFGS.stpmin );
-				stp[0] = Math.min ( stp[0] , LBFGS.stpmax );
+				stp[0] = Math.max ( stp[0] , STPMIN );
+				stp[0] = Math.min ( stp[0] , STPMAX );
 
 				// If an unusual termination is to occur then let
 				// stp be the lowest point obtained so far.
@@ -706,15 +524,15 @@ class Mcsrch
 
 			if ( ( brackt[0] && ( stp[0] <= stmin || stp[0] >= stmax ) ) || infoc[0] == 0 ) info[0] = 6;
 
-			if ( stp[0] == LBFGS.stpmax && f <= ftest1 && dg <= dgtest ) info[0] = 5;
+			if ( stp[0] == STPMAX && f <= ftest1 && dg <= dgtest ) info[0] = 5;
 
-			if ( stp[0] == LBFGS.stpmin && ( f > ftest1 || dg >= dgtest ) ) info[0] = 4;
+			if ( stp[0] == STPMIN && ( f > ftest1 || dg >= dgtest ) ) info[0] = 4;
 
 			if ( nfev[0] >= maxfev ) info[0] = 3;
 
 			if ( brackt[0] && stmax - stmin <= xtol * stmax ) info[0] = 2;
 
-			if ( f <= ftest1 && Math.abs ( dg ) <= LBFGS.gtol * ( - dginit ) ) info[0] = 1;
+			if ( f <= ftest1 && Math.abs ( dg ) <= gtol * ( - dginit ) ) info[0] = 1;
 
 			// Check for termination.
 
@@ -723,7 +541,7 @@ class Mcsrch
 			// In the first stage we seek a step for which the modified
 			// function has a nonpositive value and nonnegative derivative.
 
-			if ( stage1 && f <= ftest1 && dg >= Math.min ( ftol , LBFGS.gtol ) * dginit ) stage1 = false;
+			if ( stage1 && f <= ftest1 && dg >= Math.min ( ftol , gtol ) * dginit ) stage1 = false;
 
 			// A modified function is used to predict the step only if
 			// we have not obtained a step for which the modified
