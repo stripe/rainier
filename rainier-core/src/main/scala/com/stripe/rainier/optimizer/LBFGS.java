@@ -28,7 +28,6 @@ class LBFGS
 	private int inmc;
 	private int iycn;
 	private int iscn;
-	private boolean finish;
 	private double[] w;
 	private int m;
 	private int n;
@@ -57,7 +56,6 @@ class LBFGS
 
 		iter = 0;
 		point= 0;
-		finish= false;
 
 		diag = new double[n];
 		for ( i = 0 ; i < n ; i += 1 )
@@ -180,9 +178,7 @@ class LBFGS
 			xnorm = Math.sqrt ( ddot ( n , x , 0 , 1 , x , 0 , 1 ) );
 			xnorm = Math.max ( 1.0 , xnorm );
 
-			if ( gnorm / xnorm <= eps ) finish = true;
-
-			if ( finish )
+			if ( gnorm / xnorm <= eps )
 				return true;
 
 			execute_entire_while_loop = true;		// from now on, execute whole loop
@@ -425,45 +421,43 @@ class LBFGS
 		{
 			infoc[0] = 1;
 
-		infoc[0] = 1;
+			// Compute the initial gradient in the search direction
+			// and check that s is a descent direction.
 
-		// Compute the initial gradient in the search direction
-		// and check that s is a descent direction.
+			dginit = 0;
 
-		dginit = 0;
+			for ( j = 0 ; j < n ; j += 1 )
+				dginit = dginit + g [j] * s [is0+j];
 
-		for ( j = 0 ; j < n ; j += 1 )
-			dginit = dginit + g [j] * s [is0+j];
+			if ( dginit >= 0 )
+				throw new RuntimeException("dginit");
 
-		if ( dginit >= 0 )
-			throw new RuntimeException("dginit");
+			brackt[0] = false;
+			stage1 = true;
+			nfev[0] = 0;
+			finit = f;
+			dgtest = ftol*dginit;
+			width = STPMAX - STPMIN;
+			width1 = width/p5;
 
-		brackt[0] = false;
-		stage1 = true;
-		nfev[0] = 0;
-		finit = f;
-		dgtest = ftol*dginit;
-		width = STPMAX - STPMIN;
-		width1 = width/p5;
+			for ( j = 0 ; j < n ; j += 1 )
+				wa[j] = x[j];
 
-		for ( j = 0 ; j < n ; j += 1 )
-			wa[j] = x[j];
+			// The variables stx, fx, dgx contain the values of the step,
+			// function, and directional derivative at the best step.
+			// The variables sty, fy, dgy contain the value of the step,
+			// function, and derivative at the other endpoint of
+			// the interval of uncertainty.
+			// The variables stp, f, dg contain the values of the step,
+			// function, and derivative at the current step.
 
-		// The variables stx, fx, dgx contain the values of the step,
-		// function, and directional derivative at the best step.
-		// The variables sty, fy, dgy contain the value of the step,
-		// function, and derivative at the other endpoint of
-		// the interval of uncertainty.
-		// The variables stp, f, dg contain the values of the step,
-		// function, and derivative at the current step.
-
-		stx[0] = 0;
-		fx[0] = finit;
-		dgx[0] = dginit;
-		sty[0] = 0;
-		fy[0] = finit;
-		dgy[0] = dginit;
-	}
+			stx[0] = 0;
+			fx[0] = finit;
+			dgx[0] = dginit;
+			sty[0] = 0;
+			fy[0] = finit;
+			dgy[0] = dginit;
+		}
 
 		while ( true )
 		{
