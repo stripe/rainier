@@ -7,16 +7,35 @@ package com.stripe.rainier.optimizer;
 
 class LBFGS
 {
-	private double gnorm = 0, stp1 = 0, stp[] = new double[1], ys = 0, yy = 0, sq = 0, yr = 0, beta = 0, xnorm = 0;
-	private int iter = 0,  point = 0, ispt = 0, iypt = 0, info[] = new int[1], bound = 0, npt = 0, cp = 0, i = 0, nfev[] = new int[1], inmc = 0, iycn = 0, iscn = 0;
-	private boolean finish = false;
-
+	private double gnorm;
+	private double stp1;
+	private double[] stp = new double[1];
+	private double ys;
+	private double yy;
+	private double sq;
+	private double yr;
+	private double beta;
+	private double xnorm;
+	private int iter;
+	private int point;
+	private int ispt;
+	private int iypt;
+	private int bound;
+	private int npt;
+	private int cp;
+	private int i;
+	private int[] nfev = new int[1];
+	private int inmc;
+	private int iycn;
+	private int iscn;
+	private boolean finish;
 	private double[] w;
-	
-	private int m, n;
+	private int m;
+	private int n;
 	private double eps;
 	private double[] diag;
 	private double[] x;
+	private int[] info = new int[1];
 
 	/*  m The number of corrections used in the BFGS update. 
 	*		Values of less than 3 are not recommended;
@@ -48,7 +67,7 @@ class LBFGS
 		iypt= ispt+n*m;
 	}
 
-	public void apply (double f, double[] g, int[] iflag)
+	public boolean apply (double f, double[] g)
 	{
 		boolean execute_entire_while_loop = false;
 		if ( iter == 0 )
@@ -56,7 +75,7 @@ class LBFGS
 			//initialize
 			for (i = 0 ; i < n ; i += 1 )
 			{
-				w [ispt + i] = - g [i] * diag [i];
+				w[ispt + i] = -g[i] * diag[i];
 			}
 	
 			gnorm = Math.sqrt ( ddot ( n , g , 0, 1 , g , 0, 1 ) );
@@ -78,9 +97,7 @@ class LBFGS
 					yy = ddot ( n , w , iypt + npt , 1 , w , iypt + npt , 1 );
 
 					for ( i = 0 ; i < n ; i += 1 )
-					{
 						diag [i] = ys / yy;
-					}
 				}
 			}
 
@@ -139,23 +156,14 @@ class LBFGS
 
 				for (i = 0; i < n; i += 1 )
 				{
-					w [i] = g[i];
+					w[i] = g[i];
 				}
 			}
 
-			Mcsrch.mcsrch ( n , x , f , g , w , ispt + point * n , stp , info , nfev , diag );
+			Mcsrch.mcsrch ( n , x , f , g , w , ispt + point * n , stp , info, nfev , diag );
 
-			if ( info[0] == - 1 )
-			{
-				iflag[0]=1;
-				return;
-			}
-
-			if ( info[0] != 1 )
-			{
-				iflag[0]=-1;
-				return;
-			}
+			if ( info[0] == -1 )
+				return false;
 
 			npt=point*n;
 
@@ -175,10 +183,7 @@ class LBFGS
 			if ( gnorm / xnorm <= eps ) finish = true;
 
 			if ( finish )
-			{
-				iflag[0]=0;
-					return;
-			}
+				return true;
 
 			execute_entire_while_loop = true;		// from now on, execute whole loop
 		}
@@ -411,62 +416,54 @@ class LBFGS
 	  *	@param wa Temporary storage array, of length <code>n</code>.
 	  */
 
-	public static void mcsrch ( int n , double[] x , double f , double[] g , double[] s , int is0 , double[] stp , int[] info , int[] nfev , double[] wa )
+	public static void mcsrch ( int n , double[] x , double f , double[] g , double[] s , int is0 , double[] stp , int[] info, int[] nfev , double[] wa )
 	{
 		p5 = 0.5;
 		p66 = 0.66;
 		xtrapf = 4;
-
 		if ( info[0] != - 1 )
 		{
 			infoc[0] = 1;
-			if ( n <= 0 || stp[0] <= 0 || ftol < 0 || gtol < 0 || xtol < 0 || STPMIN < 0 || STPMAX < STPMIN || maxfev <= 0 ) 
-				return;
 
-			// Compute the initial gradient in the search direction
-			// and check that s is a descent direction.
+		infoc[0] = 1;
 
-			dginit = 0;
+		// Compute the initial gradient in the search direction
+		// and check that s is a descent direction.
 
-			for ( j = 1 ; j <= n ; j += 1 )
-			{
-				dginit = dginit + g [ j -1] * s [ is0+j -1];
-			}
+		dginit = 0;
 
+		for ( j = 0 ; j < n ; j += 1 )
+			dginit = dginit + g [j] * s [is0+j];
 
-			if ( dginit >= 0 )
-			{
-				return;
-			}
+		if ( dginit >= 0 )
+			throw new RuntimeException("dginit");
 
-			brackt[0] = false;
-			stage1 = true;
-			nfev[0] = 0;
-			finit = f;
-			dgtest = ftol*dginit;
-			width = STPMAX - STPMIN;
-			width1 = width/p5;
+		brackt[0] = false;
+		stage1 = true;
+		nfev[0] = 0;
+		finit = f;
+		dgtest = ftol*dginit;
+		width = STPMAX - STPMIN;
+		width1 = width/p5;
 
-			for ( j = 1 ; j <= n ; j += 1 )
-			{
-				wa [ j -1] = x [ j -1];
-			}
+		for ( j = 0 ; j < n ; j += 1 )
+			wa[j] = x[j];
 
-			// The variables stx, fx, dgx contain the values of the step,
-			// function, and directional derivative at the best step.
-			// The variables sty, fy, dgy contain the value of the step,
-			// function, and derivative at the other endpoint of
-			// the interval of uncertainty.
-			// The variables stp, f, dg contain the values of the step,
-			// function, and derivative at the current step.
+		// The variables stx, fx, dgx contain the values of the step,
+		// function, and directional derivative at the best step.
+		// The variables sty, fy, dgy contain the value of the step,
+		// function, and derivative at the other endpoint of
+		// the interval of uncertainty.
+		// The variables stp, f, dg contain the values of the step,
+		// function, and derivative at the current step.
 
-			stx[0] = 0;
-			fx[0] = finit;
-			dgx[0] = dginit;
-			sty[0] = 0;
-			fy[0] = finit;
-			dgy[0] = dginit;
-		}
+		stx[0] = 0;
+		fx[0] = finit;
+		dgx[0] = dginit;
+		sty[0] = 0;
+		fy[0] = finit;
+		dgy[0] = dginit;
+	}
 
 		while ( true )
 		{
@@ -500,10 +497,8 @@ class LBFGS
 				// and compute the directional derivative.
 				// We return to main program to obtain F and G.
 
-				for ( j = 1 ; j <= n ; j += 1 )
-				{
-					x [ j -1] = wa [ j -1] + stp[0] * s [ is0+j -1];
-				}
+				for (j = 0; j < n ; j += 1 )
+					x [j] = wa[j] + stp[0] * s[ is0+j];
 
 				info[0]=-1;
 				return;
