@@ -9,28 +9,19 @@ trait Encoder[T] {
 
 object Encoder {
   type Aux[X, Y] = Encoder[X] { type U = Y }
-  implicit val int: Aux[Int, Real] =
-    new Encoder[Int] {
-      type U = Real
-      def wrap(t: Int) = Real(t)
-      def create(acc: List[Variable]) = {
-        val u = new Variable
-        (u, u :: acc)
-      }
-      def extract(t: Int, acc: List[Double]) =
-        t.toDouble :: acc
-    }
 
-  implicit val double: Aux[Double, Real] =
-    new Encoder[Double] {
+  implicit def numeric[N](
+      implicit n: Numeric[N]
+  ): Aux[N, Real] =
+    new Encoder[N] {
       type U = Real
-      def wrap(t: Double) = Real(t)
+      def wrap(t: N) = Real(t)
       def create(acc: List[Variable]) = {
         val u = new Variable
         (u, u :: acc)
       }
-      def extract(t: Double, acc: List[Double]) =
-        t :: acc
+      def extract(t: N, acc: List[Double]) =
+        n.toDouble(t) :: acc
     }
 
   implicit def zip[A, B](implicit a: Encoder[A],
