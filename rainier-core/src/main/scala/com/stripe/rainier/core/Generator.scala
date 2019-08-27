@@ -6,7 +6,7 @@ import com.stripe.rainier.sampler.RNG
 /**
   * Generator trait, for posterior predictive distributions to be forwards sampled during sampling
   */
-trait Generator[T] { self =>
+trait Generator[+T] { self =>
   def requirements: Set[Real]
 
   def get(implicit r: RNG, n: Numeric[Real]): T
@@ -102,28 +102,43 @@ object Generator {
       def get(implicit r: RNG, n: Numeric[Real]): T = fn(r, n)
     }
 
-  def traverse[T, U](seq: Seq[T])(
-      implicit toGen: ToGenerator[T, U]
-  ): Generator[Seq[U]] = {
-    val asGen = seq.map(toGen(_))
-    new Generator[Seq[U]] {
-      val requirements: Set[Real] = asGen.flatMap(_.requirements).toSet
-      def get(implicit r: RNG, n: Numeric[Real]): Seq[U] = asGen.map(_.get)
-    }
-  }
+  def traverse[T, U](t: T)(
+      implicit traversal: GeneratorTraversal[T, U]
+  ): Generator[U] = traversal(t)
+}
 
-  def traverse[K, V, W](
-      seq: Map[K, V]
-  )(
+trait GeneratorTraversal[-T, U] {
+  def apply(t: T): Generator[U]
+}
+
+object GeneratorTraversal {
+  implicit def seq[V, W](
       implicit toGen: ToGenerator[V, W]
-  ): Generator[Map[K, W]] = {
-    val asGen = seq.mapValues(toGen(_))
-    new Generator[Map[K, W]] {
-      val requirements: Set[Real] = asGen.values.flatMap(_.requirements).toSet
-      def get(implicit r: RNG, n: Numeric[Real]): Map[K, W] =
-        asGen.mapValues(_.get)
+  ): GeneratorTraversal[Seq[V], Seq[W]] =
+    new GeneratorTraversal[Seq[V], Seq[W]] {
+      def apply(seq: Seq[V]): Generator[Seq[W]] = {
+        val asGen = seq.map(toGen(_))
+        new Generator[Seq[W]] {
+          val requirements: Set[Real] = asGen.flatMap(_.requirements).toSet
+          def get(implicit r: RNG, n: Numeric[Real]): Seq[W] = asGen.map(_.get)
+        }
+      }
     }
-  }
+
+  implicit def map[K, V, W](
+      implicit toGen: ToGenerator[V, W]
+  ): GeneratorTraversal[Map[K, V], Map[K, W]] =
+    new GeneratorTraversal[Map[K, V], Map[K, W]] {
+      def apply(seq: Map[K, V]): Generator[Map[K, W]] = {
+        val asGen = seq.mapValues(toGen(_))
+        new Generator[Map[K, W]] {
+          val requirements: Set[Real] =
+            asGen.values.flatMap(_.requirements).toSet
+          def get(implicit r: RNG, n: Numeric[Real]): Map[K, W] =
+            asGen.mapValues(_.get)
+        }
+      }
+    }
 }
 
 trait ToGenerator[-T, U] {
@@ -166,12 +181,9 @@ object ToGenerator {
     new ToGenerator[Map[K, T], Map[K, U]] {
       def apply(t: Map[K, T]) =
         Generator
-          .traverse(t.toList.map {
+          .traverse(t.map {
             case (k, x) =>
-              tu(x).map { v =>
-                k -> v
-              }
+              k -> tu(x)
           })
-          .map(_.toMap)
     }
 }

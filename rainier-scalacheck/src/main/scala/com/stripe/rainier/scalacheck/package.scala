@@ -12,12 +12,11 @@ import org.scalacheck.Cogen
 import org.scalacheck.Gen
 
 object `package` {
-
   implicit val arbitraryReal: Arbitrary[Real] =
     Arbitrary(arbitrary[Double].map(Real(_)))
 
   implicit def arbitraryGenerator[A: Arbitrary]: Arbitrary[Generator[A]] =
-    Arbitrary(genGenerator)
+    Arbitrary(genGenerator[A])
 
   def genGenerator[A: Arbitrary]: Gen[Generator[A]] = {
 
