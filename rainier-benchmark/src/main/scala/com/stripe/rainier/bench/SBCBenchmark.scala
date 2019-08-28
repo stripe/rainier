@@ -73,33 +73,33 @@ class ExponentialBenchmark extends SBCBenchmark {
 
 class BernoulliBenchmark extends SBCBenchmark {
   def sbc =
-    SBC[Int, Discrete](Uniform(0, 1))((x: Real) => Bernoulli(x))
+    SBC[Long, Discrete](Uniform(0, 1))((x: Real) => Bernoulli(x))
 }
 
 class BinomialBenchmark extends SBCBenchmark {
   def sbc =
-    SBC[Int, Discrete](Uniform(0, 1))((x: Real) => Binomial(x, 10))
+    SBC[Long, Discrete](Uniform(0, 1))((x: Real) => Binomial(x, 10))
 }
 
 class GeometricBenchmark extends SBCBenchmark {
   def sbc =
-    SBC[Int, Discrete](Uniform(0, 1))((x: Real) => Geometric(x))
+    SBC[Long, Discrete](Uniform(0, 1))((x: Real) => Geometric(x))
 }
 
 class GeometricZeroInflatedBenchmark extends SBCBenchmark {
   def sbc =
-    SBC[Int, Discrete](Uniform(0, 1))((x: Real) =>
+    SBC[Long, Discrete](Uniform(0, 1))((x: Real) =>
       Geometric(.3).zeroInflated(x))
 }
 
 class NegativeBinomialBenchmark extends SBCBenchmark {
   def sbc =
-    SBC[Int, Discrete](Uniform(0, 1))((x: Real) => NegativeBinomial(x, 10))
+    SBC[Long, Discrete](Uniform(0, 1))((x: Real) => NegativeBinomial(x, 10))
 }
 
 class BinomialPoissonApproximationBenchmark extends SBCBenchmark {
   def sbc =
-    SBC[Int, Discrete](Uniform(0, 0.04))((x: Real) => Binomial(x, 200))
+    SBC[Long, Discrete](Uniform(0, 0.04))((x: Real) => Binomial(x, 200))
 }
 
 class GaussianMixtureBenchmark extends SBCBenchmark {
