@@ -7,27 +7,21 @@ package com.stripe.rainier.optimizer;
 
 class LBFGS
 {
-	private double gnorm;
 	private double stp1;
 	private double ys;
 	private double yy;
-	private double sq;
 	private double yr;
-	private double beta;
-	private double xnorm;
 	private int iter;
 	private int point;
 	private int ispt;
 	private int iypt;
 	private int bound;
 	private int npt;
-	private int cp;
-	private int i;
+
 	private int inmc;
-	private int iycn;
-	private int iscn;
+
 	private int info;
-	private double stp;;
+	private double stp;
 	private int nfev;
 	private double[] w;
 	private int m;
@@ -59,7 +53,7 @@ class LBFGS
 		point= 0;
 
 		diag = new double[n];
-		for ( i = 0 ; i < n ; i += 1 )
+		for (int i = 0 ; i < n ; i += 1 )
 			diag [i] = 1;
 
 		ispt= n+2*m;
@@ -72,12 +66,12 @@ class LBFGS
 		if ( iter == 0 )
 		{
 			//initialize
-			for (i = 0 ; i < n ; i += 1 )
+			for (int i = 0 ; i < n ; i += 1 )
 			{
 				w[ispt + i] = -g[i] * diag[i];
 			}
 	
-			gnorm = Math.sqrt ( ddot ( n , g , 0, 1 , g , 0, 1 ) );
+			double gnorm = Math.sqrt ( ddot ( n , g , 0, 1 , g , 0, 1 ) );
 			stp1= 1/gnorm;	
 			execute_entire_while_loop = true;
 		}
@@ -95,7 +89,7 @@ class LBFGS
 					ys = ddot ( n , w , iypt + npt , 1 , w , ispt + npt , 1 );
 					yy = ddot ( n , w , iypt + npt , 1 , w , iypt + npt , 1 );
 
-					for ( i = 0 ; i < n ; i += 1 )
+					for ( int i = 0 ; i < n ; i += 1 )
 						diag [i] = ys / yy;
 				}
 			}
@@ -104,46 +98,46 @@ class LBFGS
 			{
 				if ( iter != 1 )
 				{
-					cp= point;
+					int cp= point;
 					if ( point == 0 ) cp = m;
 					w [ n + cp -1] = 1 / ys;
 
-					for ( i = 0 ; i < n ; i += 1 )
+					for ( int i = 0 ; i < n ; i += 1 )
 					{
 						w[i] = -g[i];
 					}
 
 					cp= point;
 
-					for ( i = 0 ; i < bound ; i += 1 )
+					for ( int i = 0 ; i < bound ; i += 1 )
 					{
 						cp=cp-1;
 						if ( cp == - 1 ) cp = m - 1;
-						sq = ddot ( n , w , ispt + cp * n , 1 , w , 0 , 1 );
+						double sq = ddot ( n , w , ispt + cp * n , 1 , w , 0 , 1 );
 						inmc=n+m+cp;
-						iycn=iypt+cp*n;
+						int iycn=iypt+cp*n;
 						w [inmc] = w [n + cp] * sq;
 						daxpy ( n , -w[inmc] , w , iycn , 1 , w , 0 , 1 );
 					}
 
-					for ( i = 0 ; i < n ; i += 1 )
+					for ( int i = 0 ; i < n ; i += 1 )
 					{
 						w [i] = diag [i] * w[i];
 					}
 
-					for ( i = 0 ; i < bound ; i += 1 )
+					for ( int i = 0 ; i < bound ; i += 1 )
 					{
 						yr = ddot ( n , w , iypt + cp * n , 1 , w , 0 , 1 );
-						beta = w [ n + cp] * yr;
+						double beta = w [ n + cp] * yr;
 						inmc=n+m+cp;
 						beta = w [inmc] - beta;
-						iscn=ispt+cp*n;
+						int iscn=ispt+cp*n;
 						daxpy ( n , beta , w , iscn , 1 , w , 0 , 1 );
 						cp=cp+1;
 						if ( cp == m ) cp = 0;
 					}
 
-					for ( i = 0 ; i < n ; i += 1 )
+					for ( int i = 0 ; i < n ; i += 1 )
 					{
 						w[ispt + point * n + i] = w[i];
 					}
@@ -153,7 +147,7 @@ class LBFGS
 				stp=1;
 				if ( iter == 1 ) stp = stp1;
 
-				for (i = 0; i < n; i += 1 )
+				for (int i = 0; i < n; i += 1 )
 				{
 					w[i] = g[i];
 				}
@@ -166,7 +160,7 @@ class LBFGS
 
 			npt=point*n;
 
-			for ( i = 0 ; i < n ; i += 1 )
+			for ( int i = 0 ; i < n ; i += 1 )
 			{
 				w [ ispt + npt + i] = stp * w [ ispt + npt + i];
 				w [ iypt + npt + i] = g [i] - w[i];
@@ -175,8 +169,8 @@ class LBFGS
 			point=point+1;
 			if ( point == m ) point = 0;
 
-			gnorm = Math.sqrt ( ddot ( n , g , 0 , 1 , g , 0 , 1 ) );
-			xnorm = Math.sqrt ( ddot ( n , x , 0 , 1 , x , 0 , 1 ) );
+			double gnorm = Math.sqrt ( ddot ( n , g , 0 , 1 , g , 0 , 1 ) );
+			double xnorm = Math.sqrt ( ddot ( n , x , 0 , 1 , x , 0 , 1 ) );
 			xnorm = Math.max ( 1.0 , xnorm );
 
 			if ( gnorm / xnorm <= eps )
@@ -199,8 +193,9 @@ class LBFGS
 	private static double p5 = 0.5;
 	private static double p66 = 0.66;
 
+	private static double xtrapf = 4;
 
-	private int j;
+
 	private double dg;
 	private double dgm;
 	private double dginit;
@@ -212,7 +207,6 @@ class LBFGS
 	private double stmax;
 	private double width;
 	private double width1;
-	private double xtrapf;
 
 	private boolean stage1 = false;
 
@@ -235,7 +229,6 @@ class LBFGS
 	private void mcsrch (double f , double[] g)
 	{
 		int is0 = ispt + point * n;
-		xtrapf = 4;
 		if ( info != - 1 )
 		{
 			infoc = 1;
@@ -245,7 +238,7 @@ class LBFGS
 
 			dginit = 0;
 
-			for ( j = 0 ; j < n ; j += 1 )
+			for ( int j = 0 ; j < n ; j += 1 )
 				dginit = dginit + g [j] * w[is0+j];
 
 			if ( dginit >= 0 )
@@ -259,7 +252,7 @@ class LBFGS
 			width = STPMAX - STPMIN;
 			width1 = width/p5;
 
-			for ( j = 0 ; j < n ; j += 1 )
+			for ( int j = 0 ; j < n ; j += 1 )
 				diag[j] = x[j];
 
 			// The variables stx, fx, dgx contain the values of the step,
@@ -310,7 +303,7 @@ class LBFGS
 				// and compute the directional derivative.
 				// We return to main program to obtain F and G.
 
-				for (j = 0; j < n ; j += 1 )
+				for (int j = 0; j < n ; j += 1 )
 					x [j] = diag[j] + stp * w[ is0+j];
 
 				info=-1;
@@ -321,9 +314,9 @@ class LBFGS
 			nfev = nfev + 1;
 			dg = 0;
 
-			for ( j = 1 ; j <= n ; j += 1 )
+			for (int j = 0 ; j < n ; j += 1 )
 			{
-				dg = dg + g [ j -1] * w [ is0+j -1];
+				dg = dg + g [ j] * w [ is0+j];
 			}
 
 			ftest1 = finit + stp*dgtest;
@@ -393,7 +386,8 @@ class LBFGS
 
 			if ( brackt )
 			{
-				if ( Math.abs ( sty - stx ) >= p66 * width1 ) stp = stx + p5 * ( sty - stx );
+				if ( Math.abs ( sty - stx ) >= p66 * width1 )
+					stp = stx + p5 * ( sty - stx );
 				width1 = width;
 				width = Math.abs ( sty - stx );
 			}
