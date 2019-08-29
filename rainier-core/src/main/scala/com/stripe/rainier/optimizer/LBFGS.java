@@ -196,6 +196,9 @@ class LBFGS
 	private static double ftol= 0.0001; 
 	private static int maxfev= 20;
 
+	private static double p5 = 0.5;
+	private static double p66 = 0.66;
+
 
 	private int j;
 	private double dg;
@@ -210,8 +213,6 @@ class LBFGS
 	private double width;
 	private double width1;
 	private double xtrapf;
-	private double p5;
-	private double p66;
 
 	private boolean stage1 = false;
 
@@ -234,8 +235,6 @@ class LBFGS
 	private void mcsrch (double f , double[] g)
 	{
 		int is0 = ispt + point * n;
-		p5 = 0.5;
-		p66 = 0.66;
 		xtrapf = 4;
 		if ( info != - 1 )
 		{
@@ -461,7 +460,7 @@ class LBFGS
 		boolean bound;
 		double gamma, p, q, r, s, sgnd, stpc, stpf, stpq, theta;
 
-		info = 0;
+		infoc = 0;
 
 		if ( ( brackt && ( stp <= Math.min ( stx , sty ) || stp >= Math.max ( stx , sty ) ) ) || dx[0] * ( stp - stx ) >= 0.0 || stmax < stmin ) return;
 
@@ -476,7 +475,7 @@ class LBFGS
 			// to stx than the quadratic step, the cubic step is taken,
 			// else the average of the cubic and quadratic steps is taken.
 
-			info = 1;
+			infoc = 1;
 			bound = true;
 			theta = 3 * ( fx[0] - fp ) / ( stp - stx ) + dx[0] + dp;
 			s = max3 ( Math.abs ( theta ) , Math.abs ( dx[0] ) , Math.abs ( dp ) );
@@ -504,7 +503,7 @@ class LBFGS
 			// step is closer to stx than the quadratic (secant) step,
 			// the cubic step is taken, else the quadratic step is taken.
 
-			info = 2;
+			infoc = 2;
 			bound = false;
 			theta = 3 * ( fx[0] - fp ) / ( stp - stx ) + dx[0] + dp;
 			s = max3 ( Math.abs ( theta ) , Math.abs ( dx[0] ) , Math.abs ( dp ) );
@@ -536,7 +535,7 @@ class LBFGS
 			// computed and if the minimum is bracketed then the the step
 			// closest to stx is taken, else the step farthest away is taken.
 
-			info = 3;
+			infoc = 3;
 			bound = true;
 			theta = 3 * ( fx[0] - fp ) / ( stp - stx ) + dx[0] + dp;
 			s = max3 ( Math.abs ( theta ) , Math.abs ( dx[0] ) , Math.abs ( dp ) );
@@ -588,7 +587,7 @@ class LBFGS
 			// not decrease. If the minimum is not bracketed, the step
 			// is either stmin or stmax, else the cubic step is taken.
 
-			info = 4;
+			infoc = 4;
 			bound = false;
 			if ( brackt )
 			{
