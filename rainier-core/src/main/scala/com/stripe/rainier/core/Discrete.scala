@@ -159,7 +159,7 @@ final case class Binomial(p: Real, k: Real) extends Discrete {
           case (x, kd) => x.toLong.max(0).min(kd.toLong)
         }
     val binomialGenerator = multi.generator.map { m =>
-      m.getOrElse(true, 0)
+      m.getOrElse(true, 0L)
     }
 
     Generator.require(Set(p, k)) {

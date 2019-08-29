@@ -103,14 +103,14 @@ object Categorical {
   * @param k The number of multinomial trials
   */
 final case class Multinomial[T](pmf: Map[T, Real], k: Real)
-    extends Distribution[Map[T, Int]] { self =>
-  def generator: Generator[Map[T, Int]] =
+    extends Distribution[Map[T, Long]] { self =>
+  def generator: Generator[Map[T, Long]] =
     Categorical(pmf).generator.repeat(k).map { seq =>
-      seq.groupBy(identity).map { case (t, ts) => (t, ts.size) }
+      seq.groupBy(identity).map { case (t, ts) => (t, ts.size.toLong) }
     }
 
   def likelihood =
-    new Likelihood[Map[T, Int]] {
+    new Likelihood[Map[T, Long]] {
       val choices = pmf.keys.toList
       val u = choices.map { k =>
         k -> new Variable
@@ -118,9 +118,9 @@ final case class Multinomial[T](pmf: Map[T, Real], k: Real)
       val real = Multinomial.logDensity(self, u)
       val placeholders = u.map(_._2)
 
-      def extract(t: Map[T, Int]) =
+      def extract(t: Map[T, Long]) =
         choices.map { k =>
-          t.getOrElse(k, 0).toDouble
+          t.getOrElse(k, 0L).toDouble
         }
     }
 }
@@ -141,8 +141,8 @@ object Multinomial {
         pTerm - Combinatorics.factorial(i)
     })
 
-  implicit def gen[T]: ToGenerator[Multinomial[T], Map[T, Int]] =
-    new ToGenerator[Multinomial[T], Map[T, Int]] {
+  implicit def gen[T]: ToGenerator[Multinomial[T], Map[T, Long]] =
+    new ToGenerator[Multinomial[T], Map[T, Long]] {
       def apply(m: Multinomial[T]) = m.generator
     }
 }
