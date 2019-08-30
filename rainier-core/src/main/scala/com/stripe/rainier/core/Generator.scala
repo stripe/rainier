@@ -13,19 +13,17 @@ sealed trait Generator[T] { self =>
 
   def get(implicit r: RNG, n: Numeric[Real]): T
 
-  private[core] def withRequirements(newReqs: Set[Real]): Generator[T] =
-    self match {
-      case Const(reqs, t)     => Const(reqs ++ newReqs, t)
-      case From(reqs, fromFn) => From(reqs ++ newReqs, fromFn)
-    }
-
   def map[U](fn: T => U): Generator[U] = self match {
     case Const(reqs, t)     => Const(reqs, fn(t))
     case From(reqs, fromFn) => From(reqs, (r, n) => fn(fromFn(r, n)))
   }
 
   def flatMap[U](fn: T => Generator[U]): Generator[U] = self match {
-    case Const(reqs, t) => fn(t).withRequirements(reqs)
+    case Const(reqsL, t) =>
+      fn(t) match {
+        case Const(reqsR, u)     => Const(reqsL ++ reqsR, u)
+        case From(reqsR, fromFn) => From(reqsL ++ reqsR, fromFn)
+      }
     case From(reqs, fromFn) =>
       From(reqs, { (r, n) =>
         fn(fromFn(r, n)) match {
