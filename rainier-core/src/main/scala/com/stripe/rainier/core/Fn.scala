@@ -7,10 +7,7 @@ trait Fn[A, Y] { self =>
   protected def encoder: Encoder[A] { type U = X }
   protected def xy(x: X): Y
 
-  def apply(seq: Seq[A]): Seq[Y] =
-    seq.map { a =>
-      xy(encoder.wrap(a))
-    }
+  def apply(a: A): Y = xy(encoder.wrap(a))
 
   def zip[B, Z](fn: Fn[B, Z]): Fn[(A, B), (Y, Z)] =
     new Fn[(A, B), (Y, Z)] {

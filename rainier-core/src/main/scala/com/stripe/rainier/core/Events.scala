@@ -1,32 +1,16 @@
 package com.stripe.rainier.core
 
 object Events {
-    def observe[T](seq: Seq[T], dist: Distribution[T]): RandomVariable[Generator[T]] =
-        dist.fit(seq).map(_.generator)
+    def observe[T,D <: Distribution[T]](seq: Seq[T], dist: D): RandomVariable[D] =
+        dist.fit(seq).map{_ => dist}
 
-    def observe[X,Y](seq: Seq[(X,Y)])(fn: X => Distribution[Y]): RandomVariable[Seq[X] => Generator[Seq[(X,Y)]]] = {
+    def observe[X,Y,D <: Distribution[Y]](seq: Seq[(X,Y)])(fn: X => D): RandomVariable[X => D] = {
         val rvs = seq.map { case (x, z) => fn(x).fit(z)}
-        RandomVariable.traverse(rvs).map { _ =>
-            (seq: Seq[X]) => 
-                Generator.traverse(seq.map{x =>
-                    fn(x).generator.map{y => x -> y}
-                })
-      }
+        RandomVariable.traverse(rvs).map { _ => fn}
     }
 
-    def observe[X,Y](seq: Seq[(X,Y)], fn: Fn[X,Distribution[Y]]): RandomVariable[Seq[X] => Generator[Seq[(X,Y)]]] = {
-        val lh = Fn.toLikelihood[X,Distribution[Y],Y](implicitly[ToLikelihood[Distribution[Y],Y]])(fn)
-        lh.fit(seq).map{_ =>
-            (seq: Seq[X]) => 
-                Generator.traverse(seq.zip(fn(seq)).map{case (x,dist) =>
-                    dist.generator.map{y => x -> y}
-                })       
-        }
+    def observe[X,Y,D <: Distribution[Y]](seq: Seq[(X,Y)], fn: Fn[X,D]): RandomVariable[Fn[X,D]] = {
+        val lh = Fn.toLikelihood[X,D,Y](implicitly[ToLikelihood[D,Y]])(fn)
+        lh.fit(seq).map{_ => fn}
     }
-
-    def observe[X,Y](xs: Seq[X], ys: Seq[Y])(fn: X => Distribution[Y]): RandomVariable[Seq[X] => Generator[Seq[(X,Y)]]] =
-        observe(xs.zip(ys))(fn)
-
-    def observe[X,Y](xs: Seq[X], ys: Seq[Y], fn: Fn[X,Distribution[Y]]): RandomVariable[Seq[X] => Generator[Seq[(X,Y)]]] =
-        observe(xs.zip(ys), fn)
 }
