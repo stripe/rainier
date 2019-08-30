@@ -129,12 +129,11 @@ object Generator {
 
   def traverse[K, V, W](m: Map[K, V])(
       implicit toGen: ToGenerator[V, W]
-  ): Generator[Map[K, W]] = {
+  ): Generator[Map[K, W]] =
     m.foldLeft(Generator.constant[Map[K, W]](Map.empty)) {
       case (g, (k, v)) =>
         g.zip(toGen(v)).map { case (m, w) => m.updated(k, w) }
     }
-  }
 }
 
 trait ToGenerator[-T, U] {
