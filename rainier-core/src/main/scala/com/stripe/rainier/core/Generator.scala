@@ -6,33 +6,55 @@ import com.stripe.rainier.sampler.RNG
 /**
   * Generator trait, for posterior predictive distributions to be forwards sampled during sampling
   */
-trait Generator[T] { self =>
+sealed trait Generator[T] { self =>
+  import Generator.{Const, From}
+
   def requirements: Set[Real]
 
   def get(implicit r: RNG, n: Numeric[Real]): T
 
-  def map[U](fn: T => U): Generator[U] = new Generator[U] {
-    val requirements: Set[Real] = self.requirements
-    def get(implicit r: RNG, n: Numeric[Real]): U = fn(self.get)
+  private[core] def withRequirements(newReqs: Set[Real]): Generator[T] =
+    self match {
+      case Const(reqs, t)     => Const(reqs ++ newReqs, t)
+      case From(reqs, fromFn) => From(reqs ++ newReqs, fromFn)
+    }
+
+  def map[U](fn: T => U): Generator[U] = self match {
+    case Const(reqs, t)     => Const(reqs, fn(t))
+    case From(reqs, fromFn) => From(reqs, (r, n) => fn(fromFn(r, n)))
   }
 
-  def flatMap[U](fn: T => Generator[U]): Generator[U] = new Generator[U] {
-    val requirements: Set[Real] = self.requirements
-    def get(implicit r: RNG, n: Numeric[Real]): U = fn(self.get).get
+  def flatMap[U](fn: T => Generator[U]): Generator[U] = self match {
+    case Const(reqs, t) => fn(t).withRequirements(reqs)
+    case From(reqs, fromFn) =>
+      From(reqs, { (r, n) =>
+        fn(fromFn(r, n)) match {
+          case Const(_, u)          => u
+          case From(_, innerFromFn) => innerFromFn(r, n)
+        }
+      })
   }
 
-  def zip[U](other: Generator[U]): Generator[(T, U)] = new Generator[(T, U)] {
-    val requirements: Set[Real] = self.requirements ++ other.requirements
-    def get(implicit r: RNG, n: Numeric[Real]): (T, U) = (self.get, other.get)
+  def zip[U](other: Generator[U]): Generator[(T, U)] = {
+    val reqs: Set[Real] = self.requirements ++ other.requirements
+    (self, other) match {
+      case (Const(_, t), Const(_, u)) => Const(reqs, (t, u))
+      case (From(_, lf), From(_, rf)) =>
+        From(reqs, (r, n) => (lf(r, n), rf(r, n)))
+      case (Const(_, t), From(_, rf)) => From(reqs, (r, n) => (t, rf(r, n)))
+      case (From(_, lf), Const(_, u)) => From(reqs, (r, n) => (lf(r, n), u))
+    }
   }
 
-  def repeat(k: Real): Generator[Seq[T]] = new Generator[Seq[T]] {
-    val requirements: Set[Real] = self.requirements
-    def get(implicit r: RNG, n: Numeric[Real]): Seq[T] =
-      0.until(n.toInt(k)).map { _ =>
-        self.get
-      }
-  }
+  def repeat(k: Real): Generator[Seq[T]] =
+    Generator.require(requirements)(self match {
+      case Const(_, u) =>
+        (_, n) =>
+          Seq.fill(n.toInt(k))(u)
+      case From(_, fromFn) =>
+        (r, n) =>
+          Seq.fill(n.toInt(k))(fromFn(r, n))
+    })
 
   private[core] def prepare(variables: Seq[Variable])(
       implicit r: RNG): Array[Double] => T = {
@@ -79,49 +101,40 @@ object Generator {
   def apply[L, T](l: L)(implicit gen: ToGenerator[L, T]): Generator[T] =
     gen(l)
 
-  def constant[T](t: T): Generator[T] =
-    new Generator[T] {
-      val requirements: Set[Real] = Set.empty
-      def get(implicit r: RNG, n: Numeric[Real]): T = t
-    }
-
-  def from[T](fn: (RNG, Numeric[Real]) => T): Generator[T] =
-    new Generator[T] {
-      val requirements: Set[Real] = Set.empty
-      def get(implicit r: RNG, n: Numeric[Real]): T = fn(r, n)
-    }
-
-  def real(x: Real): Generator[Double] = new Generator[Double] {
-    val requirements: Set[Real] = Set(x)
-    def get(implicit r: RNG, n: Numeric[Real]) = n.toDouble(x)
+  case class Const[T](requirements: Set[Real], t: T) extends Generator[T] {
+    def get(implicit r: RNG, n: Numeric[Real]): T = t
   }
 
+  case class From[T](requirements: Set[Real], fn: (RNG, Numeric[Real]) => T)
+      extends Generator[T] {
+    def get(implicit r: RNG, n: Numeric[Real]): T = fn(r, n)
+  }
+
+  def constant[T](t: T): Generator[T] = Const(Set.empty, t)
+
+  def from[T](fn: (RNG, Numeric[Real]) => T): Generator[T] = From(Set.empty, fn)
+
+  def real(x: Real): Generator[Double] =
+    From(Set(x), { (_, n) =>
+      n.toDouble(x)
+    })
+
   def require[T](reqs: Set[Real])(fn: (RNG, Numeric[Real]) => T): Generator[T] =
-    new Generator[T] {
-      val requirements: Set[Real] = reqs
-      def get(implicit r: RNG, n: Numeric[Real]): T = fn(r, n)
-    }
+    From(reqs, fn)
 
   def traverse[T, U](seq: Seq[T])(
       implicit toGen: ToGenerator[T, U]
-  ): Generator[Seq[U]] = {
-    val asGen = seq.map(toGen(_))
-    new Generator[Seq[U]] {
-      val requirements: Set[Real] = asGen.flatMap(_.requirements).toSet
-      def get(implicit r: RNG, n: Numeric[Real]): Seq[U] = asGen.map(_.get)
+  ): Generator[Seq[U]] =
+    seq.foldLeft(Generator.constant[Seq[U]](Seq.empty)) { (g, t) =>
+      g.zip(toGen(t)).map { case (l, r) => l :+ r }
     }
-  }
 
-  def traverse[K, V, W](
-      seq: Map[K, V]
-  )(
+  def traverse[K, V, W](m: Map[K, V])(
       implicit toGen: ToGenerator[V, W]
   ): Generator[Map[K, W]] = {
-    val asGen = seq.mapValues(toGen(_))
-    new Generator[Map[K, W]] {
-      val requirements: Set[Real] = asGen.values.flatMap(_.requirements).toSet
-      def get(implicit r: RNG, n: Numeric[Real]): Map[K, W] =
-        asGen.mapValues(_.get)
+    m.foldLeft(Generator.constant[Map[K, W]](Map.empty)) {
+      case (g, (k, v)) =>
+        g.zip(toGen(v)).map { case (m, w) => m.updated(k, w) }
     }
   }
 }
@@ -138,10 +151,8 @@ object ToGenerator {
 
   implicit val double: ToGenerator[Real, Double] =
     new ToGenerator[Real, Double] {
-      def apply(t: Real) = new Generator[Double] {
-        def get(implicit r: RNG, n: Numeric[Real]): Double =
-          n.toDouble(t)
-        val requirements = Set(t)
+      def apply(t: Real) = Generator.require[Double](Set(t)) { (_, n) =>
+        n.toDouble(t)
       }
     }
 

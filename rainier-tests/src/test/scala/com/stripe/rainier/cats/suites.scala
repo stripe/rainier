@@ -17,8 +17,7 @@ class GeneratorSuite extends CatsSuite {
   implicit def eqGenerator[A](implicit EqA: Eq[A]): Eq[Generator[A]] =
     Eq.instance((x, y) => EqA.eqv(x.get, y.get))
 
-  checkAll("Generator[Int]",
-           MonadTests[Generator].stackUnsafeMonad[Int, Int, Int])
+  checkAll("Generator[Int]", MonadTests[Generator].monad[Int, Int, Int])
 }
 
 class RandomVariableSuite extends CatsSuite {
