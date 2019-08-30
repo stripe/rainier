@@ -126,9 +126,9 @@ final case class Multinomial[T](pmf: Map[T, Real], k: Real)
 }
 
 object Multinomial {
-  def optional[T](pmf: Map[T, Real], k: Real): Multinomial[Option[T]] = {
+  def optional[T](pmf: Map[T,Real], k: Real): Multinomial[Option[T]] = {
     val total = Real.sum(pmf.values)
-    val newPMF = pmf.map { case (t, p) => Option(t) -> p } + (None -> (Real.one - total))
+    val newPMF = pmf.map{case (t,p) => Option(t) -> p} + (None -> (Real.one - total))
     Multinomial(newPMF, k)
   }
 
