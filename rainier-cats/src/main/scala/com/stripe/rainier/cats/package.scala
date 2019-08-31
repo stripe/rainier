@@ -4,14 +4,32 @@ import com.stripe.rainier.compute.Real
 import com.stripe.rainier.core.Generator
 import com.stripe.rainier.core.RandomVariable
 import com.stripe.rainier.sampler.RNG
-import _root_.cats.Monad
+import _root_.cats.{Comonad, Monad}
 
 import scala.annotation.tailrec
 
-object `package` {
+object `package` extends LowPriorityInstances {
   implicit val rainierMonadGenerator: Monad[Generator] = new MonadGenerator
   implicit val rainierMonadRandomVariable: Monad[RandomVariable] =
     new MonadRandomVariable
+}
+
+private[cats] sealed abstract class LowPriorityInstances {
+  implicit def generatorComonad(implicit r: RNG,
+                                n: Numeric[Real]): Comonad[Generator] =
+    new MonadGenerator with Comonad[Generator] {
+      def coflatMap[A, B](ga: Generator[A])(
+          f: Generator[A] => B): Generator[B] =
+        Generator.constant(f(ga))
+      def extract[A](x: Generator[A]): A = x.get
+    }
+
+  implicit val randomVariableComonad: Comonad[RandomVariable] =
+    new MonadRandomVariable with Comonad[RandomVariable] {
+      def coflatMap[A, B](rva: RandomVariable[A])(
+          f: RandomVariable[A] => B): RandomVariable[B] = RandomVariable(f(rva))
+      def extract[A](rv: RandomVariable[A]): A = rv.value
+    }
 }
 
 private[cats] class MonadGenerator extends Monad[Generator] {
