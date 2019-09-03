@@ -1,10 +1,9 @@
 package com.stripe.rainier.cats
 
+import com.stripe.rainier.compute.Real
 import com.stripe.rainier.core.Generator
 import com.stripe.rainier.core.RandomVariable
-import com.stripe.rainier.compute.Real
 import com.stripe.rainier.sampler.RNG
-
 import _root_.cats.Monad
 
 import scala.annotation.tailrec
@@ -28,17 +27,21 @@ private[cats] class MonadGenerator extends Monad[Generator] {
   def flatMap[A, B](fa: Generator[A])(f: A => Generator[B]): Generator[B] =
     fa.flatMap(f)
 
-  // note: currently not stack safe
-  def tailRecM[A, B](a: A)(f: A => Generator[Either[A, B]]): Generator[B] =
-    new Generator[B] {
-      lazy val step = f(a)
-      def requirements: Set[Real] = step.requirements
-      def get(implicit r: RNG, n: Numeric[Real]): B =
-        step.get match {
-          case Right(b) => b
-          case Left(aa) => tailRecM(aa)(f).get
-        }
-    }
+  def tailRecM[A, B](a: A)(f: A => Generator[Either[A, B]]): Generator[B] = {
+    @tailrec
+    def run(g: Generator[Either[A, B]], r: RNG, n: Numeric[Real]): B =
+      g match {
+        case Generator.Const(_, Left(a))  => run(f(a), r, n)
+        case Generator.Const(_, Right(b)) => b
+        case Generator.From(_, fromFn) =>
+          fromFn(r, n) match {
+            case Left(a)  => run(f(a), r, n)
+            case Right(b) => b
+          }
+      }
+    val step = f(a)
+    Generator.require(step.requirements)(run(step, _, _))
+  }
 }
 
 private[cats] class MonadRandomVariable extends Monad[RandomVariable] {
