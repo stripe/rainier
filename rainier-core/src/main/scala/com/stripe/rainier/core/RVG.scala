@@ -1,5 +1,7 @@
 package com.stripe.rainier.core
 
+import scala.collection.Map
+
 case class RVG[T](value: RandomVariable[Generator[T]]) {
   def map[U](fn: T => U): RVG[U] = RVG(value.map(_.map(fn)))
 
@@ -18,4 +20,13 @@ object RVG {
         .map { gs =>
           Generator.traverse(gs)
         })
+
+  def traverse[K, V](map: Map[K, RVG[V]]): RVG[Map[K, V]] =
+    RVG(
+      RandomVariable
+        .traverse(map.map { case (k, v) => k -> v.value })
+        .map { gs =>
+          Generator.traverse(gs)
+        }
+    )
 }
