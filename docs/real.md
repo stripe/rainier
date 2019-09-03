@@ -46,7 +46,7 @@ A `Variable` doesn't really need anything other than its own identity (they don'
 
 ```scala
 scala> val x = new Variable
-x: com.stripe.rainier.compute.Variable = com.stripe.rainier.compute.Variable@6896d488
+x: com.stripe.rainier.compute.Variable = com.stripe.rainier.compute.Variable@7ac1b880
 ```
 
 Taken by itself, `x` here represents a function that extracts a specific single parameter from the (conceptually infinite) parameter vector. We can denote that like this:
@@ -59,7 +59,7 @@ Just like before, we can do basic arithmetic on `x` to get a new `Real`:
 
 ```scala
 scala> val xTwo = x * 2
-xTwo: com.stripe.rainier.compute.Real = com.stripe.rainier.compute.Line@7467544b
+xTwo: com.stripe.rainier.compute.Real = com.stripe.rainier.compute.Line@60278bda
 ```
 
 Unlike before, this can't just return a constant, because we don't know the value of `x`. Instead, we end up with a function like this:
@@ -72,17 +72,17 @@ However, `Real` will still try to immediately evaluate as much as it can. One wa
 
 ```scala
 scala> xTwo / 2
-res0: com.stripe.rainier.compute.Real = com.stripe.rainier.compute.Variable@6896d488
+res0: com.stripe.rainier.compute.Real = com.stripe.rainier.compute.Variable@7ac1b880
 ```
 
 We can also construct functions that depend on multiple variables, as you'd expect:
 
 ```scala
 scala> val y = new Variable
-y: com.stripe.rainier.compute.Variable = com.stripe.rainier.compute.Variable@5e3849b2
+y: com.stripe.rainier.compute.Variable = com.stripe.rainier.compute.Variable@7ed2620b
 
 scala> val xy = x * y
-xy: com.stripe.rainier.compute.Real = LogLine(Many(Map(com.stripe.rainier.compute.Variable@6896d488 -> 1.0, com.stripe.rainier.compute.Variable@5e3849b2 -> 1.0),List(com.stripe.rainier.compute.Variable@6896d488, com.stripe.rainier.compute.Variable@5e3849b2)))
+xy: com.stripe.rainier.compute.Real = LogLine(Many(Map(com.stripe.rainier.compute.Variable@7ac1b880 -> 1.0, com.stripe.rainier.compute.Variable@7ed2620b -> 1.0),List(com.stripe.rainier.compute.Variable@7ac1b880, com.stripe.rainier.compute.Variable@7ed2620b)))
 ```
 
 This, of course, represents the function `xy(Θ) = Θ_x * Θ_y`.
@@ -97,7 +97,7 @@ If you want to actually evaluate a function, you have to provide values for the 
 
 ```scala
 scala> val eval = new Evaluator(Map(x -> 3.0, y -> 2.0))
-eval: com.stripe.rainier.compute.Evaluator = com.stripe.rainier.compute.Evaluator@6d4f9032
+eval: com.stripe.rainier.compute.Evaluator = com.stripe.rainier.compute.Evaluator@194a0b89
 
 scala> eval.toDouble(x)
 res1: Double = 3.0
@@ -113,7 +113,7 @@ Or if you want to use a different set of parameter values:
 
 ```scala
 scala> val eval2 = new Evaluator(Map(x -> 1.0, y -> -1.0))
-eval2: com.stripe.rainier.compute.Evaluator = com.stripe.rainier.compute.Evaluator@3af089e3
+eval2: com.stripe.rainier.compute.Evaluator = com.stripe.rainier.compute.Evaluator@60ac2c07
 
 scala> eval2.toDouble(x)
 res4: Double = 1.0
@@ -129,7 +129,7 @@ However, this method of evaluating a `Real` is relatively slow. If you want to b
 
 ```scala
 scala> val xyFn = Compiler.default.compile(List(x,y), xy)
-xyFn: Array[Double] => Double = scala.Function1$$Lambda$4329/2125034164@436345cf
+xyFn: Array[Double] => Double = com.stripe.rainier.compute.Compiler$$Lambda$5743/620029269@3798e377
 ```
 
 And now we can use it as many times as we want:
@@ -147,7 +147,6 @@ This, of course, isn't a very exciting function - it just multiplies two numbers
 ## Tracing
 
 ```scala
-scala> import com.stripe.rainier.trace._
 import com.stripe.rainier.trace._
 ```
 
@@ -157,7 +156,7 @@ For example, if we construct something like this:
 
 ```scala
 scala> val f1 = (x - 3).pow(2) + (x + 3).pow(2)
-f1: com.stripe.rainier.compute.Real = com.stripe.rainier.compute.Line@65077be1
+f1: com.stripe.rainier.compute.Real = com.stripe.rainier.compute.Line@4bd7cd3d
 ```
 
 We can see what kind of code it would produce like this:
@@ -179,7 +178,7 @@ implements com.stripe.rainier.ir.CompiledFunction
                 throw null;
             }
         }
-        return CompiledFunction$21$9._919((double[])arrd, (double[])arrd2);
+        return CompiledFunction$21$density$9._941((double[])arrd, (double[])arrd2);
     }
 
     public int numInputs() {
@@ -194,9 +193,9 @@ implements com.stripe.rainier.ir.CompiledFunction
         return 1;
     }
 }
-public class CompiledFunction$21$9
+public class CompiledFunction$21$density$9
  {
-    public static final double _919(double[] arrd, double[] arrd2) {
+    public static final double _941(double[] arrd, double[] arrd2) {
         double d = 9.0 + arrd[0] * arrd[0];
         return d + d;
     }
@@ -216,7 +215,7 @@ scala> val data = 1.to(100).toList
 data: List[Int] = List(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100)
 
 scala> val err = data.map{n => (x - n).pow(2)}.reduce(_ + _) / data.size
-err: com.stripe.rainier.compute.Real = com.stripe.rainier.compute.Line@315934f4
+err: com.stripe.rainier.compute.Real = com.stripe.rainier.compute.Line@525614b2
 ```
 
 If we trace this, we'll see that `Real` was able to evaluate this completely enough to fully collapse out the list of data points, and the final calculation just involves an `x` and `x^2` term:
@@ -238,7 +237,7 @@ implements com.stripe.rainier.ir.CompiledFunction
                 throw null;
             }
         }
-        return CompiledFunction$22$9._924((double[])arrd, (double[])arrd2);
+        return CompiledFunction$22$density$9._946((double[])arrd, (double[])arrd2);
     }
 
     public int numInputs() {
@@ -253,10 +252,10 @@ implements com.stripe.rainier.ir.CompiledFunction
         return 1;
     }
 }
-public class CompiledFunction$22$9
+public class CompiledFunction$22$density$9
  {
-    public static final double _924(double[] arrd, double[] arrd2) {
-        return 3383.5 + arrd[0] * arrd[0] - arrd[0] * 101.0;
+    public static final double _946(double[] arrd, double[] arrd2) {
+        return 3383.5 + arrd[0] * -101.0 + arrd[0] * arrd[0];
     }
 }
 ```
@@ -265,7 +264,7 @@ Of course, this won't always work. For example, if we change from L2 to L1 error
 
 ```scala
 scala> val err2 = data.map{n => (x - n).abs}.reduce(_ + _) / data.size
-err2: com.stripe.rainier.compute.Real = com.stripe.rainier.compute.Line@286e270f
+err2: com.stripe.rainier.compute.Real = com.stripe.rainier.compute.Line@2350d1c0
 
 scala> Tracer.default(err2)
 public class CompiledFunction$23
@@ -283,7 +282,7 @@ implements com.stripe.rainier.ir.CompiledFunction
                 throw null;
             }
         }
-        return CompiledFunction$23$12._1230((double[])arrd, (double[])arrd2);
+        return CompiledFunction$23$density$12._1251((double[])arrd, (double[])arrd2);
     }
 
     public int numInputs() {
@@ -298,33 +297,29 @@ implements com.stripe.rainier.ir.CompiledFunction
         return 1;
     }
 }
-public class CompiledFunction$23$12
+public class CompiledFunction$23$density$12
  {
-    public CompiledFunction$23$12() {
+    public CompiledFunction$23$density$12() {
     }
 
-    public static final double _1228(double[] arrd, double[] arrd2) {
-        return java.lang.Math.abs(-20.0 + arrd[0]) + java.lang.Math.abs(-19.0 + arrd[0]) + (java.lang.Math.abs(-18.0 + arrd[0]) + java.lang.Math.abs(-17.0 + arrd[0])) + (java.lang.Math.abs(-16.0 + arrd[0]) + java.lang.Math.abs(-15.0 + arrd[0]) + (java.lang.Math.abs(-14.0 + arrd[0]) + java.lang.Math.abs(-13.0 + arrd[0]))) + (java.lang.Math.abs(-12.0 + arrd[0]) + java.lang.Math.abs(-11.0 + arrd[0]) + (java.lang.Math.abs(-10.0 + arrd[0]) + java.lang.Math.abs(-9.0 + arrd[0])) + (java.lang.Math.abs(-8.0 + arrd[0]) + java.lang.Math.abs(-7.0 + arrd[0]) + (java.lang.Math.abs(-6.0 + arrd[0]) + java.lang.Math.abs(-5.0 + arrd[0]))));
+    public static final double _1251(double[] arrd, double[] arrd2) {
+        return (CompiledFunction$23$density$12._1250((double[])arrd, (double[])arrd2) + java.lang.Math.abs(-24.0 + arrd[0]) + java.lang.Math.abs(-23.0 + arrd[0]) + java.lang.Math.abs(-22.0 + arrd[0]) + java.lang.Math.abs(-21.0 + arrd[0]) + java.lang.Math.abs(-20.0 + arrd[0]) + java.lang.Math.abs(-19.0 + arrd[0]) + java.lang.Math.abs(-18.0 + arrd[0]) + java.lang.Math.abs(-17.0 + arrd[0]) + java.lang.Math.abs(-16.0 + arrd[0]) + java.lang.Math.abs(-15.0 + arrd[0]) + java.lang.Math.abs(-14.0 + arrd[0]) + java.lang.Math.abs(-13.0 + arrd[0]) + java.lang.Math.abs(-12.0 + arrd[0]) + java.lang.Math.abs(-11.0 + arrd[0]) + java.lang.Math.abs(-10.0 + arrd[0]) + java.lang.Math.abs(-9.0 + arrd[0]) + java.lang.Math.abs(-8.0 + arrd[0]) + java.lang.Math.abs(-7.0 + arrd[0]) + java.lang.Math.abs(-6.0 + arrd[0]) + java.lang.Math.abs(-5.0 + arrd[0]) + java.lang.Math.abs(-4.0 + arrd[0]) + java.lang.Math.abs(-3.0 + arrd[0]) + java.lang.Math.abs(-1.0 + arrd[0]) + java.lang.Math.abs(-2.0 + arrd[0])) * 0.01;
     }
 
-    public static final double _1230(double[] arrd, double[] arrd2) {
-        return (java.lang.Math.abs(-100.0 + arrd[0]) + java.lang.Math.abs(-99.0 + arrd[0]) + (java.lang.Math.abs(-98.0 + arrd[0]) + java.lang.Math.abs(-97.0 + arrd[0])) + (java.lang.Math.abs(-96.0 + arrd[0]) + java.lang.Math.abs(-95.0 + arrd[0]) + (java.lang.Math.abs(-94.0 + arrd[0]) + java.lang.Math.abs(-93.0 + arrd[0]))) + (java.lang.Math.abs(-92.0 + arrd[0]) + java.lang.Math.abs(-91.0 + arrd[0]) + (java.lang.Math.abs(-90.0 + arrd[0]) + java.lang.Math.abs(-89.0 + arrd[0])) + (java.lang.Math.abs(-88.0 + arrd[0]) + java.lang.Math.abs(-87.0 + arrd[0]) + (java.lang.Math.abs(-86.0 + arrd[0]) + java.lang.Math.abs(-85.0 + arrd[0])))) + CompiledFunction$23$12._1225((double[])arrd, (double[])arrd2) + CompiledFunction$23$12._1227((double[])arrd, (double[])arrd2) + CompiledFunction$23$12._1229((double[])arrd, (double[])arrd2)) * 0.01;
+    public static final double _1250(double[] arrd, double[] arrd2) {
+        return CompiledFunction$23$density$12._1249((double[])arrd, (double[])arrd2) + java.lang.Math.abs(-49.0 + arrd[0]) + java.lang.Math.abs(-48.0 + arrd[0]) + java.lang.Math.abs(-47.0 + arrd[0]) + java.lang.Math.abs(-46.0 + arrd[0]) + java.lang.Math.abs(-45.0 + arrd[0]) + java.lang.Math.abs(-44.0 + arrd[0]) + java.lang.Math.abs(-43.0 + arrd[0]) + java.lang.Math.abs(-42.0 + arrd[0]) + java.lang.Math.abs(-41.0 + arrd[0]) + java.lang.Math.abs(-40.0 + arrd[0]) + java.lang.Math.abs(-39.0 + arrd[0]) + java.lang.Math.abs(-38.0 + arrd[0]) + java.lang.Math.abs(-37.0 + arrd[0]) + java.lang.Math.abs(-36.0 + arrd[0]) + java.lang.Math.abs(-35.0 + arrd[0]) + java.lang.Math.abs(-34.0 + arrd[0]) + java.lang.Math.abs(-33.0 + arrd[0]) + java.lang.Math.abs(-32.0 + arrd[0]) + java.lang.Math.abs(-31.0 + arrd[0]) + java.lang.Math.abs(-30.0 + arrd[0]) + java.lang.Math.abs(-29.0 + arrd[0]) + java.lang.Math.abs(-28.0 + arrd[0]) + java.lang.Math.abs(-27.0 + arrd[0]) + java.lang.Math.abs(-26.0 + arrd[0]) + java.lang.Math.abs(-25.0 + arrd[0]);
     }
 
-    public static final double _1227(double[] arrd, double[] arrd2) {
-        return java.lang.Math.abs(-68.0 + arrd[0]) + java.lang.Math.abs(-67.0 + arrd[0]) + (java.lang.Math.abs(-66.0 + arrd[0]) + java.lang.Math.abs(-65.0 + arrd[0])) + (java.lang.Math.abs(-64.0 + arrd[0]) + java.lang.Math.abs(-63.0 + arrd[0]) + (java.lang.Math.abs(-62.0 + arrd[0]) + java.lang.Math.abs(-61.0 + arrd[0]))) + (java.lang.Math.abs(-60.0 + arrd[0]) + java.lang.Math.abs(-59.0 + arrd[0]) + (java.lang.Math.abs(-58.0 + arrd[0]) + java.lang.Math.abs(-57.0 + arrd[0])) + (java.lang.Math.abs(-56.0 + arrd[0]) + java.lang.Math.abs(-55.0 + arrd[0]) + (java.lang.Math.abs(-54.0 + arrd[0]) + java.lang.Math.abs(-53.0 + arrd[0])))) + CompiledFunction$23$12._1226((double[])arrd, (double[])arrd2);
+    public static final double _1249(double[] arrd, double[] arrd2) {
+        return CompiledFunction$23$density$12._1248((double[])arrd, (double[])arrd2) + java.lang.Math.abs(-74.0 + arrd[0]) + java.lang.Math.abs(-73.0 + arrd[0]) + java.lang.Math.abs(-72.0 + arrd[0]) + java.lang.Math.abs(-71.0 + arrd[0]) + java.lang.Math.abs(-70.0 + arrd[0]) + java.lang.Math.abs(-69.0 + arrd[0]) + java.lang.Math.abs(-68.0 + arrd[0]) + java.lang.Math.abs(-67.0 + arrd[0]) + java.lang.Math.abs(-66.0 + arrd[0]) + java.lang.Math.abs(-65.0 + arrd[0]) + java.lang.Math.abs(-64.0 + arrd[0]) + java.lang.Math.abs(-63.0 + arrd[0]) + java.lang.Math.abs(-62.0 + arrd[0]) + java.lang.Math.abs(-61.0 + arrd[0]) + java.lang.Math.abs(-60.0 + arrd[0]) + java.lang.Math.abs(-59.0 + arrd[0]) + java.lang.Math.abs(-58.0 + arrd[0]) + java.lang.Math.abs(-57.0 + arrd[0]) + java.lang.Math.abs(-56.0 + arrd[0]) + java.lang.Math.abs(-55.0 + arrd[0]) + java.lang.Math.abs(-54.0 + arrd[0]) + java.lang.Math.abs(-53.0 + arrd[0]) + java.lang.Math.abs(-52.0 + arrd[0]) + java.lang.Math.abs(-51.0 + arrd[0]) + java.lang.Math.abs(-50.0 + arrd[0]);
     }
 
-    public static final double _1225(double[] arrd, double[] arrd2) {
-        return java.lang.Math.abs(-84.0 + arrd[0]) + java.lang.Math.abs(-83.0 + arrd[0]) + (java.lang.Math.abs(-82.0 + arrd[0]) + java.lang.Math.abs(-81.0 + arrd[0])) + (java.lang.Math.abs(-80.0 + arrd[0]) + java.lang.Math.abs(-79.0 + arrd[0]) + (java.lang.Math.abs(-78.0 + arrd[0]) + java.lang.Math.abs(-77.0 + arrd[0]))) + (java.lang.Math.abs(-76.0 + arrd[0]) + java.lang.Math.abs(-75.0 + arrd[0]) + (java.lang.Math.abs(-74.0 + arrd[0]) + java.lang.Math.abs(-73.0 + arrd[0])) + (java.lang.Math.abs(-72.0 + arrd[0]) + java.lang.Math.abs(-71.0 + arrd[0]) + (java.lang.Math.abs(-70.0 + arrd[0]) + java.lang.Math.abs(-69.0 + arrd[0]))));
+    public static final double _1248(double[] arrd, double[] arrd2) {
+        return java.lang.Math.abs(-100.0 + arrd[0]) + java.lang.Math.abs(-99.0 + arrd[0]) + java.lang.Math.abs(-98.0 + arrd[0]) + java.lang.Math.abs(-97.0 + arrd[0]) + java.lang.Math.abs(-96.0 + arrd[0]) + java.lang.Math.abs(-95.0 + arrd[0]) + java.lang.Math.abs(-94.0 + arrd[0]) + java.lang.Math.abs(-93.0 + arrd[0]) + java.lang.Math.abs(-92.0 + arrd[0]) + java.lang.Math.abs(-91.0 + arrd[0]) + java.lang.Math.abs(-90.0 + arrd[0]) + java.lang.Math.abs(-89.0 + arrd[0]) + java.lang.Math.abs(-88.0 + arrd[0]) + java.lang.Math.abs(-87.0 + arrd[0]) + java.lang.Math.abs(-86.0 + arrd[0]) + java.lang.Math.abs(-85.0 + arrd[0]) + java.lang.Math.abs(-84.0 + arrd[0]) + java.lang.Math.abs(-83.0 + arrd[0]) + java.lang.Math.abs(-82.0 + arrd[0]) + java.lang.Math.abs(-81.0 + arrd[0]) + java.lang.Math.abs(-80.0 + arrd[0]) + java.lang.Math.abs(-79.0 + arrd[0]) + java.lang.Math.abs(-78.0 + arrd[0]) + java.lang.Math.abs(-77.0 + arrd[0]) + java.lang.Math.abs(-76.0 + arrd[0]) + CompiledFunction$23$density$12._1247((double[])arrd, (double[])arrd2);
     }
 
-    public static final double _1226(double[] arrd, double[] arrd2) {
-        return java.lang.Math.abs(-52.0 + arrd[0]) + java.lang.Math.abs(-51.0 + arrd[0]) + (java.lang.Math.abs(-50.0 + arrd[0]) + java.lang.Math.abs(-49.0 + arrd[0])) + (java.lang.Math.abs(-48.0 + arrd[0]) + java.lang.Math.abs(-47.0 + arrd[0]) + (java.lang.Math.abs(-46.0 + arrd[0]) + java.lang.Math.abs(-45.0 + arrd[0]))) + (java.lang.Math.abs(-44.0 + arrd[0]) + java.lang.Math.abs(-43.0 + arrd[0]) + (java.lang.Math.abs(-42.0 + arrd[0]) + java.lang.Math.abs(-41.0 + arrd[0])) + (java.lang.Math.abs(-40.0 + arrd[0]) + java.lang.Math.abs(-39.0 + arrd[0]) + (java.lang.Math.abs(-38.0 + arrd[0]) + java.lang.Math.abs(-37.0 + arrd[0]))));
-    }
-
-    public static final double _1229(double[] arrd, double[] arrd2) {
-        return java.lang.Math.abs(-36.0 + arrd[0]) + java.lang.Math.abs(-35.0 + arrd[0]) + (java.lang.Math.abs(-34.0 + arrd[0]) + java.lang.Math.abs(-33.0 + arrd[0])) + (java.lang.Math.abs(-32.0 + arrd[0]) + java.lang.Math.abs(-31.0 + arrd[0]) + (java.lang.Math.abs(-30.0 + arrd[0]) + java.lang.Math.abs(-29.0 + arrd[0]))) + (java.lang.Math.abs(-28.0 + arrd[0]) + java.lang.Math.abs(-27.0 + arrd[0]) + (java.lang.Math.abs(-26.0 + arrd[0]) + java.lang.Math.abs(-25.0 + arrd[0])) + (java.lang.Math.abs(-24.0 + arrd[0]) + java.lang.Math.abs(-23.0 + arrd[0]) + (java.lang.Math.abs(-22.0 + arrd[0]) + java.lang.Math.abs(-21.0 + arrd[0])))) + CompiledFunction$23$12._1228((double[])arrd, (double[])arrd2) + (java.lang.Math.abs(-4.0 + arrd[0]) + java.lang.Math.abs(-3.0 + arrd[0]) + (java.lang.Math.abs(-1.0 + arrd[0]) + java.lang.Math.abs(-2.0 + arrd[0])));
+    public static final double _1247(double[] arrd, double[] arrd2) {
+        return java.lang.Math.abs(-75.0 + arrd[0]);
     }
 }
 ```

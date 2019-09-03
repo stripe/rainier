@@ -18,7 +18,7 @@ val data =  List((0,8), (1,12), (2,16), (3,20), (4,21), (5,31), (6,23), (7,33), 
 val model = for {
   slope <- LogNormal(0,1).param
   intercept <- LogNormal(0,1).param
-  regression <- Predictor[Int].from{ x => Poisson(x*slope + intercept) }.fit(data)
+  regression <- Predictor[Long].from{ x => Poisson(x*slope + intercept) }.fit(data)
 } yield regression.predict(21)
 ```
 
@@ -91,7 +91,7 @@ plot2D(xz.sample())
 
 You can see that although we still sample from the full range of `x` values, for any given sample, `x` and `z` are quite close to each other.
 
-A note about the `Real` type: you may have noticed that, for example, `x` is a `RandomVariable[Real]` or that `normal.mean` was a `Real`. What's that? `Real` is a special numeric type used by Rainier to represent your model's parameter values, and any values derived from those parameters (if you do arithmetic on a `Real`, you get back another `Real`). It's also the type that all the distribution objects like `Normal` expect to be parameterized with, so that you can chain things together like we did for `z` - though you can also use regular `Int` or `Double` values here and they'll get wrapped automatically. `Real` is, by design, an extremely restricted type: it only supports the 4 basic arithmetic operations, `log`, and `exp`. Restricting it in this way helps keep Rainier models as efficient to perform inference on as possible. At sampling time, however, any `Real` outputs are converted to `Double` so that you can work with them from there.
+A note about the `Real` type: you may have noticed that, for example, `x` is a `RandomVariable[Real]` or that `normal.mean` was a `Real`. What's that? `Real` is a special numeric type used by Rainier to represent your model's parameter values, and any values derived from those parameters (if you do arithmetic on a `Real`, you get back another `Real`). It's also the type that all the distribution objects like `Normal` expect to be parameterized with, so that you can chain things together like we did for `z` - though you can also use regular `Long` or `Double` values here and they'll get wrapped automatically. `Real` is, by design, an extremely restricted type: it only supports the 4 basic arithmetic operations, `log`, and `exp`. Restricting it in this way helps keep Rainier models as efficient to perform inference on as possible. At sampling time, however, any `Real` outputs are converted to `Double` so that you can work with them from there.
 
 ## `fit`
 
@@ -100,10 +100,10 @@ Just like every Rainier model has one more more parameters with priors, every Ra
 Let's say that we have some data that represents the last week's worth of sales on a website, at (we believe) a constant daily rate, and we'd like to know how many sales we might get tomorrow. Here's our data:
 
 ```tut
-val sales = List(4, 4, 7, 11, 8, 12, 10)
+val sales = List(4L, 4L, 7L, 11L, 8L, 12L, 10L)
 ```
 
-We can model the number of sales we get on each day as a poisson distribution parameterized by the underlying rate. For example, looking at that data, we might guess that it came from a `Poisson(9)` or `Poisson(10)`. We can test those hypotheses by using the `fit` method available on all `Distribution` objects. Since `Poisson` is a `Distribution[Int]`, its `fit` will accept either `Int` or `Seq[Int]`, and return a `RandomVariable` which encodes the likelihood of the provided data being produced by that distribution. (We're not going to worry right now about what *kind* of `RandomVariable` it is, since we're only really interested in the likelihood).
+We can model the number of sales we get on each day as a poisson distribution parameterized by the underlying rate. For example, looking at that data, we might guess that it came from a `Poisson(9)` or `Poisson(10)`. We can test those hypotheses by using the `fit` method available on all `Distribution` objects. Since `Poisson` is a `Distribution[Long]`, its `fit` will accept either `Long` or `Seq[Long]`, and return a `RandomVariable` which encodes the likelihood of the provided data being produced by that distribution. (We're not going to worry right now about what *kind* of `RandomVariable` it is, since we're only really interested in the likelihood).
 
 ```tut:silent
 val poisson9: RandomVariable[_] = Poisson(9).fit(sales)
@@ -218,7 +218,7 @@ plot1D(prediction.sample())
 What if, instead of assuming that our website's sales are constant over time, we assume that they're growing at a constant rate? We might have data like the following, organized in (day, sales) pairs. (You may recognize this data from the start of the tour.)
 
 ```tut
-val data =  List((0,8), (1,12), (2,16), (3,20), (4,21), (5,31), (6,23), (7,33), (8,31), (9,33), (10,36), (11,42), (12,39), (13,56), (14,55), (15,63), (16,52), (17,66), (18,52), (19,80), (20,71))
+val data =  List[(Long, Long)]((0,8), (1,12), (2,16), (3,20), (4,21), (5,31), (6,23), (7,33), (8,31), (9,33), (10,36), (11,42), (12,39), (13,56), (14,55), (15,63), (16,52), (17,66), (18,52), (19,80), (20,71))
 ```
 
 Plotting the data gives a clear sense of the trend:
@@ -243,7 +243,7 @@ Like `Distribution`, `Predictor` implements `fit` (in fact, they both extend the
 ```tut
 val regr = for {
     (slope, intercept) <- prior
-    predictor <- Predictor[Int].from{i =>
+    predictor <- Predictor[Long].from{i =>
                     Poisson(intercept + slope*i)
                 }.fit(data)
 } yield (slope, intercept)
@@ -262,7 +262,7 @@ Alternatively, as in the earlier example, we could try to predict what will happ
 val regr2 = for {
     slope <- LogNormal(0,1).param
     intercept <- LogNormal(0,1).param
-    predictor <- Predictor[Int].from{i =>
+    predictor <- Predictor[Long].from{i =>
                     Poisson(intercept + slope*i)
                 }.fit(data)
 } yield predictor.predict(21)
@@ -277,7 +277,7 @@ plot1D(regr2.sample())
 Finally, let's close with a small and somewhat contrived example of a hierarchical model, where we have two separate regressions that share a parameter. For the sake of the example, let's assume that we have a second sales dataset, much like the first, where we know they had the same rate at the start of the observations, but may have grown at different rates - so their intercepts will be equal but their slopes will not. Here's the data:
 
 ```tut
-val data2 = List((0,9), (1,2), (2,3), (3,17), (4,21), (5,12), (6,21), (7,19), (8,21), (9,18), (10,25), (11,27), (12,33), (13,23), (14,28), (15,45), (16,35), (17,45), (18,47), (19,54), (20,40))
+val data2 = List[(Long, Long)]((0,9), (1,2), (2,3), (3,17), (4,21), (5,12), (6,21), (7,19), (8,21), (9,18), (10,25), (11,27), (12,33), (13,23), (14,28), (15,45), (16,35), (17,45), (18,47), (19,54), (20,40))
 ```
 
 It's straightforward to set up two separate slopes, two separate predictors, but the same intercept. We'll still just sample the first slope so we can compare to the previous model. We can write out the two slopes and predictors manually
@@ -287,8 +287,8 @@ val regr3 =  for {
     slope0 <- LogNormal(0,1).param
     slope1 <- LogNormal(0,1).param
     intercept <- LogNormal(0,1).param
-    _ <- Predictor[Int].from{ i => Poisson(intercept + slope0 * i) }.fit(data)
-    _ <- Predictor[Int].from{ i => Poisson(intercept + slope1 * i) }.fit(data2)
+    _ <- Predictor[Long].from{ i => Poisson(intercept + slope0 * i) }.fit(data)
+    _ <- Predictor[Long].from{ i => Poisson(intercept + slope1 * i) }.fit(data2)
 } yield (slope0, intercept)
 ```
 
@@ -299,7 +299,7 @@ val allData = data.map{ case (x,y) => ((0, x), y) } ++ data2.map{ case (x, y) =>
 val regr4 = for {
   slopes <- RandomVariable.fill(2)(LogNormal(0,1).param).map(Lookup(_))
   intercept <- LogNormal(0,1).param
-  _ <- Predictor[(Int,Int)].from{ case (index, x) => Poisson(intercept + slopes(index) * x) }.fit(allData)
+  _ <- Predictor[(Int,Long)].from{ case (index, x) => Poisson(intercept + slopes(index) * x) }.fit(allData)
 } yield (slopes(0), intercept)
 ```
 
