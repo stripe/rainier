@@ -51,7 +51,7 @@ class TargetTest extends FunSuite {
 
   run("poisson fit") {
     Uniform.standard.param.flatMap { a =>
-      Poisson(a).fit(List(1, 2, 3))
+      Poisson(a).fit(List(1L, 2L, 3L))
     }.targets
   }
 

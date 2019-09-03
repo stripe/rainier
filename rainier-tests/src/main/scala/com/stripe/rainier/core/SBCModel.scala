@@ -99,7 +99,7 @@ object SBCGamma extends SBCModel {
 /** Discrete **/
 object SBCBernoulli extends SBCModel {
   def sbc =
-    SBC[Int, Discrete](Uniform(0, 1))((x: Real) => Bernoulli(x))
+    SBC[Long, Discrete](Uniform(0, 1))((x: Real) => Bernoulli(x))
   def goldset =
     List(0.3717408311126508, 0.3865579546493665, 0.3605987423866729,
       0.38767871113770336, 0.35470510388203624, 0.39420956481816916,
@@ -116,7 +116,7 @@ object SBCBernoulli extends SBCModel {
 
 object SBCBinomial extends SBCModel {
   def sbc =
-    SBC[Int, Discrete](Uniform(0, 1))((x: Real) => Binomial(x, 10))
+    SBC[Long, Discrete](Uniform(0, 1))((x: Real) => Binomial(x, 10))
   def goldset =
     List(0.38208027875508366, 0.37884005861941134, 0.3814174045711878,
       0.37942894970566404, 0.38147495662485753, 0.3795087014387845,
@@ -133,7 +133,7 @@ object SBCBinomial extends SBCModel {
 
 object SBCGeometric extends SBCModel {
   def sbc =
-    SBC[Int, Discrete](Uniform(0, 1))((x: Real) => Geometric(x))
+    SBC[Long, Discrete](Uniform(0, 1))((x: Real) => Geometric(x))
   def goldset =
     List(0.39883333471673815, 0.3826532340713303, 0.39161198399952574,
       0.384846161100462, 0.387005040552758, 0.38962811641012607,
@@ -150,7 +150,7 @@ object SBCGeometric extends SBCModel {
 
 object SBCGeometricZeroInflated extends SBCModel {
   def sbc =
-    SBC[Int, Discrete](Uniform(0, 1))((x: Real) =>
+    SBC[Long, Discrete](Uniform(0, 1))((x: Real) =>
       Geometric(.3).zeroInflated(x))
   def goldset =
     List(0.3682741265983013, 0.3852529612682177, 0.3604238333388064,
@@ -168,7 +168,7 @@ object SBCGeometricZeroInflated extends SBCModel {
 
 object SBCNegativeBinomial extends SBCModel {
   def sbc =
-    SBC[Int, Discrete](Uniform(0, 1))((x: Real) => NegativeBinomial(x, 10))
+    SBC[Long, Discrete](Uniform(0, 1))((x: Real) => NegativeBinomial(x, 10))
   def goldset =
     List(0.3842308100146834, 0.3831571422487335, 0.3819285721702851,
       0.38500689040712294, 0.38231656584391344, 0.38576141387852825,
@@ -185,7 +185,7 @@ object SBCNegativeBinomial extends SBCModel {
 
 object SBCBinomialPoissonApproximation extends SBCModel {
   def sbc =
-    SBC[Int, Discrete](Uniform(0, 0.04))((x: Real) => Binomial(x, 200))
+    SBC[Long, Discrete](Uniform(0, 0.04))((x: Real) => Binomial(x, 200))
   def goldset =
     List(0.015088044867717167, 0.015139310410134868, 0.01510517009035067,
       0.01510665416274154, 0.015080615180726842, 0.015111162160004719,
@@ -203,7 +203,7 @@ object SBCBinomialPoissonApproximation extends SBCModel {
 
 object SBCBinomialNormalApproximation extends SBCModel {
   def sbc =
-    SBC[Int, Discrete](Uniform(0.4, 0.6))((x: Real) => Binomial(x, 300))
+    SBC[Long, Discrete](Uniform(0.4, 0.6))((x: Real) => Binomial(x, 300))
   def goldset =
     List(0.3849093699203164, 0.3822629591199987, 0.38374303903059914,
       0.3832324864849272, 0.38389219985327067, 0.3835866724851299,
