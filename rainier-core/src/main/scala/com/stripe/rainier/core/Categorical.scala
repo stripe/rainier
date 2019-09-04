@@ -90,6 +90,11 @@ object Categorical {
       Real(l.size)
     })
 
+  def fromSet[T](ts: Set[T]): Categorical[T] =
+    normalize(
+      ts.foldLeft(Map.empty[T, Real])((m, t) => m.updated(t, Real.one))
+    )
+
   implicit def gen[T]: ToGenerator[Categorical[T], T] =
     new ToGenerator[Categorical[T], T] {
       def apply(c: Categorical[T]) = c.generator
