@@ -6,6 +6,7 @@ import com.stripe.rainier.sampler.RNG
 import _root_.cats.Monad
 
 import scala.annotation.tailrec
+import scala.collection.immutable.Queue
 
 object `package` {
   implicit val rainierMonadCategorical: Monad[Categorical] =
@@ -32,19 +33,19 @@ private[cats] class MonadCategorical extends Monad[Categorical] {
 
   def tailRecM[A, B](a: A)(
       f: A => Categorical[Either[A, B]]): Categorical[B] = {
-
     @tailrec
     def run(acc: Map[B, Real],
-            pairs: List[(Either[A, B], Real)]): Map[B, Real] = {
-      pairs match {
-        case Nil => acc
-        case (Left(a), r) :: xs =>
-          run(acc, xs ++ f(a).pmf.mapValues(_ * r).toList)
-        case (Right(b), r) :: xs =>
-          run(acc.updated(b, acc.getOrElse(b, Real.zero) + r), xs)
+            queue: Queue[(Either[A, B], Real)]): Map[B, Real] =
+      if (queue.isEmpty) acc
+      else {
+        queue.head match {
+          case (Left(a), r) =>
+            run(acc, queue.tail ++ f(a).pmf.mapValues(_ * r))
+          case (Right(b), r) =>
+            run(acc.updated(b, acc.getOrElse(b, Real.zero) + r), queue.tail)
+        }
       }
-    }
-    val pmf = run(Map.empty, f(a).pmf.toList)
+    val pmf = run(Map.empty, f(a).pmf.to[Queue])
     Categorical[B](pmf)
   }
 }
