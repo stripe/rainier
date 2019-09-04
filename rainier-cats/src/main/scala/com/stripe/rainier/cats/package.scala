@@ -3,7 +3,7 @@ package com.stripe.rainier.cats
 import com.stripe.rainier.compute.Real
 import com.stripe.rainier.core.{Categorical, Generator, RandomVariable}
 import com.stripe.rainier.sampler.RNG
-import _root_.cats.{Monad, StackSafeMonad}
+import _root_.cats.Monad
 
 import scala.annotation.tailrec
 
@@ -15,7 +15,7 @@ object `package` {
     new MonadRandomVariable
 }
 
-private[cats] class MonadCategorical extends StackSafeMonad[Categorical] {
+private[cats] class MonadCategorical extends Monad[Categorical] {
   def pure[A](x: A): Categorical[A] = Categorical(Map(x -> Real.one))
 
   override def map[A, B](fa: Categorical[A])(f: A => B): Categorical[B] =
@@ -30,24 +30,23 @@ private[cats] class MonadCategorical extends StackSafeMonad[Categorical] {
       f: A => Categorical[B]): Categorical[B] =
     fa.flatMap(f)
 
-  // override def tailRecM[A, B](a: A)(
-  //     f: A => Categorical[Either[A, B]]): Categorical[B] = ???
+  def tailRecM[A, B](a: A)(
+      f: A => Categorical[Either[A, B]]): Categorical[B] = {
 
-  // def tailRecM[A, B](a: A)(f: A => Categorical[Either[A, B]]): Categorical[B] = {
-  //   @tailrec
-  //   def run(g: Categorical[Either[A, B]], r: RNG, n: Numeric[Real]): B =
-  //     g match {
-  //       case Categorical.Const(_, Left(a))  => run(f(a), r, n)
-  //       case Categorical.Const(_, Right(b)) => b
-  //       case Categorical.From(_, fromFn) =>
-  //         fromFn(r, n) match {
-  //           case Left(a)  => run(f(a), r, n)
-  //           case Right(b) => b
-  //         }
-  //     }
-  //   val step = f(a)
-  //   Categorical.require(step.requirements)(run(step, _, _))
-  // }
+    @tailrec
+    def run(acc: Map[B, Real],
+            pairs: List[(Either[A, B], Real)]): Map[B, Real] = {
+      pairs match {
+        case Nil => acc
+        case (Left(a), r) :: xs =>
+          run(acc, xs ++ f(a).pmf.mapValues(_ * r).toList)
+        case (Right(b), r) :: xs =>
+          run(acc.updated(b, acc.getOrElse(b, Real.zero) + r), xs)
+      }
+    }
+    val pmf = run(Map.empty, f(a).pmf.toList)
+    Categorical[B](pmf)
+  }
 }
 
 private[cats] class MonadGenerator extends Monad[Generator] {
