@@ -84,7 +84,7 @@ class RandomVariable[+T](val value: T, val targets: Set[Target]) {
       }
   }
 
-  def optimize[V](implicit rng: RNG, tg: ToGenerator[T, V]): V = {
+  def optimize[V]()(implicit rng: RNG, tg: ToGenerator[T, V]): V = {
     val array = Optimizer.lbfgs(density)
     tg(value).prepare(targetGroup.variables).apply(array)
   }

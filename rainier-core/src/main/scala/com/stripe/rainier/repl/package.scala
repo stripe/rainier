@@ -2,6 +2,7 @@ package com.stripe.rainier
 
 import com.stripe.rainier.sampler._
 import java.io._
+import scala.collection.Map
 
 package object repl {
   def plot1D[N](seq: Seq[N])(implicit num: Numeric[N]): Unit = {
