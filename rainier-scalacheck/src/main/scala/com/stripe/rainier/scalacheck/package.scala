@@ -12,7 +12,6 @@ import org.scalacheck.Cogen
 import org.scalacheck.Gen
 
 object `package` {
-
   implicit val arbitraryReal: Arbitrary[Real] =
     Arbitrary(arbitrary[Double].map(Real(_)))
 
@@ -20,7 +19,6 @@ object `package` {
     Arbitrary(genGenerator)
 
   def genGenerator[A: Arbitrary]: Gen[Generator[A]] = {
-
     implicit val cogenRNG: Cogen[RNG] =
       Cogen(_ match {
         case ScalaRNG(seed) => seed

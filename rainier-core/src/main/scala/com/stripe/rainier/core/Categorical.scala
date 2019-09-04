@@ -25,6 +25,12 @@ final case class Categorical[T](pmf: Map[T, Real]) extends Distribution[T] {
         .map { case (u, ups) => u -> Real.sum(ups.map(_._2)) }
         .toMap)
 
+  def zip[U](other: Categorical[U]): Categorical[(T, U)] =
+    for {
+      t <- this
+      u <- other
+    } yield (t, u)
+
   def generator: Generator[T] = {
     val cdf =
       pmf.toList
@@ -90,6 +96,9 @@ object Categorical {
       Real(l.size)
     })
 
+  def fromSet[T](ts: Set[T]): Categorical[T] =
+    normalize(ts.foldLeft(Map.empty[T, Real])((m, t) => m.updated(t, Real.one)))
+
   implicit def gen[T]: ToGenerator[Categorical[T], T] =
     new ToGenerator[Categorical[T], T] {
       def apply(c: Categorical[T]) = c.generator
@@ -126,9 +135,9 @@ final case class Multinomial[T](pmf: Map[T, Real], k: Real)
 }
 
 object Multinomial {
-  def optional[T](pmf: Map[T,Real], k: Real): Multinomial[Option[T]] = {
+  def optional[T](pmf: Map[T, Real], k: Real): Multinomial[Option[T]] = {
     val total = Real.sum(pmf.values)
-    val newPMF = pmf.map{case (t,p) => Option(t) -> p} + (None -> (Real.one - total))
+    val newPMF = pmf.map { case (t, p) => Option(t) -> p } + (None -> (Real.one - total))
     Multinomial(newPMF, k)
   }
 

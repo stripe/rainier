@@ -169,6 +169,15 @@ object ToGenerator {
         })
     }
 
+  implicit def fromSet[T, U](
+      implicit tu: ToGenerator[T, U]): ToGenerator[Set[T], Set[U]] =
+    new ToGenerator[Set[T], Set[U]] {
+      def apply(t: Set[T]) =
+        Generator.traverse(t.map { x =>
+          tu(x)
+        })
+    }
+
   implicit def map[K, T, U](
       implicit tu: ToGenerator[T, U]): ToGenerator[Map[K, T], Map[K, U]] =
     new ToGenerator[Map[K, T], Map[K, U]] {
