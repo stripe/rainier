@@ -3,7 +3,6 @@ package com.stripe.rainier.core
 import com.stripe.rainier.compute._
 import com.stripe.rainier.sampler._
 import com.stripe.rainier.optimizer._
-import scala.collection.Map
 
 /**
   * The main probability monad used in Rainier for constructing probabilistic programs which can be sampled

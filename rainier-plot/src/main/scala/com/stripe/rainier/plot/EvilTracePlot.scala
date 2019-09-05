@@ -16,8 +16,6 @@ object EvilTracePlot {
   import com.cibo.evilplot.numeric.Point
   import com.cibo.evilplot.geometry.Extent
 
-  import scala.collection.Map
-
   /**
     * Render plots to disk as a PNG file
     *
