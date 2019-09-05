@@ -1,14 +1,16 @@
-package com.stripe.rainier.cats
+package com.stripe.rainier
+package cats
 
-import com.stripe.rainier.compute.Real
+import com.stripe.rainier.compute.{Constant, Infinity, NegInfinity, Real}
 import com.stripe.rainier.core.{Categorical, Generator, RandomVariable}
 import com.stripe.rainier.sampler.RNG
-import _root_.cats.Monad
+import _root_.cats.{Eq, Monad}
+import _root_.cats.kernel.instances.map._
 
 import scala.annotation.tailrec
 import scala.collection.immutable.Queue
 
-object `package` {
+object `package` extends EqInstances {
   implicit val rainierMonadCategorical: Monad[Categorical] =
     new MonadCategorical
   implicit val rainierMonadGenerator: Monad[Generator] = new MonadGenerator
@@ -100,4 +102,36 @@ private[cats] class MonadRandomVariable extends Monad[RandomVariable] {
       case Left(aa) => tailRecM(aa)(f)
       case Right(b) => RandomVariable(b)
     }
+}
+
+private[cats] trait EqInstances {
+
+  def eqBigDecimal(epsilon: Double): Eq[BigDecimal] =
+    Eq.instance { (left, right) =>
+      ((left - right) / left) < epsilon && ((left - right) / right) < epsilon
+    }
+
+  implicit val eqReal: Eq[Real] = {
+    val bde = eqBigDecimal(1e-6)
+    Eq.instance { (left, right) =>
+      (left, right) match {
+        case (Infinity, Infinity) | (NegInfinity, NegInfinity) => true
+        case (Constant(a), Constant(b))                        => bde.eqv(a, b)
+        case _                                                 => false
+      }
+    }
+  }
+
+  implicit def eqCategorical[A: Eq]: Eq[Categorical[A]] = {
+    implicit val mapEq: Eq[Map[A, Real]] = catsKernelStdEqForMap[A, Real]
+    Eq.by(_.pmf)
+  }
+
+  implicit def eqGenerator[A](
+      implicit eqA: Eq[A],
+      r: RNG,
+      n: Numeric[Real]
+  ): Eq[Generator[A]] = Eq.by(_.get)
+
+  implicit def eqRandomVariable[A: Eq]: Eq[RandomVariable[A]] = Eq.by(_.value)
 }
