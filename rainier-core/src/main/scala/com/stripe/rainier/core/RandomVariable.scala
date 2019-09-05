@@ -17,10 +17,7 @@ class RandomVariable[+T](val value: T, val targets: Set[Target]) {
     new RandomVariable(fn(value), targets)
 
   def zip[U](other: RandomVariable[U]): RandomVariable[(T, U)] =
-    for {
-      t <- this
-      u <- other
-    } yield (t, u)
+    new RandomVariable((value, other.value), targets ++ other.targets)
 
   def condition(fn: T => Real): RandomVariable[T] =
     for {
