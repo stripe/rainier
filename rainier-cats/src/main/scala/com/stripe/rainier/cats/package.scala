@@ -2,7 +2,12 @@ package com.stripe.rainier
 package cats
 
 import com.stripe.rainier.compute.{Constant, Infinity, NegInfinity, Real}
-import com.stripe.rainier.core.{Categorical, Generator, RandomVariable}
+import com.stripe.rainier.core.{
+  updateMap,
+  Categorical,
+  Generator,
+  RandomVariable
+}
 import com.stripe.rainier.sampler.RNG
 import _root_.cats.{Eq, Monad}
 import _root_.cats.kernel.instances.map._
@@ -44,7 +49,7 @@ private[cats] class MonadCategorical extends Monad[Categorical] {
           case (Left(a), r) =>
             run(acc, queue.tail ++ f(a).pmf.mapValues(_ * r))
           case (Right(b), r) =>
-            run(acc.updated(b, acc.getOrElse(b, Real.zero) + r), queue.tail)
+            run(updateMap(acc, b, r)(Real.zero)(_ + _), queue.tail)
         }
       }
     val pmf = run(Map.empty, f(a).pmf.to[Queue])

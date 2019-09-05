@@ -31,10 +31,12 @@ final case class Categorical[T](pmf: Map[T, Real]) extends Distribution[T] {
     )
 
   def zip[U](other: Categorical[U]): Categorical[(T, U)] =
-    for {
-      t <- this
-      u <- other
-    } yield (t, u)
+    Categorical(
+      for {
+        (t, p) <- pmf
+        (u, p2) <- other.pmf
+      } yield ((t, u), p * p2)
+    )
 
   def generator: Generator[T] = {
     val cdf =
