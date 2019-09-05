@@ -1,4 +1,5 @@
-package com.stripe.rainier.core
+package com.stripe.rainier
+package core
 
 import com.stripe.rainier.compute._
 
@@ -9,21 +10,25 @@ import com.stripe.rainier.compute._
   */
 final case class Categorical[T](pmf: Map[T, Real]) extends Distribution[T] {
   self =>
+
   def map[U](fn: T => U): Categorical[U] =
-    flatMap { t =>
-      Categorical(Map(fn(t) -> Real.one))
-    }
+    Categorical(
+      pmf.foldLeft(Map.empty[U, Real]) {
+        case (acc, (t, p)) =>
+          updateMap(acc, fn(t), p)(Real.zero)(_ + _)
+      }
+    )
 
   def flatMap[U](fn: T => Categorical[U]): Categorical[U] =
     Categorical(
-      pmf.toList
-        .flatMap {
-          case (t, p) =>
-            fn(t).pmf.toList.map { case (u, p2) => (u, p * p2) }
-        }
-        .groupBy(_._1)
-        .map { case (u, ups) => u -> Real.sum(ups.map(_._2)) }
-        .toMap)
+      (for {
+        (t, p) <- pmf.iterator
+        (u, p2) <- fn(t).pmf.iterator
+      } yield (u, p * p2)).foldLeft(Map.empty[U, Real]) {
+        case (acc, (u, p)) =>
+          updateMap(acc, u, p)(Real.zero)(_ + _)
+      }
+    )
 
   def zip[U](other: Categorical[U]): Categorical[(T, U)] =
     for {
