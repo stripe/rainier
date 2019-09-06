@@ -5,8 +5,12 @@ package com.stripe.rainier.compute
   * implicit conversions to real which we might
   * otherwise reach for in RandomVariable
   */
-sealed abstract class ToReal[A] {
+sealed abstract class ToReal[A] { self =>
   def apply(a: A): Real
+
+  def contramap[B](f: B => A): ToReal[B] = new ToReal[B] {
+    def apply(b: B): Real = self.apply(f(b))
+  }
 }
 
 trait LowPriToReal {
