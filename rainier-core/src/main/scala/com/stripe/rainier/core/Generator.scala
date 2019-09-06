@@ -2,7 +2,6 @@ package com.stripe.rainier.core
 
 import com.stripe.rainier.compute._
 import com.stripe.rainier.sampler.RNG
-import scala.collection.Map
 
 /**
   * Generator trait, for posterior predictive distributions to be forwards sampled during sampling
