@@ -2,6 +2,7 @@ package com.stripe.rainier.core
 
 import com.stripe.rainier.compute._
 import com.stripe.rainier.sampler._
+import com.stripe.rainier.optimizer._
 
 /**
   * The main probability monad used in Rainier for constructing probabilistic programs which can be sampled
@@ -17,10 +18,7 @@ class RandomVariable[+T](val value: T, val targets: Set[Target]) {
     new RandomVariable(fn(value), targets)
 
   def zip[U](other: RandomVariable[U]): RandomVariable[(T, U)] =
-    for {
-      t <- this
-      u <- other
-    } yield (t, u)
+    new RandomVariable((value, other.value), targets ++ other.targets)
 
   def condition(fn: T => Real): RandomVariable[T] =
     for {
@@ -80,6 +78,11 @@ class RandomVariable[+T](val value: T, val targets: Set[Target]) {
       .map { array =>
         fn(array)
       }
+  }
+
+  def optimize[V]()(implicit rng: RNG, tg: ToGenerator[T, V]): V = {
+    val array = Optimizer.lbfgs(density)
+    tg(value).prepare(targetGroup.variables).apply(array)
   }
 
   def sampleWithDiagnostics[V](sampler: Sampler,

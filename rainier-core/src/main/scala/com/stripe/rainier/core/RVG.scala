@@ -18,4 +18,13 @@ object RVG {
         .map { gs =>
           Generator.traverse(gs)
         })
+
+  def traverse[K, V](map: Map[K, RVG[V]]): RVG[Map[K, V]] =
+    RVG(
+      RandomVariable
+        .traverse(map.map { case (k, v) => k -> v.value })
+        .map { gs =>
+          Generator.traverse(gs)
+        }
+    )
 }

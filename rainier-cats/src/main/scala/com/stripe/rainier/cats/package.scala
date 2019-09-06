@@ -9,18 +9,36 @@ import com.stripe.rainier.core.{
   RandomVariable
 }
 import com.stripe.rainier.sampler.RNG
-import _root_.cats.{Eq, Monad}
+import _root_.cats.{Comonad, Eq, Monad}
 import _root_.cats.kernel.instances.map._
 
 import scala.annotation.tailrec
 import scala.collection.immutable.Queue
 
-object `package` extends EqInstances {
+object `package` extends LowPriorityInstances with EqInstances {
   implicit val rainierMonadCategorical: Monad[Categorical] =
     new MonadCategorical
   implicit val rainierMonadGenerator: Monad[Generator] = new MonadGenerator
   implicit val rainierMonadRandomVariable: Monad[RandomVariable] =
     new MonadRandomVariable
+}
+
+private[cats] sealed abstract class LowPriorityInstances {
+  implicit def generatorComonad(implicit r: RNG,
+                                n: Numeric[Real]): Comonad[Generator] =
+    new MonadGenerator with Comonad[Generator] {
+      def coflatMap[A, B](ga: Generator[A])(
+          f: Generator[A] => B): Generator[B] =
+        Generator.constant(f(ga))
+      def extract[A](x: Generator[A]): A = x.get
+    }
+
+  implicit val randomVariableComonad: Comonad[RandomVariable] =
+    new MonadRandomVariable with Comonad[RandomVariable] {
+      def coflatMap[A, B](rva: RandomVariable[A])(
+          f: RandomVariable[A] => B): RandomVariable[B] = RandomVariable(f(rva))
+      def extract[A](rv: RandomVariable[A]): A = rv.value
+    }
 }
 
 private[cats] class MonadCategorical extends Monad[Categorical] {
