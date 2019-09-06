@@ -1,13 +1,24 @@
-package com.stripe.rainier.cats
+package com.stripe.rainier
+package cats
 
 import com.stripe.rainier.core._
 import com.stripe.rainier.scalacheck._
 import com.stripe.rainier.sampler.RNG
-import com.stripe.rainier.compute.Evaluator
+import com.stripe.rainier.compute.{
+  Constant,
+  Evaluator,
+  Infinity,
+  NegInfinity,
+  Real
+}
 
-import cats.Eq
-import cats.tests.CatsSuite
-import cats.laws.discipline._
+import _root_.cats.Eq
+import _root_.cats.kernel.laws.discipline.{
+  GroupTests => GroupLawTests,
+  MonoidTests => MonoidLawTests
+}
+import _root_.cats.tests.CatsSuite
+import _root_.cats.laws.discipline._
 
 class GeneratorSuite extends CatsSuite {
 
@@ -27,4 +38,26 @@ class RandomVariableSuite extends CatsSuite {
 
   checkAll("RandomVariable[Int]",
            MonadTests[RandomVariable].monad[Int, Int, Int])
+
+  checkAll("RandomVariable[Int]", MonoidLawTests[RandomVariable[Int]].monoid)
+}
+
+class RealSuite extends CatsSuite {
+  def eqBigDecimal(epsilon: Double): Eq[BigDecimal] =
+    Eq.instance { (left, right) =>
+      ((left - right) / left) < epsilon && ((left - right) / right) < epsilon
+    }
+
+  implicit val eqReal: Eq[Real] = {
+    val bde = eqBigDecimal(1e-6)
+    Eq.instance { (left, right) =>
+      (left, right) match {
+        case (Infinity, Infinity) | (NegInfinity, NegInfinity) => true
+        case (Constant(a), Constant(b))                        => bde.eqv(a, b)
+        case _                                                 => false
+      }
+    }
+  }
+
+  checkAll("Real", GroupLawTests[Real].group)
 }

@@ -1,4 +1,5 @@
-package com.stripe.rainier.compute
+package com.stripe.rainier
+package compute
 
 import com.stripe.rainier.ir
 
@@ -114,9 +115,9 @@ object Real {
   val negInfinity: Real = NegInfinity
 }
 
-final private case class Constant(value: BigDecimal) extends Real
-final private object Infinity extends Real
-final private object NegInfinity extends Real
+final private[rainier] case class Constant(value: BigDecimal) extends Real
+final private[rainier] object Infinity extends Real
+final private[rainier] object NegInfinity extends Real
 
 sealed trait NonConstant extends Real
 
