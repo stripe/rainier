@@ -50,4 +50,11 @@ object `package` {
     arbitrary[A].flatMap(a =>
       arbitrary[Real].flatMap(density => RandomVariable(a, density)))
 
+  implicit def cogenGenerator[A](implicit CA: Cogen[A],
+                                 r: RNG,
+                                 n: Numeric[Real]): Cogen[Generator[A]] =
+    CA.contramap(_.get)
+
+  implicit def cogenRandomVariable[A: Cogen]: Cogen[RandomVariable[A]] =
+    Cogen[A].contramap(_.value)
 }
