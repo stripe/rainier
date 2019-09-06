@@ -17,7 +17,7 @@ import scala.collection.immutable.Queue
 
 object `package` extends LowPriorityInstances with EqInstances {
   implicit val rainierMonadCategorical: Monad[Categorical] =
-    new MonadCategorical
+    MonadCategorical
   implicit val rainierMonadGenerator: Monad[Generator] = new MonadGenerator
   implicit val rainierMonadRandomVariable: Monad[RandomVariable] =
     new MonadRandomVariable
@@ -41,7 +41,7 @@ private[cats] sealed abstract class LowPriorityInstances {
     }
 }
 
-private[cats] class MonadCategorical extends Monad[Categorical] {
+private[cats] object MonadCategorical extends Monad[Categorical] {
   def pure[A](x: A): Categorical[A] = Categorical(Map(x -> Real.one))
 
   override def map[A, B](fa: Categorical[A])(f: A => B): Categorical[B] =
