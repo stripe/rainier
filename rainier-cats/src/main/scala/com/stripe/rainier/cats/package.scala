@@ -131,11 +131,13 @@ private[cats] trait EqInstances {
 
   def eqBigDecimal(epsilon: Double): Eq[BigDecimal] =
     Eq.instance { (left, right) =>
-      ((left - right) / left) < epsilon && ((left - right) / right) < epsilon
+      if (right == BigDecimal(0.0))
+        left.abs < epsilon
+      else ((left - right).abs / right.abs) < epsilon
     }
 
-  implicit val eqReal: Eq[Real] = {
-    val bde = eqBigDecimal(1e-6)
+  def eqReal(epsilon: Double): Eq[Real] = {
+    val bde = eqBigDecimal(epsilon)
     Eq.instance { (left, right) =>
       (left, right) match {
         case (Infinity, Infinity) | (NegInfinity, NegInfinity) => true
@@ -144,6 +146,8 @@ private[cats] trait EqInstances {
       }
     }
   }
+
+  implicit val defaultEqReal: Eq[Real] = eqReal(1e-6)
 
   implicit def eqCategorical[A: Eq]: Eq[Categorical[A]] = {
     implicit val mapEq: Eq[Map[A, Real]] = catsKernelStdEqForMap[A, Real]
