@@ -4,7 +4,7 @@ import com.stripe.rainier.compute.Real
 import com.stripe.rainier.core.Generator
 import com.stripe.rainier.core.RandomVariable
 import com.stripe.rainier.sampler.RNG
-import _root_.cats.{Group, Monad, Monoid}
+import _root_.cats.{Applicative, Group, Monad, Monoid}
 
 import scala.annotation.tailrec
 
@@ -13,8 +13,11 @@ object `package` {
   implicit val rainierMonadRandomVariable: Monad[RandomVariable] =
     new MonadRandomVariable
 
-  implicit def rvMonoid[A](implicit ma: Monoid[A]): Monoid[RandomVariable[A]] =
-    new MonoidRandomVariable(ma)
+  implicit def rvMonoid[A: Monoid]: Monoid[RandomVariable[A]] =
+    Applicative.monoid[RandomVariable, A]
+
+  implicit def genMonoid[A: Monoid]: Monoid[Generator[A]] =
+    Applicative.monoid[Generator, A]
 
   implicit val groupReal: Group[Real] = GroupReal
 }
@@ -47,15 +50,6 @@ private[cats] class MonadGenerator extends Monad[Generator] {
     val step = f(a)
     Generator.require(step.requirements)(run(step, _, _))
   }
-}
-
-private[cats] class MonoidRandomVariable[A](
-    ma: Monoid[A]
-) extends Monoid[RandomVariable[A]] {
-  override val empty: RandomVariable[A] = RandomVariable(ma.empty)
-  override def combine(l: RandomVariable[A],
-                       r: RandomVariable[A]): RandomVariable[A] =
-    new RandomVariable(ma.combine(l.value, r.value), l.targets ++ r.targets)
 }
 
 private[cats] class MonadRandomVariable extends Monad[RandomVariable] {
