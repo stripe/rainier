@@ -41,4 +41,8 @@ object Events {
         (x, y)
       }
     })
+
+  def simulate[X, Y, D](seq: Seq[X], fn: Fn[X,D])(
+      implicit tg: ToGenerator[D, Y]): Generator[Seq[(X, Y)]] =
+    simulate(seq)(fn(_))
 }
