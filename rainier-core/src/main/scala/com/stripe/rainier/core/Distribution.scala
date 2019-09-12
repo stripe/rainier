@@ -17,4 +17,8 @@ object Distribution {
     new ToLikelihood[D, T] {
       def apply(d: D) = d.likelihood
     }
+
+  def gen[D <: Distribution[T], T] = new ToGenerator[D, T] {
+    def apply(d: D) = d.generator
+  }
 }
