@@ -21,9 +21,7 @@ trait Discrete extends Distribution[Int] { self: Discrete =>
 
 object Discrete {
   implicit def gen[D <: Discrete]: ToGenerator[D, Int] =
-    new ToGenerator[D, Int] {
-      def apply(d: D) = d.generator
-    }
+    Distribution.gen[D, Int]
 }
 
 /**
