@@ -1,7 +1,7 @@
 package com.stripe.rainier.scalacheck
 
 import com.stripe.rainier.core.{Categorical, Generator, RandomVariable}
-import com.stripe.rainier.compute.Real
+import com.stripe.rainier.compute.{Real, ToReal}
 import com.stripe.rainier.sampler.{RNG, ScalaRNG}
 import org.scalacheck.{Arbitrary, Cogen, Gen}
 
@@ -62,7 +62,8 @@ object `package` {
   // note: currently assuming all evaluators are pure and don't have
   // internal state (other than caching)
   implicit def cogenNumericReal[A](
-    implicit CA: CoGen[A], tr: ToReal[A]
+      implicit CA: Cogen[A],
+      tr: ToReal[A]
   ): Cogen[Numeric[Real]] = Cogen(_.getClass.hashCode.toLong)
 
   implicit def cogenGenerator[A](implicit CA: Cogen[A],

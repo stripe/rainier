@@ -33,8 +33,10 @@ class RandomVariableSuite extends CatsSuite {
   implicit val iso = SemigroupalTests.Isomorphisms
     .invariant[RandomVariable]
 
-  checkAll("RandomVariable[Int]", MonadTests[RandomVariable].monad[Int, Int, Int])
-  checkAll("RandomVariable[Int]", ComonadTests[RandomVariable].comonad[Int, Int, Int])
+  checkAll("RandomVariable[Int]",
+           MonadTests[RandomVariable].monad[Int, Int, Int])
+  checkAll("RandomVariable[Int]",
+           ComonadTests[RandomVariable].comonad[Int, Int, Int])
   checkAll("RandomVariable[Int]", MonoidTests[RandomVariable[Int]].monoid)
 }
 
