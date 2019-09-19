@@ -6,7 +6,7 @@ import com.stripe.rainier.sampler.RNG
 /**
   * Generator trait, for posterior predictive distributions to be forwards sampled during sampling
   */
-sealed trait Generator[T] { self =>
+sealed trait Generator[+T] { self =>
   import Generator.{Const, From}
 
   def requirements: Set[Real]

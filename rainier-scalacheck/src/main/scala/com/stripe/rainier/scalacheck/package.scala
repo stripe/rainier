@@ -62,8 +62,8 @@ object `package` {
   // note: currently assuming all evaluators are pure and don't have
   // internal state (other than caching)
   implicit def cogenNumericReal[A](
-    implicit CA: CoGen[A],tr: ToReal[A]): Cogen[Numeric[Real]] =
-    Cogen(_.getClass.hashCode.toLong)
+    implicit CA: CoGen[A], tr: ToReal[A]
+  ): Cogen[Numeric[Real]] = Cogen(_.getClass.hashCode.toLong)
 
   implicit def cogenGenerator[A](implicit CA: Cogen[A],
                                  r: RNG,

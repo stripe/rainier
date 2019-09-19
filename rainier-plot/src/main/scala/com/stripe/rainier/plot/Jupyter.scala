@@ -94,24 +94,26 @@ object Jupyter {
     })
 
   def whiskers(samples: Seq[Map[String, Double]]): Plot = {
-    val labels = samples.head.keys.toList.sorted
-    val seq = labels.map { k =>
-      val dist = samples.map(_(k))
-      val (low, high) = hdpi(dist)
-      val stats =
-        BoxPlotSummaryStatistics(
-          dist.min,
-          dist.max,
-          dist.min,
-          dist.max,
-          low,
-          mean(dist),
-          high,
-          Nil,
-          dist
-        )
-      k -> stats
-    }
+    val labels = samples.head.keys.toList
+    val seq = labels
+      .map { k =>
+        val dist = samples.map(_(k))
+        val (low, high) = hdpi(dist)
+        val stats =
+          BoxPlotSummaryStatistics(
+            dist.min,
+            dist.max,
+            dist.min,
+            dist.max,
+            low,
+            mean(dist),
+            high,
+            Nil,
+            dist
+          )
+        k -> stats
+      }
+      .sortBy(_._2.middleQuantile)
 
     whiskers(seq)
   }

@@ -114,6 +114,7 @@ Rainier's primary author is [Avi Bryant](http://twitter.com/avibryant) with majo
  * Michael Manapat
  * Alan O'Donnell
  * Adam Reese
+ * Sam Ritchie
  * David Rodriguez
  * Andy Scott
  * Aaron Steele
