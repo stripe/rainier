@@ -142,7 +142,10 @@ private[cats] trait EqInstances {
       (left, right) match {
         case (Infinity, Infinity) | (NegInfinity, NegInfinity) => true
         case (Constant(a), Constant(b))                        => bde.eqv(a, b)
-        case _                                                 => false
+        // TODO - the Eq instance returned here doesn't test for full
+        // DAG equality; this final case needs to be expanded to
+        // compare the various NonConstant options.
+        case (a, b) => a == b
       }
     }
   }
@@ -160,5 +163,8 @@ private[cats] trait EqInstances {
       n: Numeric[Real]
   ): Eq[Generator[A]] = Eq.by(_.get)
 
+  // TODO - Comparing RandomVariable instances by value alone isn't
+  // sound; a proper Eq instance needs to take density into account as
+  // well.
   implicit def eqRandomVariable[A: Eq]: Eq[RandomVariable[A]] = Eq.by(_.value)
 }
