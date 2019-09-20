@@ -4,13 +4,8 @@ package cats
 import com.stripe.rainier.core._
 import com.stripe.rainier.scalacheck._
 import com.stripe.rainier.sampler.RNG
-import com.stripe.rainier.compute.{
-  Constant,
-  Evaluator,
-  Infinity,
-  NegInfinity,
-  Real
-}
+import com.stripe.rainier.compute.{Evaluator, Real}
+import _root_.cats.kernel.laws.discipline.{GroupTests, MonoidTests}
 import _root_.cats.laws.discipline._
 import _root_.cats.tests.CatsSuite
 
@@ -26,7 +21,7 @@ class GeneratorSuite extends CatsSuite {
 
   checkAll("Generator[Int]", MonadTests[Generator].monad[Int, Int, Int])
   checkAll("Generator[Int]", ComonadTests[Generator].comonad[Int, Int, Int])
-  checkAll("Generator[Int]", MonoidLawTests[Generator[Int]].monoid)
+  checkAll("Generator[Int]", MonoidTests[Generator[Int]].monoid)
 }
 
 class RandomVariableSuite extends CatsSuite {

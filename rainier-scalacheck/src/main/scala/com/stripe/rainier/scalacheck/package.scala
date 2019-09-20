@@ -1,7 +1,7 @@
 package com.stripe.rainier.scalacheck
 
 import com.stripe.rainier.core.{Categorical, Generator, RandomVariable}
-import com.stripe.rainier.compute.{Real, ToReal}
+import com.stripe.rainier.compute.Real
 import com.stripe.rainier.sampler.{RNG, ScalaRNG}
 import org.scalacheck.{Arbitrary, Cogen, Gen}
 
@@ -59,12 +59,12 @@ object `package` {
       case other          => sys.error(s"$other RNG currently unsupported")
     })
 
-  // note: currently assuming all evaluators are pure and don't have
-  // internal state (other than caching)
-  implicit def cogenNumericReal[A](
-      implicit CA: Cogen[A],
-      tr: ToReal[A]
-  ): Cogen[Numeric[Real]] = Cogen(_.getClass.hashCode.toLong)
+  // note: currently assuming all Evaluator instances are pure and
+  // don't have internal state (other than caching); if this
+  // assumption's true, then the class's hashcode uniquely identifies
+  // the Numeric[Real] instance.
+  implicit lazy val cogenNumericReal: Cogen[Numeric[Real]] =
+    Cogen(_.getClass.hashCode.toLong)
 
   implicit def cogenGenerator[A](implicit CA: Cogen[A],
                                  r: RNG,
