@@ -1,6 +1,6 @@
 package com.stripe.rainier.core
 
-case class RVG[T](value: RandomVariable[Generator[T]]) {
+case class RVG[+T](value: RandomVariable[Generator[T]]) {
   def map[U](fn: T => U): RVG[U] = RVG(value.map(_.map(fn)))
 
   def zip[U](other: RVG[U]): RVG[(T, U)] =
