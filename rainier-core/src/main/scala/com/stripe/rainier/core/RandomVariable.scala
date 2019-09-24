@@ -3,6 +3,7 @@ package com.stripe.rainier.core
 import com.stripe.rainier.compute._
 import com.stripe.rainier.sampler._
 import com.stripe.rainier.optimizer._
+import com.stripe.rainier.ir.CompiledFunction
 
 /**
   * The main probability monad used in Rainier for constructing probabilistic programs which can be sampled
@@ -78,6 +79,15 @@ class RandomVariable[+T](val value: T, val targets: Set[Target]) {
       .map { array =>
         fn(array)
       }
+  }
+
+  def waic(
+      sampler: Sampler,
+      warmupIterations: Int,
+      iterations: Int,
+      keepEvery: Int = 1)(implicit rng: RNG): Double = {
+    val samples = Sampler.sample(density, sampler, warmupIterations, iterations, keepEvery)
+    targets.map{t => RandomVariable.waic(samples, targetGroup.variables, t)}.sum
   }
 
   def optimize[V]()(implicit rng: RNG, tg: ToGenerator[T, V]): V = {
@@ -226,4 +236,73 @@ object RandomVariable {
   def fit[L, T](l: L, seq: Seq[T])(
       implicit toLH: ToLikelihood[L, T]): RandomVariable[Unit] =
     toLH(l).fit(seq)
+
+  private[core] def waic(samples: List[Array[Double]], variables: List[Variable], target: Target): Double =
+    if(target.nRows == 0)
+      0.0
+    else {
+      val cf = Compiler.default.compile(target.placeholderVariables ++ variables, List(("logLikelihood", target.real)))
+      val globalBuf = new Array[Double](cf.numGlobals)
+      val inputBuf = new Array[Double](cf.numInputs)
+      val data = target.placeholderVariables.map{v => target.placeholders(v)}.toArray
+      val sampleArray = samples.toArray
+      var i = 0
+      var result = 0.0
+      while(i < target.nRows) {
+        result += waic(sampleArray, cf, inputBuf, globalBuf, data, i)
+        i += 1
+      }
+      result * -2.0
+  }
+
+  private def waic(samples: Array[Array[Double]], cf: CompiledFunction, inputBuf: Array[Double], globalsBuf: Array[Double], data: Array[Array[Double]], i: Int): Double = {
+    val nInputs = inputBuf.size
+    val nDataInputs = data.size
+    val nSampleInputs = nInputs - nDataInputs
+    val nSamples = samples.size
+    val outputs = new Array[Double](nSamples)
+    var j = 0
+    while(j < nDataInputs) {
+      inputBuf(j) = data(j)(i)
+      j += 1
+    }
+    var k = 0
+    while(k < nSamples) {
+      val sample = samples(k)
+      j = 0
+      while(j < nSampleInputs) {
+        inputBuf(nDataInputs + j) = sample(j)
+        j += 1
+      }
+      outputs(i) = cf.output(inputBuf, globalsBuf, 0)
+      k += 1
+    }
+
+    val max = outputs.max
+    var expSum = 0.0
+    k = 0
+    while(k < nSamples) {
+      expSum += Math.exp(outputs(i) - max)
+    }
+    val lppd = Math.log(expSum) + max - Math.log(nSamples)
+    val pWAIC = variance(outputs)
+    lppd - pWAIC
+  }
+
+  private def variance(values: Array[Double]): Double = {
+    var count = 0
+    var mean = 0.0
+    var m2 = 0.0
+    val n = values.size
+    while(count < n) {
+      val newValue = values(count)
+      count += 1
+      val delta = newValue - mean
+      mean += (delta / count.toDouble)
+      val delta2 = newValue - mean
+      m2 += (delta * delta2)
+    }
+
+    m2 / count.toDouble
+  }
 }
