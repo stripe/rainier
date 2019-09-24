@@ -59,8 +59,10 @@ object `package` {
       case other          => sys.error(s"$other RNG currently unsupported")
     })
 
-  // note: currently assuming all evaluators are pure and don't have
-  // internal state (other than caching)
+  // note: currently assuming all Evaluator instances are pure and
+  // don't have internal state (other than caching); if this
+  // assumption's true, then the class's hashcode uniquely identifies
+  // the Numeric[Real] instance.
   implicit lazy val cogenNumericReal: Cogen[Numeric[Real]] =
     Cogen(_.getClass.hashCode.toLong)
 

@@ -9,18 +9,29 @@ import com.stripe.rainier.core.{
   RandomVariable
 }
 import com.stripe.rainier.sampler.RNG
-import _root_.cats.{Comonad, Eq, Monad}
+import _root_.cats.{Applicative, Group, Comonad, Eq, Monad, Monoid}
 import _root_.cats.kernel.instances.map._
 
 import scala.annotation.tailrec
 import scala.collection.immutable.Queue
 
-object `package` extends LowPriorityInstances with EqInstances {
+object `package`
+    extends LowPriorityInstances
+    with EqInstances
+    with FunctionKInstances {
   implicit val rainierMonadCategorical: Monad[Categorical] =
     MonadCategorical
   implicit val rainierMonadGenerator: Monad[Generator] = new MonadGenerator
   implicit val rainierMonadRandomVariable: Monad[RandomVariable] =
     new MonadRandomVariable
+
+  implicit def rvMonoid[A: Monoid]: Monoid[RandomVariable[A]] =
+    Applicative.monoid[RandomVariable, A]
+
+  implicit def genMonoid[A: Monoid]: Monoid[Generator[A]] =
+    Applicative.monoid[Generator, A]
+
+  implicit val groupReal: Group[Real] = GroupReal
 }
 
 private[cats] sealed abstract class LowPriorityInstances {
@@ -127,6 +138,14 @@ private[cats] class MonadRandomVariable extends Monad[RandomVariable] {
     }
 }
 
+private[cats] object GroupReal extends Group[Real] {
+  override val empty: Real = Real.zero
+  override def combine(l: Real, r: Real): Real = l + r
+  override def inverse(r: Real): Real = -r
+  override def remove(l: Real, r: Real): Real = l - r
+  override def combineN(r: Real, n: Int): Real = r * n
+}
+
 private[cats] trait EqInstances {
 
   def eqBigDecimal(epsilon: Double): Eq[BigDecimal] =
@@ -167,4 +186,32 @@ private[cats] trait EqInstances {
   // sound; a proper Eq instance needs to take density into account as
   // well.
   implicit def eqRandomVariable[A: Eq]: Eq[RandomVariable[A]] = Eq.by(_.value)
+}
+
+/**
+  This trait provides natural transformations between Rainier's Generator and
+  the cats.Eval datatype.
+  */
+private[cats] trait FunctionKInstances {
+  import _root_.cats.{Eval, Now}
+  import _root_.cats.arrow.FunctionK
+  import Generator.{Const, From}
+
+  def evalToGenerator[A](a: Eval[A]): Generator[A] = a match {
+    case Now(a) => Generator.constant(a)
+    case _      => Generator.from((_, _) => a.value)
+
+  }
+
+  val evalToGeneratorK: FunctionK[Eval, Generator] =
+    FunctionK.lift(evalToGenerator)
+
+  def generatorToEvalK(implicit r: RNG,
+                       n: Numeric[Real]): FunctionK[Generator, Eval] =
+    new FunctionK[Generator, Eval] {
+      def apply[A](ga: Generator[A]) = ga match {
+        case Const(_, v) => Eval.now(v)
+        case From(_, _)  => Eval.always(ga.get(r, n))
+      }
+    }
 }
