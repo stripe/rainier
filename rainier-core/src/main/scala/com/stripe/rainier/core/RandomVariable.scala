@@ -296,6 +296,7 @@ object RandomVariable {
     k = 0
     while (k < nSamples) {
       expSum += Math.exp(outputs(i) - max)
+      k += 1
     }
     val lppd = Math.log(expSum) + max - Math.log(nSamples.toDouble)
     val pWAIC = variance(outputs)
