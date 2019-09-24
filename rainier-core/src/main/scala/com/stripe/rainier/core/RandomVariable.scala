@@ -81,13 +81,15 @@ class RandomVariable[+T](val value: T, val targets: Set[Target]) {
       }
   }
 
-  def waic(
-      sampler: Sampler,
-      warmupIterations: Int,
-      iterations: Int,
-      keepEvery: Int = 1)(implicit rng: RNG): Double = {
-    val samples = Sampler.sample(density, sampler, warmupIterations, iterations, keepEvery)
-    targets.map{t => RandomVariable.waic(samples, targetGroup.variables, t)}.sum
+  def waic(sampler: Sampler,
+           warmupIterations: Int,
+           iterations: Int,
+           keepEvery: Int = 1)(implicit rng: RNG): Double = {
+    val samples =
+      Sampler.sample(density, sampler, warmupIterations, iterations, keepEvery)
+    targets.map { t =>
+      RandomVariable.waic(samples, targetGroup.variables, t)
+    }.sum
   }
 
   def optimize[V]()(implicit rng: RNG, tg: ToGenerator[T, V]): V = {
@@ -237,40 +239,51 @@ object RandomVariable {
       implicit toLH: ToLikelihood[L, T]): RandomVariable[Unit] =
     toLH(l).fit(seq)
 
-  private[core] def waic(samples: List[Array[Double]], variables: List[Variable], target: Target): Double =
-    if(target.nRows == 0)
+  private[core] def waic(samples: List[Array[Double]],
+                         variables: List[Variable],
+                         target: Target): Double =
+    if (target.nRows == 0)
       0.0
     else {
-      val cf = Compiler.default.compile(target.placeholderVariables ++ variables, List(("logLikelihood", target.real)))
+      val cf = Compiler.default.compile(
+        target.placeholderVariables ++ variables,
+        List(("logLikelihood", target.real)))
       val globalBuf = new Array[Double](cf.numGlobals)
       val inputBuf = new Array[Double](cf.numInputs)
-      val data = target.placeholderVariables.map{v => target.placeholders(v)}.toArray
+      val data = target.placeholderVariables.map { v =>
+        target.placeholders(v)
+      }.toArray
       val sampleArray = samples.toArray
       var i = 0
       var result = 0.0
-      while(i < target.nRows) {
+      while (i < target.nRows) {
         result += waic(sampleArray, cf, inputBuf, globalBuf, data, i)
         i += 1
       }
       result * -2.0
-  }
+    }
 
-  private def waic(samples: Array[Array[Double]], cf: CompiledFunction, inputBuf: Array[Double], globalsBuf: Array[Double], data: Array[Array[Double]], i: Int): Double = {
+  private def waic(samples: Array[Array[Double]],
+                   cf: CompiledFunction,
+                   inputBuf: Array[Double],
+                   globalsBuf: Array[Double],
+                   data: Array[Array[Double]],
+                   i: Int): Double = {
     val nInputs = inputBuf.size
     val nDataInputs = data.size
     val nSampleInputs = nInputs - nDataInputs
     val nSamples = samples.size
     val outputs = new Array[Double](nSamples)
     var j = 0
-    while(j < nDataInputs) {
+    while (j < nDataInputs) {
       inputBuf(j) = data(j)(i)
       j += 1
     }
     var k = 0
-    while(k < nSamples) {
+    while (k < nSamples) {
       val sample = samples(k)
       j = 0
-      while(j < nSampleInputs) {
+      while (j < nSampleInputs) {
         inputBuf(nDataInputs + j) = sample(j)
         j += 1
       }
@@ -281,7 +294,7 @@ object RandomVariable {
     val max = outputs.max
     var expSum = 0.0
     k = 0
-    while(k < nSamples) {
+    while (k < nSamples) {
       expSum += Math.exp(outputs(i) - max)
     }
     val lppd = Math.log(expSum) + max - Math.log(nSamples.toDouble)
@@ -294,7 +307,7 @@ object RandomVariable {
     var mean = 0.0
     var m2 = 0.0
     val n = values.size
-    while(count < n) {
+    while (count < n) {
       val newValue = values(count)
       count += 1
       val delta = newValue - mean
