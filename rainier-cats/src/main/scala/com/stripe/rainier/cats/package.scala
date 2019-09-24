@@ -15,7 +15,10 @@ import _root_.cats.kernel.instances.map._
 import scala.annotation.tailrec
 import scala.collection.immutable.Queue
 
-object `package` extends LowPriorityInstances with EqInstances {
+object `package`
+    extends LowPriorityInstances
+    with EqInstances
+    with FunctionKInstances {
   implicit val rainierMonadCategorical: Monad[Categorical] =
     MonadCategorical
   implicit val rainierMonadGenerator: Monad[Generator] = new MonadGenerator
@@ -183,4 +186,32 @@ private[cats] trait EqInstances {
   // sound; a proper Eq instance needs to take density into account as
   // well.
   implicit def eqRandomVariable[A: Eq]: Eq[RandomVariable[A]] = Eq.by(_.value)
+}
+
+/**
+  This trait provides natural transformations between Rainier's Generator and
+  the cats.Eval datatype.
+  */
+private[cats] trait FunctionKInstances {
+  import _root_.cats.{Eval, Now}
+  import _root_.cats.arrow.FunctionK
+  import Generator.{Const, From}
+
+  def evalToGenerator[A](a: Eval[A]): Generator[A] = a match {
+    case Now(a) => Generator.constant(a)
+    case _      => Generator.from((_, _) => a.value)
+
+  }
+
+  val evalToGeneratorK: FunctionK[Eval, Generator] =
+    FunctionK.lift(evalToGenerator)
+
+  def generatorToEvalK(implicit r: RNG,
+                       n: Numeric[Real]): FunctionK[Generator, Eval] =
+    new FunctionK[Generator, Eval] {
+      def apply[A](ga: Generator[A]) = ga match {
+        case Const(_, v) => Eval.now(v)
+        case From(_, _)  => Eval.always(ga.get(r, n))
+      }
+    }
 }
