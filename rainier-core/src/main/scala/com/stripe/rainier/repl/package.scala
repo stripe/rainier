@@ -184,7 +184,7 @@ package object repl {
       .map { case (s, m) => s -> m.waic(HMC(5), 100000, 10000, 1) }
       .sortBy(_._2)
     val minWaic = waics.head._2
-    val probs = waics.map { case (s, w) => Math.exp((w - minWaic) / -2.0) }
+    val probs = waics.map { case (_, w) => Math.exp((w - minWaic) / -2.0) }
     val totalProb = probs.sum
     val weights = probs.map(_ / totalProb)
     val maxKeyLength = waics.map(_._1.size).max
