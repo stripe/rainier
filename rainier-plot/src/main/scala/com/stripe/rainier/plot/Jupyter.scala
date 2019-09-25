@@ -188,7 +188,8 @@ object Jupyter {
   }
 
   def shade[M, N](intervals: Seq[(M, (N, N))])(implicit mNum: Numeric[M],
-                                               nNum: Numeric[N]): Plot = {
+                                               nNum: Numeric[N],
+                                               theme: Theme): Plot = {
     val doubleTriples = intervals
       .map {
         case (m, (n1, n2)) =>
@@ -205,7 +206,7 @@ object Jupyter {
       Bounds(minX, maxX),
       Bounds(minY, maxY),
       new PlotRenderer {
-        def render(plot: Plot, plotExtent: Extent)(implicit theme: Theme) = {
+        def render(plot: Plot, plotExtent: Extent)(implicit _theme: Theme) = {
           val xtransformer = plot.xtransform(plot, plotExtent)
           val ytransformer = plot.ytransform(plot, plotExtent)
 
