@@ -11,27 +11,47 @@ import com.cibo.evilplot.plot.aesthetics._
 import com.stripe.rainier.repl.{hdpi, mean}
 
 object Jupyter {
-  val font =
-    java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment.getAvailableFontFamilyNames
-      .find(_.startsWith("Century Schoolbook"))
-      .getOrElse("Arial")
+  object PlotThemes {
+    private val blueColor = HSLA(211, 38, 48, 0.5)
+    private val grayColor = HSLA(210, 100, 0, 0.2)
+    private val font =
+      java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment.getAvailableFontFamilyNames
+        .find(_.startsWith("Century Schoolbook"))
+        .getOrElse("Arial")
+
+    val default = Theme(
+      fonts = DefaultTheme.DefaultFonts.copy(
+        tickLabelSize = 11,
+        labelSize = 12,
+        fontFace = font
+      ),
+      colors = DefaultTheme.DefaultColors.copy(
+        bar = blueColor,
+        point = blueColor,
+        fill = grayColor
+      ),
+      elements = DefaultTheme.DefaultElements.copy(
+        strokeWidth = 0.5,
+        pointSize = 3
+      )
+    )
+
+    val blue = default.copy(
+      colors = default.colors.copy(
+        fill = blueColor
+      )
+    )
+
+    val gray = default.copy(
+      colors = default.colors.copy(
+        bar = grayColor,
+        point = grayColor
+      )
+    )
+  }
 
   implicit val extent = Extent(400, 400)
-  implicit val theme = Theme(
-    fonts = DefaultTheme.DefaultFonts.copy(
-      tickLabelSize = 11,
-      labelSize = 12,
-      fontFace = font
-    ),
-    colors = DefaultTheme.DefaultColors.copy(
-      point = HSLA(211, 38, 48, 0.5),
-      fill = HSLA(210, 100, 0, 0.2)
-    ),
-    elements = DefaultTheme.DefaultElements.copy(
-      strokeWidth = 0.5,
-      pointSize = 3
-    )
-  )
+  implicit val theme = PlotThemes.default
 
   def density[N](seq: Seq[N], minX: Double, maxX: Double)(
       implicit num: Numeric[N],
