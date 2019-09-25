@@ -83,16 +83,8 @@ package object repl {
   }
 
   def precis(samples: Seq[Map[String, Double]], corr: Boolean = false): Unit = {
-    val keys = samples.head.keys.toList
-
-    val meansSDs = keys.map { k =>
-      val data = samples.map(_(k))
-      val mean = data.sum / data.size
-      val stdDev = math.sqrt(data.map { x =>
-        math.pow(x - mean, 2)
-      }.sum / data.size)
-      (k, (mean, stdDev))
-    }.toMap
+    val meansSDs = computeParamStats(samples)
+    val keys = meansSDs.keys
 
     val correlations = keys.flatMap { k =>
       val diffs = samples.map(_(k) - meansSDs(k)._1)
@@ -134,6 +126,56 @@ package object repl {
           corrValues.map(_.formatted("%7.2f")).mkString(" "))
     }
   }
+
+  def coeftab(models: (String, Seq[Map[String, Double]])*): Unit = {
+    val coefs = models.map {
+      case (_, samples) =>
+        coef(samples)
+    }
+
+    val modelNames = models.map(_._1)
+    val valWidth = 10.max(modelNames.map(_.size).max)
+
+    val keys = models.flatMap(_._2.head.keys).toSet
+    val maxKeyLength = keys.map(_.size).max
+
+    println(
+      "".padTo(maxKeyLength, ' ') +
+        modelNames.map(leftPad(_, valWidth, ' ')).mkString("")
+    )
+    keys.foreach { k =>
+      println(
+        k.padTo(maxKeyLength, ' ') +
+          coefs
+            .map(
+              _.get(k)
+                .map(_.formatted("%10.2f"))
+                .getOrElse(leftPad("NA", valWidth, ' '))
+            )
+            .mkString("")
+      )
+    }
+  }
+
+  def coef(samples: Seq[Map[String, Double]]): Map[String, Double] =
+    computeParamStats(samples).map { case (k, v) => k -> v._1 }
+
+  private def computeParamStats(
+      samples: Seq[Map[String, Double]]): Map[String, (Double, Double)] = {
+    val keys = samples.head.keys.toList
+
+    keys.map { k =>
+      val data = samples.map(_(k))
+      val mean = data.sum / data.size
+      val stdDev = math.sqrt(data.map { x =>
+        math.pow(x - mean, 2)
+      }.sum / data.size)
+      (k, (mean, stdDev))
+    }.toMap
+  }
+
+  private def leftPad(s: String, len: Int, elem: Char): String =
+    s.reverse.padTo(len, elem).reverse
 
   implicit val rng: RNG = RNG.default
 }
