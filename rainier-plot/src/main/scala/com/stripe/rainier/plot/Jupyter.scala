@@ -244,6 +244,20 @@ object Jupyter {
     )
   }
 
+  def show(xLabel: String, yLabel: String, title: String, plots: Plot*)(
+      implicit extent: Extent,
+      theme: Theme,
+      oh: OutputHandler): Unit =
+    show(
+      Overlay
+        .fromSeq(plots)
+        .xAxis()
+        .yAxis()
+        .frame()
+        .xLabel(xLabel)
+        .yLabel(yLabel)
+        .title(title))
+
   def show(xLabel: String, yLabel: String, plots: Plot*)(
       implicit extent: Extent,
       theme: Theme,
