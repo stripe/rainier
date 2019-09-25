@@ -28,8 +28,17 @@ object Fn {
   def encode[A](implicit enc: Encoder[A]) =
     new Fn[A, enc.U] {
       type X = enc.U
-      val encoder: Encoder[A] { type U = X } = enc
+      val encoder: Encoder.Aux[A,X] = enc
       def xy(x: X) = x
+    }
+
+  def lookup[K,V](map: Map[K,V])(implicit enc: Encoder[V]) = 
+    new Fn[K,enc.U] {
+      type X = Real
+      val encoder: Encoder.Aux[K,X] = new Encoder[K] {
+        
+      }
+
     }
 
   def likelihood[A, Y, L](fn: Fn[A, Y],
