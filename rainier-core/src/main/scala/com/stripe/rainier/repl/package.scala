@@ -1,6 +1,7 @@
 package com.stripe.rainier
 
 import com.stripe.rainier.sampler._
+import com.stripe.rainier.core._
 import java.io._
 
 package object repl {
@@ -176,6 +177,31 @@ package object repl {
 
   private def leftPad(s: String, len: Int, elem: Char): String =
     s.reverse.padTo(len, elem).reverse
+
+  def compare(models: (String, RandomVariable[_])*): Unit = {
+    //hardcoding the sampling parameters for now; we really need to refactor the sampling API to improve this
+    val waics = models
+      .map { case (s, m) => s -> m.waic(HMC(5), 100000, 10000, 1) }
+      .sortBy(_._2)
+    val minWaic = waics.head._2
+    val probs = waics.map { case (s, w) => Math.exp((w - minWaic) / -2.0) }
+    val totalProb = probs.sum
+    val weights = probs.map(_ / totalProb)
+    val maxKeyLength = waics.map(_._1.size).max
+
+    println(
+      "".padTo(maxKeyLength, ' ') +
+        "WAIC".formatted("%10s") +
+        "Weight".formatted("%10s"))
+
+    waics.zip(weights).foreach {
+      case ((str, waic), weight) =>
+        println(
+          str.padTo(maxKeyLength, ' ') +
+            waic.formatted("%10.2f") +
+            weight.formatted("%10.2f"))
+    }
+  }
 
   implicit val rng: RNG = RNG.default
 }
