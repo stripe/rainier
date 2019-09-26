@@ -182,9 +182,11 @@ package object repl {
     //hardcoding the sampling parameters for now; we really need to refactor the sampling API to improve this
     val waics = models
       .map { case (s, m) => s -> m.waic(HMC(5), 100000, 10000, 1) }
-      .sortBy(_._2)
-    val minWaic = waics.head._2
-    val probs = waics.map { case (_, w) => Math.exp((w - minWaic) / -2.0) }
+      .sortBy(_._2.value)
+    val minWaic = waics.head._2.value
+    val probs = waics.map {
+      case (_, w) => Math.exp((w.value - minWaic) / -2.0)
+    }
     val totalProb = probs.sum
     val weights = probs.map(_ / totalProb)
     val maxKeyLength = waics.map(_._1.size).max
@@ -192,13 +194,17 @@ package object repl {
     println(
       "".padTo(maxKeyLength, ' ') +
         "WAIC".formatted("%10s") +
+        "pWAIC".formatted("%10s") +
+        "dWAIC".formatted("%10s") +
         "Weight".formatted("%10s"))
 
     waics.zip(weights).foreach {
       case ((str, waic), weight) =>
         println(
           str.padTo(maxKeyLength, ' ') +
-            waic.formatted("%10.2f") +
+            waic.value.formatted("%10.2f") +
+            waic.pWAIC.formatted("%10.2f") +
+            (waic.value - minWaic).formatted("%10.2f") +
             weight.formatted("%10.2f"))
     }
   }

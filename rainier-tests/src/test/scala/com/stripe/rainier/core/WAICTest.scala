@@ -70,6 +70,6 @@ class WAICTest extends FunSuite {
     } yield (a, b)
 
     val w = m.waic(HMC(5), 100000, 10000, 1)
-    assert(w >= 400.0 && w <= 450.0)
+    assert(w.value >= 400.0 && w.value <= 450.0)
   }
 }
