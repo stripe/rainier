@@ -194,6 +194,10 @@ class RealTest extends FunSuite {
     }
   }
 
+  run("cancelling x^2 then distributing") { x =>
+    (x.pow(2) * 2) / (x.pow(2)) + 1
+  }
+
   run("pow", defined = _ >= 0) { x =>
     x.pow(x)
   }
