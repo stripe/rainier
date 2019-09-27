@@ -3,6 +3,7 @@ package com.stripe.rainier.core
 import com.stripe.rainier.compute._
 import com.stripe.rainier.ir._
 
+// Widely Applicable Information Criterion (Watanabe 2010)
 case class WAIC(lppd: Double, pWAIC: Double) {
   val value = (lppd - pWAIC) * -2
   def +(other: WAIC) = WAIC(lppd + other.lppd, pWAIC + other.pWAIC)
@@ -40,10 +41,12 @@ object WAIC {
                           logLikelihoods,
                           data,
                           i)
+
         val totalLoglikelihood = logSumExp(logLikelihoods)
         val logMeanLikelihood = totalLoglikelihood - Math.log(
           samples.size.toDouble)
         lppd += logMeanLikelihood
+
         pWAIC += variance(logLikelihoods)
         i += 1
       }
@@ -92,7 +95,7 @@ object WAIC {
     Math.log(expSum) + max
   }
 
-//welford's online variance algorithm, from wikipedia
+  //welford's online variance algorithm, from wikipedia
   private def variance(values: Array[Double]): Double = {
     var count = 0
     var mean = 0.0
@@ -107,6 +110,6 @@ object WAIC {
       m2 += (delta * delta2)
     }
 
-    m2 / count.toDouble
+    m2 / (count.toDouble - 1)
   }
 }

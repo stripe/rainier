@@ -69,7 +69,37 @@ class WAICTest extends FunSuite {
       }
     } yield (a, b)
 
-    val w = m.waic(HMC(5), 100000, 10000, 1)
-    assert(w.value >= 400.0 && w.value <= 450.0)
+    def logit(x: Double) = math.log(x / (1.0 - x))
+
+    //samples of (a,b,sigma) taken from external sampler
+    val samples = List(
+      Array(-8.780982, 3.702219, 16.34632),
+      Array(-17.308180, 3.793232, 14.12478),
+      Array(-20.655049, 4.064332, 14.65831),
+      Array(-11.534922, 3.705626, 17.13509),
+      Array(-22.650850, 3.934438, 16.23996)
+    ).map { a =>
+      Array(
+        a(0) / 100.0, //correct for scaling in prior
+        a(1) / 10.0, //correct for scaling in prior
+        logit(a(2) / 30.0) //correct for scaling & logistic transform
+      )
+    }
+
+    val w =
+      m.targets
+        .map { t =>
+          WAIC(samples, m.targetGroup.variables, t)
+        }
+        .reduce(_ + _)
+
+    def assertWithinEps(x: Double, y: Double) = {
+      val err = math.abs((x - y) / y)
+      assert(err < 0.02)
+    }
+
+    //results from external WAIC implementation
+    assertWithinEps(w.pWAIC, 4.020387)
+    assertWithinEps(w.lppd, -206.6377)
   }
 }
