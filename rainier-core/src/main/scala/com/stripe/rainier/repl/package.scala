@@ -1,6 +1,6 @@
 package com.stripe.rainier
 
-import com.stripe.rainier.sampler._
+import com.stripe.rainier.util._
 import java.io._
 
 package object repl {

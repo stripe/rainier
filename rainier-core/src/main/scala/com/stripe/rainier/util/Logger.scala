@@ -1,4 +1,4 @@
-package com.stripe.rainier.log
+package com.stripe.rainier.util
 
 import com.google.common.flogger.{FluentLogger, LoggerConfig}
 import com.google.common.flogger.backend.Platform

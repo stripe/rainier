@@ -1,4 +1,4 @@
-package com.stripe.rainier.sampler
+package com.stripe.rainier.util
 
 import scala.util.Random
 import Log._
