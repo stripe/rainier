@@ -1,4 +1,4 @@
-package com.stripe.rainier.generator
+package com.stripe.rainier.core
 
 import com.stripe.rainier.compute._
 import com.stripe.rainier.util._

@@ -1,9 +1,6 @@
-package com.stripe.rainier
+package com.stripe.rainier.util
 
-import com.stripe.rainier.util._
-import java.io._
-
-package object repl {
+object Repl {
 
   def hdpi(samples: Seq[Double], prob: Double = 0.89): (Double, Double) = {
     val sorted = samples.sorted.toArray
