@@ -1,4 +1,4 @@
-package com.stripe.rainier.sampler
+package com.stripe.rainier.util
 
 trait DensityFunction {
   def nVars: Int

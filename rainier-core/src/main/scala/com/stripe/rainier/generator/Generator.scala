@@ -1,7 +1,7 @@
-package com.stripe.rainier.core
+package com.stripe.rainier.generator
 
 import com.stripe.rainier.compute._
-import com.stripe.rainier.sampler.RNG
+import com.stripe.rainier.util._
 
 /**
   * Generator trait, for posterior predictive distributions to be forwards sampled during sampling
