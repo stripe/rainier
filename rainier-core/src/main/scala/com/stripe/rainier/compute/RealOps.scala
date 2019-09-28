@@ -105,10 +105,10 @@ private[compute] object RealOps {
       case (_, Constant(Real.BigZero))    => left
       case (Constant(Real.BigZero), _)    => right
       case (Constant(x), Constant(y))     => Real(x + y)
-      case (Constant(x), nc: NonConstant) => LineOps.translate(Line(nc), x)
-      case (nc: NonConstant, Constant(x)) => LineOps.translate(Line(nc), x)
+      case (Constant(x), nc: NonConstant) => LineOps.translate(nc, x)
+      case (nc: NonConstant, Constant(x)) => LineOps.translate(nc, x)
       case (nc1: NonConstant, nc2: NonConstant) =>
-        LineOps.sum(Line(nc1), Line(nc2))
+        LineOps.sum(nc1, nc2)
     }
 
   def multiply(left: Real, right: Real): Real =
@@ -131,8 +131,8 @@ private[compute] object RealOps {
       case (_, Constant(Real.BigOne))     => left
       case (Constant(Real.BigOne), _)     => right
       case (Constant(x), Constant(y))     => Real(x * y)
-      case (Constant(x), nc: NonConstant) => LineOps.scale(Line(nc), x)
-      case (nc: NonConstant, Constant(x)) => LineOps.scale(Line(nc), x)
+      case (Constant(x), nc: NonConstant) => LineOps.scale(nc, x)
+      case (nc: NonConstant, Constant(x)) => LineOps.scale(nc, x)
       case (nc1: NonConstant, nc2: NonConstant) =>
         LogLineOps.multiply(LogLine(nc1), LogLine(nc2))
     }

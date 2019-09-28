@@ -54,8 +54,8 @@ private class Translator {
   }
 
   private def lineExpr(line: Line): Expr = {
-    val (y, k) = LineOps.factor(line)
-    factoredSumLine(y.ax, y.b, k.toDouble)
+    val (ax, b, k) = LineOps.factor(line)
+    factoredSumLine(ax, b, k.toDouble)
   }
 
   private def logLineExpr(line: LogLine): Expr = {
