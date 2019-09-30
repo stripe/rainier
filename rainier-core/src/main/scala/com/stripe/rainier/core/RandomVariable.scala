@@ -93,6 +93,9 @@ class RandomVariable[+T](val value: T, val targets: Set[Target]) {
       .reduce(_ + _)
   }
 
+  def waic[V]()(implicit rng: RNG): WAIC =
+    waic(Sampler.Default.sampler, Sampler.Default.warmupIterations, Sampler.Default.iterations)
+
   def optimize[V]()(implicit rng: RNG, tg: ToGenerator[T, V]): V = {
     val array = Optimizer.lbfgs(density)
     tg(value).prepare(targetGroup.variables).apply(array)

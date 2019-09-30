@@ -178,10 +178,12 @@ package object repl {
   private def leftPad(s: String, len: Int, elem: Char): String =
     s.reverse.padTo(len, elem).reverse
 
-  def compare(models: (String, RandomVariable[_])*): Unit = {
-    //hardcoding the sampling parameters for now; we really need to refactor the sampling API to improve this
+  def compare(models: (String, RandomVariable[_])*): Unit =
+    compare(models, HMC(5), 100000, 10000, 1)
+  
+  def compare(models: Seq[(String, RandomVariable[_])], sampler: Sampler, warmupIterations: Int, iterations: Int, keepEvery: Int = 1): Unit = {
     val waics = models
-      .map { case (s, m) => s -> m.waic(HMC(5), 100000, 10000, 1) }
+      .map { case (s, m) => s -> m.waic(sampler, warmupIterations, iterations, keepEvery) }
       .sortBy(_._2.value)
     val minWaic = waics.head._2.value
     val probs = waics.map {
