@@ -41,7 +41,7 @@ private[compute] object LogLineOps {
       common with something in t (or some later thing we will add s+t to), and we can combine the constants
    */
   val DistributeToMaxTerms = 20
-  def distribute(line: LogLine): Option[Line] = {
+  def distribute(line: LogLine): Option[(Coefficients, BigDecimal)] = {
 
     def nTerms(l: Line): Int =
       if (l.b == 0.0)
@@ -73,7 +73,7 @@ private[compute] object LogLineOps {
 
     terms.map { l =>
       if (factors.isEmpty)
-        l
+        (l.ax, l.b)
       else {
         val ll = LogLine(Coefficients(factors))
         val (newAx, newB) =
@@ -87,7 +87,7 @@ private[compute] object LogLineOps {
                   (nAx.merge(Coefficients(nc -> a)), nB)
               }
           }
-        Line(newAx, newB)
+        (newAx, newB)
       }
     }
   }

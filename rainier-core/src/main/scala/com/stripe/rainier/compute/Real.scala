@@ -142,21 +142,11 @@ for an example.
 private final class Line private (val ax: Coefficients, val b: BigDecimal)
     extends NonConstant
 
-private object Line {
+private[compute] object Line {
   def apply(ax: Coefficients, b: BigDecimal): Line = {
     require(!ax.isEmpty)
     new Line(ax, b)
   }
-
-  def apply(nc: NonConstant): Line =
-    nc match {
-      case l: Line => l
-      case l: LogLine =>
-        LogLineOps
-          .distribute(l)
-          .getOrElse(Line(Coefficients(l -> Real.BigOne), Real.BigZero))
-      case _ => Line(Coefficients(nc -> Real.BigOne), Real.BigZero)
-    }
 }
 
 /*

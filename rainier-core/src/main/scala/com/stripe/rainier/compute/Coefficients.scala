@@ -17,7 +17,11 @@ sealed trait Coefficients {
 
 object Coefficients {
   def apply(pair: (NonConstant, BigDecimal)): Coefficients =
-    One(pair._1, pair._2)
+    if (pair._2 == Real.BigZero)
+      Empty
+    else
+      One(pair._1, pair._2)
+
   def apply(seq: Seq[(NonConstant, BigDecimal)]): Coefficients = {
     val filtered = seq.filter(_._2 != Real.BigZero)
     if (filtered.isEmpty)

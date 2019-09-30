@@ -2,19 +2,36 @@ package com.stripe.rainier.compute
 
 private[compute] object LineOps {
 
-  def sum(left: Line, right: Line): Real = {
-    val merged = left.ax.merge(right.ax)
+  private def axb(nc: NonConstant): (Coefficients, BigDecimal) =
+    nc match {
+      case l: Line => (l.ax, l.b)
+      case l: LogLine =>
+        LogLineOps
+          .distribute(l)
+          .getOrElse((Coefficients(l -> Real.BigOne), Real.BigZero))
+      case _ => (Coefficients(nc -> Real.BigOne), Real.BigZero)
+    }
+
+  def sum(left: NonConstant, right: NonConstant): Real = {
+    val (lax, lb) = axb(left)
+    val (rax, rb) = axb(right)
+
+    val merged = lax.merge(rax)
     if (merged.isEmpty)
-      Constant(left.b + right.b)
+      Constant(lb + rb)
     else
-      simplify(merged, left.b + right.b)
+      simplify(merged, lb + rb)
   }
 
-  def scale(line: Line, v: BigDecimal): NonConstant =
-    simplify(line.ax.mapCoefficients(_ * v), line.b * v)
+  def scale(nc: NonConstant, v: BigDecimal): Real = {
+    val (ax, b) = axb(nc)
+    simplify(ax.mapCoefficients(_ * v), b * v)
+  }
 
-  def translate(line: Line, v: BigDecimal): NonConstant =
-    simplify(line.ax, line.b + v)
+  def translate(nc: NonConstant, v: BigDecimal): Real = {
+    val (ax, b) = axb(nc)
+    simplify(ax, b + v)
+  }
 
   /*
   Multiply two lines, using the distribution rule, to produce a new Line.
@@ -79,7 +96,7 @@ private[compute] object LineOps {
   multiplication ops needed, by reducing some of the weights in ax down to 1 or -1.
   We want to pick the k that maximizes how many get reduced that way.
    */
-  def factor(line: Line): (Line, BigDecimal) = {
+  def factor(line: Line): (Coefficients, BigDecimal, BigDecimal) = {
     val coefficientFreqs =
       line.ax.coefficients
         .groupBy(_.abs)
@@ -87,13 +104,14 @@ private[compute] object LineOps {
 
     val (k, cnt) = coefficientFreqs.maxBy(_._2)
     if (cnt > coefficientFreqs.getOrElse(Real.BigOne, 0))
-      (Line(scale(line, Real.BigOne / k)), k)
+      (line.ax.mapCoefficients(_ / k), line.b / k, k)
     else
-      (line, Real.BigOne)
+      (line.ax, line.b, Real.BigOne)
   }
 
-  private def simplify(ax: Coefficients, b: BigDecimal): NonConstant =
+  private def simplify(ax: Coefficients, b: BigDecimal): Real =
     ax match {
+      case Coefficients.Empty => Constant(b)
       case Coefficients.One(x, Real.BigOne) if b == Real.BigZero =>
         x
       case _ => Line(ax, b)
