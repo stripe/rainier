@@ -1,6 +1,7 @@
 package com.stripe.rainier
 
 import com.stripe.rainier.sampler._
+import com.stripe.rainier.core._
 import java.io._
 
 package object repl {
@@ -176,6 +177,46 @@ package object repl {
 
   private def leftPad(s: String, len: Int, elem: Char): String =
     s.reverse.padTo(len, elem).reverse
+
+  def compare(models: (String, RandomVariable[_])*): Unit =
+    compare(models, HMC(5), 100000, 10000, 1)
+
+  def compare(models: Seq[(String, RandomVariable[_])],
+              sampler: Sampler,
+              warmupIterations: Int,
+              iterations: Int,
+              keepEvery: Int = 1): Unit = {
+    val waics = models
+      .map {
+        case (s, m) =>
+          s -> m.waic(sampler, warmupIterations, iterations, keepEvery)
+      }
+      .sortBy(_._2.value)
+    val minWaic = waics.head._2.value
+    val probs = waics.map {
+      case (_, w) => Math.exp((w.value - minWaic) / -2.0)
+    }
+    val totalProb = probs.sum
+    val weights = probs.map(_ / totalProb)
+    val maxKeyLength = waics.map(_._1.size).max
+
+    println(
+      "".padTo(maxKeyLength, ' ') +
+        "WAIC".formatted("%10s") +
+        "pWAIC".formatted("%10s") +
+        "dWAIC".formatted("%10s") +
+        "Weight".formatted("%10s"))
+
+    waics.zip(weights).foreach {
+      case ((str, waic), weight) =>
+        println(
+          str.padTo(maxKeyLength, ' ') +
+            waic.value.formatted("%10.2f") +
+            waic.pWAIC.formatted("%10.2f") +
+            (waic.value - minWaic).formatted("%10.2f") +
+            weight.formatted("%10.2f"))
+    }
+  }
 
   implicit val rng: RNG = RNG.default
 }
