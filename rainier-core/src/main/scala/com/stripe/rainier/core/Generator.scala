@@ -56,7 +56,7 @@ sealed trait Generator[+T] { self =>
 
   private[core] def prepare(variables: Seq[Variable])(
       implicit r: RNG): Array[Double] => T = {
-    val reqs = requirements.toList
+    val reqs = requirements.toList.take(Generator.MaxRequirements)
     if (reqs.isEmpty) { array =>
       {
         implicit val evaluator: Evaluator =
@@ -96,6 +96,8 @@ sealed trait Generator[+T] { self =>
   * Generator object, for posterior predictive distributions to be forwards sampled during sampling
   */
 object Generator {
+  val MaxRequirements = 500
+
   def apply[L, T](l: L)(implicit gen: ToGenerator[L, T]): Generator[T] =
     gen(l)
 
