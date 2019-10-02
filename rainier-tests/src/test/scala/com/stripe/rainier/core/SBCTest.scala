@@ -25,4 +25,5 @@ class SBCTest extends FunSuite {
   check(SBCGeometric)
   //check(SBCGeometricZeroInflated)
   check(SBCNegativeBinomial)
+  check(SBCLargePoisson)
 }
