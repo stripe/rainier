@@ -116,18 +116,33 @@ final case class NegativeBinomial(p: Real, n: Real) extends Discrete {
   * @param lambda The mean of the Poisson distribution
   */
 final case class Poisson(lambda: Real) extends Discrete {
+  val Step = 500
+  val eStep = math.exp(Step.toDouble)
+
   val generator: Generator[Int] =
     Generator.require(Set(lambda)) { (r, n) =>
-      val l = math.exp(-n.toDouble(lambda))
-      if (l >= 1.0) { 0 } else {
-        var k = 0
-        var p = 1.0
-        while (p > l) {
-          k += 1
-          p *= r.standardUniform
+      var lambdaLeft = n.toDouble(lambda)
+      var k = 0
+      var p = 1.0
+
+      def update() = {
+        k = k + 1
+        p *= r.standardUniform
+        while (p < 1.0 && lambdaLeft > 0.0) {
+          if (lambdaLeft > Step) {
+            p *= eStep
+            lambdaLeft -= Step
+          } else {
+            p *= math.exp(lambdaLeft)
+            lambdaLeft = 0
+          }
         }
-        k - 1
       }
+
+      update()
+      while (p > 1.0) update()
+
+      k - 1
     }
 
   def logDensity(v: Real) =

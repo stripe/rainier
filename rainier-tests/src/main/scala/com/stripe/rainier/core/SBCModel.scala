@@ -217,4 +217,13 @@ object SBCBinomialNormalApproximation extends SBCModel {
       0.38614580147352096, 0.38091354056091625, 0.3841577712144981)
   val description =
     "Normal approximation to Binomial: Binomial(x, 200) with Uniform(0.4, 0.6) prior"
+
+}
+
+object SBCLargePoisson extends SBCModel {
+  def sbc =
+    SBC[Int, Discrete](Uniform(0.8, 1))((x: Real) => Poisson(x * 1000))
+  def goldset = Nil
+  val description =
+    "Poisson(x*1000) with Uniform(0.8, 1) prior"
 }
