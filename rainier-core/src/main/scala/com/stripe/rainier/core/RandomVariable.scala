@@ -117,7 +117,7 @@ class RandomVariable[+T](val value: T, val targets: Set[Target]) {
   lazy val dataFn =
     Compiler.default.compileTargets(targetGroup, true, 4)
 
-  def density() =
+  def density(): DensityFunction =
     new DensityFunction {
       val nVars = targetGroup.variables.size
       val inputs = new Array[Double](dataFn.numInputs)

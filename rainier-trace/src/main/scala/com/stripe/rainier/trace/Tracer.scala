@@ -32,6 +32,6 @@ object Tracer {
         sys.error("Cannot find bytecode for class")
     }
 
-  val default = Tracer(Compiler.default, false)
-  val gradient = Tracer(Compiler.default, true)
+  val default: Tracer = Tracer(Compiler.default, false)
+  val gradient: Tracer = Tracer(Compiler.default, true)
 }

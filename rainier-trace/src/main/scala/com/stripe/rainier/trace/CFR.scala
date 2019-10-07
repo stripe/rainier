@@ -6,10 +6,11 @@ import reader.state.{DCCommonState, ClassFileSourceImpl}
 import reader.util.bytestream.BaseByteData
 import reader.util.getopt.OptionsImpl
 import reader.util.output.ToStringDumper
+import java.util.HashMap
 
 object CFR {
-  val optionMap = new java.util.HashMap[String, String]
-  val options = new OptionsImpl(optionMap)
+  val optionMap: HashMap[String, String] = new HashMap
+  val options: OptionsImpl = new OptionsImpl(optionMap)
 
   def decompile(seq: Seq[Array[Byte]]): Seq[String] = {
     val state = new DCCommonState(options, new ClassFileSourceImpl(options))

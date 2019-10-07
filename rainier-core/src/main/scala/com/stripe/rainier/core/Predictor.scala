@@ -93,8 +93,14 @@ object Predictor {
     def fromVector[L](k: Int)(fn: IndexedSeq[U] => L): Predictor[Seq[X], L]
   }
 
-  def apply[X](implicit enc: Encoder[X]) =
-    new From[X, enc.U] {
+  trait EncoderFrom[X, U] extends From[X, U] {
+    override def from[L](fn: U => L): EncoderPredictor[X, L]
+    override def fromVector[L](k: Int)(
+        fn: IndexedSeq[U] => L): EncoderPredictor[Seq[X], L]
+  }
+
+  def apply[X](implicit enc: Encoder[X]): EncoderFrom[X, enc.U] =
+    new EncoderFrom[X, enc.U] {
       def from[L](fn: enc.U => L): EncoderPredictor[X, L] =
         new EncoderPredictor[X, L] {
           type P = enc.U

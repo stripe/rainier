@@ -45,7 +45,7 @@ object Likelihood {
     def fromVector(k: Int)(fn: IndexedSeq[U] => Real): Likelihood[Seq[T]]
   }
 
-  def apply[T](implicit enc: Encoder[T]) =
+  def apply[T](implicit enc: Encoder[T]): From[T, enc.U] =
     new From[T, enc.U] {
       def from(fn: enc.U => Real) = {
         val (p, vs) = enc.create(Nil)

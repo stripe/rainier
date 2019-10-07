@@ -39,9 +39,9 @@ object EightSchools {
     }
   }
 
-  val warmups = 1000
-  val samples = 1000000
-  val thin = 1000
-  val ys = List(28, 8, -3, 7, -1, 1, 18, 12)
-  val sigmas = List(15, 10, 16, 11, 9, 11, 10, 18)
+  val warmups: Int = 1000
+  val samples: Int = 1000000
+  val thin: Int = 1000
+  val ys: List[Int] = List(28, 8, -3, 7, -1, 1, 18, 12)
+  val sigmas: List[Int] = List(15, 10, 16, 11, 9, 11, 10, 18)
 }
