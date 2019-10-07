@@ -120,6 +120,10 @@ object Generator {
   def require[T](reqs: Set[Real])(fn: (RNG, Numeric[Real]) => T): Generator[T] =
     From(reqs, fn)
 
+  def vector[T](v: Vector[T]) = from((r, _) => v(r.int(v.size)))
+
+  def fromSet[T](items: Set[T]) = vector(items.to[Vector])
+
   def traverse[T, U](seq: Seq[T])(
       implicit toGen: ToGenerator[T, U]
   ): Generator[Seq[U]] =
