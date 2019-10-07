@@ -94,7 +94,8 @@ class RandomVariable[+T](val value: T, val targets: Set[Target]) {
       implicit rng: RNG,
       tg: ToGenerator[T, V]): (List[V], List[Diagnostics]) = {
     val fn = tg(value).prepare(targetGroup.variables)
-    val range = if (parallel) 1.to(chains).par else 1.to(chains)
+    val range: scala.collection.GenSeq[Int] =
+      if (parallel) 1.to(chains).par else 1.to(chains)
     val samples =
       range.map { _ =>
         Sampler

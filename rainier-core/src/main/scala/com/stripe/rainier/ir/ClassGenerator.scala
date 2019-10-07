@@ -66,7 +66,7 @@ private[ir] trait ClassGenerator {
 private[ir] object ClassGenerator {
   @volatile private var id: Int = 0
   def freshName: String = this.synchronized {
-    val name = "CompiledFunction$" + id
+    val name = s"CompiledFunction$$$id"
     id += 1
     name
   }

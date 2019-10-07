@@ -187,7 +187,7 @@ final case class DensityPlot(nRows: Int = 20,
 
   private def format(v: Double, magnitude: Int): String = {
     if (magnitude < 0) {
-      ("%." + -magnitude + "f").format(v)
+      (s"%.${-magnitude}f").format(v)
     } else if (magnitude < 3) {
       val d = math.pow(10, magnitude.toDouble)
       (math.floor(v / d) * d).toInt.toString
