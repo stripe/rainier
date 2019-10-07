@@ -10,22 +10,18 @@ lazy val root = project.
   settings(unpublished)
 
 scalafmtOnCompile in ThisBuild := true
-wartremoverErrors in ThisBuild ++= Seq(
-  // Wart.Any,
-  // Wart.AsInstanceOf,
-  // Wart.DefaultArguments,
-  // Wart.EitherProjectionPartial,
-  // Wart.IsInstanceOf,
-  // Wart.TraversableOps,
-  // Wart.OptionPartial,
+
+// see https://www.wartremover.org/doc/warts.html for the full list.
+wartremoverErrors in (Compile, compile) ++= Seq(
+  Wart.EitherProjectionPartial,
+  Wart.OptionPartial,
   Wart.Product,
   Wart.PublicInference,
-  // Wart.Return,
-   Wart.Serializable,
-  Wart.StringPlusAny
-  // Wart.Throw,
-  // Wart.TryPartial,
-  // Wart.Var
+  Wart.Return,
+  Wart.Serializable,
+  Wart.StringPlusAny,
+  Wart.Throw,
+  Wart.TryPartial
 )
 
 def getPublishTo(snapshot: Boolean) = {
