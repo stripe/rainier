@@ -159,6 +159,11 @@ object ToGenerator {
       }
     }
 
+  implicit val string: ToGenerator[String, String] =
+    new ToGenerator[String, String] {
+      def apply(t: String) = Generator.constant(t)
+    }
+
   implicit def zip[A, B, X, Y](
       implicit ab: ToGenerator[A, B],
       xy: ToGenerator[X, Y]): ToGenerator[(A, X), (B, Y)] =
