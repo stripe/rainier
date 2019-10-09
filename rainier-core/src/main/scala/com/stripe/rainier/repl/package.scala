@@ -83,7 +83,8 @@ package object repl {
     }
   }
 
-  def precis(samples: Seq[Traversable[(String, Double)]], corr: Boolean = false): Unit = {
+  def precis(samples: Seq[Traversable[(String, Double)]],
+             corr: Boolean = false): Unit = {
     val sampleSeqs = samples.map(_.toSeq)
     val meansSDs = computeParamStats(sampleSeqs)
     val keys = meansSDs.map(_._1)
@@ -205,7 +206,7 @@ package object repl {
     val waics = models
       .map {
         case (s, m) =>
-          s -> m.waic(sampler, warmupIterations, iterations, keepEvery)
+          s -> m.toSample(sampler, warmupIterations, iterations, keepEvery).waic
       }
       .sortBy(_._2.value)
     val minWaic = waics.head._2.value
