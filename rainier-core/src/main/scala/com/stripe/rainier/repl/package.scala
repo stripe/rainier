@@ -83,34 +83,26 @@ package object repl {
     }
   }
 
-  def precis(samples: Seq[Map[String, Double]], corr: Boolean = false): Unit =
-    precis(samples.map(_.toSeq), corr)
-
-  def precis(samples: Seq[Seq[(String, Double)]]): Unit =
-    precis(samples, false)
-
-  def precis(samples: Seq[Seq[(String, Double)]], corr: Boolean)(
-      // Avoid double-definition error after type erasure
-      implicit dummy: DummyImplicit
-  ): Unit = {
-    val meansSDs = computeParamStats(samples)
+  def precis(samples: Seq[Traversable[(String, Double)]], corr: Boolean = false): Unit = {
+    val sampleSeqs = samples.map(_.toSeq)
+    val meansSDs = computeParamStats(sampleSeqs)
     val keys = meansSDs.map(_._1)
 
     val correlations = keys.zipWithIndex.flatMap {
       case (k, i) =>
-        val diffs = samples.map(_(i)._2 - meansSDs(i)._2._1)
+        val diffs = sampleSeqs.map(_(i)._2 - meansSDs(i)._2._1)
         keys.zipWithIndex.map {
           case (l, j) =>
-            val diffs2 = samples.map(_(j)._2 - meansSDs(j)._2._1)
+            val diffs2 = sampleSeqs.map(_(j)._2 - meansSDs(j)._2._1)
             val sumDiffProd = diffs.zip(diffs2).map { case (a, b) => a * b }.sum
-            val r = sumDiffProd / (meansSDs(i)._2._2 * meansSDs(j)._2._2 * (samples.size - 1))
+            val r = sumDiffProd / (meansSDs(i)._2._2 * meansSDs(j)._2._2 * (sampleSeqs.size - 1))
             (k, l) -> r
         }
     }.toMap
 
     val cis = keys.zipWithIndex.map {
       case (k, i) =>
-        val data = samples.map(_(i)._2).sorted
+        val data = sampleSeqs.map(_(i)._2).sorted
         val low = data(math.floor(data.size * 0.055).toInt)
         val high = data(math.floor(data.size * 0.945).toInt)
         (k, (low, high))
@@ -143,19 +135,10 @@ package object repl {
     }
   }
 
-  def coeftab(models: (String, Seq[Map[String, Double]])*): Unit =
-    coeftab(models.map {
-      case (n, samples) =>
-        (n, samples.map(_.toSeq))
-    }: _*)
-
-  def coeftab(models: (String, Seq[Seq[(String, Double)]])*)(
-      // Avoid double-definition error after type erasure
-      implicit dummy: DummyImplicit
-  ): Unit = {
+  def coeftab(models: (String, Seq[Traversable[(String, Double)]])*): Unit = {
     val coefs = models.map {
       case (_, samples) =>
-        coef(samples).toMap
+        coef(samples.map(_.toSeq)).toMap
     }
 
     val modelNames = models.map(_._1)
