@@ -179,7 +179,12 @@ package object repl {
     s.reverse.padTo(len, elem).reverse
 
   def compare(models: (String, RandomVariable[_])*): Unit =
-    compare(models, HMC(5), 100000, 10000, 1)
+    compare(
+      models,
+      Sampler.Default.sampler,
+      Sampler.Default.warmupIterations,
+      Sampler.Default.iterations,
+    )
 
   def compare(models: Seq[(String, RandomVariable[_])],
               sampler: Sampler,
