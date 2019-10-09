@@ -195,7 +195,7 @@ package object repl {
       models,
       Sampler.Default.sampler,
       Sampler.Default.warmupIterations,
-      Sampler.Default.iterations,
+      Sampler.Default.iterations
     )
 
   def compare(models: Seq[(String, RandomVariable[_])],
