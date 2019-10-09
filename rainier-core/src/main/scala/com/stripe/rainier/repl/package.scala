@@ -83,25 +83,29 @@ package object repl {
     }
   }
 
-  def precis(samples: Seq[Map[String, Double]], corr: Boolean = false): Unit = {
-    val meansSDs = computeParamStats(samples)
-    val keys = meansSDs.keys
+  def precis(samples: Seq[Traversable[(String, Double)]], corr: Boolean = false): Unit = {
+    val sampleSeqs = samples.map(_.toSeq)
+    val meansSDs = computeParamStats(sampleSeqs)
+    val keys = meansSDs.map(_._1)
 
-    val correlations = keys.flatMap { k =>
-      val diffs = samples.map(_(k) - meansSDs(k)._1)
-      keys.map { j =>
-        val diffs2 = samples.map(_(j) - meansSDs(j)._1)
-        val sumDiffProd = diffs.zip(diffs2).map { case (a, b) => a * b }.sum
-        val r = sumDiffProd / (meansSDs(k)._2 * meansSDs(j)._2 * (samples.size - 1))
-        (k, j) -> r
-      }
+    val correlations = keys.zipWithIndex.flatMap {
+      case (k, i) =>
+        val diffs = sampleSeqs.map(_(i)._2 - meansSDs(i)._2._1)
+        keys.zipWithIndex.map {
+          case (l, j) =>
+            val diffs2 = sampleSeqs.map(_(j)._2 - meansSDs(j)._2._1)
+            val sumDiffProd = diffs.zip(diffs2).map { case (a, b) => a * b }.sum
+            val r = sumDiffProd / (meansSDs(i)._2._2 * meansSDs(j)._2._2 * (sampleSeqs.size - 1))
+            (k, l) -> r
+        }
     }.toMap
 
-    val cis = keys.map { k =>
-      val data = samples.map(_(k)).sorted
-      val low = data(math.floor(data.size * 0.055).toInt)
-      val high = data(math.floor(data.size * 0.945).toInt)
-      (k, (low, high))
+    val cis = keys.zipWithIndex.map {
+      case (k, i) =>
+        val data = sampleSeqs.map(_(i)._2).sorted
+        val low = data(math.floor(data.size * 0.055).toInt)
+        val high = data(math.floor(data.size * 0.945).toInt)
+        (k, (low, high))
     }.toMap
 
     val maxKeyLength = keys.map(_.size).max
@@ -114,30 +118,33 @@ package object repl {
         "94.5%".formatted("%10s") +
         corrKeys.map(_.formatted("%7s")).mkString(" "))
 
-    keys.foreach { k =>
-      val corrValues = if (corr) keys.map { j =>
-        correlations(k -> j)
-      } else Nil
-      println(
-        k.padTo(maxKeyLength, ' ') +
-          meansSDs(k)._1.formatted("%10.2f") +
-          meansSDs(k)._2.formatted("%10.2f") +
-          cis(k)._1.formatted("%10.2f") +
-          cis(k)._2.formatted("%10.2f") +
-          corrValues.map(_.formatted("%7.2f")).mkString(" "))
+    keys.zipWithIndex.foreach {
+      case (k, i) =>
+        val corrValues = if (corr) keys.map { j =>
+          correlations(k -> j)
+        } else Nil
+        val (mean, sd) = meansSDs(i)._2
+        val (lowCI, highCI) = cis(k)
+        println(
+          k.padTo(maxKeyLength, ' ') +
+            mean.formatted("%10.2f") +
+            sd.formatted("%10.2f") +
+            lowCI.formatted("%10.2f") +
+            highCI.formatted("%10.2f") +
+            corrValues.map(_.formatted("%7.2f")).mkString(" "))
     }
   }
 
-  def coeftab(models: (String, Seq[Map[String, Double]])*): Unit = {
+  def coeftab(models: (String, Seq[Traversable[(String, Double)]])*): Unit = {
     val coefs = models.map {
       case (_, samples) =>
-        coef(samples)
+        coef(samples.map(_.toSeq)).toMap
     }
 
     val modelNames = models.map(_._1)
     val valWidth = 10.max(modelNames.map(_.size).max)
 
-    val keys = models.flatMap(_._2.head.keys).toSet
+    val keys = models.flatMap(_._2.head.map(_._1)).distinct
     val maxKeyLength = keys.map(_.size).max
 
     println(
@@ -159,20 +166,24 @@ package object repl {
   }
 
   def coef(samples: Seq[Map[String, Double]]): Map[String, Double] =
+    computeParamStats(samples.map(_.toSeq)).map { case (k, v) => k -> v._1 }.toMap
+
+  def coef(samples: Seq[Seq[(String, Double)]]): Seq[(String, Double)] =
     computeParamStats(samples).map { case (k, v) => k -> v._1 }
 
-  private def computeParamStats(
-      samples: Seq[Map[String, Double]]): Map[String, (Double, Double)] = {
-    val keys = samples.head.keys.toList
+  private def computeParamStats(samples: Seq[Seq[(String, Double)]])
+    : IndexedSeq[(String, (Double, Double))] = {
+    val keys = samples.head.map(_._1).toVector
 
-    keys.map { k =>
-      val data = samples.map(_(k))
-      val mean = data.sum / data.size
-      val stdDev = math.sqrt(data.map { x =>
-        math.pow(x - mean, 2)
-      }.sum / data.size)
-      (k, (mean, stdDev))
-    }.toMap
+    keys.zipWithIndex.map {
+      case (k, i) =>
+        val data = samples.map(_(i)._2)
+        val mean = data.sum / data.size
+        val stdDev = math.sqrt(data.map { x =>
+          math.pow(x - mean, 2)
+        }.sum / data.size)
+        (k, (mean, stdDev))
+    }
   }
 
   private def leftPad(s: String, len: Int, elem: Char): String =
