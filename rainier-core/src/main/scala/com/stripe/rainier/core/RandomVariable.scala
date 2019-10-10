@@ -58,6 +58,27 @@ class RandomVariable[+T](val value: T, val targets: Set[Target]) {
     sampledParams.map(fn)
   }
 
+  def toSample()(implicit rng: RNG): Sample[T] =
+    toSample(Sampler.Default.sampler,
+             Sampler.Default.warmupIterations,
+             Sampler.Default.iterations)
+
+  def toSample(sampler: Sampler,
+               warmupIterations: Int,
+               iterations: Int,
+               keepEvery: Int = 1,
+               nChains: Int = 1,
+               parallel: Boolean = false)(implicit rng: RNG): Sample[T] = {
+    val range = if (parallel) 1.to(nChains).par else 1.to(nChains)
+    val chains =
+      range.map { _ =>
+        Sampler
+          .sample(density(), sampler, warmupIterations, iterations, keepEvery)
+      }.toList
+
+    Sample(chains, targets, targetGroup.variables, value)
+  }
+
   def sample[V]()(implicit rng: RNG, tg: ToGenerator[T, V]): List[V] =
     sample(Sampler.Default.iterations)
 
@@ -79,24 +100,6 @@ class RandomVariable[+T](val value: T, val targets: Set[Target]) {
         fn(array)
       }
   }
-
-  def waic(sampler: Sampler,
-           warmupIterations: Int,
-           iterations: Int,
-           keepEvery: Int = 1)(implicit rng: RNG): WAIC = {
-    val samples =
-      Sampler.sample(density, sampler, warmupIterations, iterations, keepEvery)
-    targets
-      .map { t =>
-        WAIC(samples, targetGroup.variables, t)
-      }
-      .reduce(_ + _)
-  }
-
-  def waic[V]()(implicit rng: RNG): WAIC =
-    waic(Sampler.Default.sampler,
-         Sampler.Default.warmupIterations,
-         Sampler.Default.iterations)
 
   def optimize[V]()(implicit rng: RNG, tg: ToGenerator[T, V]): V = {
     val array = Optimizer.lbfgs(density)
