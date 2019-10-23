@@ -76,7 +76,7 @@ class RandomVariable[+T](val value: T, val targets: Set[Target]) {
           .sample(density(), sampler, warmupIterations, iterations, keepEvery)
       }.toList
 
-    Sample(chains, targets, targetGroup.variables, value)
+    Sample(chains, targets.toList, targetGroup.variables, value)
   }
 
   def sample[V]()(implicit rng: RNG, tg: ToGenerator[T, V]): List[V] =

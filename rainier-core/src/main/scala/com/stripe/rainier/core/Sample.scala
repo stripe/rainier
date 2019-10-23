@@ -4,7 +4,7 @@ import com.stripe.rainier.compute._
 import com.stripe.rainier.sampler._
 
 case class Sample[+T](chains: List[List[Array[Double]]],
-                      targets: Set[Target],
+                      targets: List[Target],
                       variables: List[Variable],
                       value: T) {
   def map[U](fn: T => U) = Sample(chains, targets, variables, fn(value))
