@@ -105,6 +105,9 @@ object Gamma {
   def apply(shape: Real, scale: Real): Continuous =
     standard(shape).scale(scale)
 
+  def meanAndScale(mean: Real, scale: Real): Continuous =
+    Gamma(mean / scale, scale)
+
   def standard(shape: Real): StandardContinuous = new StandardContinuous {
     val support = BoundedBelowSupport(Real.zero)
 
