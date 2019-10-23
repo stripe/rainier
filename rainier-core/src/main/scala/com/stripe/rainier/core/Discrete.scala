@@ -208,6 +208,11 @@ final case class BetaBinomial(a: Real, b: Real, k: Real) extends Discrete {
       Combinatorics.beta(a, b)
 }
 
+object BetaBinomial {
+  def meanAndPrecision(mean: Real, precision: Real, k: Real): BetaBinomial =
+    BetaBinomial(mean * precision, (Real.one - mean) * precision, k)
+}
+
 /**
   * Discrete Mixture Distribution
   *
