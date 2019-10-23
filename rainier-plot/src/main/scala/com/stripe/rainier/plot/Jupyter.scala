@@ -39,14 +39,18 @@ object Jupyter {
 
     val blue = default.copy(
       colors = default.colors.copy(
-        fill = blueColor
+        fill = blueColor,
+        trendLine = blueColor,
+        path = blueColor
       )
     )
 
     val gray = default.copy(
       colors = default.colors.copy(
         bar = grayColor,
-        point = grayColor
+        point = grayColor,
+        trendLine = grayColor,
+        path = grayColor
       )
     )
   }
