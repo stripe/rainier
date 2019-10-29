@@ -25,7 +25,7 @@ trait Fn[A, Y] { self =>
 }
 
 object Fn {
-  def encode[A](implicit enc: Encoder[A]) =
+  def encode[A](implicit enc: Encoder[A]): Fn[A, enc.U] =
     new Fn[A, enc.U] {
       type X = enc.U
       val encoder: Encoder[A] { type U = X } = enc

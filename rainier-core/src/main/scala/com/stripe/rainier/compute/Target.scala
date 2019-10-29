@@ -1,7 +1,7 @@
 package com.stripe.rainier.compute
 
 class Target(val real: Real, val placeholders: Map[Variable, Array[Double]]) {
-  val nRows =
+  val nRows: Int =
     if (placeholders.isEmpty)
       0
     else

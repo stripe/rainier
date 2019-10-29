@@ -110,7 +110,7 @@ class GraphViz {
     }
   }
 
-  def dot = buf.toString + "\n}"
+  def dot: String = buf.toString + "\n}"
   def write(path: String): Unit = {
     val pw = new PrintWriter(new File(path))
     pw.write(dot)

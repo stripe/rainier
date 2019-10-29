@@ -105,6 +105,9 @@ object Gamma {
   def apply(shape: Real, scale: Real): Continuous =
     standard(shape).scale(scale)
 
+  def meanAndScale(mean: Real, scale: Real): Continuous =
+    Gamma(mean / scale, scale)
+
   def standard(shape: Real): StandardContinuous = new StandardContinuous {
     val support = BoundedBelowSupport(Real.zero)
 
@@ -180,7 +183,8 @@ final case class Beta(a: Real, b: Real) extends StandardContinuous {
       u.log + (b - 1) *
       (1 - u).log - Combinatorics.beta(a, b)
 
-  def binomial = Predictor[Int].from(BetaBinomial(a, b, _))
+  def binomial: Predictor[Int, BetaBinomial] =
+    Predictor[Int].from(BetaBinomial(a, b, _))
 }
 
 object Beta {
@@ -202,7 +206,7 @@ object LogNormal {
   * A Uniform distribution over `[from,to]` with expectation `(to-from)/2`.
   */
 object Uniform {
-  val beta11 = Beta(1, 1)
+  val beta11: Beta = Beta(1, 1)
   val standard: Continuous = new StandardContinuous {
     val support = beta11.support
 

@@ -23,8 +23,8 @@ case class DataFunction(cf: CompiledFunction,
                         numParamInputs: Int,
                         numOutputs: Int,
                         data: Array[Array[Array[Double]]]) {
-  val numInputs = cf.numInputs
-  val numGlobals = cf.numGlobals
+  val numInputs: Int = cf.numInputs
+  val numGlobals: Int = cf.numGlobals
 
   require(data.isEmpty || DataFunction.logTwo(data.map { a =>
     a.head.size

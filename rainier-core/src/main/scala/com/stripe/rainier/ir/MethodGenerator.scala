@@ -96,7 +96,7 @@ private trait MethodGenerator {
   def classNameForMethod(classPrefix: String, id: Int): String = {
     val n = id / classSizeLimit
     if (n > 0)
-      classPrefix + "$" + n
+      s"classPrefix$$$n"
     else
       classPrefix
   }

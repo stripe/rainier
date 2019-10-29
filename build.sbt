@@ -1,3 +1,5 @@
+import wartremover.Wart
+
 lazy val root = project.
   in(file(".")).
   aggregate(rainierCore, rainierPlot, rainierCats, rainierScalacheck).
@@ -8,6 +10,19 @@ lazy val root = project.
   settings(unpublished)
 
 scalafmtOnCompile in ThisBuild := true
+
+// see https://www.wartremover.org/doc/warts.html for the full list.
+wartremoverErrors in (Compile, compile) ++= Seq(
+  Wart.EitherProjectionPartial,
+  Wart.OptionPartial,
+  Wart.Product,
+  Wart.PublicInference,
+  Wart.Return,
+  Wart.Serializable,
+  Wart.StringPlusAny,
+  Wart.Throw,
+  Wart.TryPartial
+)
 
 def getPublishTo(snapshot: Boolean) = {
   val nexus = "https://oss.sonatype.org/"

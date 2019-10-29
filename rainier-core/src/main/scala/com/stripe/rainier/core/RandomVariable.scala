@@ -76,7 +76,7 @@ class RandomVariable[+T](val value: T, val targets: Set[Target]) {
           .sample(density(), sampler, warmupIterations, iterations, keepEvery)
       }.toList
 
-    Sample(chains, targets, targetGroup.variables, value)
+    Sample(chains, targets.toList, targetGroup.variables, value)
   }
 
   def sample[V]()(implicit rng: RNG, tg: ToGenerator[T, V]): List[V] =
@@ -115,7 +115,8 @@ class RandomVariable[+T](val value: T, val targets: Set[Target]) {
       implicit rng: RNG,
       tg: ToGenerator[T, V]): (List[V], List[Diagnostics]) = {
     val fn = tg(value).prepare(targetGroup.variables)
-    val range = if (parallel) 1.to(chains).par else 1.to(chains)
+    val range: scala.collection.GenSeq[Int] =
+      if (parallel) 1.to(chains).par else 1.to(chains)
     val samples =
       range.map { _ =>
         Sampler
@@ -137,7 +138,7 @@ class RandomVariable[+T](val value: T, val targets: Set[Target]) {
   lazy val dataFn =
     Compiler.default.compileTargets(targetGroup, true, 4)
 
-  def density() =
+  def density(): DensityFunction =
     new DensityFunction {
       val nVars = targetGroup.variables.size
       val inputs = new Array[Double](dataFn.numInputs)

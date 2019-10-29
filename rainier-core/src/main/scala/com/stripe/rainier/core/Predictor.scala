@@ -89,11 +89,12 @@ object Predictor {
     }
 
   trait From[X, U] {
-    def from[L](fn: U => L): Predictor[X, L]
-    def fromVector[L](k: Int)(fn: IndexedSeq[U] => L): Predictor[Seq[X], L]
+    def from[L](fn: U => L): EncoderPredictor[X, L]
+    def fromVector[L](k: Int)(
+        fn: IndexedSeq[U] => L): EncoderPredictor[Seq[X], L]
   }
 
-  def apply[X](implicit enc: Encoder[X]) =
+  def apply[X](implicit enc: Encoder[X]): From[X, enc.U] =
     new From[X, enc.U] {
       def from[L](fn: enc.U => L): EncoderPredictor[X, L] =
         new EncoderPredictor[X, L] {

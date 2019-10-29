@@ -15,16 +15,16 @@ object FitHLL {
     }
 
   def compare(scale: Int): RandomVariable[Real] = {
-    println("Generating a set with max size " + scale)
+    println(s"Generating a set with max size $scale")
     val data = 1.to(scale).map { _ =>
       rand.nextInt
     }
-    println("True size: " + data.toSet.size)
+    println(s"True size: ${data.toSet.size}")
 
     val sketch = hll(data)
-    println("Estimated size: " + hll.cardinality(sketch).toInt)
+    println(s"Estimated size: ${hll.cardinality(sketch).toInt}")
     val (lower, upper) = hll.bounds(sketch)
-    println("Confidence interval: " + lower.toInt + ", " + upper.toInt)
+    println(s"Confidence interval: ${lower.toInt}, ${upper.toInt}")
 
     println("Inferring size")
     val m = model(sketch)
@@ -32,12 +32,12 @@ object FitHLL {
     val samples = m.sample()
     val t2 = System.currentTimeMillis
     val mean = samples.sum / samples.size
-    println("Inferred size: " + mean.toInt)
+    println(s"Inferred size: ${mean.toInt}")
     val sorted = samples.sorted
     val lower2 = sorted((samples.size * 0.05).toInt)
     val upper2 = sorted((samples.size * 0.95).toInt)
-    println("Credible interval: " + lower2.toInt + ", " + upper2.toInt)
-    println("ms: " + (t2 - t1))
+    println(s"Credible interval: ${lower2.toInt}, ${upper2.toInt}")
+    println(s"ms: ${(t2 - t1)}")
     println("")
     m
   }

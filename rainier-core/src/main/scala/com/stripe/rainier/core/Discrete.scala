@@ -12,10 +12,10 @@ trait Discrete extends Distribution[Int] { self: Discrete =>
 
   def logDensity(v: Real): Real
 
-  def zeroInflated(psi: Real) =
+  def zeroInflated(psi: Real): DiscreteMixture =
     constantInflated(0.0, psi)
 
-  def constantInflated(constant: Real, psi: Real) =
+  def constantInflated(constant: Real, psi: Real): DiscreteMixture =
     DiscreteMixture(Map(DiscreteConstant(constant) -> psi, self -> (1 - psi)))
 }
 
@@ -206,6 +206,11 @@ final case class BetaBinomial(a: Real, b: Real, k: Real) extends Discrete {
     Combinatorics.choose(k, v) +
       Combinatorics.beta(a + v, k - v + b) -
       Combinatorics.beta(a, b)
+}
+
+object BetaBinomial {
+  def meanAndPrecision(mean: Real, precision: Real, k: Real): BetaBinomial =
+    BetaBinomial(mean * precision, (Real.one - mean) * precision, k)
 }
 
 /**
