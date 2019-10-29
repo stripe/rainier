@@ -18,7 +18,8 @@ final case class SBC[T, L](priors: Seq[Continuous], fn: Seq[Real] => (L, Real))(
 
   import SBC._
 
-  val priorGenerator = Generator.traverse(priors.map(_.generator))
+  val priorGenerator: Generator[Seq[Double]] =
+    Generator.traverse(priors.map(_.generator))
 
   def posteriorSamples(nSamples: Int): List[Double] = {
     implicit val rng: RNG = ScalaRNG(1528666602081L)
@@ -217,7 +218,7 @@ final case class SBC[T, L](priors: Seq[Continuous], fn: Seq[Real] => (L, Real))(
 }
 
 object SBC {
-  val emptyEvaluator = new Evaluator(Map.empty)
+  val emptyEvaluator: Evaluator = new Evaluator(Map.empty)
 
   def apply[T, L](prior: Continuous)(fn: Real => L)(
       implicit lh: ToLikelihood[L, T],
@@ -226,10 +227,10 @@ object SBC {
       (fn(l.head), l.head)
     })
 
-  val Samples = 1024
-  val Chains = 4
-  val RepsPerBin = 40
-  val Trials = 5
+  val Samples: Int = 1024
+  val Chains: Int = 4
+  val RepsPerBin: Int = 40
+  val Trials: Int = 5
 
   def binomialQuantile(q: Double, n: Int, p: Double): Int = {
     var cmf = 0.0

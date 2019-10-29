@@ -13,12 +13,13 @@ trait Distribution[T] {
 }
 
 object Distribution {
-  implicit def lh[T, D <: Distribution[T]] =
+  implicit def lh[T, D <: Distribution[T]]: ToLikelihood[D, T] =
     new ToLikelihood[D, T] {
       def apply(d: D) = d.likelihood
     }
 
-  def gen[D <: Distribution[T], T] = new ToGenerator[D, T] {
-    def apply(d: D) = d.generator
-  }
+  def gen[D <: Distribution[T], T]: ToGenerator[D, T] =
+    new ToGenerator[D, T] {
+      def apply(d: D) = d.generator
+    }
 }

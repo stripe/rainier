@@ -69,7 +69,7 @@ sealed trait Generator[+T] { self =>
     } else {
       val namedReqs = reqs.zipWithIndex.map {
         case (r, i) =>
-          ("req" + i, r)
+          (s"req$i", r)
       }
       val cf = Compiler.default.compile(variables, namedReqs)
       array =>

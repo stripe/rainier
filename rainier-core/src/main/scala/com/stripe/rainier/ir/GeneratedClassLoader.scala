@@ -4,7 +4,7 @@ class GeneratedClassLoader private[ir] (cf: OutputClassGenerator,
                                         helpers: Seq[ExprClassGenerator],
                                         parent: ClassLoader)
     extends ClassLoader(parent) {
-  val cfClass = defineClass(cf.name, cf.bytes, 0, cf.bytes.length)
+  val cfClass: Class[_] = defineClass(cf.name, cf.bytes, 0, cf.bytes.length)
   val helperClasses: Map[String, Class[_]] =
     helpers.map {
       case cg =>

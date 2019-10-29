@@ -20,7 +20,7 @@ object Jupyter {
         .find(_.startsWith("Century Schoolbook"))
         .getOrElse("Arial")
 
-    val default = Theme(
+    val default: Theme = Theme(
       fonts = DefaultTheme.DefaultFonts.copy(
         tickLabelSize = 11,
         labelSize = 12,
@@ -37,7 +37,7 @@ object Jupyter {
       )
     )
 
-    val blue = default.copy(
+    val blue: Theme = default.copy(
       colors = default.colors.copy(
         fill = blueColor,
         trendLine = blueColor,
@@ -45,7 +45,7 @@ object Jupyter {
       )
     )
 
-    val gray = default.copy(
+    val gray: Theme = default.copy(
       colors = default.colors.copy(
         bar = grayColor,
         point = grayColor,
@@ -55,8 +55,8 @@ object Jupyter {
     )
   }
 
-  implicit val extent = Extent(400, 400)
-  implicit val theme = PlotThemes.default
+  implicit val extent: Extent = Extent(400, 400)
+  implicit val theme: Theme = PlotThemes.default
 
   def density[N](seq: Seq[N], minX: Double, maxX: Double)(
       implicit num: Numeric[N],

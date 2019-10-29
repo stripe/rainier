@@ -56,11 +56,12 @@ final case class Categorical[T](pmf: Map[T, Real]) extends Distribution[T] {
   def toMixture[V](implicit ev: T <:< Continuous): Mixture =
     Mixture(pmf.map { case (k, v) => (ev(k), v) })
 
-  def toMultinomial = Predictor[Int].from { i =>
-    Multinomial(pmf, i)
-  }
+  def toMultinomial: Predictor[Int, Multinomial[T]] =
+    Predictor[Int].from { i =>
+      Multinomial(pmf, i)
+    }
 
-  def likelihood =
+  def likelihood: Likelihood[T] =
     new Likelihood[T] {
       val choices = pmf.keys.toList
       val u = choices.map { k =>
@@ -80,7 +81,7 @@ final case class Categorical[T](pmf: Map[T, Real]) extends Distribution[T] {
 }
 
 object Categorical {
-  def logDensity[T](cat: Categorical[T], value: List[(T, Real)]) =
+  def logDensity[T](cat: Categorical[T], value: List[(T, Real)]): Real =
     Real
       .sum(value.map {
         case (t, r) =>
@@ -91,7 +92,8 @@ object Categorical {
   def boolean(p: Real): Categorical[Boolean] =
     Categorical(Map(true -> p, false -> (Real.one - p)))
 
-  def binomial(p: Real) = Predictor[Int].from(Binomial(p, _))
+  def binomial(p: Real): Predictor[Int, Binomial] =
+    Predictor[Int].from(Binomial(p, _))
 
   def normalize[T](pmf: Map[T, Real]): Categorical[T] = {
     val total = Real.sum(pmf.values.toList)

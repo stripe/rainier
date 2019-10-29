@@ -1,7 +1,11 @@
 package com.stripe.rainier.internal.asm
 
+import java.lang.reflect.Field
+
 object MethodSizer {
-  val firstMethodField = classOf[ClassWriter].getDeclaredField("firstMethod")
+  val firstMethodField: Field =
+    classOf[ClassWriter].getDeclaredField("firstMethod")
+
   firstMethodField.setAccessible(true)
 
   def methodSizes(cw: ClassWriter): List[Int] = {

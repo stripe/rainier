@@ -67,7 +67,7 @@ private[compute] object RealOps {
           case LogOp =>
             if (value.toDouble < 0)
               throw new ArithmeticException(
-                "Cannot take the log of " + value.toDouble)
+                s"Cannot take the log of ${value.toDouble}")
             else
               Real(Math.log(value.toDouble))
           case AbsOp  => Real(value.abs)

@@ -2,7 +2,7 @@ package com.stripe.rainier.compute
 
 import scala.annotation.tailrec
 
-sealed trait Coefficients {
+sealed trait Coefficients extends Product with Serializable {
   def isEmpty: Boolean
   def size: Int
   def coefficients: Iterable[BigDecimal]
@@ -32,7 +32,7 @@ object Coefficients {
       Many(filtered.toMap, filtered.map(_._1).toList)
   }
 
-  val Empty: Coefficients = new Coefficients {
+  private final case object EmptyCoefficients extends Coefficients {
     val isEmpty = true
     val size = 0
     val coefficients = Nil
@@ -44,6 +44,8 @@ object Coefficients {
     def +(pair: (NonConstant, BigDecimal)) = apply(pair)
     def merge(other: Coefficients) = other
   }
+
+  val Empty: Coefficients = EmptyCoefficients
 
   case class One(term: NonConstant, coefficient: BigDecimal)
       extends Coefficients {

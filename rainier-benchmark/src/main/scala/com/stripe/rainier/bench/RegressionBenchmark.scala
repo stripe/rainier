@@ -28,7 +28,7 @@ class RegressionBenchmark {
   lazy val vars = model.targetGroup.variables
   lazy val df = model.density
 
-  def synthesize() = {
+  def synthesize(): List[(List[Double], Double)] = {
     val betas = List.fill(k)(rng.standardNormal * 2)
     val sigma = 3.0
     List.fill(n) {
@@ -40,7 +40,7 @@ class RegressionBenchmark {
   }
 
   @Benchmark
-  def build() =
+  def build(): RandomVariable[Real] =
     for {
       betas <- RandomVariable.fill(k)(Normal(0, 1).param)
       sigma <- Uniform(0, 10).param
@@ -53,11 +53,11 @@ class RegressionBenchmark {
     } yield sigma
 
   @Benchmark
-  def compile() =
+  def compile(): DensityFunction =
     model.density
 
   @Benchmark
-  def run() =
+  def run(): Unit =
     df.update(vars.map { _ =>
       rng.standardUniform
     }.toArray)

@@ -7,7 +7,7 @@ import com.stripe.rainier.compute.Real
   * Note that they all return the log of the function described.
   */
 object Combinatorics {
-  def gamma(z: Real) =
+  def gamma(z: Real): Real =
     if (z == Real.zero)
       Real.infinity
     else if (z == Real.one || z == Real.two)

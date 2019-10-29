@@ -35,7 +35,7 @@ final case class Compiler(methodSizeLimit: Int, classSizeLimit: Int) {
             val newOutsWithGradient =
               newOuts.zipWithIndex.flatMap {
                 case (o, j) =>
-                  Compiler.withGradient("target" + i + "_bit" + j, o, gradVars)
+                  Compiler.withGradient(s"target${i}_bit${j}", o, gradVars)
               }
             (ins ++ newIns, outs ++ newOutsWithGradient)
         }
@@ -79,6 +79,6 @@ object Compiler {
         .zipWithIndex
         .map {
           case (g, i) =>
-            (name + "_" + "grad" + i, g)
+            (s"${name}_grad${i}", g)
         }
 }

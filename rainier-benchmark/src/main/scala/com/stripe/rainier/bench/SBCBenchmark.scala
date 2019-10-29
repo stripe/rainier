@@ -5,6 +5,7 @@ import java.util.concurrent.TimeUnit
 
 import com.stripe.rainier.compute._
 import com.stripe.rainier.core._
+import com.stripe.rainier.ir.DataFunction
 import com.stripe.rainier.sampler._
 
 @BenchmarkMode(Array(Mode.SampleTime))
@@ -27,24 +28,26 @@ abstract class SBCBenchmark {
   var df: DensityFunction = _
 
   @Setup(Level.Trial)
-  def setup() = {
+  def setup(): Unit = {
     s = sbc
     model = build
     df = model.density
+    ()
   }
 
   @Benchmark
-  def synthesize() = s.synthesize(syntheticSamples)
+  def synthesize(): (Seq[_], Double) =
+    s.synthesize(syntheticSamples)
 
   @Benchmark
-  def build() = s.model(syntheticSamples)
+  def build(): RandomVariable[Real] = s.model(syntheticSamples)
 
   @Benchmark
-  def compile() =
+  def compile(): DataFunction =
     Compiler.default.compileTargets(TargetGroup(model.targets, 0), true, 4)
 
   @Benchmark
-  def run() =
+  def run(): Unit =
     df.update(Array.fill(df.nVars) { rng.standardUniform })
 }
 

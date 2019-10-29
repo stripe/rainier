@@ -10,7 +10,7 @@ case class Tracer(compiler: Compiler, gradient: Boolean) {
       if (gradient)
         ("density", real) :: real.gradient.zipWithIndex.map {
           case (r, i) =>
-            ("grad" + i, r)
+            (s"grad$i", r)
         } else
         List(("density", real))
     Tracer.dump(compiler.compile(real.variables, outputs))
@@ -32,6 +32,6 @@ object Tracer {
         sys.error("Cannot find bytecode for class")
     }
 
-  val default = Tracer(Compiler.default, false)
-  val gradient = Tracer(Compiler.default, true)
+  val default: Tracer = Tracer(Compiler.default, false)
+  val gradient: Tracer = Tracer(Compiler.default, true)
 }
