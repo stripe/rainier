@@ -42,7 +42,7 @@ The other kind of `Real` you can create directly is a `Variable` (though if you'
 A `Variable` doesn't really need anything other than its own identity (they don't need explicit names, for example). So you create them like this:
 
 ```tut
-val x = new Variable
+val x = Real.variable()
 ```
 
 Taken by itself, `x` here represents a function that extracts a specific single parameter from the (conceptually infinite) parameter vector. We can denote that like this:
@@ -72,7 +72,7 @@ xTwo / 2
 We can also construct functions that depend on multiple variables, as you'd expect:
 
 ```tut
-val y = new Variable
+val y = Real.variable()
 val xy = x * y
 ```
 

@@ -66,7 +66,7 @@ class Target(val real: Real, val placeholders: Map[Variable, Array[Double]]) {
     0.until(1 << bit).foldLeft((emptyV, Real.zero)) {
       case ((v, r), _) =>
         val newVars = placeholderVariables.map { _ =>
-          new Variable
+          Real.variable()
         }
         val newReal =
           PartialEvaluator.inline(real, placeholderVariables.zip(newVars).toMap)
@@ -77,7 +77,7 @@ class Target(val real: Real, val placeholders: Map[Variable, Array[Double]]) {
 
   def updater: (Real, List[Variable]) = {
     val newVars = placeholderVariables.map { _ =>
-      new Variable
+      Real.variable()
     }
     val newReal =
       PartialEvaluator.inline(real, placeholderVariables.zip(newVars).toMap)
