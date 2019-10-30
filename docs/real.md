@@ -45,7 +45,7 @@ The other kind of `Real` you can create directly is a `Variable` (though if you'
 A `Variable` doesn't really need anything other than its own identity (they don't need explicit names, for example). So you create them like this:
 
 ```scala
-scala> val x = new Variable
+scala> val x = Real.variable()
 x: com.stripe.rainier.compute.Variable = com.stripe.rainier.compute.Variable@6896d488
 ```
 
@@ -78,7 +78,7 @@ res0: com.stripe.rainier.compute.Real = com.stripe.rainier.compute.Variable@6896
 We can also construct functions that depend on multiple variables, as you'd expect:
 
 ```scala
-scala> val y = new Variable
+scala> val y = Real.variable()
 y: com.stripe.rainier.compute.Variable = com.stripe.rainier.compute.Variable@5e3849b2
 
 scala> val xy = x * y

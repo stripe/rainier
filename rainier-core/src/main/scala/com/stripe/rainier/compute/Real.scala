@@ -8,9 +8,9 @@ A Real is a DAG which represents a mathematical function
 from 0 or more real-valued input parameters to a single real-valued output.
 
 You can create new single-node DAGs either like `Real(2.0)`, for a constant,
-or with `new Variable` to introduce an input parameter. You can create more interesting DAGs
-by combining Reals using the standard mathematical operators, eg `(new Variable) + Real(2.0)`
-is the function f(x) = x+2, or `(new Variable) * (new Variable).log` is the function f(x,y) = xlog(y).
+or with `Real.variable` to introduce an input parameter. You can create more interesting DAGs
+by combining Reals using the standard mathematical operators, eg `Real.variable + Real(2.0)`
+is the function f(x) = x+2, or `Real.variable * Real.variable.log` is the function f(x,y) = xlog(y).
 Every such operation on Real results in a new Real.
 Apart from Variable and a simple ternary If expression, all of the subtypes of Real are private to this package.
 
@@ -85,6 +85,8 @@ object Real {
     summed.log + max
   }
 
+  def variable(): Variable = new Placeholder()
+
   def eq(left: Real, right: Real, ifTrue: Real, ifFalse: Real): Real =
     lookupCompare(left, right, ifFalse, ifTrue, ifFalse)
   def lt(left: Real, right: Real, ifTrue: Real, ifFalse: Real): Real =
@@ -121,9 +123,11 @@ final private[rainier] object NegInfinity extends Real
 
 sealed trait NonConstant extends Real
 
-final class Variable extends NonConstant {
+sealed trait Variable extends NonConstant {
   private[compute] val param = new ir.Parameter
 }
+
+final private class Placeholder extends Variable
 
 final private case class Unary(original: NonConstant, op: ir.UnaryOp)
     extends NonConstant

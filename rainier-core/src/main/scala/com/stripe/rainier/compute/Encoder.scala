@@ -17,7 +17,7 @@ object Encoder {
       type U = Real
       def wrap(t: N) = Real(t)
       def create(acc: List[Variable]) = {
-        val u = new Variable
+        val u = Real.variable()
         (u, u :: acc)
       }
       def extract(t: N, acc: List[Double]) =
@@ -70,7 +70,7 @@ object Encoder {
       def create(acc: List[Variable]): (Map[String, Real], List[Variable]) =
         toMap.fields.foldRight((Map[String, Real](), acc)) {
           case (field, (map, a)) =>
-            val v = new Variable
+            val v = Real.variable()
             (map + (field -> v), v :: a)
         }
 

@@ -65,7 +65,7 @@ final case class Categorical[T](pmf: Map[T, Real]) extends Distribution[T] {
     new Likelihood[T] {
       val choices = pmf.keys.toList
       val u = choices.map { k =>
-        k -> new Variable
+        k -> Real.variable()
       }
       val real = Categorical.logDensity(self, u)
       val placeholders = u.map(_._2)
@@ -135,7 +135,7 @@ final case class Multinomial[T](pmf: Map[T, Real], k: Real)
     new Likelihood[Map[T, Int]] {
       val choices = pmf.keys.toList
       val u = choices.map { k =>
-        k -> new Variable
+        k -> Real.variable()
       }
       val real = Multinomial.logDensity(self, u)
       val placeholders = u.map(_._2)

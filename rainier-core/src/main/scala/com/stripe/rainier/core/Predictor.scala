@@ -76,7 +76,7 @@ object Predictor {
         type U = Real
         def wrap(t: K) = map(t)
         def create(acc: List[Variable]): (Real, List[Variable]) = {
-          val v = new Variable
+          val v = Real.variable()
           val r = Lookup(v, keys.map { k =>
             map(k)
           })

@@ -11,7 +11,7 @@ class RealTest extends FunSuite {
           derivable: Double => Boolean = _ => true,
           reference: Double => Double = null)(fn: Real => Real): Unit = {
     test(description) {
-      val x = new Variable
+      val x = Real.variable()
       val result = fn(x)
       val deriv = result.gradient.head
 

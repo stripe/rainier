@@ -11,7 +11,7 @@ trait Continuous extends Distribution[Double] {
   private[rainier] val support: Support
 
   def likelihood = new Likelihood[Double] {
-    val x = new Variable
+    val x = Real.variable()
     val placeholders = List(x)
     val real = logDensity(x)
     def extract(t: Double) = List(t)
@@ -35,7 +35,7 @@ object Continuous {
   */
 private[rainier] trait StandardContinuous extends Continuous {
   def param: RandomVariable[Real] = {
-    val x = new Variable
+    val x = Real.variable()
 
     val transformed = support.transform(x)
 
@@ -240,7 +240,7 @@ case class Mixture(components: Map[Continuous, Real]) extends Continuous {
       })
 
   def param: RandomVariable[Real] = {
-    val x = new Variable
+    val x = Real.variable()
 
     val transformed: Real = support.transform(x)
 
