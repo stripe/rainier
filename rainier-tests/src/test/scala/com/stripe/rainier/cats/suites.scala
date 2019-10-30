@@ -24,17 +24,6 @@ class GeneratorSuite extends CatsSuite {
   checkAll("Generator[Int]", MonoidTests[Generator[Int]].monoid)
 }
 
-class RandomVariableSuite extends CatsSuite {
-  implicit val iso = SemigroupalTests.Isomorphisms
-    .invariant[RandomVariable]
-
-  checkAll("RandomVariable[Int]",
-           MonadTests[RandomVariable].monad[Int, Int, Int])
-  checkAll("RandomVariable[Int]",
-           ComonadTests[RandomVariable].comonad[Int, Int, Int])
-  checkAll("RandomVariable[Int]", MonoidTests[RandomVariable[Int]].monoid)
-}
-
 class RealSuite extends CatsSuite {
   checkAll("Real", GroupTests[Real].group)
 }

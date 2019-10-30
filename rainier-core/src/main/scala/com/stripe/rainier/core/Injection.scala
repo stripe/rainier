@@ -34,8 +34,6 @@ private[rainier] trait Injection { self =>
       Generator.require(self.requirements) { (r, n) =>
         fastForwards(dist.generator.get(r, n))(n)
       }
-
-    def param: RandomVariable[Real] = dist.param.map(forwards)
   }
 }
 

@@ -3,13 +3,6 @@ package com.stripe.rainier.core
 import com.stripe.rainier.compute._
 
 trait Discrete extends Distribution[Long] { self: Discrete =>
-  def likelihood = new Likelihood[Long] {
-    val x = Real.variable()
-    val placeholders = List(x)
-    val real = logDensity(x)
-    def extract(t: Long) = List(t.toDouble)
-  }
-
   def logDensity(v: Real): Real
 
   def zeroInflated(psi: Real): DiscreteMixture =

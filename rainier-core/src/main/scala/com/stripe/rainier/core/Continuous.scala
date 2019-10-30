@@ -10,14 +10,6 @@ import scala.annotation.tailrec
 trait Continuous extends Distribution[Double] {
   private[rainier] val support: Support
 
-  def likelihood = new Likelihood[Double] {
-    val x = Real.variable()
-    val placeholders = List(x)
-    val real = logDensity(x)
-    def extract(t: Double) = List(t)
-  }
-
-  def param: RandomVariable[Real]
   def logDensity(v: Real): Real
 
   def scale(a: Real): Continuous = Scale(a).transform(this)
@@ -33,17 +25,7 @@ object Continuous {
 /**
   * A Continuous Distribution that inherits its transforms from a Support object.
   */
-private[rainier] trait StandardContinuous extends Continuous {
-  def param: RandomVariable[Real] = {
-    val x = Real.variable()
-
-    val transformed = support.transform(x)
-
-    val density = support.logJacobian(x) + logDensity(transformed)
-
-    RandomVariable(transformed, density)
-  }
-}
+private[rainier] trait StandardContinuous extends Continuous {}
 
 /**
   * Location-scale family distribution
@@ -182,9 +164,6 @@ final case class Beta(a: Real, b: Real) extends StandardContinuous {
     (a - 1) *
       u.log + (b - 1) *
       (1 - u).log - Combinatorics.beta(a, b)
-
-  def binomial: Predictor[Int, BetaBinomial] =
-    Predictor[Int].from(BetaBinomial(a, b, _))
 }
 
 object Beta {
@@ -238,14 +217,4 @@ case class Mixture(components: Map[Continuous, Real]) extends Continuous {
           dist.logDensity(real) + weight.log
         }
       })
-
-  def param: RandomVariable[Real] = {
-    val x = Real.variable()
-
-    val transformed: Real = support.transform(x)
-
-    val density = support.logJacobian(x) + logDensity(transformed)
-
-    RandomVariable(transformed, density)
-  }
 }
