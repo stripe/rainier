@@ -36,6 +36,7 @@ private[rainier] trait Injection { self =>
       }
 
     def param: RandomVariable[Real] = dist.param.map(forwards)
+    def parameter: Real = forwards(dist.parameter)
   }
 }
 
