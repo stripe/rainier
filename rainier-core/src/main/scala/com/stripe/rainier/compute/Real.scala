@@ -86,7 +86,11 @@ object Real {
   }
 
   def variable(): Variable = new Placeholder()
-  def parameter(fn: Variable => Real): Variable = new Parameter(fn)
+  def parameter(fn: Variable => Real): Variable = {
+    val x = new Parameter(Real.zero)
+    x.density = fn(x)
+    x
+  }
 
   def eq(left: Real, right: Real, ifTrue: Real, ifFalse: Real): Real =
     lookupCompare(left, right, ifFalse, ifTrue, ifFalse)
@@ -129,9 +133,7 @@ sealed trait Variable extends NonConstant {
 }
 
 final private[rainier] class Placeholder extends Variable
-final private[rainier] class Parameter(fn: Variable => Real) extends Variable {
-  def density: Real = fn(this)
-}
+final private[rainier] class Parameter(var density: Real) extends Variable
 
 final private case class Unary(original: NonConstant, op: ir.UnaryOp)
     extends NonConstant
