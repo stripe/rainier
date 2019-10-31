@@ -97,10 +97,7 @@ sealed trait Generator[+T] { self =>
   */
 object Generator {
   val MaxRequirements = 500
-
-  def apply[L, T](l: L)(implicit gen: ToGenerator[L, T]): Generator[T] =
-    gen(l)
-
+  
   case class Const[T](requirements: Set[Real], t: T) extends Generator[T] {
     def get(implicit r: RNG, n: Numeric[Real]): T = t
   }
@@ -126,71 +123,14 @@ object Generator {
 
   def fromSet[T](items: Set[T]) = vector(items.to[Vector])
 
-  def traverse[T, U](seq: Seq[T])(
-      implicit toGen: ToGenerator[T, U]
-  ): Generator[Seq[U]] =
+  def traverse[T, U](seq: Seq[T])(implicit ev: T <:< Generator[U]): Generator[Seq[U]] =
     seq.foldLeft(Generator.constant[Seq[U]](Seq.empty)) { (g, t) =>
-      g.zip(toGen(t)).map { case (l, r) => l :+ r }
+      g.zip(ev(t)).map { case (l, r) => l :+ r }
     }
 
-  def traverse[K, V, W](m: Map[K, V])(
-      implicit toGen: ToGenerator[V, W]
-  ): Generator[Map[K, W]] =
+  def traverse[K, V, W](m: Map[K, V])(implicit ev: V <:< Generator[W]): Generator[Map[K, W]] =
     m.foldLeft(Generator.constant[Map[K, W]](Map.empty)) {
       case (g, (k, v)) =>
-        g.zip(toGen(v)).map { case (m, w) => m.updated(k, w) }
-    }
-}
-
-trait ToGenerator[-T, U] {
-  def apply(t: T): Generator[U]
-}
-
-object ToGenerator {
-  implicit def generator[T]: ToGenerator[Generator[T], T] =
-    new ToGenerator[Generator[T], T] {
-      def apply(t: Generator[T]) = t
-    }
-
-  implicit val double: ToGenerator[Real, Double] =
-    new ToGenerator[Real, Double] {
-      def apply(t: Real) = Generator.require[Double](Set(t)) { (_, n) =>
-        n.toDouble(t)
-      }
-    }
-
-  implicit val string: ToGenerator[String, String] =
-    new ToGenerator[String, String] {
-      def apply(t: String) = Generator.constant(t)
-    }
-
-  implicit def zip[A, B, X, Y](
-      implicit ab: ToGenerator[A, B],
-      xy: ToGenerator[X, Y]): ToGenerator[(A, X), (B, Y)] =
-    new ToGenerator[(A, X), (B, Y)] {
-      def apply(t: (A, X)) = ab(t._1).zip(xy(t._2))
-    }
-
-  implicit def seq[T, U](
-      implicit tu: ToGenerator[T, U]): ToGenerator[Seq[T], Seq[U]] =
-    new ToGenerator[Seq[T], Seq[U]] {
-      def apply(t: Seq[T]) =
-        Generator.traverse(t.map { x =>
-          tu(x)
-        })
-    }
-
-  implicit def map[K, T, U](
-      implicit tu: ToGenerator[T, U]): ToGenerator[Map[K, T], Map[K, U]] =
-    new ToGenerator[Map[K, T], Map[K, U]] {
-      def apply(t: Map[K, T]) =
-        Generator
-          .traverse(t.toList.map {
-            case (k, x) =>
-              tu(x).map { v =>
-                k -> v
-              }
-          })
-          .map(_.toMap)
+        g.zip(ev(v)).map { case (m, w) => m.updated(k, w) }
     }
 }

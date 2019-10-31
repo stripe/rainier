@@ -17,11 +17,6 @@ trait Continuous extends Distribution[Double] {
   def exp: Continuous = Exp.transform(this)
 }
 
-object Continuous {
-  implicit def gen[C <: Continuous]: ToGenerator[C, Double] =
-    Distribution.gen[C, Double]
-}
-
 /**
   * A Continuous Distribution that inherits its transforms from a Support object.
   */
