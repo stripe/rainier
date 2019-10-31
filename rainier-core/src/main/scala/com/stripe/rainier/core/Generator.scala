@@ -97,7 +97,7 @@ sealed trait Generator[+T] { self =>
   */
 object Generator {
   val MaxRequirements = 500
-  
+
   case class Const[T](requirements: Set[Real], t: T) extends Generator[T] {
     def get(implicit r: RNG, n: Numeric[Real]): T = t
   }
@@ -123,12 +123,14 @@ object Generator {
 
   def fromSet[T](items: Set[T]) = vector(items.to[Vector])
 
-  def traverse[T, U](seq: Seq[T])(implicit ev: T <:< Generator[U]): Generator[Seq[U]] =
+  def traverse[T, U](seq: Seq[T])(
+      implicit ev: T <:< Generator[U]): Generator[Seq[U]] =
     seq.foldLeft(Generator.constant[Seq[U]](Seq.empty)) { (g, t) =>
       g.zip(ev(t)).map { case (l, r) => l :+ r }
     }
 
-  def traverse[K, V, W](m: Map[K, V])(implicit ev: V <:< Generator[W]): Generator[Map[K, W]] =
+  def traverse[K, V, W](m: Map[K, V])(
+      implicit ev: V <:< Generator[W]): Generator[Map[K, W]] =
     m.foldLeft(Generator.constant[Map[K, W]](Map.empty)) {
       case (g, (k, v)) =>
         g.zip(ev(v)).map { case (m, w) => m.updated(k, w) }
