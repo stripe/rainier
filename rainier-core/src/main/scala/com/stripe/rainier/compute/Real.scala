@@ -117,7 +117,10 @@ object Real {
   val negInfinity: Real = NegInfinity
 }
 
-final private[rainier] case class Constant(value: BigDecimal) extends Real
+final private[rainier] case class Constant(value: BigDecimal) extends Real {
+  val toDouble = value.toDouble
+}
+
 final private[rainier] object Infinity extends Real
 final private[rainier] object NegInfinity extends Real
 

@@ -3,6 +3,7 @@ package com.stripe.rainier.compute
 class Evaluator(var cache: Map[Real, Double]) extends Numeric[Real] {
 
   def toDouble(x: Real): Double = x match {
+    case c: Constant => c.toDouble
     case Infinity    => Double.PositiveInfinity
     case NegInfinity => Double.NegativeInfinity
     case _ =>
