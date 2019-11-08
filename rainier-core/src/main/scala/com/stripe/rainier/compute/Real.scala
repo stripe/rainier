@@ -118,7 +118,7 @@ object Real {
 }
 
 final private[rainier] case class Constant(value: BigDecimal) extends Real {
-  val toDouble = value.toDouble
+  lazy val toDouble = value.toDouble
 }
 
 final private[rainier] object Infinity extends Real

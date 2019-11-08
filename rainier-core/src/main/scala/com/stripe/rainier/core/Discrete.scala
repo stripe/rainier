@@ -172,6 +172,8 @@ object Poisson {
   }
 
   //from https://www.johndcook.com/blog/2010/08/16/how-to-compute-log-factorial/
+  //we're using the roughest approximation here because we're only using this for
+  //large lambda, which leads to generally large n, where the approximation works
   private def logFactorial(n: Int): Double = {
     val x = (n + 1).toDouble
     ((x - 0.5) * math.log(x)) - x + (0.5 * math.log(2 * math.Pi))
