@@ -3,7 +3,6 @@ import wartremover.Wart
 lazy val root = project.
   in(file(".")).
   aggregate(rainierCore, rainierPlot, rainierCats, rainierScalacheck).
-  aggregate(rainierDocs, rainierExample).
   aggregate(rainierBenchmark, rainierTests).
   aggregate(shadedAsm).
   settings(commonSettings).
@@ -122,35 +121,6 @@ lazy val rainierScalacheck = project.
     "org.typelevel" %% "cats-core" % V.cats,
     "org.scalacheck" %% "scalacheck" % V.scalacheck))
 
-// documentation modules
-
-lazy val rainierDocs = project.
-  in(file("rainier-docs")).
-  settings(name := "rainier-docs").
-  enablePlugins(TutPlugin).
-  dependsOn(
-    rainierCore,
-    rainierTrace,
-  ).
-  settings(commonSettings).
-  settings(
-    resolvers := Seq(Resolver.bintrayRepo("tpolecat", "maven")),
-    scalacOptions in Tut ~= {
-      _.filterNot(sc => sc.contains("-Ywarn-unused") || sc == "-Yno-predef" )
-    },
-    tutTargetDirectory := (baseDirectory in LocalRootProject).value / "docs"
-  ).
-  settings(unpublished)
-
-lazy val rainierExample = project.
-  in(file("rainier-example")).
-  settings(name := "rainier-example").
-  dependsOn(
-    rainierCore,
-    rainierPlot,
-  ).
-  settings(commonSettings).
-  settings(unpublished)
 
 // test modules
 

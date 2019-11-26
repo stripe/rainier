@@ -20,12 +20,6 @@ jobs:
         - sbt compile
 
     - env:
-        - NAME="DOCS"
-        - SCALAC_FATAL_WARNINGS=true
-      script:
-        - sbt tut
-
-    - env:
         - NAME="TESTS"
         - SCALAC_FATAL_WARNINGS=true
       script:

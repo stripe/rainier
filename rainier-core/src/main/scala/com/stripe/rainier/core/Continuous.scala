@@ -15,6 +15,8 @@ trait Continuous extends Distribution[Double] {
   def scale(a: Real): Continuous = Scale(a).transform(this)
   def translate(b: Real): Continuous = Translate(b).transform(this)
   def exp: Continuous = Exp.transform(this)
+
+  def param: Real
 }
 
 object Continuous {
@@ -25,7 +27,14 @@ object Continuous {
 /**
   * A Continuous Distribution that inherits its transforms from a Support object.
   */
-private[rainier] trait StandardContinuous extends Continuous {}
+private[rainier] trait StandardContinuous extends Continuous {
+  def param: Real = {
+    val x = Real.parameter{x =>
+      support.logJacobian(x) + logDensity(support.transform(x))
+    }
+    support.transform(x)
+  }  
+}
 
 /**
   * Location-scale family distribution
@@ -217,4 +226,11 @@ case class Mixture(components: Map[Continuous, Real]) extends Continuous {
           dist.logDensity(real) + weight.log
         }
       })
+
+  def param: Real = {
+    val x = Real.parameter{x =>
+      support.logJacobian(x) + logDensity(support.transform(x))
+    }
+    support.transform(x)
+  }
 }
