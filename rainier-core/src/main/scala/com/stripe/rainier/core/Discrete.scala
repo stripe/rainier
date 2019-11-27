@@ -1,9 +1,11 @@
 package com.stripe.rainier.core
 
 import com.stripe.rainier.compute._
+import com.stripe.rainier.unused
 
 trait Discrete extends Distribution[Long] { self: Discrete =>
-  def logDensity(v: Real): Real
+  type V = Real
+  def encoder(@unused seq: Seq[Long]) = Encoder.numeric[Long]
 
   def zeroInflated(psi: Real): DiscreteMixture =
     constantInflated(0.0, psi)

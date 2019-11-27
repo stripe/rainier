@@ -10,7 +10,8 @@ import scala.annotation.tailrec
 trait Continuous extends Distribution[Double] {
   private[rainier] val support: Support
 
-  def logDensity(v: Real): Real
+  type V = Real
+  def encoder(seq: Seq[Double]) = Encoder.numeric[Double]
 
   def scale(a: Real): Continuous = Scale(a).transform(this)
   def translate(b: Real): Continuous = Translate(b).transform(this)

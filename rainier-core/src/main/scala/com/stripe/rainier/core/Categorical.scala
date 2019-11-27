@@ -53,7 +53,7 @@ final case class Categorical[T](pmf: Map[T, Real]) extends Distribution[T] {
     }
   }
 
-  def toMixture[V](implicit ev: T <:< Continuous): Mixture =
+  def toMixture[U](implicit ev: T <:< Continuous): Mixture =
     Mixture(pmf.map { case (k, v) => (ev(k), v) })
 }
 
