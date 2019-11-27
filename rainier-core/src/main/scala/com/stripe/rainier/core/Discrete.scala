@@ -1,6 +1,7 @@
 package com.stripe.rainier.core
 
 import com.stripe.rainier.compute._
+import com.stripe.rainier.unused
 
 trait Discrete extends Distribution[Long] { self: Discrete =>
   type V = Real
