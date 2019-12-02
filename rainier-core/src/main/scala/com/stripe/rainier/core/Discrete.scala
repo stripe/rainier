@@ -184,7 +184,7 @@ final case class Binomial(p: Real, k: Real) extends Discrete {
   }
 
   def logDensity(v: Real): Real =
-    Multinomial.logDensity(multi, List((true -> v), (false -> (k - v))))
+    multi.logDensity(List((true -> v), (false -> (k - v))))
 }
 
 /**

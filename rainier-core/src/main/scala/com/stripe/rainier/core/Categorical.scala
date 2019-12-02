@@ -11,6 +11,17 @@ import com.stripe.rainier.compute._
 final case class Categorical[T](pmf: Map[T, Real]) extends Distribution[T] {
   self =>
 
+  type V = List[(T,Real)]
+  def encoder(seq: Seq[T]): Encoder.Aux[T, V] = ???
+
+  def logDensity(value: V): Real =
+  Real
+    .sum(value.map {
+      case (t, r) =>
+        (r * pmf.getOrElse(t, Real.zero))
+    })
+    .log
+
   def map[U](fn: T => U): Categorical[U] =
     Categorical(
       pmf.foldLeft(Map.empty[U, Real]) {
@@ -58,14 +69,6 @@ final case class Categorical[T](pmf: Map[T, Real]) extends Distribution[T] {
 }
 
 object Categorical {
-  def logDensity[T](cat: Categorical[T], value: List[(T, Real)]): Real =
-    Real
-      .sum(value.map {
-        case (t, r) =>
-          (r * cat.pmf.getOrElse(t, Real.zero))
-      })
-      .log
-
   def boolean(p: Real): Categorical[Boolean] =
     Categorical(Map(true -> p, false -> (Real.one - p)))
 
@@ -100,6 +103,20 @@ object Categorical {
   */
 final case class Multinomial[T](pmf: Map[T, Real], k: Real)
     extends Distribution[Map[T, Long]] { self =>
+
+  type V = List[(T, Real)]
+  def encoder(seq: Seq[Map[T,Long]]): Encoder.Aux[Map[T,Long], V] = ???
+  
+  def logDensity(v: V): Real =
+    Combinatorics.factorial(k) + Real.sum(v.map {
+      case (t, i) =>
+        val p = pmf.getOrElse(t, Real.zero)
+        val pTerm =
+          Real.eq(i, Real.zero, Real.zero, i * p.log)
+        pTerm - Combinatorics.factorial(i)
+    })
+  
+  
   def generator: Generator[Map[T, Long]] =
     Categorical(pmf).generator.repeat(k).map { seq =>
       seq.groupBy(identity).map { case (t, ts) => (t, ts.size.toLong) }
@@ -112,15 +129,6 @@ object Multinomial {
     val newPMF = pmf.map { case (t, p) => Option(t) -> p } + (None -> (Real.one - total))
     Multinomial(newPMF, k)
   }
-
-  def logDensity[T](multi: Multinomial[T], v: List[(T, Real)]): Real =
-    Combinatorics.factorial(multi.k) + Real.sum(v.map {
-      case (t, i) =>
-        val p = multi.pmf.getOrElse(t, Real.zero)
-        val pTerm =
-          Real.eq(i, Real.zero, Real.zero, i * p.log)
-        pTerm - Combinatorics.factorial(i)
-    })
 
   implicit def gen[T]: ToGenerator[Multinomial[T], Map[T, Long]] =
     new ToGenerator[Multinomial[T], Map[T, Long]] {
