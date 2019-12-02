@@ -151,7 +151,6 @@ final case class Multinomial[T](pmf: Map[T, Real], k: Real)
           Real.eq(i, Real.zero, Real.zero, i * p.log)
         pTerm - Combinatorics.factorial(i)
     })
-
   def generator: Generator[Map[T, Long]] =
     Categorical(pmf).generator.repeat(k).map { seq =>
       seq.groupBy(identity).map { case (t, ts) => (t, ts.size.toLong) }
