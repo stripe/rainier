@@ -4,8 +4,8 @@ import com.stripe.rainier.compute._
 
 trait Fn[A, Y] { self =>
   type X
-  protected def encoder: Encoder[A] { type U = X }
-  protected def xy(x: X): Y
+  private[core] def encoder: Encoder[A] { type U = X }
+  private[core] def xy(x: X): Y
 
   def apply(a: A): Y = xy(encoder.wrap(a))
 

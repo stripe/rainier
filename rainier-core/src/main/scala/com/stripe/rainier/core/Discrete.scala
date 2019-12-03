@@ -3,7 +3,8 @@ package com.stripe.rainier.core
 import com.stripe.rainier.compute._
 
 trait Discrete extends Distribution[Long] { self: Discrete =>
-  def logDensity(v: Real): Real
+  type V = Real
+  val encoder = Encoder.numeric[Long]
 
   def zeroInflated(psi: Real): DiscreteMixture =
     constantInflated(0.0, psi)
@@ -182,7 +183,7 @@ final case class Binomial(p: Real, k: Real) extends Discrete {
   }
 
   def logDensity(v: Real): Real =
-    Multinomial.logDensity(multi, List((true -> v), (false -> (k - v))))
+    multi.logDensity(List((true -> v), (false -> (k - v))))
 }
 
 /**

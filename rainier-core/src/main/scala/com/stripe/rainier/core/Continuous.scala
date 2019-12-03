@@ -10,7 +10,8 @@ import scala.annotation.tailrec
 trait Continuous extends Distribution[Double] {
   private[rainier] val support: Support
 
-  def logDensity(v: Real): Real
+  type V = Real
+  val encoder = Encoder.numeric[Double]
 
   def scale(a: Real): Continuous = Scale(a).transform(this)
   def translate(b: Real): Continuous = Translate(b).transform(this)
@@ -29,11 +30,11 @@ object Continuous {
   */
 private[rainier] trait StandardContinuous extends Continuous {
   def param: Real = {
-    val x = Real.parameter{x =>
+    val x = Real.parameter { x =>
       support.logJacobian(x) + logDensity(support.transform(x))
     }
     support.transform(x)
-  }  
+  }
 }
 
 /**
@@ -228,7 +229,7 @@ case class Mixture(components: Map[Continuous, Real]) extends Continuous {
       })
 
   def param: Real = {
-    val x = Real.parameter{x =>
+    val x = Real.parameter { x =>
       support.logJacobian(x) + logDensity(support.transform(x))
     }
     support.transform(x)
