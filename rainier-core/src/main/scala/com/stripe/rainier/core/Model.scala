@@ -3,7 +3,7 @@ package com.stripe.rainier.core
 import com.stripe.rainier.compute._
 import com.stripe.rainier.sampler._
 
-case class Model(private val targets: Set[Target]) {
+case class Model(private[core] val targets: Set[Target]) {
   def merge(other: Model) = Model(targets ++ other.targets)
 
   def predict[T, U](value: T)(implicit tg: ToGenerator[T, U]): Prediction[U] =
