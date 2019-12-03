@@ -4,6 +4,9 @@ import com.stripe.rainier.compute._
 
 case class Model(private val targets: Set[Target]) {
   def merge(other: Model) = Model(targets ++ other.targets)
+
+  def predict[T, U](value: T)(implicit tg: ToGenerator[T, U]): Prediction[U] =
+    Prediction(this, tg(value))
 }
 
 object Model {
