@@ -6,7 +6,8 @@ case class Sample[+T](chains: List[List[Array[Double]]],
                       model: Model,
                       generator: Generator[T]) {
   def map[U](fn: T => U) = Sample(chains, model, generator.map(fn))
-  def flatMap[U](fn: T => Generator[U]) = Sample(chains, model, generator.flatMap(fn))
+  def flatMap[U](fn: T => Generator[U]) =
+    Sample(chains, model, generator.flatMap(fn))
 
   def diagnostics = Sampler.diagnostics(chains)
 

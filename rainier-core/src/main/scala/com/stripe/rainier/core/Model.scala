@@ -6,27 +6,27 @@ import com.stripe.rainier.sampler._
 case class Model(private val targets: Set[Target]) {
   def merge(other: Model) = Model(targets ++ other.targets)
 
-    def predict[T,U](value: T)(implicit tg: ToGenerator[T,U]): Prediction[U] =
-        Prediction(this, tg(value))
+  def predict[T, U](value: T)(implicit tg: ToGenerator[T, U]): Prediction[U] =
+    Prediction(this, tg(value))
 
-    private lazy val targetGroup = TargetGroup(targets, 10)
+  private lazy val targetGroup = TargetGroup(targets, 10)
 
-    private[rainier] def variables: List[Variable] = targetGroup.variables
-    private[rainier] def density: DensityFunction = {
-        val dataFn = Compiler.default.compileTargets(targetGroup, true, 1)
-        new DensityFunction {
-            val nVars = targetGroup.variables.size
-            val inputs = new Array[Double](dataFn.numInputs)
-            val globals = new Array[Double](dataFn.numGlobals)
-            val outputs = new Array[Double](dataFn.numOutputs)
-            def update(vars: Array[Double]): Unit = {
-              System.arraycopy(vars, 0, inputs, 0, nVars)
-              dataFn(inputs, globals, outputs)
-            }
-            def density = outputs(0)
-            def gradient(index: Int) = outputs(index + 1)
-        }
+  private[rainier] def variables: List[Variable] = targetGroup.variables
+  private[rainier] def density: DensityFunction = {
+    val dataFn = Compiler.default.compileTargets(targetGroup, true, 1)
+    new DensityFunction {
+      val nVars = targetGroup.variables.size
+      val inputs = new Array[Double](dataFn.numInputs)
+      val globals = new Array[Double](dataFn.numGlobals)
+      val outputs = new Array[Double](dataFn.numOutputs)
+      def update(vars: Array[Double]): Unit = {
+        System.arraycopy(vars, 0, inputs, 0, nVars)
+        dataFn(inputs, globals, outputs)
+      }
+      def density = outputs(0)
+      def gradient(index: Int) = outputs(index + 1)
     }
+  }
 }
 
 object Model {
