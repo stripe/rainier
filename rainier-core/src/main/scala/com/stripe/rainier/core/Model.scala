@@ -2,14 +2,14 @@ package com.stripe.rainier.core
 
 import com.stripe.rainier.compute._
 
-case class Model(targets: List[Target]) {
+case class Model(private val targets: Set[Target]) {
   def merge(other: Model) = Model(targets ++ other.targets)
 }
 
 object Model {
   def observe[Y](ys: Seq[Y], dist: Distribution[Y]): Model = {
     val target = dist.target(ys)
-    Model(List(target))
+    Model(Set(target))
   }
 
   def observe[X, Y](xs: Seq[X], ys: Seq[Y])(fn: X => Distribution[Y]): Model = {
@@ -17,7 +17,7 @@ object Model {
       case (x, y) => fn(x).target(y)
     }
 
-    Model(targets.toList)
+    Model(targets.toSet)
   }
 
   def observe[X, Y](xs: Seq[X],
@@ -29,7 +29,7 @@ object Model {
     val target = dist.target(ys)
     val cols = enc.columns(xs)
     Model(
-      List(
+      Set(
         new Target(target.real, target.placeholders ++ vars.zip(cols).toMap)))
   }
 }
