@@ -5,7 +5,7 @@ import com.stripe.rainier.compute._
 trait Distribution[T] {
   type V
   private[core] def encoder: Encoder.Aux[T, V]
-  private[core] def logDensity(v: V): Real
+  def logDensity(v: V): Real
 
   private[core] def target(ts: Seq[T]): Target = {
     val enc = encoder

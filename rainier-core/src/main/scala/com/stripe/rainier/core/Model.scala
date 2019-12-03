@@ -29,7 +29,6 @@ object Model {
     val target = dist.target(ys)
     val cols = enc.columns(xs)
     Model(
-      Set(
-        new Target(target.real, target.placeholders ++ vars.zip(cols).toMap)))
+      Set(new Target(target.real, target.placeholders ++ vars.zip(cols).toMap)))
   }
 }
