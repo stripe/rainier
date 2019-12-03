@@ -11,28 +11,34 @@ import com.stripe.rainier.compute._
 final case class Categorical[T](pmf: Map[T, Real]) extends Distribution[T] {
   self =>
 
-  type V = List[(T,Real)]
+  type V = List[(T, Real)]
   val encoder = {
     val choices = pmf.keys.toList
     new Encoder[T] {
       type U = V
-      def wrap(t: T) = choices.map{k => if(t == k) (k, Real.one) else (k, Real.zero)}
+      def wrap(t: T) = choices.map { k =>
+        if (t == k) (k, Real.one) else (k, Real.zero)
+      }
       def create(acc: List[Variable]) = {
-        val u = choices.map{k => (k, Real.variable())}
+        val u = choices.map { k =>
+          (k, Real.variable())
+        }
         (u, u.map(_._2) ++ acc)
       }
-      def extract(t: T, acc: List[Double]) = 
-        choices.map{k => if(k == t) 1.0 else 0.0} ++ acc
+      def extract(t: T, acc: List[Double]) =
+        choices.map { k =>
+          if (k == t) 1.0 else 0.0
+        } ++ acc
     }
   }
 
   def logDensity(value: V): Real =
-  Real
-    .sum(value.map {
-      case (t, r) =>
-        (r * pmf.getOrElse(t, Real.zero))
-    })
-    .log
+    Real
+      .sum(value.map {
+        case (t, r) =>
+          (r * pmf.getOrElse(t, Real.zero))
+      })
+      .log
 
   def map[U](fn: T => U): Categorical[U] =
     Categorical(
@@ -119,15 +125,21 @@ final case class Multinomial[T](pmf: Map[T, Real], k: Real)
   type V = List[(T, Real)]
   val encoder = {
     val choices = pmf.keys.toList
-    new Encoder[Map[T,Long]] {
+    new Encoder[Map[T, Long]] {
       type U = V
-      def wrap(t: Map[T,Long]) = choices.map{k => (k, Real(t.getOrElse(k, 0L)))}
+      def wrap(t: Map[T, Long]) = choices.map { k =>
+        (k, Real(t.getOrElse(k, 0L)))
+      }
       def create(acc: List[Variable]) = {
-        val u = choices.map{k => (k, Real.variable())}
+        val u = choices.map { k =>
+          (k, Real.variable())
+        }
         (u, u.map(_._2) ++ acc)
       }
-      def extract(t: Map[T,Long], acc: List[Double]) = 
-        choices.map{k => t.getOrElse(k, 0L).toDouble} ++ acc
+      def extract(t: Map[T, Long], acc: List[Double]) =
+        choices.map { k =>
+          t.getOrElse(k, 0L).toDouble
+        } ++ acc
     }
   }
 
@@ -139,8 +151,7 @@ final case class Multinomial[T](pmf: Map[T, Real], k: Real)
           Real.eq(i, Real.zero, Real.zero, i * p.log)
         pTerm - Combinatorics.factorial(i)
     })
-  
-  
+
   def generator: Generator[Map[T, Long]] =
     Categorical(pmf).generator.repeat(k).map { seq =>
       seq.groupBy(identity).map { case (t, ts) => (t, ts.size.toLong) }

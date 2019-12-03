@@ -30,11 +30,11 @@ object Continuous {
   */
 private[rainier] trait StandardContinuous extends Continuous {
   def param: Real = {
-    val x = Real.parameter{x =>
+    val x = Real.parameter { x =>
       support.logJacobian(x) + logDensity(support.transform(x))
     }
     support.transform(x)
-  }  
+  }
 }
 
 /**
@@ -229,7 +229,7 @@ case class Mixture(components: Map[Continuous, Real]) extends Continuous {
       })
 
   def param: Real = {
-    val x = Real.parameter{x =>
+    val x = Real.parameter { x =>
       support.logJacobian(x) + logDensity(support.transform(x))
     }
     support.transform(x)

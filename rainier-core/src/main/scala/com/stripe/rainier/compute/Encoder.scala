@@ -9,9 +9,11 @@ trait Encoder[T] {
   def extract(t: T, acc: List[Double]): List[Double]
   def columns(ts: Seq[T]): List[Array[Double]] = {
     val first = extract(ts.head, Nil)
-    val buffers = first.map{v => ArrayBuffer(v)}
-    ts.tail.foreach{t =>
-      buffers.zip(extract(t, Nil)).foreach{
+    val buffers = first.map { v =>
+      ArrayBuffer(v)
+    }
+    ts.tail.foreach { t =>
+      buffers.zip(extract(t, Nil)).foreach {
         case (buf, v) => buf += v
       }
     }

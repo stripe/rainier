@@ -91,7 +91,7 @@ object Real {
     x.density = fn(x)
     x
   }
-  
+
   def eq(left: Real, right: Real, ifTrue: Real, ifFalse: Real): Real =
     lookupCompare(left, right, ifFalse, ifTrue, ifFalse)
   def lt(left: Real, right: Real, ifTrue: Real, ifFalse: Real): Real =
