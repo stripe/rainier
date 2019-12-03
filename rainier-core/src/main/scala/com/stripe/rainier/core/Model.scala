@@ -7,7 +7,7 @@ case class Model(targets: List[Target]) {
 }
 
 object Model {
-    def observe[X,Y](ys: Seq[Y], dist: Distribution[Y]): Model =  {
+    def observe[Y](ys: Seq[Y], dist: Distribution[Y]): Model =  {
         val target = dist.target(ys)
         Model(List(target))
     }

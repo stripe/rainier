@@ -4,11 +4,11 @@ import com.stripe.rainier.compute._
 
 trait Distribution[T] {
   type V
-  private[core] def encoder(seq: Seq[T]): Encoder.Aux[T,V]
+  private[core] def encoder: Encoder.Aux[T,V]
   private[core] def logDensity(v: V): Real
 
   private[core] def target(ts: Seq[T]): Target = {
-    val enc = encoder(ts)
+    val enc = encoder
     val (v, vars) = enc.create(Nil)
     val lh = logDensity(v)
     val cols = enc.columns(ts)
@@ -16,7 +16,7 @@ trait Distribution[T] {
   }
 
   private[core] def target(t: T): Target = {
-    val enc = encoder(List(t))
+    val enc = encoder
     val v = enc.wrap(t)
     val lh = logDensity(v)
     Target(lh)    

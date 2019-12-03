@@ -12,7 +12,19 @@ final case class Categorical[T](pmf: Map[T, Real]) extends Distribution[T] {
   self =>
 
   type V = List[(T,Real)]
-  def encoder(seq: Seq[T]): Encoder.Aux[T, V] = ???
+  val encoder = {
+    val choices = pmf.keys.toList
+    new Encoder[T] {
+      type U = V
+      def wrap(t: T) = choices.map{k => if(t == k) (k, Real.one) else (k, Real.zero)}
+      def create(acc: List[Variable]) = {
+        val u = choices.map{k => (k, Real.variable())}
+        (u, u.map(_._2) ++ acc)
+      }
+      def extract(t: T, acc: List[Double]) = 
+        choices.map{k => if(k == t) 1.0 else 0.0} ++ acc
+    }
+  }
 
   def logDensity(value: V): Real =
   Real
@@ -105,8 +117,20 @@ final case class Multinomial[T](pmf: Map[T, Real], k: Real)
     extends Distribution[Map[T, Long]] { self =>
 
   type V = List[(T, Real)]
-  def encoder(seq: Seq[Map[T,Long]]): Encoder.Aux[Map[T,Long], V] = ???
-  
+  val encoder = {
+    val choices = pmf.keys.toList
+    new Encoder[Map[T,Long]] {
+      type U = V
+      def wrap(t: Map[T,Long]) = choices.map{k => (k, Real(t.getOrElse(k, 0L)))}
+      def create(acc: List[Variable]) = {
+        val u = choices.map{k => (k, Real.variable())}
+        (u, u.map(_._2) ++ acc)
+      }
+      def extract(t: Map[T,Long], acc: List[Double]) = 
+        choices.map{k => t.getOrElse(k, 0L).toDouble} ++ acc
+    }
+  }
+
   def logDensity(v: V): Real =
     Combinatorics.factorial(k) + Real.sum(v.map {
       case (t, i) =>

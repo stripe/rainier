@@ -11,7 +11,7 @@ trait Continuous extends Distribution[Double] {
   private[rainier] val support: Support
 
   type V = Real
-  def encoder(seq: Seq[Double]) = Encoder.numeric[Double]
+  val encoder = Encoder.numeric[Double]
 
   def scale(a: Real): Continuous = Scale(a).transform(this)
   def translate(b: Real): Continuous = Translate(b).transform(this)
