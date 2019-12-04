@@ -22,7 +22,7 @@ trait SBCModel[T] {
     val (model, real) = sbc.fit(values)
     model.sample(sampler, warmupIterations, goldset.size).predict(real)
   }
-            
+
   def goldset: List[Double]
   val description: String
 }
@@ -155,8 +155,7 @@ object SBCGeometric extends SBCModel[Long] {
 
 object SBCGeometricZeroInflated extends SBCModel[Long] {
   def sbc =
-    SBC(Uniform(0, 1))((x: Real) =>
-      Geometric(.3).zeroInflated(x))
+    SBC(Uniform(0, 1))((x: Real) => Geometric(.3).zeroInflated(x))
   def goldset =
     List(0.3682741265983013, 0.3852529612682177, 0.3604238333388064,
       0.386596856795002, 0.3555033555350904, 0.39217253775032623,
