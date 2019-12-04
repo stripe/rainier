@@ -221,10 +221,13 @@ private[compute] object RealOps {
         seen += r
         r match {
           case Constant(_) | Infinity | NegInfinity => ()
-          case v: Variable                          => vars = v :: vars
-          case u: Unary                             => loop(u.original)
-          case l: Line                              => l.ax.terms.foreach(loop)
-          case l: LogLine                           => l.ax.terms.foreach(loop)
+          case v: Placeholder                       => vars = v :: vars
+          case v: Parameter =>
+            vars = v :: vars
+            loop(v.density)
+          case u: Unary   => loop(u.original)
+          case l: Line    => l.ax.terms.foreach(loop)
+          case l: LogLine => l.ax.terms.foreach(loop)
           case Compare(left, right) =>
             loop(left)
             loop(right)

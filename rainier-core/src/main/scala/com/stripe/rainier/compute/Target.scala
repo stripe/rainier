@@ -111,6 +111,8 @@ object TargetGroup {
         }
         .toList
         .sortBy(_.param.sym.id)
-    TargetGroup(base, batched, variables)
+    val priors = variables.collect { case a: Parameter => a.density }
+
+    TargetGroup(base + Real.sum(priors), batched, variables)
   }
 }
