@@ -14,14 +14,17 @@ trait SBCModel[T] {
     sbc.animate(sampler, warmupIterations, syntheticSamples)
     println(s"\nnew goldset:")
     println(s"$samples")
+    println(s"\ngoldset true value: $trueValue")
     println(
       s"If this run looks good, please update the goldset in your SBCModel")
   }
-  val samples: List[Double] = {
+  val (samples, trueValue) = {
     implicit val rng: RNG = ScalaRNG(1528673302081L)
-    val values = sbc.synthesize(syntheticSamples)._1
+    val (values, trueValue) = sbc.synthesize(syntheticSamples)
     val (model, real) = sbc.fit(values)
-    model.sample(sampler, warmupIterations, goldset.size).predict(real)
+    val samples =
+      model.sample(sampler, warmupIterations, goldset.size).predict(real)
+    (samples, trueValue)
   }
 
   def goldset: List[Double]
@@ -124,16 +127,17 @@ object SBCBinomial extends SBCModel[Long] {
   def sbc =
     SBC(Uniform(0, 1))((x: Real) => Binomial(x, 10))
   def goldset =
-    List(0.38208027875508366, 0.37884005861941134, 0.3814174045711878,
-      0.37942894970566404, 0.38147495662485753, 0.3795087014387845,
-      0.3811844893251685, 0.3794994564632975, 0.3814748165852564,
-      0.3789463889009164, 0.3819370875489973, 0.37902844992228435,
-      0.3813961248421356, 0.37952763981983967, 0.38128972112688125,
-      0.37959683465760674, 0.38121052827062557, 0.3797758164503148,
-      0.3807856939838994, 0.3799199559826927, 0.38096924168172425,
-      0.38000420485489156, 0.3809817456723548, 0.37998638359895265,
-      0.3809306152322875, 0.3799967600846534, 0.380753436705161,
-      0.38012492553669414, 0.38074455691051023, 0.37871977321564537)
+    List(0.4535065256280634, 0.4626187458545526, 0.4626187458545526,
+      0.4511858944937367, 0.4562103990243661, 0.4562103990243661,
+      0.45053233902438183, 0.45053233902438183, 0.45774584251133293,
+      0.45774584251133293, 0.45206304454153684, 0.45206304454153684,
+      0.45347567314971393, 0.4642348892017204, 0.4494125264409434,
+      0.4440650639105339, 0.4593119144263747, 0.4593119144263747,
+      0.4593119144263747, 0.4593119144263747, 0.456473316354661,
+      0.456473316354661, 0.456473316354661, 0.456473316354661,
+      0.4714549587182768, 0.4473437842515287, 0.4473437842515287,
+      0.44781510594768753, 0.4627226838014988, 0.4627226838014988)
+
   val description = "Binomial(x, 10) with Uniform(0, 1) prior"
 }
 
