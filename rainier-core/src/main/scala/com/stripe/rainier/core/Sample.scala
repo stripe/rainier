@@ -9,7 +9,7 @@ case class Sample[+T](chains: List[List[Array[Double]]],
                       value: T) {
   def map[U](fn: T => U) = Sample(chains, targets, variables, fn(value))
 
-  def diagnostics = Sampler.diagnostics(chains)
+  def diagnostics = Diagnostics.diagnostics(chains)
 
   def waic =
     targets
