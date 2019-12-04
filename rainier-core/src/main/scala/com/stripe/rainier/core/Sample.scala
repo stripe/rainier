@@ -2,13 +2,7 @@ package com.stripe.rainier.core
 
 import com.stripe.rainier.sampler._
 
-case class Sample[+T](chains: List[List[Array[Double]]],
-                      model: Model,
-                      generator: Generator[T]) {
-  def map[U](fn: T => U) = Sample(chains, model, generator.map(fn))
-  def flatMap[U](fn: T => Generator[U]) =
-    Sample(chains, model, generator.flatMap(fn))
-
+case class Sample(chains: List[List[Array[Double]]], model: Model, rng: RNG) {
   def diagnostics = Sampler.diagnostics(chains)
 
   def waic =
@@ -18,8 +12,8 @@ case class Sample[+T](chains: List[List[Array[Double]]],
       }
       .reduce(_ + _)
 
-  def toList(implicit rng: RNG): List[T] = {
-    val fn = generator.prepare(model.variables)
+  def predict[T, U](value: T)(implicit tg: ToGenerator[T, U]): List[U] = {
+    val fn = tg(value).prepare(model.variables)(rng)
     chains.flatMap { c =>
       c.map { a =>
         fn(a)

@@ -6,14 +6,23 @@ import com.stripe.rainier.sampler._
 case class Model(private[core] val targets: Set[Target]) {
   def merge(other: Model) = Model(targets ++ other.targets)
 
-  def predict[T, U](value: T)(implicit tg: ToGenerator[T, U]): Prediction[U] =
-    Prediction(this, tg(value))
+  def sample(sampler: Sampler,
+             warmupIterations: Int,
+             iterations: Int,
+             keepEvery: Int = 1,
+             nChains: Int = 1)(implicit rng: RNG): Sample = {
+    val chains = 1.to(nChains).toList.map { _ =>
+      sampler.sample(density(), warmupIterations, iterations, keepEvery)
+    }
+    Sample(chains, this, rng)
+  }
 
   private lazy val targetGroup = TargetGroup(targets, 10)
+  private lazy val dataFn =
+    Compiler.default.compileTargets(targetGroup, true, 1)
 
   private[rainier] def variables: List[Variable] = targetGroup.variables
-  private[rainier] def density: DensityFunction = {
-    val dataFn = Compiler.default.compileTargets(targetGroup, true, 1)
+  private[rainier] def density(): DensityFunction =
     new DensityFunction {
       val nVars = targetGroup.variables.size
       val inputs = new Array[Double](dataFn.numInputs)
@@ -26,7 +35,6 @@ case class Model(private[core] val targets: Set[Target]) {
       def density = outputs(0)
       def gradient(index: Int) = outputs(index + 1)
     }
-  }
 }
 
 object Model {
