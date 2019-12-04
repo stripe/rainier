@@ -3,7 +3,7 @@ package com.stripe.rainier.core
 import com.stripe.rainier.compute._
 import com.stripe.rainier.sampler._
 
-case class Model(private[core] val targets: Set[Target]) {
+case class Model(private[rainier] val targets: Set[Target]) {
   def merge(other: Model) = Model(targets ++ other.targets)
 
   def sample(sampler: Sampler,
