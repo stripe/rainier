@@ -101,7 +101,7 @@ libraryDependencies += "com.stripe" %% "rainier-core" % "0.2.3"
 
 ## Authors
 
-Rainier's primary author is [Avi Bryant](http://twitter.com/avibryant) with major contributions from [Mio Alter](https://twitter.com/mioalter). Many thanks also for contributions and support from:
+Rainier's primary author is [Avi Bryant](http://twitter.com/avibryant) with major contributions from [Mio Alter](https://twitter.com/mioalter) and Andrew Metcalf. Many thanks also for contributions and support from:
  * Christian Anderson
  * Alex Beal
  * Arthur Bit-Monnot
@@ -111,7 +111,6 @@ Rainier's primary author is [Avi Bryant](http://twitter.com/avibryant) with majo
  * Grzegorz Kossakowski
  * Roban Kramer
  * Jonny Law
- * Andrew Metcalf
  * Michael Manapat
  * Alan O'Donnell
  * Adam Reese
