@@ -14,7 +14,7 @@ case class Model(private[core] val targets: Set[Target]) {
     val chains = 1.to(nChains).toList.map { _ =>
       sampler.sample(density(), warmupIterations, iterations, keepEvery)
     }
-    Sample(chains, this, rng)
+    Sample(chains, this)
   }
 
   private lazy val targetGroup = TargetGroup(targets, 10)
