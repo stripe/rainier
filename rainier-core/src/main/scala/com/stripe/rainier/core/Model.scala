@@ -35,7 +35,6 @@ case class Model(private[core] val targets: Set[Target]) {
       def density = outputs(0)
       def gradient(index: Int) = outputs(index + 1)
     }
-  }
 }
 
 object Model {
