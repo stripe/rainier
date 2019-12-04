@@ -12,7 +12,8 @@ and returns a (Distribution[T], Real) which is a pair of values:
 1) a distribution describing the likelihood of the observed data, given the parameter values,
 2) the parameter value or summary stat we're calibrating on
  */
-final case class SBC[T](priors: Seq[Continuous], fn: Seq[Real] => (Distribution[T], Real)) {
+final case class SBC[T](priors: Seq[Continuous],
+                        fn: Seq[Real] => (Distribution[T], Real)) {
 
   import SBC._
 
@@ -124,7 +125,11 @@ final case class SBC[T](priors: Seq[Continuous], fn: Seq[Real] => (Distribution[
     val (model, real) = fit(syntheticValues)
 
     val sample =
-      model.sample(sampler, warmupIterations, (Samples / Chains) * thin, thin, Chains)
+      model.sample(sampler,
+                   warmupIterations,
+                   (Samples / Chains) * thin,
+                   thin,
+                   Chains)
     val diag = sample.diagnostics
     val maxRHat = diag.map(_.rHat).max
     val minEffectiveSampleSize = diag.map(_.effectiveSampleSize).min
