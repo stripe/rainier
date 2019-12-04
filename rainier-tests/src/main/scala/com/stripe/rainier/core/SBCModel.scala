@@ -4,13 +4,13 @@ import com.stripe.rainier.compute._
 import com.stripe.rainier.sampler._
 
 trait SBCModel[T] {
-  implicit val rng: RNG = ScalaRNG(1528673302081L)
   def sbc: SBC[T]
   val sampler: Sampler = HMC(1)
   val warmupIterations: Int = 10000
   val syntheticSamples: Int = 1000
   val nSamples: Int = 10
   def main(args: Array[String]): Unit = {
+    implicit val rng: RNG = ScalaRNG(1528673302081L)
     sbc.animate(sampler, warmupIterations, syntheticSamples)
     println(s"\nnew goldset:")
     println(s"$samples")
@@ -18,6 +18,7 @@ trait SBCModel[T] {
       s"If this run looks good, please update the goldset in your SBCModel")
   }
   val samples: List[Double] = {
+    implicit val rng: RNG = ScalaRNG(1528673302081L)
     val values = sbc.synthesize(syntheticSamples)._1
     val (model, real) = sbc.fit(values)
     model.sample(sampler, warmupIterations, goldset.size).predict(real)
