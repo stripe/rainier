@@ -17,6 +17,8 @@ Apart from Variable and a simple ternary If expression, all of the subtypes of R
 You can also automatically derive the gradient of a Real with respect to its variables.
  */
 sealed trait Real {
+  def bounds: Bounds
+
   def +(other: Real): Real = RealOps.add(this, other)
   def *(other: Real): Real = RealOps.multiply(this, other)
 
@@ -122,20 +124,35 @@ object Real {
   val negInfinity: Real = NegInfinity
 }
 
-final private[rainier] case class Constant(value: BigDecimal) extends Real
-final private[rainier] object Infinity extends Real
-final private[rainier] object NegInfinity extends Real
+final private[rainier] case class Constant(value: BigDecimal) extends Real {
+  val bounds = 
+  if(value > 0.0)
+    PositiveBounds
+  else if(value < 0.0)
+    NegativeBounds
+  else
+    UnknownBounds
+}
+
+final private[rainier] object Infinity extends Real {
+  val bounds = PositiveBounds
+}
+
+final private[rainier] object NegInfinity extends Real {
+  val bounds = UnknownBounds
+}
 
 sealed trait NonConstant extends Real
 
 sealed trait Variable extends NonConstant {
   private[compute] val param = new ir.Parameter
+  val bounds = UnknownBounds
 }
 
 final private[rainier] class Placeholder extends Variable
 final private[rainier] class Parameter(var density: Real) extends Variable
 
-final private case class Unary(original: NonConstant, op: ir.UnaryOp)
+final private case class Unary(original: NonConstant, op: ir.UnaryOp, bounds: Bounds)
     extends NonConstant
 
 /*
@@ -149,13 +166,13 @@ Because it is common for ax to have a large number of terms, this is deliberatel
 as equality comparisons would be too expensive. The impact of this is subtle, see [0] at the bottom of this file
 for an example.
  */
-private final class Line private (val ax: Coefficients, val b: BigDecimal)
+private final class Line private (val ax: Coefficients, val b: BigDecimal, val bounds: Bounds)
     extends NonConstant
 
 private[compute] object Line {
-  def apply(ax: Coefficients, b: BigDecimal): Line = {
+  def apply(ax: Coefficients, b: BigDecimal, bounds: Bounds): Line = {
     require(!ax.isEmpty)
-    new Line(ax, b)
+    new Line(ax, b, bounds)
   }
 }
 
@@ -169,7 +186,7 @@ Luckily, this aligns well with the demands of numerical stability: if you have t
 together, you are better off adding their logs.
  */
 private final case class LogLine(
-    ax: Coefficients
+    ax: Coefficients, bounds: Bounds
 ) extends NonConstant {
   require(!ax.isEmpty)
 }
@@ -178,7 +195,7 @@ private object LogLine {
   def apply(nc: NonConstant): LogLine =
     nc match {
       case l: LogLine => l
-      case _          => LogLine(Coefficients(nc -> Real.BigOne))
+      case _          => LogLine(Coefficients(nc -> Real.BigOne), nc.bounds)
     }
 }
 
@@ -187,9 +204,11 @@ Evaluates to 0 if left and right are equal, 1 if left > right, and
 -1 if left < right.
  */
 private final case class Compare private (left: Real, right: Real)
-    extends NonConstant
+    extends NonConstant {
+      val bounds = UnknownBounds
+    }
 
-private final case class Pow private (base: Real, exponent: NonConstant)
+private final case class Pow private (base: Real, exponent: NonConstant, bounds: Bounds)
     extends NonConstant
 
 /*
@@ -197,7 +216,8 @@ Evaluates to the (index-low)'th element of table.
  */
 private final class Lookup(val index: NonConstant,
                            val table: Array[Real],
-                           val low: Int)
+                           val low: Int,
+                           val bounds: Bounds)
     extends NonConstant
 
 object Lookup {
@@ -214,7 +234,7 @@ object Lookup {
         else
           throw new ArithmeticException("Cannot lookup a non-integral number")
       case nc: NonConstant =>
-        new Lookup(nc, table.toArray, low)
+        new Lookup(nc, table.toArray, low, Bounds.any(table.map(_.bounds)))
     }
 }
 

@@ -25,14 +25,14 @@ class Evaluator(var cache: Map[Real, Double]) extends Numeric[Real] {
       l.ax.toList.map { case (r, d) => toDouble(r) * d.toDouble }.sum + l.b.toDouble
     case l: LogLine =>
       l.ax.toList.map { case (r, d) => Math.pow(toDouble(r), d.toDouble) }.product
-    case Unary(original, op) =>
+    case Unary(original, op, _) =>
       // must use Real(_) constructor since Constant(_) constructor would result in undesirable errors
       // at infinities and unhelpful NumberFormatException on NaN, all due to conversion to BigDecimal
       val ev = Real(toDouble(original))
       eval(RealOps.unary(ev, op))
     case Compare(left, right) =>
       eval(RealOps.compare(toDouble(left), toDouble(right)))
-    case Pow(base, exponent) =>
+    case Pow(base, exponent, _) =>
       // note: result can be NaN when base < 0 && exponent is negative and not an int
       Math.pow(toDouble(base), toDouble(exponent))
     case l: Lookup =>
