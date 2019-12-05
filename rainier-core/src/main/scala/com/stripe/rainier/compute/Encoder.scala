@@ -2,7 +2,7 @@ package com.stripe.rainier.compute
 
 import scala.collection.mutable.ArrayBuffer
 
-trait Encoder[T] {
+trait Encoder[-T] {
   type U
   def wrap(t: T): U
   def create(acc: List[Variable]): (U, List[Variable])

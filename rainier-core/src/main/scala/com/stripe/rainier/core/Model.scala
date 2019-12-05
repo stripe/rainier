@@ -4,7 +4,7 @@ import com.stripe.rainier.compute._
 import com.stripe.rainier.sampler._
 import com.stripe.rainier.optimizer._
 
-case class Model(private[core] val targets: Set[Target]) {
+case class Model(private[rainier] val targets: Set[Target]) {
   def merge(other: Model) = Model(targets ++ other.targets)
 
   def sample(sampler: Sampler,
@@ -21,10 +21,10 @@ case class Model(private[core] val targets: Set[Target]) {
   def optimize(): Estimate =
     Estimate(Optimizer.lbfgs(density()), this)
 
-  private lazy val targetGroup = TargetGroup(targets, 10)
-  private lazy val dataFn =
-    Compiler.default.compileTargets(targetGroup, true, 1)
-
+  lazy val targetGroup = TargetGroup(targets, 500)
+  lazy val dataFn =
+    Compiler.default.compileTargets(targetGroup, true, 4)
+    
   private[rainier] def variables: List[Variable] = targetGroup.variables
   private[rainier] def density(): DensityFunction =
     new DensityFunction {

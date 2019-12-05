@@ -2,7 +2,7 @@ package com.stripe.rainier.core
 
 import com.stripe.rainier.compute._
 
-trait Fn[A, Y] { self =>
+trait Fn[-A, +Y] { self =>
   type X
   private[core] def encoder: Encoder[A] { type U = X }
   private[core] def xy(x: X): Y
