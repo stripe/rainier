@@ -9,6 +9,7 @@ import com.cibo.evilplot.plot.renderers._
 import com.cibo.evilplot.plot.aesthetics._
 
 import com.stripe.rainier.repl.{hdpi, mean}
+import com.stripe.rainier.core._
 
 object Jupyter {
   object PlotThemes {
@@ -56,6 +57,25 @@ object Jupyter {
 
   implicit val extent: Extent = Extent(400, 400)
   implicit val theme: Theme = PlotThemes.default
+
+  def trace(sample: Sample)(implicit	
+                               theme: Theme,	
+                               oh: OutputHandler): Unit = {	
+    val nVariables = sample.model.variables.size	
+    val lines =	
+      0.until(nVariables).toList.map { v =>	
+        sample.chains.zipWithIndex.map {	
+          case (c, n) =>	
+            line(c.zipWithIndex.map { case (a, i) => i -> a(v) })	
+              .xAxis()	
+              .yAxis()	
+              .frame()	
+              .xLabel("chain " + (n + 1))	
+              .yLabel("param " + (v + 1))	
+        }	
+      }	
+    show(Facets(lines))(Extent(800, 800), theme, oh)	
+  }	
 
   def density[N](seq: Seq[N], minX: Double, maxX: Double)(
       implicit num: Numeric[N],
