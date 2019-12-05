@@ -62,10 +62,11 @@ class WAICTest extends FunSuite {
     val a = Normal(0, 100).param
     val b = Normal(0, 10).param
     val sigma = Uniform(0, 30).param
-    val m = Model.observe(cars.map(_._1), cars.map(_._2)) { s =>
+    val fn = Fn.encode[Double].map { s =>
       val mu = a + b * s
       Normal(mu, sigma)
     }
+    val m = Model.observe(cars.map(_._1), cars.map(_._2), fn)
 
     def logit(x: Double) = math.log(x / (1.0 - x))
 
