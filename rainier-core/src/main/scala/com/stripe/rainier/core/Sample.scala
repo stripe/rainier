@@ -2,7 +2,8 @@ package com.stripe.rainier.core
 
 import com.stripe.rainier.sampler._
 
-case class Sample(chains: List[List[Array[Double]]], model: Model)(implicit rng: RNG) {
+case class Sample(chains: List[List[Array[Double]]], model: Model)(
+    implicit rng: RNG) {
   def diagnostics = Sampler.diagnostics(chains)
 
   def waic =
