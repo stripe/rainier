@@ -44,9 +44,9 @@ class RegressionBenchmark {
     val betas = Vector.fill(k)(Normal(0, 1).param)
     val sigma = Uniform(0, 10).param
     //TODO: version that uses Fn
-    Model.observe(data.map(_._1), data.map(_._2)){vec =>
-        val mean = Real.dot(betas, Real.seq(vec))
-        Normal(mean, sigma)
+    Model.observe(data.map(_._1), data.map(_._2)) { vec =>
+      val mean = Real.dot(betas, Real.seq(vec))
+      Normal(mean, sigma)
     }
   }
 
