@@ -2,6 +2,8 @@ package com.stripe.rainier
 package compute
 
 import com.stripe.rainier.ir
+import com.stripe.rainier.ir.AbsOp
+import com.stripe.rainier.ir.ExpOp
 
 /*
 A Real is a DAG which represents a mathematical function
@@ -125,13 +127,7 @@ object Real {
 }
 
 final private[rainier] case class Constant(value: BigDecimal) extends Real {
-  val bounds = 
-  if(value > 0.0)
-    PositiveBounds
-  else if(value < 0.0)
-    NegativeBounds
-  else
-    UnknownBounds
+  val bounds = Bounds(value)
 }
 
 final private[rainier] object Infinity extends Real {
@@ -152,8 +148,14 @@ sealed trait Variable extends NonConstant {
 final private[rainier] class Placeholder extends Variable
 final private[rainier] class Parameter(var density: Real) extends Variable
 
-final private case class Unary(original: NonConstant, op: ir.UnaryOp, bounds: Bounds)
-    extends NonConstant
+final private case class Unary(original: NonConstant, op: ir.UnaryOp)
+    extends NonConstant {
+  val bounds = op match {
+    case AbsOp => PositiveBounds //incorrect if original == 0
+    case ExpOp => PositiveBounds
+    case _ => UnknownBounds
+  }
+}
 
 /*
 This node type represents any linear transformation from an input vector to an output
@@ -166,13 +168,17 @@ Because it is common for ax to have a large number of terms, this is deliberatel
 as equality comparisons would be too expensive. The impact of this is subtle, see [0] at the bottom of this file
 for an example.
  */
-private final class Line private (val ax: Coefficients, val b: BigDecimal, val bounds: Bounds)
-    extends NonConstant
+private final class Line private (val ax: Coefficients, val b: BigDecimal)
+    extends NonConstant {
+      val bounds = Bounds.sum(Bounds(b) :: ax.toList.map{case (x, a) =>
+        Bounds.multiply(x.bounds, Bounds(a))
+      })
+  }
 
 private[compute] object Line {
-  def apply(ax: Coefficients, b: BigDecimal, bounds: Bounds): Line = {
+  def apply(ax: Coefficients, b: BigDecimal): Line = {
     require(!ax.isEmpty)
-    new Line(ax, b, bounds)
+    new Line(ax, b)
   }
 }
 

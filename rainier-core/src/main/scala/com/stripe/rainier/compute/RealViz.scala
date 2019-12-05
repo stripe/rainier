@@ -69,7 +69,7 @@ private class RealViz {
       case Some(id) => id
       case None =>
         val id = nc match {
-          case Unary(original, op, _) =>
+          case Unary(original, op) =>
             val origID = nonConstant(original)
             val id = gv.node(label(IRViz.opLabel(op)), shape("oval"))
             gv.edge(id, origID)

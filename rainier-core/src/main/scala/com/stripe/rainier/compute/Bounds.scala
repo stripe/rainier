@@ -6,7 +6,18 @@ sealed trait Bounds {
 }
 
 object Bounds {
+    def apply(value: BigDecimal): Bounds = {
+        if(value > 0.0)
+            PositiveBounds
+        else if(value < 0.0)
+            NegativeBounds
+        else
+            UnknownBounds
+    }
+
     def any(seq: Seq[Bounds]): Bounds = ???
+    def sum(seq: Seq[Bounds]): Bounds = ???
+    def multiply(left: Bounds, right: Bounds): Bounds = ???
 }
 
 object UnknownBounds extends Bounds {

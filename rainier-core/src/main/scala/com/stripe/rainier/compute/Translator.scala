@@ -15,7 +15,7 @@ private class Translator {
         case Infinity            => Const(1.0 / 0.0)
         case NegInfinity         => Const(-1.0 / 0.0)
         case Constant(value)     => Const(value.toDouble)
-        case Unary(original, op, _) => unaryExpr(toExpr(original), op)
+        case Unary(original, op) => unaryExpr(toExpr(original), op)
         case l: Line             => lineExpr(l)
         case l: LogLine          => logLineExpr(l)
         case Pow(base, exponent, _) =>
