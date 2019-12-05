@@ -2,6 +2,7 @@ package com.stripe.rainier.core
 
 import com.stripe.rainier.compute._
 import com.stripe.rainier.sampler._
+import com.stripe.rainier.optimizer._
 
 case class Model(private[core] val targets: Set[Target]) {
   def merge(other: Model) = Model(targets ++ other.targets)
@@ -16,6 +17,9 @@ case class Model(private[core] val targets: Set[Target]) {
     }
     Sample(chains, this)
   }
+
+  def optimize(): Estimate =
+    Estimate(Optimizer.lbfgs(density()), this)
 
   private lazy val targetGroup = TargetGroup(targets, 10)
   private lazy val dataFn =
