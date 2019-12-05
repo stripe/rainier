@@ -171,7 +171,7 @@ for an example.
 private final class Line private (val ax: Coefficients, val b: BigDecimal)
     extends NonConstant {
       val bounds = Bounds.sum(Bounds(b) :: ax.toList.map{case (x, a) =>
-        Bounds.multiply(x.bounds, Bounds(a))
+        Bounds.product(List(x.bounds, Bounds(a)))
       })
   }
 
@@ -192,16 +192,17 @@ Luckily, this aligns well with the demands of numerical stability: if you have t
 together, you are better off adding their logs.
  */
 private final case class LogLine(
-    ax: Coefficients, bounds: Bounds
+    ax: Coefficients
 ) extends NonConstant {
   require(!ax.isEmpty)
+  val bounds = Bounds.product(ax.toList.map{case (x,a) => Bounds.pow(x.bounds,a)})
 }
 
 private object LogLine {
   def apply(nc: NonConstant): LogLine =
     nc match {
       case l: LogLine => l
-      case _          => LogLine(Coefficients(nc -> Real.BigOne), nc.bounds)
+      case _          => LogLine(Coefficients(nc -> Real.BigOne))
     }
 }
 
@@ -214,8 +215,10 @@ private final case class Compare private (left: Real, right: Real)
       val bounds = UnknownBounds
     }
 
-private final case class Pow private (base: Real, exponent: NonConstant, bounds: Bounds)
-    extends NonConstant
+private final case class Pow private (base: Real, exponent: NonConstant)
+    extends NonConstant {
+      val bounds = Bounds.pow(base.bounds)
+  }
 
 /*
 Evaluates to the (index-low)'th element of table.
@@ -240,7 +243,7 @@ object Lookup {
         else
           throw new ArithmeticException("Cannot lookup a non-integral number")
       case nc: NonConstant =>
-        new Lookup(nc, table.toArray, low, Bounds.any(table.map(_.bounds)))
+        new Lookup(nc, table.toArray, low, Bounds.or(table.map(_.bounds)))
     }
 }
 

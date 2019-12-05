@@ -49,7 +49,7 @@ class PartialEvaluator(var cache: Map[Real, (Real, Boolean)]) {
         (RealOps.compare(newLeft, newRight), true)
       else
         (real, false)
-    case Pow(base, exponent, _) =>
+    case Pow(base, exponent) =>
       val (newBase, baseModified) = apply(base)
       val (newExponent, exponentModified) = apply(exponent)
       if (baseModified || exponentModified)

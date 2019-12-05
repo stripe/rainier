@@ -32,7 +32,7 @@ class Evaluator(var cache: Map[Real, Double]) extends Numeric[Real] {
       eval(RealOps.unary(ev, op))
     case Compare(left, right) =>
       eval(RealOps.compare(toDouble(left), toDouble(right)))
-    case Pow(base, exponent, _) =>
+    case Pow(base, exponent) =>
       // note: result can be NaN when base < 0 && exponent is negative and not an int
       Math.pow(toDouble(base), toDouble(exponent))
     case l: Lookup =>

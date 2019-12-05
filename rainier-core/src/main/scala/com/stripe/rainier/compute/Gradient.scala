@@ -143,7 +143,7 @@ private object Gradient {
         if (complement.isEmpty)
           Real.one
         else
-          LogLine(complement, ???)
+          LogLine(complement)
       gradient.toReal *
         exponent *
         term.pow(exponent - 1) *

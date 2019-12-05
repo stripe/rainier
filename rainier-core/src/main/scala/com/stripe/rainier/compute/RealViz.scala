@@ -74,7 +74,7 @@ private class RealViz {
             val id = gv.node(label(IRViz.opLabel(op)), shape("oval"))
             gv.edge(id, origID)
             id
-          case Pow(base, exponent, _) =>
+          case Pow(base, exponent) =>
             gv.binaryRecord(IRViz.opLabel(PowOp),
                             idOrLabel(base),
                             idOrLabel(exponent))
@@ -82,7 +82,7 @@ private class RealViz {
             gv.binaryRecord(IRViz.opLabel(CompareOp),
                             idOrLabel(left),
                             idOrLabel(right))
-          case LogLine(ax, _) =>
+          case LogLine(ax) =>
             coefficients("∏^", ax, None)
           case l: Line =>
             val b =

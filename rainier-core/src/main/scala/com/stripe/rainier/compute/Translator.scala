@@ -18,7 +18,7 @@ private class Translator {
         case Unary(original, op) => unaryExpr(toExpr(original), op)
         case l: Line             => lineExpr(l)
         case l: LogLine          => logLineExpr(l)
-        case Pow(base, exponent, _) =>
+        case Pow(base, exponent) =>
           binaryExpr(toExpr(base), toExpr(exponent), PowOp)
         case Compare(left, right) =>
           binaryExpr(toExpr(left), toExpr(right), CompareOp)
