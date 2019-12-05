@@ -36,8 +36,23 @@ object Bounds {
         }
             
 
-    def pow(x: Bounds, y: BigDecimal) = ???
-    def pow(x: Bounds) = ???
+    def pow(x: Bounds, y: BigDecimal) = {
+        if(x == PositiveBounds)
+            PositiveBounds
+        else if(x == NegativeBounds && y.isValidInt) {
+            if(y.toInt % 2 == 0)
+                PositiveBounds
+            else
+                NegativeBounds
+        } else
+            UnknownBounds
+    }
+
+    def pow(x: Bounds) =
+        if(x == PositiveBounds)
+            PositiveBounds
+        else
+            UnknownBounds
 }
 
 object UnknownBounds extends Bounds {
