@@ -153,7 +153,7 @@ final private case class Unary(original: NonConstant, op: ir.UnaryOp)
   val bounds = op match {
     case AbsOp => PositiveBounds //incorrect if original == 0
     case ExpOp => PositiveBounds
-    case _ => UnknownBounds
+    case _     => UnknownBounds
   }
 }
 
@@ -170,10 +170,11 @@ for an example.
  */
 private final class Line private (val ax: Coefficients, val b: BigDecimal)
     extends NonConstant {
-      val bounds = Bounds.sum(Bounds(b) :: ax.toList.map{case (x, a) =>
-        Bounds.product(List(x.bounds, Bounds(a)))
-      })
-  }
+  val bounds = Bounds.sum(Bounds(b) :: ax.toList.map {
+    case (x, a) =>
+      Bounds.product(List(x.bounds, Bounds(a)))
+  })
+}
 
 private[compute] object Line {
   def apply(ax: Coefficients, b: BigDecimal): Line = {
@@ -195,7 +196,9 @@ private final case class LogLine(
     ax: Coefficients
 ) extends NonConstant {
   require(!ax.isEmpty)
-  val bounds = Bounds.product(ax.toList.map{case (x,a) => Bounds.pow(x.bounds,a)})
+  val bounds = Bounds.product(ax.toList.map {
+    case (x, a) => Bounds.pow(x.bounds, a)
+  })
 }
 
 private object LogLine {
@@ -212,13 +215,13 @@ Evaluates to 0 if left and right are equal, 1 if left > right, and
  */
 private final case class Compare private (left: Real, right: Real)
     extends NonConstant {
-      val bounds = UnknownBounds
-    }
+  val bounds = UnknownBounds
+}
 
 private final case class Pow private (base: Real, exponent: NonConstant)
     extends NonConstant {
-      val bounds = Bounds.pow(base.bounds)
-  }
+  val bounds = Bounds.pow(base.bounds)
+}
 
 /*
 Evaluates to the (index-low)'th element of table.
