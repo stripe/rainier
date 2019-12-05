@@ -6,18 +6,17 @@ import org.scalatest.FunSuite
 class OptimizerTest extends FunSuite {
 
   test("fit normal") {
-    testLBFGS(for {
-      mu <- Normal(0, 10).param
-      sigma <- Uniform(0, 1).param
-      n <- Normal(mu, sigma).fit(List(1.0, 2.0, 3.0))
-    } yield n)
+    val mu = Normal(0, 10).param
+    val sigma = Uniform(0, 1).param
+    val m = Model.observe(List(1.0, 2.0, 3.0), Normal(mu, sigma))
+    testLBFGS(m)
   }
 
   val m = 5
   val eps = 0.1
 
-  def testLBFGS(rv: RandomVariable[_]): Unit = {
-    val df = rv.density()
+  def testLBFGS(model: Model): Unit = {
+    val df = model.density()
     testLBFGS(df.nVars) { x =>
       df.update(x)
       val f = df.density * -1

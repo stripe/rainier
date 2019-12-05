@@ -18,13 +18,13 @@ import com.stripe.rainier.sampler._
 abstract class SBCBenchmark {
   implicit val rng: RNG = RNG.default
 
-  protected def sbc: SBC[_, _]
+  protected def sbc: SBC[_]
 
   @Param(Array("100", "1000", "10000", "100000"))
   protected var syntheticSamples: Int = _
 
-  var s: SBC[_, _] = _
-  var model: RandomVariable[_] = _
+  var s: SBC[_] = _
+  var model: Model = _
   var df: DensityFunction = _
 
   @Setup(Level.Trial)
@@ -40,7 +40,7 @@ abstract class SBCBenchmark {
     s.synthesize(syntheticSamples)
 
   @Benchmark
-  def build(): RandomVariable[Real] = s.model(syntheticSamples)
+  def build(): Model = s.model(syntheticSamples)._1
 
   @Benchmark
   def compile(): DataFunction =
@@ -53,61 +53,60 @@ abstract class SBCBenchmark {
 
 class NormalBenchmark extends SBCBenchmark {
   def sbc =
-    SBC[Double, Continuous](Uniform(0, 1)) { n =>
+    SBC(Uniform(0, 1)) { n =>
       Normal(n, 1)
     }
 }
 
 class LaplaceBenchmark extends SBCBenchmark {
-  def sbc = SBC[Double, Continuous](LogNormal(0, 1)) { x =>
+  def sbc = SBC(LogNormal(0, 1)) { x =>
     Laplace(x, x)
   }
 }
 
 class LogNormalBenchmark extends SBCBenchmark {
   def sbc =
-    SBC[Double, Continuous](LogNormal(0, 1))((x: Real) => LogNormal(x, x))
+    SBC(LogNormal(0, 1))((x: Real) => LogNormal(x, x))
 }
 
 class ExponentialBenchmark extends SBCBenchmark {
   def sbc =
-    SBC[Double, Continuous](LogNormal(0, 1))((x: Real) => Exponential(x))
+    SBC(LogNormal(0, 1))((x: Real) => Exponential(x))
 }
 
 class BernoulliBenchmark extends SBCBenchmark {
   def sbc =
-    SBC[Long, Discrete](Uniform(0, 1))((x: Real) => Bernoulli(x))
+    SBC(Uniform(0, 1))((x: Real) => Bernoulli(x))
 }
 
 class BinomialBenchmark extends SBCBenchmark {
   def sbc =
-    SBC[Long, Discrete](Uniform(0, 1))((x: Real) => Binomial(x, 10))
+    SBC(Uniform(0, 1))((x: Real) => Binomial(x, 10))
 }
 
 class GeometricBenchmark extends SBCBenchmark {
   def sbc =
-    SBC[Long, Discrete](Uniform(0, 1))((x: Real) => Geometric(x))
+    SBC(Uniform(0, 1))((x: Real) => Geometric(x))
 }
 
 class GeometricZeroInflatedBenchmark extends SBCBenchmark {
   def sbc =
-    SBC[Long, Discrete](Uniform(0, 1))((x: Real) =>
-      Geometric(.3).zeroInflated(x))
+    SBC(Uniform(0, 1))((x: Real) => Geometric(.3).zeroInflated(x))
 }
 
 class NegativeBinomialBenchmark extends SBCBenchmark {
   def sbc =
-    SBC[Long, Discrete](Uniform(0, 1))((x: Real) => NegativeBinomial(x, 10))
+    SBC(Uniform(0, 1))((x: Real) => NegativeBinomial(x, 10))
 }
 
 class BinomialPoissonApproximationBenchmark extends SBCBenchmark {
   def sbc =
-    SBC[Long, Discrete](Uniform(0, 0.04))((x: Real) => Binomial(x, 200))
+    SBC(Uniform(0, 0.04))((x: Real) => Binomial(x, 200))
 }
 
 class GaussianMixtureBenchmark extends SBCBenchmark {
   def sbc =
-    SBC[Double, Continuous](Uniform(0, 1))(
+    SBC(Uniform(0, 1))(
       (x: Real) =>
         Mixture(
           Map(

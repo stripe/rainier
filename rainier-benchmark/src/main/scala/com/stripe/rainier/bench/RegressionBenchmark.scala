@@ -25,7 +25,7 @@ class RegressionBenchmark {
 
   lazy val data = synthesize
   lazy val model = build
-  lazy val vars = model.targetGroup.variables
+  lazy val vars = model.variables
   lazy val df = model.density
 
   def synthesize(): List[(List[Double], Double)] = {
@@ -40,17 +40,15 @@ class RegressionBenchmark {
   }
 
   @Benchmark
-  def build(): RandomVariable[Real] =
-    for {
-      betas <- RandomVariable.fill(k)(Normal(0, 1).param)
-      sigma <- Uniform(0, 10).param
-      _ <- Predictor[Double]
-        .fromVector(k) { vec =>
-          val mean = Real.dot(betas, vec)
-          Normal(mean, sigma)
-        }
-        .fit(data)
-    } yield sigma
+  def build(): Model = {
+    val betas = Vector.fill(k)(Normal(0, 1).param)
+    val sigma = Uniform(0, 10).param
+    //TODO: version that uses Fn
+    Model.observe(data.map(_._1), data.map(_._2)) { vec =>
+      val mean = Real.dot(betas, Real.seq(vec))
+      Normal(mean, sigma)
+    }
+  }
 
   @Benchmark
   def compile(): DensityFunction =

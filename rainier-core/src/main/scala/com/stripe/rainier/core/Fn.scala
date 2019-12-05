@@ -2,10 +2,10 @@ package com.stripe.rainier.core
 
 import com.stripe.rainier.compute._
 
-trait Fn[A, Y] { self =>
+trait Fn[-A, +Y] { self =>
   type X
-  protected def encoder: Encoder[A] { type U = X }
-  protected def xy(x: X): Y
+  private[core] def encoder: Encoder[A] { type U = X }
+  private[core] def xy(x: X): Y
 
   def apply(a: A): Y = xy(encoder.wrap(a))
 
@@ -30,24 +30,5 @@ object Fn {
       type X = enc.U
       val encoder: Encoder[A] { type U = X } = enc
       def xy(x: X) = x
-    }
-
-  def likelihood[A, Y, L](fn: Fn[A, Y],
-                          lh: ToLikelihood[Y, L]): Likelihood[(A, L)] = {
-    val (x, vs) = fn.encoder.create(Nil)
-    val y = fn.xy(x)
-    val inner = lh(y)
-    new Likelihood[(A, L)] {
-      val real = inner.real
-      val placeholders = vs ++ inner.placeholders
-      def extract(t: (A, L)) =
-        fn.encoder.extract(t._1, Nil) ++ inner.extract(t._2)
-    }
-  }
-
-  implicit def toLikelihood[A, Y, L](
-      implicit lh: ToLikelihood[Y, L]): ToLikelihood[Fn[A, Y], (A, L)] =
-    new ToLikelihood[Fn[A, Y], (A, L)] {
-      def apply(fn: Fn[A, Y]) = likelihood(fn, lh)
     }
 }

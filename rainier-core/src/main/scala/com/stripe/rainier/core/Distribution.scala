@@ -1,22 +1,32 @@
 package com.stripe.rainier.core
 
-trait Distribution[T] {
-  def generator: Generator[T]
-  def likelihood: Likelihood[T]
+import com.stripe.rainier.compute._
 
-  def fit(value: T): RandomVariable[Distribution[T]] =
-    fit(List(value))
-  def fit(seq: Seq[T]): RandomVariable[Distribution[T]] =
-    likelihood.fit(seq).map { _ =>
-      this
-    }
+trait Distribution[T] {
+  type V
+  private[core] def encoder: Encoder.Aux[T, V]
+  def logDensity(v: V): Real
+
+  private[core] def target(ts: Seq[T]): Target = {
+    val enc = encoder
+    val (v, vars) = enc.create(Nil)
+    val lh = logDensity(v)
+    val cols = enc.columns(ts)
+    new Target(lh, vars.zip(cols).toMap)
+  }
+
+  private[core] def target(t: T): Target = {
+    val enc = encoder
+    val v = enc.wrap(t)
+    val lh = logDensity(v)
+    Target(lh)
+  }
+
+  def generator: Generator[T]
 }
 
 object Distribution {
-  implicit def lh[T, D <: Distribution[T]]: ToLikelihood[D, T] =
-    new ToLikelihood[D, T] {
-      def apply(d: D) = d.likelihood
-    }
+  type Aux[X, Y] = Distribution[X] { type V = Y }
 
   def gen[D <: Distribution[T], T]: ToGenerator[D, T] =
     new ToGenerator[D, T] {

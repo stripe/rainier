@@ -2,12 +2,7 @@ package com.stripe.rainier
 package cats
 
 import com.stripe.rainier.compute.{Constant, Infinity, NegInfinity, Real}
-import com.stripe.rainier.core.{
-  updateMap,
-  Categorical,
-  Generator,
-  RandomVariable
-}
+import com.stripe.rainier.core.{updateMap, Categorical, Generator}
 import com.stripe.rainier.sampler.RNG
 import _root_.cats.{Applicative, Group, Comonad, Eq, Monad, Monoid}
 import _root_.cats.kernel.instances.map._
@@ -22,11 +17,6 @@ object `package`
   implicit val rainierMonadCategorical: Monad[Categorical] =
     MonadCategorical
   implicit val rainierMonadGenerator: Monad[Generator] = new MonadGenerator
-  implicit val rainierMonadRandomVariable: Monad[RandomVariable] =
-    new MonadRandomVariable
-
-  implicit def rvMonoid[A: Monoid]: Monoid[RandomVariable[A]] =
-    Applicative.monoid[RandomVariable, A]
 
   implicit def genMonoid[A: Monoid]: Monoid[Generator[A]] =
     Applicative.monoid[Generator, A]
@@ -42,13 +32,6 @@ private[cats] sealed abstract class LowPriorityInstances {
           f: Generator[A] => B): Generator[B] =
         Generator.constant(f(ga))
       def extract[A](x: Generator[A]): A = x.get
-    }
-
-  implicit val randomVariableComonad: Comonad[RandomVariable] =
-    new MonadRandomVariable with Comonad[RandomVariable] {
-      def coflatMap[A, B](rva: RandomVariable[A])(
-          f: RandomVariable[A] => B): RandomVariable[B] = RandomVariable(f(rva))
-      def extract[A](rv: RandomVariable[A]): A = rv.value
     }
 }
 
@@ -116,28 +99,6 @@ private[cats] class MonadGenerator extends Monad[Generator] {
   }
 }
 
-private[cats] class MonadRandomVariable extends Monad[RandomVariable] {
-  def pure[A](x: A): RandomVariable[A] = RandomVariable(x)
-
-  override def map[A, B](fa: RandomVariable[A])(f: A => B): RandomVariable[B] =
-    fa.map(f)
-
-  def flatMap[A, B](fa: RandomVariable[A])(
-      f: A => RandomVariable[B]): RandomVariable[B] =
-    fa.flatMap(f)
-
-  override def product[A, B](fa: RandomVariable[A],
-                             fb: RandomVariable[B]): RandomVariable[(A, B)] =
-    fa.zip(fb)
-
-  @tailrec final def tailRecM[A, B](a: A)(
-      f: A => RandomVariable[Either[A, B]]): RandomVariable[B] =
-    f(a).value match {
-      case Left(aa) => tailRecM(aa)(f)
-      case Right(b) => RandomVariable(b)
-    }
-}
-
 private[cats] object GroupReal extends Group[Real] {
   override val empty: Real = Real.zero
   override def combine(l: Real, r: Real): Real = l + r
@@ -181,11 +142,6 @@ private[cats] trait EqInstances {
       r: RNG,
       n: Numeric[Real]
   ): Eq[Generator[A]] = Eq.by(_.get)
-
-  // TODO - Comparing RandomVariable instances by value alone isn't
-  // sound; a proper Eq instance needs to take density into account as
-  // well.
-  implicit def eqRandomVariable[A: Eq]: Eq[RandomVariable[A]] = Eq.by(_.value)
 }
 
 /**

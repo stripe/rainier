@@ -59,19 +59,18 @@ class WAICTest extends FunSuite {
   )
 
   test("cars linear model") {
-    val m = for {
-      a <- Normal(0, 100).param
-      b <- Normal(0, 10).param
-      sigma <- Uniform(0, 30).param
-      _ <- Events.observe(cars) { s =>
-        val mu = a + b * s
-        Normal(mu, sigma)
-      }
-    } yield (a, b)
+    val a = Normal(0, 100).param
+    val b = Normal(0, 10).param
+    val sigma = Uniform(0, 30).param
+    val fn = Fn.encode[Double].map { s =>
+      val mu = a + b * s
+      Normal(mu, sigma)
+    }
+    val m = Model.observe(cars.map(_._1), cars.map(_._2), fn)
 
     def logit(x: Double) = math.log(x / (1.0 - x))
 
-    //samples of (a,b,sigma) taken from external sampler
+    //samples of (a,b,sigma) taken from external sampler	
     val samples = List(
       Array(-8.780982, 3.702219, 16.34632),
       Array(-17.308180, 3.793232, 14.12478),
@@ -80,16 +79,16 @@ class WAICTest extends FunSuite {
       Array(-22.650850, 3.934438, 16.23996)
     ).map { a =>
       Array(
-        a(0) / 100.0, //correct for scaling in prior
-        a(1) / 10.0, //correct for scaling in prior
-        logit(a(2) / 30.0) //correct for scaling & logistic transform
+        a(0) / 100.0, //correct for scaling in prior	
+        a(1) / 10.0, //correct for scaling in prior	
+        logit(a(2) / 30.0) //correct for scaling & logistic transform	
       )
     }
 
     val w =
       m.targets
         .map { t =>
-          WAIC(samples, m.targetGroup.variables, t)
+          WAIC(samples, m.variables, t)
         }
         .reduce(_ + _)
 
@@ -98,7 +97,7 @@ class WAICTest extends FunSuite {
       assert(err < 0.02)
     }
 
-    //results from external WAIC implementation
+    //results from external WAIC implementation	
     assertWithinEps(w.pWAIC, 4.020387)
     assertWithinEps(w.lppd, -206.6377)
   }

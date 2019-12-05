@@ -1,6 +1,6 @@
 package com.stripe.rainier.scalacheck
 
-import com.stripe.rainier.core.{Categorical, Generator, RandomVariable}
+import com.stripe.rainier.core.{Categorical, Generator}
 import com.stripe.rainier.compute.Real
 import com.stripe.rainier.sampler.{RNG, ScalaRNG}
 import org.scalacheck.{Arbitrary, Cogen, Gen}
@@ -34,21 +34,11 @@ object `package` {
       .mapOf[A, Real](Gen.zip(genA, genReal))
       .map(Categorical(_))
 
-  def genRandomVariable[A](genA: Gen[A]): Gen[RandomVariable[A]] =
-    for {
-      a <- genA
-      density <- genReal
-    } yield RandomVariable(a, density)
-
   implicit def arbitraryReal: Arbitrary[Real] =
     Arbitrary(genReal)
 
   implicit def arbitraryGenerator[A: Arbitrary]: Arbitrary[Generator[A]] =
     Arbitrary(genGenerator(arbitrary[A]))
-
-  implicit def arbitraryRandomVariable[A: Arbitrary]
-    : Arbitrary[RandomVariable[A]] =
-    Arbitrary(genRandomVariable(arbitrary[A]))
 
   implicit def arbitraryCategorical[A: Arbitrary]: Arbitrary[Categorical[A]] =
     Arbitrary(genCategorical(arbitrary[A]))
@@ -70,7 +60,4 @@ object `package` {
                                  r: RNG,
                                  n: Numeric[Real]): Cogen[Generator[A]] =
     CA.contramap(_.get)
-
-  implicit def cogenRandomVariable[A: Cogen]: Cogen[RandomVariable[A]] =
-    Cogen[A].contramap(_.value)
 }

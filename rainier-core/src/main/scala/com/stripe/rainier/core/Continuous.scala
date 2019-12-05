@@ -10,19 +10,14 @@ import scala.annotation.tailrec
 trait Continuous extends Distribution[Double] {
   private[rainier] val support: Support
 
-  def likelihood = new Likelihood[Double] {
-    val x = Real.variable()
-    val placeholders = List(x)
-    val real = logDensity(x)
-    def extract(t: Double) = List(t)
-  }
-
-  def param: RandomVariable[Real]
-  def logDensity(v: Real): Real
+  type V = Real
+  val encoder = Encoder.numeric[Double]
 
   def scale(a: Real): Continuous = Scale(a).transform(this)
   def translate(b: Real): Continuous = Translate(b).transform(this)
   def exp: Continuous = Exp.transform(this)
+
+  def param: Real
 }
 
 object Continuous {
@@ -34,14 +29,11 @@ object Continuous {
   * A Continuous Distribution that inherits its transforms from a Support object.
   */
 private[rainier] trait StandardContinuous extends Continuous {
-  def param: RandomVariable[Real] = {
-    val x = Real.variable()
-
-    val transformed = support.transform(x)
-
-    val density = support.logJacobian(x) + logDensity(transformed)
-
-    RandomVariable(transformed, density)
+  def param: Real = {
+    val x = Real.parameter { x =>
+      support.logJacobian(x) + logDensity(support.transform(x))
+    }
+    support.transform(x)
   }
 }
 
@@ -182,9 +174,6 @@ final case class Beta(a: Real, b: Real) extends StandardContinuous {
     (a - 1) *
       u.log + (b - 1) *
       (1 - u).log - Combinatorics.beta(a, b)
-
-  def binomial: Predictor[Int, BetaBinomial] =
-    Predictor[Int].from(BetaBinomial(a, b, _))
 }
 
 object Beta {
@@ -239,13 +228,10 @@ case class Mixture(components: Map[Continuous, Real]) extends Continuous {
         }
       })
 
-  def param: RandomVariable[Real] = {
-    val x = Real.variable()
-
-    val transformed: Real = support.transform(x)
-
-    val density = support.logJacobian(x) + logDensity(transformed)
-
-    RandomVariable(transformed, density)
+  def param: Real = {
+    val x = Real.parameter { x =>
+      support.logJacobian(x) + logDensity(support.transform(x))
+    }
+    support.transform(x)
   }
 }

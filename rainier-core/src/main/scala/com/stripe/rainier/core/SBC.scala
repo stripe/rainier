@@ -12,20 +12,13 @@ and returns a (Distribution[T], Real) which is a pair of values:
 1) a distribution describing the likelihood of the observed data, given the parameter values,
 2) the parameter value or summary stat we're calibrating on
  */
-final case class SBC[T, L](priors: Seq[Continuous], fn: Seq[Real] => (L, Real))(
-    implicit lh: ToLikelihood[L, T],
-    gen: ToGenerator[L, T]) {
+final case class SBC[T](priors: Seq[Continuous],
+                        fn: Seq[Real] => (Distribution[T], Real)) {
 
   import SBC._
 
   val priorGenerator: Generator[Seq[Double]] =
     Generator.traverse(priors.map(_.generator))
-
-  def posteriorSamples(nSamples: Int): List[Double] = {
-    implicit val rng: RNG = ScalaRNG(1528666602081L)
-    val values = synthesize(1000)._1
-    fit(values).sample(nSamples)
-  }
 
   def animate(sampler: Sampler,
               warmupIterations: Int,
@@ -65,25 +58,18 @@ final case class SBC[T, L](priors: Seq[Continuous], fn: Seq[Real] => (L, Real))(
     priorGenerator
       .flatMap { priorParams =>
         val (d, r) = fn(Real.seq(priorParams))
-        Generator(d)
+        d.generator
           .repeat(samples)
           .zip(Generator.real(r))
       }
       .get(rng, emptyEvaluator)
 
-  def fit(values: Seq[T]): RandomVariable[Real] =
-    RandomVariable
-      .traverse(priors.map(_.param))
-      .flatMap { priorParams =>
-        val (d, r) = fn(priorParams)
-        lh(d)
-          .fit(values)
-          .map { _ =>
-            r
-          }
-      }
+  def fit(values: Seq[T]): (Model, Real) = {
+    val (d, r) = fn(priors.map(_.param))
+    (Model.observe(values, d), r)
+  }
 
-  def model(syntheticSamples: Int)(implicit rng: RNG): RandomVariable[Real] =
+  def model(syntheticSamples: Int)(implicit rng: RNG): (Model, Real) =
     fit(synthesize(syntheticSamples)._1)
 
   private def repStream(sampler: Sampler,
@@ -136,19 +122,20 @@ final case class SBC[T, L](priors: Seq[Continuous], fn: Seq[Real] => (L, Real))(
                      syntheticSamples: Int,
                      thin: Int)(implicit rng: RNG): (Int, Double, Double) = {
     val (syntheticValues, trueOutput) = synthesize(syntheticSamples)
-    val model = fit(syntheticValues)
+    val (model, real) = fit(syntheticValues)
 
-    val (samples, diag) =
-      model.sampleWithDiagnostics(sampler,
-                                  Chains,
-                                  warmupIterations,
-                                  (Samples / Chains) * thin,
-                                  true,
-                                  thin)
-
+    val sample =
+      model.sample(sampler,
+                   warmupIterations,
+                   (Samples / Chains) * thin,
+                   thin,
+                   Chains)
+    val diag = sample.diagnostics
     val maxRHat = diag.map(_.rHat).max
     val minEffectiveSampleSize = diag.map(_.effectiveSampleSize).min
-    val rawRank = samples.tail.count { n =>
+
+    val predictions = sample.predict(real)
+    val rawRank = predictions.tail.count { n =>
       n < trueOutput
     }
     (rawRank, maxRHat, minEffectiveSampleSize)
@@ -220,9 +207,7 @@ final case class SBC[T, L](priors: Seq[Continuous], fn: Seq[Real] => (L, Real))(
 object SBC {
   val emptyEvaluator: Evaluator = new Evaluator(Map.empty)
 
-  def apply[T, L](prior: Continuous)(fn: Real => L)(
-      implicit lh: ToLikelihood[L, T],
-      gen: ToGenerator[L, T]): SBC[T, L] =
+  def apply[T](prior: Continuous)(fn: Real => Distribution[T]): SBC[T] =
     apply(List(prior), { l =>
       (fn(l.head), l.head)
     })
