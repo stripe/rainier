@@ -17,10 +17,10 @@ case class Model(private[rainier] val targets: Set[Target]) {
     Sample(chains, this)
   }
 
-  private lazy val targetGroup = TargetGroup(targets, 10)
-  private lazy val dataFn =
-    Compiler.default.compileTargets(targetGroup, true, 1)
-
+  lazy val targetGroup = TargetGroup(targets, 500)
+  lazy val dataFn =
+    Compiler.default.compileTargets(targetGroup, true, 4)
+    
   private[rainier] def variables: List[Variable] = targetGroup.variables
   private[rainier] def density(): DensityFunction =
     new DensityFunction {
