@@ -156,14 +156,14 @@ final private[rainier] class Parameter(var density: Real) extends Variable
 final private case class Unary(original: NonConstant, op: ir.UnaryOp)
     extends NonConstant {
   val bounds = op match {
-    case ir.NoOp => original.bounds
+    case ir.NoOp  => original.bounds
     case ir.AbsOp => Bounds.abs(original.bounds)
     case ir.ExpOp => Bounds.exp(original.bounds)
     case ir.LogOp => Bounds.log(original.bounds)
     //todo: narrow bounds for trig
-    case ir.SinOp | ir.CosOp => Bounds(-1,1)
-    case ir.TanOp => Bounds(Double.NegativeInfinity, Double.PositiveInfinity)
-    case ir.AsinOp | ir.AcosOp | ir.AtanOp => Bounds(0, Math.PI/2.0)
+    case ir.SinOp | ir.CosOp               => Bounds(-1, 1)
+    case ir.TanOp                          => Bounds(Double.NegativeInfinity, Double.PositiveInfinity)
+    case ir.AsinOp | ir.AcosOp | ir.AtanOp => Bounds(0, Math.PI / 2.0)
   }
 }
 
@@ -242,9 +242,9 @@ Evaluates to the (index-low)'th element of table.
 private final class Lookup(val index: NonConstant,
                            val table: Array[Real],
                            val low: Int)
-    extends NonConstant  {
-      val bounds = Bounds.or(table.map(_.bounds))
-  }
+    extends NonConstant {
+  val bounds = Bounds.or(table.map(_.bounds))
+}
 
 object Lookup {
   def apply(table: Seq[Real]): Real => Real =
