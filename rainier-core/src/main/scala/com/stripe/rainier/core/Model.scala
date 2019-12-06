@@ -2,6 +2,7 @@ package com.stripe.rainier.core
 
 import com.stripe.rainier.compute._
 import com.stripe.rainier.sampler._
+import com.stripe.rainier.optimizer._
 
 case class Model(private[rainier] val targets: Set[Target]) {
   def merge(other: Model) = Model(targets ++ other.targets)
@@ -17,10 +18,38 @@ case class Model(private[rainier] val targets: Set[Target]) {
     Sample(chains, this)
   }
 
-  private lazy val targetGroup = TargetGroup(targets, 10)
-  private lazy val dataFn =
-    Compiler.default.compileTargets(targetGroup, true, 1)
+  def writeGraph(path: String, gradient: Boolean = false): Unit = {	
+    val gradVars = if (gradient) targetGroup.variables else Nil	
+    val tuples = ("base", targetGroup.base, Map.empty[Variable, Array[Double]]) ::	
+      targetGroup.batched.zipWithIndex.map {	
+      case (b, i) =>	
+        (s"target$i", b.real, b.placeholders)	
+    }	
+    RealViz(tuples, gradVars).write(path)	
+  }	
 
+  def writeIRGraph(path: String,	
+                   gradient: Boolean = false,	
+                   methodSizeLimit: Option[Int] = None): Unit = {	
+    val tuples =	
+      (("base", targetGroup.base) ::	
+        targetGroup.batched.zipWithIndex.map {	
+        case (b, i) => (s"target$i" -> b.real)	
+      })	
+
+    RealViz	
+      .ir(tuples, targetGroup.variables, gradient, methodSizeLimit)	
+      .write(path)	
+  }
+
+
+  def optimize(): Estimate =
+    Estimate(Optimizer.lbfgs(density()), this)
+
+  lazy val targetGroup = TargetGroup(targets, 500)
+  lazy val dataFn =
+    Compiler.default.compileTargets(targetGroup, true, 4)
+    
   private[rainier] def variables: List[Variable] = targetGroup.variables
   private[rainier] def density(): DensityFunction =
     new DensityFunction {
