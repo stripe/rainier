@@ -241,9 +241,10 @@ Evaluates to the (index-low)'th element of table.
  */
 private final class Lookup(val index: NonConstant,
                            val table: Array[Real],
-                           val low: Int,
-                           val bounds: Bounds)
-    extends NonConstant
+                           val low: Int)
+    extends NonConstant  {
+      val bounds = Bounds.or(table.map(_.bounds))
+  }
 
 object Lookup {
   def apply(table: Seq[Real]): Real => Real =
@@ -259,7 +260,7 @@ object Lookup {
         else
           throw new ArithmeticException("Cannot lookup a non-integral number")
       case nc: NonConstant =>
-        new Lookup(nc, table.toArray, low, Bounds.or(table.map(_.bounds)))
+        new Lookup(nc, table.toArray, low)
     }
 }
 
