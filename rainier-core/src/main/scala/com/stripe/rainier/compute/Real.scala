@@ -5,15 +5,6 @@ import com.stripe.rainier.ir
 /*
 A Real is a DAG which represents a mathematical function
 from 0 or more real-valued input parameters to a single real-valued output.
-
-You can create new single-node DAGs either like `Real(2.0)`, for a constant,
-or with `Real.variable` to introduce an input parameter. You can create more interesting DAGs
-by combining Reals using the standard mathematical operators, eg `Real.variable + Real(2.0)`
-is the function f(x) = x+2, or `Real.variable * Real.variable.log` is the function f(x,y) = xlog(y).
-Every such operation on Real results in a new Real.
-Apart from Variable and a simple ternary If expression, all of the subtypes of Real are private to this package.
-
-You can also automatically derive the gradient of a Real with respect to its variables.
  */
 sealed trait Real {
   def bounds: Bounds
@@ -45,24 +36,10 @@ sealed trait Real {
   def cosh: Real = (this.exp + (-this).exp) / 2
   def tanh: Real = this.sinh / this.cosh
 
-  //because abs does not have a smooth derivative, try to avoid using it
   def abs: Real = RealOps.unary(this, ir.AbsOp)
 
   def logit: Real = -((Real.one / this - 1).log)
   def logistic: Real = Real.one / (Real.one + (-this).exp)
-
-  lazy val variables: List[Variable] = RealOps.variables(this).toList
-  lazy val gradient: List[Real] = Gradient.derive(variables, this)
-
-  def writeGraph(path: String): Unit = {
-    RealViz("output" -> this).write(path)
-  }
-
-  def writeIRGraph(path: String, methodSizeLimit: Option[Int] = None): Unit = {
-    RealViz
-      .ir(List(("output", this)), variables, false, methodSizeLimit)
-      .write(path)
-  }
 }
 
 object Real {
@@ -86,9 +63,11 @@ object Real {
     summed.log + max
   }
 
-  def variable(): Variable = new Placeholder()
-  def parameter(fn: Variable => Real): Variable = {
-    val x = new Parameter(Real.zero)
+  def placeholder(values: Array[Double]): Placeholder = new Placeholder(values)
+
+  def parameter(): Parameter = new Parameter(Real.zero)
+  def parameter(fn: Parameter => Real): Parameter = {
+    val x = parameter()
     x.density = fn(x)
     x
   }
@@ -139,11 +118,16 @@ sealed trait NonConstant extends Real
 
 sealed trait Variable extends NonConstant {
   private[compute] val param = new ir.Parameter
-  val bounds = Bounds(Double.NegativeInfinity, Double.PositiveInfinity)
 }
 
-final private[rainier] class Placeholder extends Variable
-final private[rainier] class Parameter(var density: Real) extends Variable
+final private[rainier] class Placeholder(val values: Array[Double])
+    extends Variable {
+  val bounds = Bounds(values.min, values.max)
+}
+
+final private[rainier] class Parameter(var density: Real) extends Variable {
+  val bounds = Bounds(Double.NegativeInfinity, Double.PositiveInfinity)
+}
 
 final private case class Unary(original: NonConstant, op: ir.UnaryOp)
     extends NonConstant {
