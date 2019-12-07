@@ -83,11 +83,10 @@ object Model {
                     ys: Seq[Y],
                     fn: Fn[X, Distribution[Y]]): Model = {
     val enc = fn.encoder
-    val (v, vars) = enc.create(Nil)
+    val (v, ph) = enc.encode(xs)
     val dist = fn.xy(v)
     val target = dist.target(ys)
-    val cols = enc.columns(xs)
     Model(
-      Set(new Target(target.real, target.placeholders ++ vars.zip(cols).toMap)))
+      Set(new Target(target.real, target.placeholders ++ ph)))
   }
 }

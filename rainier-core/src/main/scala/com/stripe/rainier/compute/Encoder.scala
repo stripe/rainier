@@ -5,9 +5,10 @@ import scala.collection.mutable.ArrayBuffer
 trait Encoder[-T] {
   type U
   def wrap(t: T): U
-  def create(acc: List[Variable]): (U, List[Variable])
-  def extract(t: T, acc: List[Double]): List[Double]
-  def columns(ts: Seq[T]): List[Array[Double]] = {
+  protected def extract(t: T, acc: List[Double]): List[Double]
+  protected def create(acc: List[Placeholder], columns: List[Array[Double]]): (U, List[Placeholder], List[Array[Double]])
+
+  def encode(ts: Seq[T]): (U, List[Placeholder]) = {
     val first = extract(ts.head, Nil)
     val buffers = first.map { v =>
       ArrayBuffer(v)
@@ -17,7 +18,9 @@ trait Encoder[-T] {
         case (buf, v) => buf += v
       }
     }
-    buffers.map(_.toArray)
+    val columns = buffers.map(_.toArray)
+    val (u, phs, _) = create(Nil, columns)
+    (u, phs)    
   }
 }
 
@@ -30,9 +33,9 @@ object Encoder {
     new Encoder[N] {
       type U = Real
       def wrap(t: N) = Real(t)
-      def create(acc: List[Variable]) = {
-        val u = Real.variable()
-        (u, u :: acc)
+      def create(acc: List[Placeholder], columns: List[Array[Double]]) = {
+        val u = Real.placeholder(columns.head)
+        (u, u :: acc, columns.tail)
       }
       def extract(t: N, acc: List[Double]) =
         n.toDouble(t) :: acc
@@ -43,10 +46,10 @@ object Encoder {
     new Encoder[(A, B)] {
       type U = (a.U, b.U)
       def wrap(t: (A, B)) = (a.wrap(t._1), b.wrap(t._2))
-      def create(acc: List[Variable]) = {
-        val (bv, acc1) = b.create(acc)
-        val (av, acc2) = a.create(acc1)
-        ((av, bv), acc2)
+      def create(acc: List[Placeholder], columns: List[Array[Double]]) = {
+        val (bv, acc1, cols1) = b.create(acc, columns)
+        val (av, acc2, cols2) = a.create(acc1, cols1)
+        ((av, bv), acc2, cols2)
       }
       def extract(t: (A, B), acc: List[Double]) =
         a.extract(t._1, b.extract(t._2, acc))
@@ -60,14 +63,14 @@ object Encoder {
         t.map { x =>
           enc.wrap(x)
         }.toVector
-      def create(acc: List[Variable]) = {
-        val (us, vs) =
-          1.to(size).foldLeft((List.empty[enc.U], acc)) {
-            case ((us, a), _) =>
-              val (u, a2) = enc.create(a)
-              (u :: us, a2)
+      def create(acc: List[Placeholder], columns: List[Array[Double]]) = {
+          val (us, vs, cols) =
+          1.to(size).foldLeft((List.empty[enc.U], acc, columns)) {
+            case ((us, a, col), _) =>
+              val (u, a2, col2) = enc.create(a, col)
+              (u :: us, a2, col2)
           }
-        (us.toVector, vs)
+        (us.toVector, vs, cols)
       }
       def extract(t: Seq[T], acc: List[Double]) =
         t.foldRight(acc) { case (x, a) => enc.extract(x, a) }
@@ -81,11 +84,11 @@ object Encoder {
       def wrap(t: T): Map[String, Real] =
         toMap.apply(t).mapValues(Real(_))
 
-      def create(acc: List[Variable]): (Map[String, Real], List[Variable]) =
-        toMap.fields.foldRight((Map[String, Real](), acc)) {
-          case (field, (map, a)) =>
-            val v = Real.variable()
-            (map + (field -> v), v :: a)
+        def create(acc: List[Placeholder], columns: List[Array[Double]]) =
+          toMap.fields.foldRight((Map[String, Real](), acc, columns)) {
+            case (field, (map, a, cols)) =>
+              val v = Real.placeholder(cols.head)
+              (map + (field -> v), v :: a, cols.tail)
         }
 
       def extract(t: T, acc: List[Double]): List[Double] = {

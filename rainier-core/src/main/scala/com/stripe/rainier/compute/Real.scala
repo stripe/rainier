@@ -94,8 +94,9 @@ object Real {
     summed.log + max
   }
 
-  def variable(): Variable = new Placeholder()
-  def parameter(fn: Variable => Real): Variable = {
+  def placeholder(values: Array[Double]): Placeholder = new Placeholder(values)
+
+  def parameter(fn: Variable => Real): Parameter = {
     val x = new Parameter(Real.zero)
     x.density = fn(x)
     x
@@ -147,11 +148,15 @@ sealed trait NonConstant extends Real
 
 sealed trait Variable extends NonConstant {
   private[compute] val param = new ir.Parameter
-  val bounds = Bounds(Double.NegativeInfinity, Double.PositiveInfinity)
 }
 
-final private[rainier] class Placeholder extends Variable
-final private[rainier] class Parameter(var density: Real) extends Variable
+final private[rainier] class Placeholder(val values: Array[Double]) extends Variable {
+  val bounds = Bounds(values.min, values.max)
+}
+
+final private[rainier] class Parameter(var density: Real) extends Variable {
+  val bounds = Bounds(Double.NegativeInfinity, Double.PositiveInfinity)
+}
 
 final private case class Unary(original: NonConstant, op: ir.UnaryOp)
     extends NonConstant {

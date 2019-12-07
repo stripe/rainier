@@ -9,10 +9,9 @@ trait Distribution[T] {
 
   private[core] def target(ts: Seq[T]): Target = {
     val enc = encoder
-    val (v, vars) = enc.create(Nil)
+    val (v, ph) = enc.encode(ts)
     val lh = logDensity(v)
-    val cols = enc.columns(ts)
-    new Target(lh, vars.zip(cols).toMap)
+    new Target(lh, ph)
   }
 
   private[core] def target(t: T): Target = {

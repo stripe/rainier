@@ -1,19 +1,18 @@
 package com.stripe.rainier.compute
 
-class Target(val real: Real, val placeholders: Map[Variable, Array[Double]]) {
+class Target(val real: Real, val placeholders: List[Placeholder]) {
   val nRows: Int =
     if (placeholders.isEmpty)
       0
     else
-      placeholders.head._2.size
+      placeholders.head.values.size
 
-  val placeholderVariables: List[Variable] = placeholders.keys.toList
-  val variables: Set[Variable] = RealOps.variables(real) -- placeholderVariables
+  val parameters: Set[Parameter] = RealOps.parameters(real)
 
   private def inlineRow(i: Int): Real = {
     val row: Map[Variable, Real] = placeholders.map {
-      case (v, a) => v -> Real(a(i))
-    }
+      v => v -> Real(v.values(i))
+    }.toMap
     PartialEvaluator.inline(real, row)
   }
 
