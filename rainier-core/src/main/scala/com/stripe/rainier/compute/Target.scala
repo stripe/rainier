@@ -1,18 +1,21 @@
 package com.stripe.rainier.compute
 
-class Target(val real: Real, val placeholders: List[Placeholder]) {
+class Target(val real: Real) {
+  val (placeholders, parameters) = {
+    val variables = RealOps.variables(real)
+    (variables.collect{case x:Placeholder => x}.toList,
+    variables.collect{case x:Parameter => x})
+  }
+
   val nRows: Int =
     if (placeholders.isEmpty)
       0
     else
       placeholders.head.values.size
-
-  val parameters: Set[Parameter] = RealOps.parameters(real)
 }
 
 object Target {
-  def apply(real: Real): Target = new Target(real, Nil)
-  val empty: Target = apply(Real.zero)
+  val empty: Target = new Target(Real.zero)
 }
 
 case class TargetGroup(base: Real,

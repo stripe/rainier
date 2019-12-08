@@ -59,8 +59,8 @@ sealed trait Real {
   def logit: Real = -((Real.one / this - 1).log)
   def logistic: Real = Real.one / (Real.one + (-this).exp)
 
-  lazy val parameters: List[Parameter] = RealOps.parameters(this).toList
-  lazy val gradient: List[Real] = Gradient.derive(parameters, this)
+  //lazy val parameters: List[Parameter] = RealOps.parameters(this).toList
+  //lazy val gradient: List[Real] = Gradient.derive(parameters, this)
 
   def writeGraph(path: String): Unit = {
     RealViz("output" -> this).write(path)

@@ -67,25 +67,22 @@ case class Model(private[rainier] val targets: Set[Target]) {
 
 object Model {
   def observe[Y](ys: Seq[Y], dist: Distribution[Y]): Model = {
-    val target = dist.target(ys)
-    Model(Set(target))
+    val likelihood = dist.logDensity(ys)
+    Model(Set(new Target(likelihood)))
   }
 
   def observe[X, Y](xs: Seq[X], ys: Seq[Y])(fn: X => Distribution[Y]): Model = {
-    val targets = (xs.zip(ys)).map {
-      case (x, y) => fn(x).target(y)
+    val likelihoods = (xs.zip(ys)).map {
+      case (x, y) => fn(x).logDensity(y)
     }
 
-    Model(targets.toSet)
+    Model(likelihoods.map(new Target(_)).toSet)
   }
 
   def observe[X, Y](xs: Seq[X],
                     ys: Seq[Y],
                     fn: Fn[X, Distribution[Y]]): Model = {
-    val enc = fn.encoder
-    val (v, ph) = enc.encode(xs)
-    val dist = fn.xy(v)
-    val target = dist.target(ys)
-    Model(Set(new Target(target.real, target.placeholders ++ ph)))
+    val likelihood = dist.logDensity(fn.encode(xs))
+    Model(Set(new Target(likelihood)))
   }
 }

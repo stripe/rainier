@@ -213,8 +213,6 @@ private[compute] object RealOps {
       case _ => Compare(left, right)
     }
 
-  def parameters(real: Real): Set[Parameter] = ???
-/*
   def variables(real: Real): Set[Variable] = {
     var seen = Set.empty[Real]
     var vars = List.empty[Variable]
@@ -246,5 +244,4 @@ private[compute] object RealOps {
 
     vars.toSet
   }
-  */
 }
