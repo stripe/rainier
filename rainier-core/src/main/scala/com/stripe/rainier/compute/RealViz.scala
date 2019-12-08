@@ -21,9 +21,7 @@ private class RealViz {
     }
   }
 
-  def output(name: String,
-             r: Real,
-             placeholders: Map[Variable, Array[Double]]): Unit = {
+  def output(name: String, r: Real, placeholders: List[Placeholder]): Unit = {
     if (!placeholders.isEmpty)
       registerPlaceholders(placeholders)
     val id = idOrLabel(r) match {
@@ -132,7 +130,7 @@ object RealViz {
       case (s, r) => (s, r, Map.empty[Variable, Array[Double]])
     }, Nil)
 
-  def apply(reals: List[(String, Real, Map[Variable, Array[Double]])],
+  def apply(reals: List[(String, Real, List[Placeholder])],
             gradVars: List[Variable]): GraphViz = {
     val v = new RealViz
     reals.foreach {
@@ -143,17 +141,17 @@ object RealViz {
   }
 
   def ir(reals: List[(String, Real)],
-         variables: List[Variable],
+         parameters: List[Parameter],
          gradient: Boolean,
          methodSizeLimit: Option[Int]): GraphViz = {
     val withGrad =
       if (gradient)
         reals.flatMap {
-          case (name, real) => Compiler.withGradient(name, real, variables)
+          case (name, real) => Compiler.withGradient(name, real, parameters)
         } else
         reals
     val translator = new Translator
     val exprs = withGrad.map { case (n, r) => n -> translator.toExpr(r) }
-    IRViz(exprs, variables.map(_.param), methodSizeLimit)
+    IRViz(exprs, parameters.map(_.param), methodSizeLimit)
   }
 }

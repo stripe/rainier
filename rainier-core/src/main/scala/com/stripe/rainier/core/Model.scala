@@ -19,8 +19,8 @@ case class Model(private[rainier] val targets: Set[Target]) {
   }
 
   def writeGraph(path: String, gradient: Boolean = false): Unit = {
-    val gradVars = if (gradient) targetGroup.variables else Nil
-    val tuples = ("base", targetGroup.base, Map.empty[Variable, Array[Double]]) ::
+    val gradVars = if (gradient) targetGroup.parameters else Nil
+    val tuples = ("base", targetGroup.base, List.empty[Placeholder]) ::
       targetGroup.batched.zipWithIndex.map {
       case (b, i) =>
         (s"target$i", b.real, b.placeholders)
@@ -38,21 +38,21 @@ case class Model(private[rainier] val targets: Set[Target]) {
       })
 
     RealViz
-      .ir(tuples, targetGroup.variables, gradient, methodSizeLimit)
+      .ir(tuples, targetGroup.parameters, gradient, methodSizeLimit)
       .write(path)
   }
 
   def optimize(): Estimate =
     Estimate(Optimizer.lbfgs(density()), this)
 
-  lazy val targetGroup = TargetGroup(targets, 500)
+  lazy val targetGroup = TargetGroup(targets)
   lazy val dataFn =
-    Compiler.default.compileTargets(targetGroup, true, 4)
+    Compiler.default.compileTargets(targetGroup, true)
 
-  private[rainier] def variables: List[Variable] = targetGroup.variables
+  private[rainier] def parameters: List[Parameter] = targetGroup.parameters
   private[rainier] def density(): DensityFunction =
     new DensityFunction {
-      val nVars = targetGroup.variables.size
+      val nVars = targetGroup.parameters.size
       val inputs = new Array[Double](dataFn.numInputs)
       val globals = new Array[Double](dataFn.numGlobals)
       val outputs = new Array[Double](dataFn.numOutputs)
@@ -86,7 +86,6 @@ object Model {
     val (v, ph) = enc.encode(xs)
     val dist = fn.xy(v)
     val target = dist.target(ys)
-    Model(
-      Set(new Target(target.real, target.placeholders ++ ph)))
+    Model(Set(new Target(target.real, target.placeholders ++ ph)))
   }
 }

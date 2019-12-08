@@ -59,8 +59,8 @@ sealed trait Real {
   def logit: Real = -((Real.one / this - 1).log)
   def logistic: Real = Real.one / (Real.one + (-this).exp)
 
-  lazy val variables: List[Variable] = RealOps.variables(this).toList
-  lazy val gradient: List[Real] = Gradient.derive(variables, this)
+  lazy val parameters: List[Parameter] = RealOps.parameters(this).toList
+  lazy val gradient: List[Real] = Gradient.derive(parameters, this)
 
   def writeGraph(path: String): Unit = {
     RealViz("output" -> this).write(path)
@@ -68,7 +68,7 @@ sealed trait Real {
 
   def writeIRGraph(path: String, methodSizeLimit: Option[Int] = None): Unit = {
     RealViz
-      .ir(List(("output", this)), variables, false, methodSizeLimit)
+      .ir(List(("output", this)), parameters, false, methodSizeLimit)
       .write(path)
   }
 }
@@ -150,7 +150,8 @@ sealed trait Variable extends NonConstant {
   private[compute] val param = new ir.Parameter
 }
 
-final private[rainier] class Placeholder(val values: Array[Double]) extends Variable {
+final private[rainier] class Placeholder(val values: Array[Double])
+    extends Variable {
   val bounds = Bounds(values.min, values.max)
 }
 

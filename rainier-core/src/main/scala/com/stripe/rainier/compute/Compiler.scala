@@ -11,23 +11,16 @@ final case class Compiler(methodSizeLimit: Int, classSizeLimit: Int) {
     }
   }
 
-  def compileTargets(targets: TargetGroup,
-                     gradient: Boolean,
-                     maxBatchBits: Int): DataFunction = {
+  def compileTargets(targets: TargetGroup, gradient: Boolean): DataFunction = {
     val data = targets.batched.map { target =>
-      target.placeholderVariables.map { v =>
-        target.placeholders(v)
-      }.toArray
+      target.placeholders.map(_.values).toArray
     }.toArray
 
-    val batchBits =
-      DataFunction
-        .logTwo(data.map(_.head.size).reduceOption(_ min _).getOrElse(0))
-        .min(maxBatchBits)
-        .max(0)
+    val gradVars = if (gradient) targets.parameters else Nil
+    val batchVariables: List[Placeholder] = ???
+    val batchOutputs: List[(String, Real)] = ???
 
-    val gradVars = if (gradient) targets.variables else Nil
-    val (batchVariables, batchOutputs) =
+    /*
       targets.batched.zipWithIndex
         .foldLeft((List.empty[Variable], List.empty[(String, Real)])) {
           case ((ins, outs), (target, i)) =>
@@ -38,17 +31,17 @@ final case class Compiler(methodSizeLimit: Int, classSizeLimit: Int) {
                   Compiler.withGradient(s"target${i}_bit${j}", o, gradVars)
               }
             (ins ++ newIns, outs ++ newOutsWithGradient)
-        }
+        }*/
 
     val cf = compile(
-      targets.variables ++ batchVariables,
+      targets.parameters ++ batchVariables,
       Compiler.withGradient("base", targets.base, gradVars) ++ batchOutputs)
     val numOutputs =
       if (gradient)
-        targets.variables.size + 1
+        targets.parameters.size + 1
       else
         1
-    DataFunction(cf, batchBits, targets.variables.size, numOutputs, data)
+    DataFunction(cf, targets.parameters.size, numOutputs, data)
   }
 
   def compile(inputs: Seq[Variable],
@@ -70,12 +63,12 @@ object Compiler {
 
   def withGradient(name: String,
                    real: Real,
-                   variables: List[Variable]): List[(String, Real)] =
-    if (variables.isEmpty)
+                   parameters: List[Parameter]): List[(String, Real)] =
+    if (parameters.isEmpty)
       List((name, real))
     else
       (name, real) :: Gradient
-        .derive(variables, real)
+        .derive(parameters, real)
         .zipWithIndex
         .map {
           case (g, i) =>

@@ -17,27 +17,26 @@ object Target {
 
 case class TargetGroup(base: Real,
                        batched: List[Target],
-                       variables: List[Variable])
+                       parameters: List[Parameter])
 
 object TargetGroup {
   def apply(targets: Iterable[Target]): TargetGroup = {
     val (base, batched) = targets.foldLeft((Real.zero, List.empty[Target])) {
       case ((b, l), t) =>
-        t.maybeInlined(maxInlineTerms) match {
-          case Some(r) => ((b + r), l)
-          case None    => (b, t :: l)
-        }
+        if (t.nRows == 0)
+          (t.real + b, l)
+        else
+          (b, t :: l)
     }
-    val variables =
+    val parameters =
       batched
-        .foldLeft(RealOps.variables(base)) {
+        .foldLeft(RealOps.parameters(base)) {
           case (set, target) =>
-            set ++ target.variables
+            set ++ target.parameters
         }
         .toList
         .sortBy(_.param.sym.id)
-    val priors = variables.collect { case a: Parameter => a.density }
-
-    TargetGroup(base + Real.sum(priors), batched, variables)
+    val priors = parameters.map(_.density)
+    TargetGroup(base + Real.sum(priors), batched, parameters)
   }
 }

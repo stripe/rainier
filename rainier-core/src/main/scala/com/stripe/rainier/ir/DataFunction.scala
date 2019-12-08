@@ -19,16 +19,11 @@ Output layout:
       - numOutputs batch outputs
  */
 case class DataFunction(cf: CompiledFunction,
-                        batchBits: Int,
                         numParamInputs: Int,
                         numOutputs: Int,
                         data: Array[Array[Array[Double]]]) {
   val numInputs: Int = cf.numInputs
   val numGlobals: Int = cf.numGlobals
-
-  require(data.isEmpty || DataFunction.logTwo(data.map { a =>
-    a.head.size
-  }.min) >= batchBits)
 
   private val inputMultiplier = (1 << (batchBits + 1))
   private val inputStartIndices =
@@ -155,8 +150,4 @@ case class DataFunction(cf: CompiledFunction,
       o += 1
     }
   }
-}
-
-object DataFunction {
-  def logTwo(n: Int): Int = Math.floor(Math.log(n.toDouble) / Math.log(2)).toInt
 }
