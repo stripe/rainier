@@ -10,13 +10,13 @@ private class RealViz {
 
   def output(name: String,
              r: Real,
-             gradVars: List[Variable],
-             placeholders: Map[Variable, Array[Double]]): Unit = {
+             gradVars: List[Parameter],
+             placeholders: List[Placeholder]): Unit = {
     output(name, r, placeholders)
     if (!gradVars.isEmpty) {
       Gradient.derive(gradVars, r).zipWithIndex.foreach {
         case (g, i) =>
-          output(name + s"_grad$i", g, Map.empty)
+          output(name + s"_grad$i", g, Nil)
       }
     }
   }
@@ -37,20 +37,18 @@ private class RealViz {
     gv.rank("sink", List(oid))
   }
 
-  private def registerPlaceholders(map: Map[Variable, Array[Double]]): Unit =
+  private def registerPlaceholders(placeholders: List[Placeholder]): Unit =
     gv.cluster(label("X"), justify("l")) {
-      val cols = map.toList
-      val colData = cols.map {
-        case (_, arr) =>
-          arr.take(5).toList.map(formatDouble)
+      val colData = placeholders.map {p =>
+          p.values.take(5).toList.map(formatDouble)
       }
       val colIDs = colData.map { d =>
         val (id, _) = gv.record(true, d)
         id
       }
-      cols.zip(colIDs).foreach {
-        case ((v, _), cid) =>
-          ids += (v -> cid)
+      placeholders.zip(colIDs).foreach {
+        case (p, cid) =>
+          ids += (p -> cid)
       }
     }
 
@@ -127,11 +125,11 @@ private class RealViz {
 object RealViz {
   def apply(reals: (String, Real)*): GraphViz =
     apply(reals.toList.map {
-      case (s, r) => (s, r, Map.empty[Variable, Array[Double]])
+      case (s, r) => (s, r, Nil)
     }, Nil)
 
   def apply(reals: List[(String, Real, List[Placeholder])],
-            gradVars: List[Variable]): GraphViz = {
+            gradVars: List[Parameter]): GraphViz = {
     val v = new RealViz
     reals.foreach {
       case (name, real, placeholders) =>
