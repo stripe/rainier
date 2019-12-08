@@ -25,18 +25,18 @@ case class DataFunction(cf: CompiledFunction,
   val numInputs: Int = cf.numInputs
   val numGlobals: Int = cf.numGlobals
 
-  private val inputMultiplier = (1 << (batchBits + 1))
   private val inputStartIndices =
     data.map(_.size).scanLeft(numParamInputs) {
-      case (x, sz) => x + (sz * inputMultiplier)
+      case (x, sz) => x + sz
     }
+
   require(inputStartIndices(data.size) == cf.numInputs)
 
-  private val outputMultiplier = batchBits + 2
   private val outputStartIndices =
     data.scanLeft(numOutputs) {
-      case (x, _) => x + (numOutputs * outputMultiplier)
+      case (x, _) => x + numOutputs
     }
+
   require(outputStartIndices(data.size) == cf.numOutputs)
 
   def apply(inputs: Array[Double],
@@ -94,6 +94,7 @@ case class DataFunction(cf: CompiledFunction,
                  inputStartIndices(i),
                  outputStartIndices(i))
 
+  //TODO: from here down
   @tailrec
   private def computeBatch(inputs: Array[Double],
                            globals: Array[Double],
