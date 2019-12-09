@@ -1,47 +1,25 @@
 package com.stripe.rainier.compute
 
-import com.stripe.rainier.ir.{CompiledFunction, DataFunction}
+import com.stripe.rainier.ir.CompiledFunction
 
 final case class Compiler(methodSizeLimit: Int, classSizeLimit: Int) {
-  def compile(variables: Seq[Variable], real: Real): Array[Double] => Double = {
-    val cf = compile(variables, List(("base", real)))
-    return { array =>
-      val globalBuf = new Array[Double](cf.numGlobals)
-      cf.output(array, globalBuf, 0)
-    }
-  }
-
-  def compileTargets(targets: TargetGroup, gradient: Boolean): DataFunction = {
-    val data = targets.batched.map { target =>
-      target.placeholders.map(_.values).toArray
-    }.toArray
-
-    val gradVars = if (gradient) targets.parameters else Nil
-    val batchVariables: List[Placeholder] = ???
-    val batchOutputs: List[(String, Real)] = ???
-
-    /*
-      targets.batched.zipWithIndex
-        .foldLeft((List.empty[Variable], List.empty[(String, Real)])) {
-          case ((ins, outs), (target, i)) =>
-            val (newIns, newOuts) = target.batched(batchBits)
-            val newOutsWithGradient =
-              newOuts.zipWithIndex.flatMap {
-                case (o, j) =>
-                  Compiler.withGradient(s"target${i}_bit${j}", o, gradVars)
-              }
-            (ins ++ newIns, outs ++ newOutsWithGradient)
-        }*/
+  def compileTargets(targets: List[Real], gradient: Boolean): DataFunction = {
+    val parameters: List[Parameter] = ???
+    val gradParams: List[Parameter] = ???
+    val placeholders: List[Placeholder] = ???
+    val base: Real = ???
+    val batchOutputs: Seq[(String, Real)] = ???
+    val data: Array[Array[Array[Double]]] = ???
 
     val cf = compile(
-      targets.parameters ++ batchVariables,
-      Compiler.withGradient("base", targets.base, gradVars) ++ batchOutputs)
+      parameters ++ placeholders,
+      Compiler.withGradient("base", base, gradParams) ++ batchOutputs)
     val numOutputs =
       if (gradient)
-        targets.parameters.size + 1
+        parameters.size + 1
       else
         1
-    DataFunction(cf, targets.parameters.size, numOutputs, data)
+    DataFunction(cf, parameters, numOutputs, data)
   }
 
   def compile(inputs: Seq[Variable],

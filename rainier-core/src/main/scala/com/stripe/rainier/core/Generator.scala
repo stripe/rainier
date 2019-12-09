@@ -54,14 +54,14 @@ sealed trait Generator[+T] { self =>
           Seq.fill(n.toInt(k))(fromFn(r, n))
     })
 
-  private[core] def prepare(variables: Seq[Variable])(
+  private[core] def prepare(parameters: Seq[Parameter])(
       implicit r: RNG): Array[Double] => T = {
     val reqs = requirements.toList.take(Generator.MaxRequirements)
     if (reqs.isEmpty) { array =>
       {
         implicit val evaluator: Evaluator =
           new Evaluator(
-            variables
+            parameters
               .zip(array)
               .toMap)
         get
@@ -71,7 +71,7 @@ sealed trait Generator[+T] { self =>
         case (r, i) =>
           (s"req$i", r)
       }
-      val cf = Compiler.default.compile(variables, namedReqs)
+      val cf = Compiler.default.compile(parameters, namedReqs)
       array =>
         {
           val globalBuf = new Array[Double](cf.numGlobals)
@@ -81,7 +81,7 @@ sealed trait Generator[+T] { self =>
           }
           implicit val evaluator: Evaluator =
             new Evaluator(
-              variables
+              parameters
                 .zip(array)
                 .toMap ++
                 reqs.zip(reqValues).toMap

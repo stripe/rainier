@@ -4,8 +4,8 @@ import com.stripe.rainier.compute._
 import com.stripe.rainier.sampler._
 import com.stripe.rainier.optimizer._
 
-case class Model(private[rainier] val targets: Set[Target]) {
-  def merge(other: Model) = Model(targets ++ other.targets)
+case class Model(private[rainier] targets: List[Real]) {
+  def +(other: Model) = Model(targets ++ other.targets)
 
   def sample(sampler: Sampler,
              warmupIterations: Int,
@@ -21,33 +21,34 @@ case class Model(private[rainier] val targets: Set[Target]) {
   def optimize(): Estimate =
     Estimate(Optimizer.lbfgs(density()), this)
 
-  lazy val targetGroup = TargetGroup(targets)
   lazy val dataFn =
-    Compiler.default.compileTargets(targetGroup, true)
+    Compiler.default.compileTargets(targets, true)
 
+  def parameters: List[Parameter] = dataFn.parameters
+  
   private[rainier] def density(): DensityFunction =
     Model.density(dataFn)
 }
 
 object Model {
-  def apply(real: Real): Model = Model(Set(new Target(real)))
+  def apply(real: Real): Model = Model(List(real))
 
   def observe[Y](ys: Seq[Y], dist: Distribution[Y]): Model =
-    Model(dist.likelihoodFn.encode(ys))
+    Model(dist.likelihoodFn.batch(ys))
 
   def observe[X, Y](xs: Seq[X], ys: Seq[Y])(fn: X => Distribution[Y]): Model = {
     val likelihoods = (xs.zip(ys)).map {
       case (x, y) => fn(x).likelihoodFn(y)
     }
 
-    Model(likelihoods.map(new Target(_)).toSet)
+    Model(likelihoods.toList)
   }
 
   def observe[X, Y](xs: Seq[X],
                     ys: Seq[Y],
                     fn: Fn[X, Distribution[Y]]): Model = {
-    val dist = fn.encode(xs)
-    Model(dist.likelihoodFn.encode(ys))
+    val dist = fn.batch(xs)
+    Model(dist.likelihoodFn.batch(ys))
   }
 
   def density(dataFn: DataFunction): DensityFunction =
