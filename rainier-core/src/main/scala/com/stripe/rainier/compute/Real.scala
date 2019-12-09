@@ -17,14 +17,6 @@ You can also automatically derive the gradient of a Real with respect to its var
  */
 sealed trait Real {
   def bounds: Bounds
-  def mustBePositive(): Unit = {
-    //this may be too aggressive; we could warn instead
-    assert(bounds.lower >= 0)
-  }
-  def mustBeZeroToOne(): Unit = {
-    mustBePositive()
-    assert(bounds.upper <= 1)
-  }
 
   def +(other: Real): Real = RealOps.add(this, other)
   def *(other: Real): Real = RealOps.multiply(this, other)

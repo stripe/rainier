@@ -1,6 +1,9 @@
 package com.stripe.rainier.compute
 
-case class Bounds(lower: Double, upper: Double)
+case class Bounds(lower: Double, upper: Double) {
+  def isPositive = lower >= 0.0
+  def betweenZeroAndOne = isPositive && (upper <= 1.0)
+}
 
 object Bounds {
   def apply(value: BigDecimal): Bounds = Bounds(value.toDouble, value.toDouble)
