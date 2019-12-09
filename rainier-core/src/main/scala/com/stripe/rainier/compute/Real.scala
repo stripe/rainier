@@ -1,5 +1,4 @@
-package com.stripe.rainier
-package compute
+package com.stripe.rainier.compute
 
 import com.stripe.rainier.ir
 
@@ -17,6 +16,8 @@ Apart from Variable and a simple ternary If expression, all of the subtypes of R
 You can also automatically derive the gradient of a Real with respect to its variables.
  */
 sealed trait Real {
+  def bounds: Bounds
+
   def +(other: Real): Real = RealOps.add(this, other)
   def *(other: Real): Real = RealOps.multiply(this, other)
 
@@ -122,21 +123,41 @@ object Real {
   val negInfinity: Real = NegInfinity
 }
 
-final private[rainier] case class Constant(value: BigDecimal) extends Real
-final private[rainier] object Infinity extends Real
-final private[rainier] object NegInfinity extends Real
+final private[rainier] case class Constant(value: BigDecimal) extends Real {
+  val bounds = Bounds(value)
+}
+
+final private[rainier] object Infinity extends Real {
+  val bounds = Bounds(Double.PositiveInfinity, Double.PositiveInfinity)
+}
+
+final private[rainier] object NegInfinity extends Real {
+  val bounds = Bounds(Double.NegativeInfinity, Double.NegativeInfinity)
+}
 
 sealed trait NonConstant extends Real
 
 sealed trait Variable extends NonConstant {
   private[compute] val param = new ir.Parameter
+  val bounds = Bounds(Double.NegativeInfinity, Double.PositiveInfinity)
 }
 
 final private[rainier] class Placeholder extends Variable
 final private[rainier] class Parameter(var density: Real) extends Variable
 
 final private case class Unary(original: NonConstant, op: ir.UnaryOp)
-    extends NonConstant
+    extends NonConstant {
+  val bounds = op match {
+    case ir.NoOp  => original.bounds
+    case ir.AbsOp => Bounds.abs(original.bounds)
+    case ir.ExpOp => Bounds.exp(original.bounds)
+    case ir.LogOp => Bounds.log(original.bounds)
+    //todo: narrow bounds for trig
+    case ir.SinOp | ir.CosOp               => Bounds(-1, 1)
+    case ir.TanOp                          => Bounds(Double.NegativeInfinity, Double.PositiveInfinity)
+    case ir.AsinOp | ir.AcosOp | ir.AtanOp => Bounds(0, Math.PI / 2.0)
+  }
+}
 
 /*
 This node type represents any linear transformation from an input vector to an output
@@ -150,7 +171,12 @@ as equality comparisons would be too expensive. The impact of this is subtle, se
 for an example.
  */
 private final class Line private (val ax: Coefficients, val b: BigDecimal)
-    extends NonConstant
+    extends NonConstant {
+  val bounds = Bounds.sum(Bounds(b) :: ax.toList.map {
+    case (x, a) =>
+      Bounds.multiply(x.bounds, Bounds(a))
+  })
+}
 
 private[compute] object Line {
   def apply(ax: Coefficients, b: BigDecimal): Line = {
@@ -168,10 +194,16 @@ Unlike for Line, it is not expected that ax will have a large number of terms, a
 Luckily, this aligns well with the demands of numerical stability: if you have to multiply a lot of numbers
 together, you are better off adding their logs.
  */
+
 private final case class LogLine(
     ax: Coefficients
 ) extends NonConstant {
   require(!ax.isEmpty)
+  val bounds = {
+    val b =
+      ax.toList.map { case (x, a) => Bounds.pow(x.bounds, Bounds(a)) }
+    b.tail.foldLeft(b.head) { case (l, r) => Bounds.multiply(l, r) } //I was failing to use reduce for some reason so did this
+  }
 }
 
 private object LogLine {
@@ -187,10 +219,14 @@ Evaluates to 0 if left and right are equal, 1 if left > right, and
 -1 if left < right.
  */
 private final case class Compare private (left: Real, right: Real)
-    extends NonConstant
+    extends NonConstant {
+  val bounds = Bounds(-1, 1)
+}
 
 private final case class Pow private (base: Real, exponent: NonConstant)
-    extends NonConstant
+    extends NonConstant {
+  val bounds = Bounds.pow(base.bounds, exponent.bounds)
+}
 
 /*
 Evaluates to the (index-low)'th element of table.
@@ -198,7 +234,9 @@ Evaluates to the (index-low)'th element of table.
 private final class Lookup(val index: NonConstant,
                            val table: Array[Real],
                            val low: Int)
-    extends NonConstant
+    extends NonConstant {
+  val bounds = Bounds.or(table.map(_.bounds))
+}
 
 object Lookup {
   def apply(table: Seq[Real]): Real => Real =
