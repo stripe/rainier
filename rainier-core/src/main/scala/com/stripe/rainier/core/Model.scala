@@ -34,7 +34,7 @@ object Model {
   def apply(real: Real): Model = Model(List(real))
 
   def observe[Y](ys: Seq[Y], dist: Distribution[Y]): Model =
-    Model(dist.likelihoodFn.batch(ys))
+    Model(dist.likelihoodFn.encode(ys))
 
   def observe[X, Y](xs: Seq[X], ys: Seq[Y])(fn: X => Distribution[Y]): Model = {
     val likelihoods = (xs.zip(ys)).map {
@@ -47,8 +47,8 @@ object Model {
   def observe[X, Y](xs: Seq[X],
                     ys: Seq[Y],
                     fn: Fn[X, Distribution[Y]]): Model = {
-    val dist = fn.batch(xs)
-    Model(dist.likelihoodFn.batch(ys))
+    val dist = fn.encode(xs)
+    Model(dist.likelihoodFn.encode(ys))
   }
 
   def density(dataFn: DataFunction): DensityFunction =
