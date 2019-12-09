@@ -18,30 +18,6 @@ case class Model(private[rainier] val targets: Set[Target]) {
     Sample(chains, this)
   }
 
-  def writeGraph(path: String, gradient: Boolean = false): Unit = {
-    val gradVars = if (gradient) targetGroup.parameters else Nil
-    val tuples = ("base", targetGroup.base, List.empty[Placeholder]) ::
-      targetGroup.batched.zipWithIndex.map {
-      case (b, i) =>
-        (s"target$i", b.real, b.placeholders)
-    }
-    RealViz(tuples, gradVars).write(path)
-  }
-
-  def writeIRGraph(path: String,
-                   gradient: Boolean = false,
-                   methodSizeLimit: Option[Int] = None): Unit = {
-    val tuples =
-      (("base", targetGroup.base) ::
-        targetGroup.batched.zipWithIndex.map {
-        case (b, i) => (s"target$i" -> b.real)
-      })
-
-    RealViz
-      .ir(tuples, targetGroup.parameters, gradient, methodSizeLimit)
-      .write(path)
-  }
-
   def optimize(): Estimate =
     Estimate(Optimizer.lbfgs(density()), this)
 
@@ -49,10 +25,34 @@ case class Model(private[rainier] val targets: Set[Target]) {
   lazy val dataFn =
     Compiler.default.compileTargets(targetGroup, true)
 
-  private[rainier] def parameters: List[Parameter] = targetGroup.parameters
   private[rainier] def density(): DensityFunction =
+    Model.density(dataFn)
+}
+
+object Model {
+  def apply(real: Real): Model = Model(Set(new Target(real)))
+
+  def observe[Y](ys: Seq[Y], dist: Distribution[Y]): Model =
+    Model(dist.likelihoodFn.encode(ys))
+
+  def observe[X, Y](xs: Seq[X], ys: Seq[Y])(fn: X => Distribution[Y]): Model = {
+    val likelihoods = (xs.zip(ys)).map {
+      case (x, y) => fn(x).likelihoodFn(y)
+    }
+
+    Model(likelihoods.map(new Target(_)).toSet)
+  }
+
+  def observe[X, Y](xs: Seq[X],
+                    ys: Seq[Y],
+                    fn: Fn[X, Distribution[Y]]): Model = {
+    val dist = fn.encode(xs)
+    Model(dist.likelihoodFn.encode(ys))
+  }
+
+  def density(dataFn: DataFunction): DensityFunction =
     new DensityFunction {
-      val nVars = targetGroup.parameters.size
+      val nVars = dataFn.numParamInputs
       val inputs = new Array[Double](dataFn.numInputs)
       val globals = new Array[Double](dataFn.numGlobals)
       val outputs = new Array[Double](dataFn.numOutputs)
@@ -63,26 +63,4 @@ case class Model(private[rainier] val targets: Set[Target]) {
       def density = outputs(0)
       def gradient(index: Int) = outputs(index + 1)
     }
-}
-
-object Model {
-  def observe[Y](ys: Seq[Y], dist: Distribution[Y]): Model = {
-    val likelihood = dist.logDensity(ys)
-    Model(Set(new Target(likelihood)))
-  }
-
-  def observe[X, Y](xs: Seq[X], ys: Seq[Y])(fn: X => Distribution[Y]): Model = {
-    val likelihoods = (xs.zip(ys)).map {
-      case (x, y) => fn(x).logDensity(y)
-    }
-
-    Model(likelihoods.map(new Target(_)).toSet)
-  }
-
-  def observe[X, Y](xs: Seq[X],
-                    ys: Seq[Y],
-                    fn: Fn[X, Distribution[Y]]): Model = {
-    val likelihood = dist.logDensity(fn.encode(xs))
-    Model(Set(new Target(likelihood)))
-  }
 }

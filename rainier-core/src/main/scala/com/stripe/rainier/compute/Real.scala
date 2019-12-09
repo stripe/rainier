@@ -5,15 +5,6 @@ import com.stripe.rainier.ir
 /*
 A Real is a DAG which represents a mathematical function
 from 0 or more real-valued input parameters to a single real-valued output.
-
-You can create new single-node DAGs either like `Real(2.0)`, for a constant,
-or with `Real.variable` to introduce an input parameter. You can create more interesting DAGs
-by combining Reals using the standard mathematical operators, eg `Real.variable + Real(2.0)`
-is the function f(x) = x+2, or `Real.variable * Real.variable.log` is the function f(x,y) = xlog(y).
-Every such operation on Real results in a new Real.
-Apart from Variable and a simple ternary If expression, all of the subtypes of Real are private to this package.
-
-You can also automatically derive the gradient of a Real with respect to its variables.
  */
 sealed trait Real {
   def bounds: Bounds
@@ -53,24 +44,10 @@ sealed trait Real {
   def cosh: Real = (this.exp + (-this).exp) / 2
   def tanh: Real = this.sinh / this.cosh
 
-  //because abs does not have a smooth derivative, try to avoid using it
   def abs: Real = RealOps.unary(this, ir.AbsOp)
 
   def logit: Real = -((Real.one / this - 1).log)
   def logistic: Real = Real.one / (Real.one + (-this).exp)
-
-  //lazy val parameters: List[Parameter] = RealOps.parameters(this).toList
-  //lazy val gradient: List[Real] = Gradient.derive(parameters, this)
-
-  def writeGraph(path: String): Unit = {
-    RealViz("output" -> this).write(path)
-  }
-
-  def writeIRGraph(path: String, methodSizeLimit: Option[Int] = None): Unit = {
-    RealViz
-      .ir(List(("output", this)), parameters, false, methodSizeLimit)
-      .write(path)
-  }
 }
 
 object Real {
@@ -96,7 +73,7 @@ object Real {
 
   def placeholder(values: Array[Double]): Placeholder = new Placeholder(values)
 
-  def parameter(fn: Variable => Real): Parameter = {
+  def parameter(fn: Parameter => Real): Parameter = {
     val x = new Parameter(Real.zero)
     x.density = fn(x)
     x

@@ -8,6 +8,7 @@ trait Fn[-A, +Y] { self =>
   private[core] def xy(x: X): Y
 
   def apply(a: A): Y = xy(encoder.wrap(a))
+  def encode(seq: Seq[A]): Y = xy(encoder.encode(seq))
 
   def zip[B, Z](fn: Fn[B, Z]): Fn[(A, B), (Y, Z)] =
     new Fn[(A, B), (Y, Z)] {
