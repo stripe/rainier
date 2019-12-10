@@ -21,9 +21,7 @@ case class Model(private[rainier] targets: List[Real]) {
   def optimize(): Estimate =
     Estimate(Optimizer.lbfgs(density()), this)
 
-  lazy val dataFn =
-    Compiler.default.compileTargets(targets, true)
-
+  lazy val dataFn = DataFunction(targets)
   def parameters: List[Parameter] = dataFn.parameters
   
   private[rainier] def density(): DensityFunction =
