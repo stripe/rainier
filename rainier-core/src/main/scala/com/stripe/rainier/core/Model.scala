@@ -32,7 +32,8 @@ object Model {
   def apply(real: Real): Model = Model(List(real))
 
   def observe[Y](ys: Seq[Y], dist: Distribution[Y]): Model =
-    Model(dist.likelihoodFn.encode(ys))
+    Model(dist.likelihoodFn.encode(ys.tail)) + Model(
+      dist.likelihoodFn.encode(List(ys.head)))
 
   def observe[X, Y](xs: Seq[X], ys: Seq[Y])(fn: X => Distribution[Y]): Model = {
     val likelihoods = (xs.zip(ys)).map {
