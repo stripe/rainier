@@ -6,17 +6,12 @@ import com.stripe.rainier.ir.CompiledFunction
 Input layout:
 - numParamInputs param inputs
 - for 0 <= i < data.size:
-   - data[i].size first-run inputs
-   - for 0 <= j <= batchBits:
-     - for 0 <= k < data[i].size:
-        - 2^j batch inputs
+   - data[i].size placeholder inputs
 
 Output layout:
 - numOutputs data-less outputs
 - for 0 <= i < data.size:
-   - numOutputs first-run outputs
-   - for batchBits >= j >= 0:
-      - numOutputs batch outputs
+   - numOutputs data outputs
  */
 case class DataFunction(cf: CompiledFunction,
                         parameters: List[Parameter],
@@ -46,8 +41,11 @@ case class DataFunction(cf: CompiledFunction,
     computeWithoutData(inputs, globals, outputs)
     var i = 0
     while (i < data.size) {
-      computeFirstWithData(inputs, globals, outputs, i)
-      computeRestWithData(inputs, globals, outputs, i)
+      var k = 0
+      while(k < data(i)(0).size) {
+        computeWithData(inputs, globals, outputs, i, k)
+        k += 1
+      }
       i += 1
     }
   }
@@ -63,17 +61,18 @@ case class DataFunction(cf: CompiledFunction,
     }
   }
 
-  private def computeFirstWithData(inputs: Array[Double],
+  private def computeWithData(inputs: Array[Double],
                                    globals: Array[Double],
                                    outputs: Array[Double],
-                                   i: Int): Unit = {
+                                   i: Int,
+                                   k: Int): Unit = {
 
     val d = data(i)
     val inputStartIndex = inputStartIndices(i)
     val outputStartIndex = outputStartIndices(i)
     var j = 0
     while (j < d.size) {
-      inputs(inputStartIndex + j) = d(j)(0)
+      inputs(inputStartIndex + j) = d(j)(k)
       j += 1
     }
     var o = 0
@@ -82,28 +81,6 @@ case class DataFunction(cf: CompiledFunction,
       o += 1
     }
   }
-
-  private def computeRestWithData(inputs: Array[Double],
-                                  globals: Array[Double],
-                                  outputs: Array[Double],
-                                  i: Int): Unit =
-    computeBatch(inputs,
-                 globals,
-                 outputs,
-                 data(i),
-                 data(i)(0).size - 1,
-                 inputStartIndices(i),
-                 outputStartIndices(i))
-
-  //TODO: from here down
-  private def computeBatch(inputs: Array[Double],
-                           globals: Array[Double],
-                           outputs: Array[Double],
-                           d: Array[Array[Double]],
-                           n: Int,
-                           inputStartIndex: Int,
-                           outputStartIndex: Int): Unit = ()
-
 }
 
 object DataFunction {
