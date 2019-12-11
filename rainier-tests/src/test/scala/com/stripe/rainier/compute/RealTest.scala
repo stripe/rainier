@@ -11,9 +11,9 @@ class RealTest extends FunSuite {
           derivable: Double => Boolean = _ => true,
           reference: Double => Double = null)(fn: Real => Real): Unit = {
     test(description) {
-      val x = Real.variable()
+      val x = Real.parameter()
       val result = fn(x)
-      val deriv = result.gradient.head
+      val deriv = Gradient.derive(List(x), result).head
 
       def evalAt(d: Double): Double = Try { fn(Real(d)) } match {
         case Success(Infinity)               => Inf
@@ -24,8 +24,18 @@ class RealTest extends FunSuite {
         case x                               => sys.error("Non-constant value " + x)
       }
 
-      val c = Compiler(200, 100).compile(List(x), result)
-      val dc = Compiler(200, 100).compile(List(x), deriv)
+      val cf =
+        Compiler(200, 100).compile(List(x), List(("y", result), ("dy", deriv)))
+      def c(inputs: Array[Double]): Double = {
+        val globals = new Array[Double](cf.numGlobals)
+        cf.output(inputs, globals, 0)
+      }
+      def dc(inputs: Array[Double]): Double = {
+        val globals = new Array[Double](cf.numGlobals)
+        cf.output(inputs, globals, 0)
+        cf.output(inputs, globals, 1)
+      }
+
       List(1.0, 0.0, -1.0, 2.0, -2.0, 0.5, -0.5, NegInf, Inf)
         .filter(defined)
         .foreach { n =>

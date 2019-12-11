@@ -4,9 +4,8 @@ import org.scalatest.FunSuite
 
 class SBCTest extends FunSuite {
 
-  val Epsilon = 1e-10
+  val Epsilon = 0.005
   def check[T](sbcModel: SBCModel[T]): Unit = {
-    test(sbcModel.description) {
       sbcModel.samples.zip(sbcModel.goldset).foreach {
         case (a, b) =>
           val err = Math.abs((a - b) / b)

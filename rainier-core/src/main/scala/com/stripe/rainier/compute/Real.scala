@@ -73,8 +73,9 @@ object Real {
 
   def placeholder(values: Array[Double]): Placeholder = new Placeholder(values)
 
+  def parameter(): Parameter = new Parameter(Real.zero)
   def parameter(fn: Parameter => Real): Parameter = {
-    val x = new Parameter(Real.zero)
+    val x = parameter()
     x.density = fn(x)
     x
   }
