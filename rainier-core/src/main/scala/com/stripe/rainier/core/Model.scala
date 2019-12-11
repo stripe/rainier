@@ -23,7 +23,7 @@ case class Model(private[rainier] targets: List[Real]) {
 
   lazy val dataFn = DataFunction(targets)
   def parameters: List[Parameter] = dataFn.parameters
-  
+
   private[rainier] def density(): DensityFunction =
     Model.density(dataFn)
 }

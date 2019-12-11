@@ -42,7 +42,7 @@ case class DataFunction(cf: CompiledFunction,
     var i = 0
     while (i < data.size) {
       var k = 0
-      while(k < data(i)(0).size) {
+      while (k < data(i)(0).size) {
         computeWithData(inputs, globals, outputs, i, k)
         k += 1
       }
@@ -62,10 +62,10 @@ case class DataFunction(cf: CompiledFunction,
   }
 
   private def computeWithData(inputs: Array[Double],
-                                   globals: Array[Double],
-                                   outputs: Array[Double],
-                                   i: Int,
-                                   k: Int): Unit = {
+                              globals: Array[Double],
+                              outputs: Array[Double],
+                              i: Int,
+                              k: Int): Unit = {
 
     val d = data(i)
     val inputStartIndex = inputStartIndices(i)
@@ -84,21 +84,31 @@ case class DataFunction(cf: CompiledFunction,
 }
 
 object DataFunction {
-  def apply(targets: List[Real], compiler: Compiler = Compiler.default): DataFunction = {
+  def apply(targets: List[Real],
+            compiler: Compiler = Compiler.default): DataFunction = {
     val (paramSet, placeholders, dataList, base, batch) =
-      targets.foldLeft((Set.empty[Parameter], List.empty[Placeholder], List.empty[Array[Array[Double]]], Real.zero, List.empty[Real])) {
+      targets.foldLeft(
+        (Set.empty[Parameter],
+         List.empty[Placeholder],
+         List.empty[Array[Array[Double]]],
+         Real.zero,
+         List.empty[Real])) {
         case ((paramAcc, phAcc, dataAcc, baseAcc, batchAcc), target) =>
           val variables = RealOps.variables(target)
-          val targetParams = variables.collect{case x:Parameter => x}
-          val targetPh = variables.collect{case x:Placeholder => x}.toList
-          if(targetPh.isEmpty) {
-            (targetParams ++ paramAcc, phAcc, dataAcc, baseAcc + target, batchAcc) 
+          val targetParams = variables.collect { case x: Parameter => x }
+          val targetPh = variables.collect { case x: Placeholder => x }.toList
+          if (targetPh.isEmpty) {
+            (targetParams ++ paramAcc,
+             phAcc,
+             dataAcc,
+             baseAcc + target,
+             batchAcc)
           } else {
             (targetParams ++ paramAcc,
-            targetPh ++ phAcc,
-            targetPh.map(_.values).toArray :: dataAcc,
-            baseAcc,
-            target :: batchAcc)
+             targetPh ++ phAcc,
+             targetPh.map(_.values).toArray :: dataAcc,
+             baseAcc,
+             target :: batchAcc)
           }
       }
 
@@ -113,6 +123,6 @@ object DataFunction {
       parameters ++ placeholders,
       Compiler.withGradient("base", base, parameters) ++ batchOutputs)
 
-      DataFunction(cf, parameters, data)
+    DataFunction(cf, parameters, data)
   }
 }

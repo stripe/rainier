@@ -50,21 +50,23 @@ trait Fn[-A, +Y] { self =>
       def xy(x: X) = g(self.xy(x))
     }
 
-  def keys[K](seq: Seq[K]): Fn[Map[K,A], Map[K,Y]] =
-    new Fn[Map[K,A], Map[K,Y]] {
-      type X = Map[K,self.X]
-      def wrap(a: Map[K,A]) = a.map{case (k,v) => k -> self.wrap(v)}
-      def create(columns: List[Array[Double]]) = ??? //seq.map{k => k -> self.create(columns)}.toMap
-      def extract(a: Map[K,A], acc: List[Double]) = seq.foldLeft(acc){case (acc2, k) => 
-        self.extract(a(k), acc2)
+  def keys[K](seq: Seq[K]): Fn[Map[K, A], Map[K, Y]] =
+    new Fn[Map[K, A], Map[K, Y]] {
+      type X = Map[K, self.X]
+      def wrap(a: Map[K, A]) = a.map { case (k, v) => k -> self.wrap(v) }
+      def create(columns: List[Array[Double]]) =
+        ??? //seq.map{k => k -> self.create(columns)}.toMap
+      def extract(a: Map[K, A], acc: List[Double]) = seq.foldLeft(acc) {
+        case (acc2, k) =>
+          self.extract(a(k), acc2)
       }
-      def xy(x: X) = x.map{case (k,v) => k -> self.xy(v)}
+      def xy(x: X) = x.map { case (k, v) => k -> self.xy(v) }
     }
 }
 
 object Fn {
   def numeric[N](implicit n: Numeric[N]): Fn[N, Real] =
-    new Fn[N,Real] {
+    new Fn[N, Real] {
       type X = Real
       def wrap(a: N) = Real(a)
       def create(columns: List[Array[Double]]) = {
@@ -76,17 +78,17 @@ object Fn {
       def xy(x: Real) = x
     }
 
-  def enum[T](choices: List[T]): Fn[T, List[(T,Real)]] = 
+  def enum[T](choices: List[T]): Fn[T, List[(T, Real)]] =
     new Fn[T, List[(T, Real)]] {
-        type X = List[(T, Real)]
-        def wrap(a: T) = choices.map { k =>
-          if (a == k) (k, Real.one) else (k, Real.zero)
-        }
-        def create(columns: List[Array[Double]]) = ???
-        def extract(a: T, acc: List[Double]) =
-          choices.map { k =>
-            if (k == a) 1.0 else 0.0
-          } ++ acc
-        def xy(x: X) = x
+      type X = List[(T, Real)]
+      def wrap(a: T) = choices.map { k =>
+        if (a == k) (k, Real.one) else (k, Real.zero)
       }
+      def create(columns: List[Array[Double]]) = ???
+      def extract(a: T, acc: List[Double]) =
+        choices.map { k =>
+          if (k == a) 1.0 else 0.0
+        } ++ acc
+      def xy(x: X) = x
+    }
 }

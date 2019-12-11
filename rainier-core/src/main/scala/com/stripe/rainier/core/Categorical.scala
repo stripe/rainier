@@ -11,13 +11,13 @@ import com.stripe.rainier.compute._
 final case class Categorical[T](pmf: Map[T, Real]) extends Distribution[T] {
   self =>
 
-  val likelihoodFn = Fn.enum(pmf.keys.toList).map{value =>
+  val likelihoodFn = Fn.enum(pmf.keys.toList).map { value =>
     Real
       .sum(value.map {
         case (t, r) =>
           (r * pmf.getOrElse(t, Real.zero))
       })
-      .log  
+      .log
   }
 
   def map[U](fn: T => U): Categorical[U] =
@@ -107,7 +107,7 @@ final case class Multinomial[T](pmf: Map[T, Real], k: Real)
       .keys(pmf.keys.toList)
       .map(logDensity)
 
-  def logDensity(v: Map[T,Real]): Real =
+  def logDensity(v: Map[T, Real]): Real =
     Combinatorics.factorial(k) + Real.sum(v.map {
       case (t, i) =>
         val p = pmf.getOrElse(t, Real.zero)
@@ -115,7 +115,7 @@ final case class Multinomial[T](pmf: Map[T, Real], k: Real)
           Real.eq(i, Real.zero, Real.zero, i * p.log)
         pTerm - Combinatorics.factorial(i)
     })
-    
+
   def generator: Generator[Map[T, Long]] =
     Categorical(pmf).generator.repeat(k).map { seq =>
       seq.groupBy(identity).map { case (t, ts) => (t, ts.size.toLong) }

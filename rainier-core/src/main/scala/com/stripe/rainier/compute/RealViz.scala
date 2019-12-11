@@ -39,8 +39,8 @@ private class RealViz {
 
   private def registerPlaceholders(placeholders: List[Placeholder]): Unit =
     gv.cluster(label("X"), justify("l")) {
-      val colData = placeholders.map {p =>
-          p.values.take(5).toList.map(formatDouble)
+      val colData = placeholders.map { p =>
+        p.values.take(5).toList.map(formatDouble)
       }
       val colIDs = colData.map { d =>
         val (id, _) = gv.record(true, d)
