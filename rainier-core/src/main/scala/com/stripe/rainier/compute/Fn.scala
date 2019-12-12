@@ -12,7 +12,7 @@ trait Fn[-A, +Y] { self =>
 
   def apply(a: A): Y = xy(wrap(a))
 
-  def encode(as: Seq[A]): Y = {
+  def encode(as: Seq[A]): Batch[Y] = {
     val first = extract(as.head, Nil)
     val buffers = first.map { v =>
       ArrayBuffer(v)
@@ -23,7 +23,7 @@ trait Fn[-A, +Y] { self =>
       }
     }
     val x = create(buffers.map(_.toArray))._1
-    xy(x)
+    new Batch(as.size, xy(x))
   }
 
   def zip[B, Z](fn: Fn[B, Z]): Fn[(A, B), (Y, Z)] =
