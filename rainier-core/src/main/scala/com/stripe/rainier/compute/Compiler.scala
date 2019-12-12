@@ -2,15 +2,21 @@ package com.stripe.rainier.compute
 
 import com.stripe.rainier.ir.CompiledFunction
 
-final class Compiler(parameters: List[Parameter], placeholders: List[Placeholder], batchWidths: List[Int], outputs: List[(String, Real)]) {
+final class Compiler(parameters: List[Parameter],
+                     placeholders: List[Placeholder],
+                     batchWidths: List[Int],
+                     outputs: List[(String, Real)]) {
   def compiledModel(): CompiledModel = {
     val cf = Compiler.compile(parameters ++ placeholders, outputs)
 
-    val batchInputStarts = batchWidths.scanLeft(0){_ + _}
-    val compiledBatches = 0.until(batchWidths.size).map{i =>
+    val batchInputStarts = batchWidths.scanLeft(0) { _ + _ }
+    val compiledBatches = 0.until(batchWidths.size).map { i =>
       val inputStartIndex = parameters.size + batchInputStarts(i)
       val outputStartIndex = (parameters.size + 1) * i
-      val data = placeholders.slice(batchInputStarts(i), batchInputStarts(i+1)).map(_.values).toArray
+      val data = placeholders
+        .slice(batchInputStarts(i), batchInputStarts(i + 1))
+        .map(_.values)
+        .toArray
       CompiledBatch(cf, inputStartIndex, outputStartIndex, data)
     }
 
@@ -47,22 +53,26 @@ object Compiler {
         }
 
   def apply(base: Real, batches: Seq[Batch[Real]]): Compiler = {
-    val baseParameters = RealOps.variables(base).collect{case v:Parameter => v}
+    val baseParameters =
+      RealOps.variables(base).collect { case v: Parameter => v }
 
     val (paramSet, placeholders, batchWidths) =
-      batches.reverse.foldLeft((baseParameters, List.empty[Placeholder], List.empty[Int])) {
+      batches.reverse.foldLeft(
+        (baseParameters, List.empty[Placeholder], List.empty[Int])) {
         case ((paramAcc, phAcc, widthAcc), batch) =>
           val variables = RealOps.variables(batch.value)
-          val params = variables.collect{case v:Parameter => v}
-          val phs = variables.collect{case v:Placeholder => v}.toList
+          val params = variables.collect { case v: Parameter => v }
+          val phs = variables.collect { case v: Placeholder => v }.toList
 
           (params ++ paramAcc, phs ++ phAcc, phs.size :: widthAcc)
-      } 
-    
+      }
+
     val parameters = paramSet.toList
     val outputs =
       withGradient("base", base, parameters) ++
-      batches.zipWithIndex.flatMap{case (b, i) => withGradient(s"batch$i", b.value, parameters)}
+        batches.zipWithIndex.flatMap {
+          case (b, i) => withGradient(s"batch$i", b.value, parameters)
+        }
 
     new Compiler(parameters, placeholders, batchWidths, outputs)
   }
