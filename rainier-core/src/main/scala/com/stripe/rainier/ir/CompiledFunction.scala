@@ -10,22 +10,23 @@ trait CompiledFunction {
 }
 
 object CompiledFunction {
+  val MethodSizeLimit = 200
+  val ClassSizeLimit = 100
+
   def apply(inputs: Seq[Parameter],
-            exprs: Seq[(String, Expr)],
-            methodSizeLimit: Int,
-            classSizeLimit: Int): CompiledFunction = {
+            exprs: Seq[(String, Expr)]): CompiledFunction = {
     FINE.log(
       "Compiling %d inputs, %d outputs, methodSizeLimit %s, classSizeLimit %d",
       inputs.size,
       exprs.size,
-      methodSizeLimit,
-      classSizeLimit)
+      MethodSizeLimit,
+      ClassSizeLimit)
 
     val outputClassName = ClassGenerator.freshName
 
     val methodGroups = exprs.map {
       case (name, expr) =>
-        val packer = new Packer(methodSizeLimit)
+        val packer = new Packer(MethodSizeLimit)
 
         FINE.log("Packing expression for %s", name)
         val outputRef = packer.pack(expr)
@@ -47,7 +48,7 @@ object CompiledFunction {
                                            inputs,
                                            varTypes,
                                            classPrefix,
-                                           classSizeLimit)
+                                           ClassSizeLimit)
           mg.className -> mg.methodNode
         }
     }
@@ -66,7 +67,7 @@ object CompiledFunction {
     }
 
     val ocg = new OutputClassGenerator(outputClassName,
-                                       classSizeLimit,
+                                       ClassSizeLimit,
                                        outputIDs,
                                        numInputs,
                                        numGlobals,

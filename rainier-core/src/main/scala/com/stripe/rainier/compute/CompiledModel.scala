@@ -5,7 +5,7 @@ import com.stripe.rainier.sampler.DensityFunction
 
 class CompiledModel(val parameters: List[Parameter],
                     cf: CompiledFunction,
-                    targets: Array[CompiledBatch]) { self =>
+                    batches: Array[CompiledBatch]) { self =>
   val numOutputs = cf.numOutputs
 
   def update(inputs: Array[Double],
@@ -18,8 +18,8 @@ class CompiledModel(val parameters: List[Parameter],
     }
 
     var i = 0
-    while (i < targets.size) {
-      targets(i).update(inputs, globals, outputs)
+    while (i < batches.size) {
+      batches(i).update(inputs, globals, outputs)
       i += 1
     }
   }

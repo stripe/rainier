@@ -71,7 +71,7 @@ sealed trait Generator[+T] { self =>
         case (r, i) =>
           (s"req$i", r)
       }
-      val cf = Compiler.default.compile(parameters, namedReqs)
+      val cf = Compiler.compile(parameters, namedReqs)
       array =>
         {
           val globalBuf = new Array[Double](cf.numGlobals)

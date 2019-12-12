@@ -22,7 +22,7 @@ class Model(private[core] val base: Real,
   def optimize(): Estimate =
     Estimate(Optimizer.lbfgs(density()), this)
 
-  lazy val compiledModel = Compiler.default.compile(base, batches)
+  lazy val compiledModel = Compiler(base, batches).compiledModel()
   def parameters: List[Parameter] = compiledModel.parameters
 
   private[rainier] def density(): DensityFunction = compiledModel.density()

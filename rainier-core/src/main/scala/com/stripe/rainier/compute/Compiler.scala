@@ -2,9 +2,23 @@ package com.stripe.rainier.compute
 
 import com.stripe.rainier.ir.CompiledFunction
 
-final case class Compiler(methodSizeLimit: Int, classSizeLimit: Int) {
-  def compile(base: Real, batches: Seq[Batch[Real]]): CompiledModel = ???
+final class Compiler(parameters: List[Parameter], placeholders: List[Placeholder], batchWidths: List[Int], outputs: List[(String, Real)]) {
+  def compiledModel(): CompiledModel = {
+    val cf = Compiler.compile(parameters ++ placeholders, outputs)
 
+    val batchInputStarts = batchWidths.scanLeft(0){_ + _}
+    val compiledBatches = 0.until(batchWidths.size).map{i =>
+      val inputStartIndex = parameters.size + batchInputStarts(i)
+      val outputStartIndex = (parameters.size + 1) * i
+      val data = placeholders.slice(batchInputStarts(i), batchInputStarts(i+1)).map(_.values).toArray
+      CompiledBatch(cf, inputStartIndex, outputStartIndex, data)
+    }
+
+    new CompiledModel(parameters, cf, compiledBatches.toArray)
+  }
+}
+
+object Compiler {
   def compile(inputs: Seq[Variable],
               outputs: Seq[(String, Real)]): CompiledFunction = {
     val translator = new Translator
@@ -15,12 +29,8 @@ final case class Compiler(methodSizeLimit: Int, classSizeLimit: Int) {
       case (s, r) =>
         s -> translator.toExpr(r)
     }
-    CompiledFunction(params, exprs, methodSizeLimit, classSizeLimit)
+    CompiledFunction(params, exprs)
   }
-}
-
-object Compiler {
-  def default: Compiler = Compiler(200, 100)
 
   def withGradient(name: String,
                    real: Real,
@@ -35,49 +45,25 @@ object Compiler {
           case (g, i) =>
             (s"${name}_grad${i}", g)
         }
-}
-/*
-object DataFunction {
-  def apply(targets: List[Real],
-            compiler: Compiler = Compiler.default): DataFunction = {
-    val (paramSet, placeholders, dataList, base, batch) =
-      targets.foldLeft(
-        (Set.empty[Parameter],
-         List.empty[Placeholder],
-         List.empty[Array[Array[Double]]],
-         Real.zero,
-         List.empty[Real])) {
-        case ((paramAcc, phAcc, dataAcc, baseAcc, batchAcc), target) =>
-          val variables = RealOps.variables(target)
-          val targetParams = variables.collect { case x: Parameter => x }
-          val targetPh = variables.collect { case x: Placeholder => x }.toList
-          if (targetPh.isEmpty) {
-            (targetParams ++ paramAcc,
-             phAcc,
-             dataAcc,
-             baseAcc + target,
-             batchAcc)
-          } else {
-            (targetParams ++ paramAcc,
-             targetPh ++ phAcc,
-             targetPh.map(_.values).toArray :: dataAcc,
-             baseAcc,
-             target :: batchAcc)
-          }
-      }
 
+  def apply(base: Real, batches: Seq[Batch[Real]]): Compiler = {
+    val baseParameters = RealOps.variables(base).collect{case v:Parameter => v}
+
+    val (paramSet, placeholders, batchWidths) =
+      batches.reverse.foldLeft((baseParameters, List.empty[Placeholder], List.empty[Int])) {
+        case ((paramAcc, phAcc, widthAcc), batch) =>
+          val variables = RealOps.variables(batch.value)
+          val params = variables.collect{case v:Parameter => v}
+          val phs = variables.collect{case v:Placeholder => v}.toList
+
+          (params ++ paramAcc, phs ++ phAcc, phs.size :: widthAcc)
+      } 
+    
     val parameters = paramSet.toList
-    val data = dataList.toArray
-    val batchOutputs = batch.zipWithIndex.flatMap {
-      case (o, i) =>
-        Compiler.withGradient(s"target${i}", o, parameters)
-    }
+    val outputs =
+      withGradient("base", base, parameters) ++
+      batches.zipWithIndex.flatMap{case (b, i) => withGradient(s"batch$i", b.value, parameters)}
 
-    val cf = compiler.compile(
-      parameters ++ placeholders,
-      Compiler.withGradient("base", base, parameters) ++ batchOutputs)
-
-    DataFunction(cf, parameters, data)
+    new Compiler(parameters, placeholders, batchWidths, outputs)
   }
 }
- */
