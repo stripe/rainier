@@ -5,7 +5,6 @@ import java.util.concurrent.TimeUnit
 
 import com.stripe.rainier.compute._
 import com.stripe.rainier.core._
-import com.stripe.rainier.ir.DataFunction
 import com.stripe.rainier.sampler._
 
 @BenchmarkMode(Array(Mode.SampleTime))
@@ -44,7 +43,7 @@ abstract class SBCBenchmark {
 
   @Benchmark
   def compile(): DataFunction =
-    Compiler.default.compileTargets(TargetGroup(model.targets, 0), true, 4)
+    model.dataFn
 
   @Benchmark
   def run(): Unit =

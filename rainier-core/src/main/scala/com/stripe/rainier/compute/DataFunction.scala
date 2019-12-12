@@ -13,6 +13,8 @@ Output layout:
 - for 0 <= i < data.size:
    - numOutputs data outputs
  */
+
+
 case class DataFunction(cf: CompiledFunction,
                         parameters: List[Parameter],
                         data: Array[Array[Array[Double]]]) {
