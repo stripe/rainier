@@ -23,14 +23,16 @@ abstract class SBCBenchmark {
   protected var syntheticSamples: Int = _
 
   var s: SBC[_] = _
-  var model: Model = _
+  var model1: Model = _
+  var model2: Model = _
   var df: DensityFunction = _
 
   @Setup(Level.Trial)
   def setup(): Unit = {
     s = sbc
-    model = build
-    df = model.density
+    model1 = build
+    model2 = build
+    df = model1.density()
     ()
   }
 
@@ -42,8 +44,8 @@ abstract class SBCBenchmark {
   def build(): Model = s.model(syntheticSamples)._1
 
   @Benchmark
-  def compile(): DataFunction =
-    model.dataFn
+  def compile(): DensityFunction =
+    model2.density()
 
   @Benchmark
   def run(): Unit =

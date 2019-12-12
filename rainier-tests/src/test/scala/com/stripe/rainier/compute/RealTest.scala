@@ -25,7 +25,7 @@ class RealTest extends FunSuite {
       }
 
       val cf =
-        Compiler(200, 100).compile(List(x), List(("y", result), ("dy", deriv)))
+        Compiler.compile(List(x), List(("y", result), ("dy", deriv)))
       def c(inputs: Array[Double]): Double = {
         val globals = new Array[Double](cf.numGlobals)
         cf.output(inputs, globals, 0)
