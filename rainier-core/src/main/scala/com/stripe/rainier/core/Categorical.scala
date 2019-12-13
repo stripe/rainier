@@ -21,7 +21,7 @@ final case class Categorical[T](pmf: Map[T, Real]) extends Distribution[T] {
       }
       def create(acc: List[Variable]) = {
         val u = choices.map { k =>
-          (k, Real.variable())
+          (k, Real.placeholder())
         }
         (u, u.map(_._2) ++ acc)
       }
@@ -132,7 +132,7 @@ final case class Multinomial[T](pmf: Map[T, Real], k: Real)
       }
       def create(acc: List[Variable]) = {
         val u = choices.map { k =>
-          (k, Real.variable())
+          (k, Real.placeholder())
         }
         (u, u.map(_._2) ++ acc)
       }

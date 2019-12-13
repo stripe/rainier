@@ -11,9 +11,9 @@ class RealTest extends FunSuite {
           derivable: Double => Boolean = _ => true,
           reference: Double => Double = null)(fn: Real => Real): Unit = {
     test(description) {
-      val x = Real.variable()
+      val x = Real.parameter()
       val result = fn(x)
-      val deriv = result.gradient.head
+      val deriv = Gradient.derive(List(x), result).head
 
       def evalAt(d: Double): Double = Try { fn(Real(d)) } match {
         case Success(Infinity)               => Inf

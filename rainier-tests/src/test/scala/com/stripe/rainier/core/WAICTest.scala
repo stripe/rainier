@@ -88,7 +88,7 @@ class WAICTest extends FunSuite {
     val w =
       m.targets
         .map { t =>
-          WAIC(samples, m.variables, t)
+          WAIC(samples, m.parameters, t)
         }
         .reduce(_ + _)
 

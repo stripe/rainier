@@ -44,7 +44,7 @@ abstract class SBCBenchmark {
 
   @Benchmark
   def compile(): DataFunction =
-    Compiler.default.compileTargets(TargetGroup(model.targets, 0), true, 4)
+    model.dataFn
 
   @Benchmark
   def run(): Unit =

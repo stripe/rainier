@@ -61,7 +61,7 @@ object Jupyter {
   def trace(sample: Sample)(implicit
                             theme: Theme,
                             oh: OutputHandler): Unit = {
-    val nVariables = sample.model.variables.size
+    val nVariables = sample.model.parameters.size
     val lines =
       0.until(nVariables).toList.map { v =>
         sample.chains.zipWithIndex.map {

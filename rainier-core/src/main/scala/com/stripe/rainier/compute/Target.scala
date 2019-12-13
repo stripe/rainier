@@ -8,7 +8,8 @@ class Target(val real: Real, val placeholders: Map[Variable, Array[Double]]) {
       placeholders.head._2.size
 
   val placeholderVariables: List[Variable] = placeholders.keys.toList
-  val variables: Set[Variable] = RealOps.variables(real) -- placeholderVariables
+  val parameters: Set[Parameter] =
+    RealOps.variables(real).collect { case v: Parameter => v }
 
   private def inlineRow(i: Int): Real = {
     val row: Map[Variable, Real] = placeholders.map {
@@ -66,7 +67,7 @@ class Target(val real: Real, val placeholders: Map[Variable, Array[Double]]) {
     0.until(1 << bit).foldLeft((emptyV, Real.zero)) {
       case ((v, r), _) =>
         val newVars = placeholderVariables.map { _ =>
-          Real.variable()
+          Real.placeholder()
         }
         val newReal =
           PartialEvaluator.inline(real, placeholderVariables.zip(newVars).toMap)
@@ -77,7 +78,7 @@ class Target(val real: Real, val placeholders: Map[Variable, Array[Double]]) {
 
   def updater: (Real, List[Variable]) = {
     val newVars = placeholderVariables.map { _ =>
-      Real.variable()
+      Real.placeholder()
     }
     val newReal =
       PartialEvaluator.inline(real, placeholderVariables.zip(newVars).toMap)
@@ -92,7 +93,7 @@ object Target {
 
 case class TargetGroup(base: Real,
                        batched: List[Target],
-                       variables: List[Variable])
+                       parameters: List[Parameter])
 
 object TargetGroup {
   def apply(targets: Iterable[Target], maxInlineTerms: Int): TargetGroup = {
@@ -103,16 +104,16 @@ object TargetGroup {
           case None    => (b, t :: l)
         }
     }
-    val variables =
+    val parameters =
       batched
-        .foldLeft(RealOps.variables(base)) {
+        .foldLeft(RealOps.variables(base).collect { case x: Parameter => x }) {
           case (set, target) =>
-            set ++ target.variables
+            set ++ target.parameters
         }
         .toList
         .sortBy(_.param.sym.id)
-    val priors = variables.collect { case a: Parameter => a.density }
+    val priors = parameters.map(_.density)
 
-    TargetGroup(base + Real.sum(priors), batched, variables)
+    TargetGroup(base + Real.sum(priors), batched, parameters)
   }
 }

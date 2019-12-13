@@ -25,7 +25,7 @@ class RegressionBenchmark {
 
   lazy val data = synthesize
   lazy val model = build
-  lazy val vars = model.variables
+  lazy val vars = model.parameters
   lazy val df = model.density
 
   def synthesize(): List[(List[Double], Double)] = {
