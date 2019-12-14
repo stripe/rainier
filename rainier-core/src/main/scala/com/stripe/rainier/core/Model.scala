@@ -21,9 +21,9 @@ case class Model(private[rainier] val targets: Set[Target]) {
   def optimize(): Estimate =
     Estimate(Optimizer.lbfgs(density()), this)
 
-  lazy val targetGroup = TargetGroup(targets, 500)
+  lazy val targetGroup = TargetGroup(targets)
   lazy val dataFn =
-    Compiler.default.compileTargets(targetGroup, true, 4)
+    Compiler.default.compileTargets(targetGroup, true)
 
   def parameters: List[Parameter] = targetGroup.parameters
 
@@ -43,28 +43,23 @@ case class Model(private[rainier] val targets: Set[Target]) {
 }
 
 object Model {
-  def observe[Y](ys: Seq[Y], dist: Distribution[Y]): Model = {
-    val target = dist.target(ys)
-    Model(Set(target))
-  }
+  def apply(real: Real): Model = Model(Set(Target(real)))
+
+  def observe[Y](ys: Seq[Y], dist: Distribution[Y]): Model =
+    Model(dist.likelihoodFn.encode(ys))
 
   def observe[X, Y](xs: Seq[X], ys: Seq[Y])(fn: X => Distribution[Y]): Model = {
-    val targets = (xs.zip(ys)).map {
-      case (x, y) => fn(x).target(y)
+    val likelihoods = (xs.zip(ys)).map {
+      case (x, y) => fn(x).likelihoodFn(y)
     }
 
-    Model(targets.toSet)
+    Model(Real.sum(likelihoods))
   }
 
   def observe[X, Y](xs: Seq[X],
                     ys: Seq[Y],
                     fn: Fn[X, Distribution[Y]]): Model = {
-    val enc = fn.encoder
-    val (v, vars) = enc.create(Nil)
-    val dist = fn.xy(v)
-    val target = dist.target(ys)
-    val cols = enc.columns(xs)
-    Model(
-      Set(new Target(target.real, target.placeholders ++ vars.zip(cols).toMap)))
+    val dist = fn.encode(xs)
+    Model(dist.likelihoodFn.encode(ys))
   }
 }

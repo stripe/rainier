@@ -11,27 +11,19 @@ final case class Compiler(methodSizeLimit: Int, classSizeLimit: Int) {
     }
   }
 
-  def compileTargets(targets: TargetGroup,
-                     gradient: Boolean,
-                     maxBatchBits: Int): DataFunction = {
+  def compileTargets(targets: TargetGroup, gradient: Boolean): DataFunction = {
     val data = targets.batched.map { target =>
       target.placeholderVariables.map { v =>
         target.placeholders(v)
       }.toArray
     }.toArray
 
-    val batchBits =
-      DataFunction
-        .logTwo(data.map(_.head.size).reduceOption(_ min _).getOrElse(0))
-        .min(maxBatchBits)
-        .max(0)
-
     val gradVars = if (gradient) targets.parameters else Nil
     val (batchVariables, batchOutputs) =
       targets.batched.zipWithIndex
         .foldLeft((List.empty[Variable], List.empty[(String, Real)])) {
           case ((ins, outs), (target, i)) =>
-            val (newIns, newOuts) = target.batched(batchBits)
+            val (newIns, newOuts) = target.batched
             val newOutsWithGradient =
               newOuts.zipWithIndex.flatMap {
                 case (o, j) =>
@@ -48,7 +40,7 @@ final case class Compiler(methodSizeLimit: Int, classSizeLimit: Int) {
         targets.parameters.size + 1
       else
         1
-    DataFunction(cf, batchBits, targets.parameters.size, numOutputs, data)
+    DataFunction(cf, 0, targets.parameters.size, numOutputs, data)
   }
 
   def compile(inputs: Seq[Variable],
