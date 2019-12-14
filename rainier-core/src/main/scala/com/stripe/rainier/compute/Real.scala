@@ -50,19 +50,6 @@ sealed trait Real {
 
   def logit: Real = -((Real.one / this - 1).log)
   def logistic: Real = Real.one / (Real.one + (-this).exp)
-
-  lazy val variables: List[Variable] = RealOps.variables(this).toList
-  lazy val gradient: List[Real] = Gradient.derive(variables, this)
-
-  def writeGraph(path: String): Unit = {
-    RealViz("output" -> this).write(path)
-  }
-
-  def writeIRGraph(path: String, methodSizeLimit: Option[Int] = None): Unit = {
-    RealViz
-      .ir(List(("output", this)), variables, false, methodSizeLimit)
-      .write(path)
-  }
 }
 
 object Real {
@@ -86,8 +73,9 @@ object Real {
     summed.log + max
   }
 
-  def variable(): Variable = new Placeholder()
-  def parameter(fn: Variable => Real): Variable = {
+  def placeholder(): Variable = new Placeholder()
+  def parameter(): Parameter = new Parameter(Real.zero)
+  def parameter(fn: Variable => Real): Parameter = {
     val x = new Parameter(Real.zero)
     x.density = fn(x)
     x

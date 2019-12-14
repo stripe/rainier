@@ -9,12 +9,12 @@ case class Sample(chains: List[List[Array[Double]]], model: Model)(
   def waic =
     model.targets
       .map { t =>
-        WAIC(chains.flatten, model.variables, t)
+        WAIC(chains.flatten, model.parameters, t)
       }
       .reduce(_ + _)
 
   def predict[T, U](value: T)(implicit tg: ToGenerator[T, U]): List[U] = {
-    val fn = tg(value).prepare(model.variables)
+    val fn = tg(value).prepare(model.parameters)
     chains.flatMap { c =>
       c.map { a =>
         fn(a)

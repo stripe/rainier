@@ -26,7 +26,7 @@ final case class Compiler(methodSizeLimit: Int, classSizeLimit: Int) {
         .min(maxBatchBits)
         .max(0)
 
-    val gradVars = if (gradient) targets.variables else Nil
+    val gradVars = if (gradient) targets.parameters else Nil
     val (batchVariables, batchOutputs) =
       targets.batched.zipWithIndex
         .foldLeft((List.empty[Variable], List.empty[(String, Real)])) {
@@ -41,14 +41,14 @@ final case class Compiler(methodSizeLimit: Int, classSizeLimit: Int) {
         }
 
     val cf = compile(
-      targets.variables ++ batchVariables,
+      targets.parameters ++ batchVariables,
       Compiler.withGradient("base", targets.base, gradVars) ++ batchOutputs)
     val numOutputs =
       if (gradient)
-        targets.variables.size + 1
+        targets.parameters.size + 1
       else
         1
-    DataFunction(cf, batchBits, targets.variables.size, numOutputs, data)
+    DataFunction(cf, batchBits, targets.parameters.size, numOutputs, data)
   }
 
   def compile(inputs: Seq[Variable],
@@ -70,12 +70,12 @@ object Compiler {
 
   def withGradient(name: String,
                    real: Real,
-                   variables: List[Variable]): List[(String, Real)] =
-    if (variables.isEmpty)
+                   parameters: List[Parameter]): List[(String, Real)] =
+    if (parameters.isEmpty)
       List((name, real))
     else
       (name, real) :: Gradient
-        .derive(variables, real)
+        .derive(parameters, real)
         .zipWithIndex
         .map {
           case (g, i) =>
