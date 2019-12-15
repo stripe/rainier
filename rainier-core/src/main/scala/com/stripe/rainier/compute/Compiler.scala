@@ -40,7 +40,7 @@ final case class Compiler(methodSizeLimit: Int, classSizeLimit: Int) {
         targets.parameters.size + 1
       else
         1
-    DataFunction(cf, 0, targets.parameters.size, numOutputs, data)
+    DataFunction(cf, targets.parameters.size, numOutputs, data)
   }
 
   def compile(inputs: Seq[Variable],

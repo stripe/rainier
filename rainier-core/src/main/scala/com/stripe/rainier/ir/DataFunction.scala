@@ -1,46 +1,32 @@
 package com.stripe.rainier.ir
 
-import scala.annotation.tailrec
-
 /*
 Input layout:
 - numParamInputs param inputs
 - for 0 <= i < data.size:
-   - data[i].size first-run inputs
-   - for 0 <= j <= batchBits:
-     - for 0 <= k < data[i].size:
-        - 2^j batch inputs
+   - data[i].size inputs
 
 Output layout:
 - numOutputs data-less outputs
 - for 0 <= i < data.size:
-   - numOutputs first-run outputs
-   - for batchBits >= j >= 0:
-      - numOutputs batch outputs
+   - numOutputs outputs
  */
 case class DataFunction(cf: CompiledFunction,
-                        batchBits: Int,
                         numParamInputs: Int,
                         numOutputs: Int,
                         data: Array[Array[Array[Double]]]) {
   val numInputs: Int = cf.numInputs
   val numGlobals: Int = cf.numGlobals
 
-  require(data.isEmpty || DataFunction.logTwo(data.map { a =>
-    a.head.size
-  }.min) >= batchBits)
-
-  private val inputMultiplier = (1 << (batchBits + 1))
   private val inputStartIndices =
     data.map(_.size).scanLeft(numParamInputs) {
-      case (x, sz) => x + (sz * inputMultiplier)
+      case (x, sz) => x + sz
     }
   require(inputStartIndices(data.size) == cf.numInputs)
 
-  private val outputMultiplier = batchBits + 2
   private val outputStartIndices =
     data.scanLeft(numOutputs) {
-      case (x, _) => x + (numOutputs * outputMultiplier)
+      case (x, _) => x + numOutputs
     }
   require(outputStartIndices(data.size) == cf.numOutputs)
 
@@ -50,8 +36,7 @@ case class DataFunction(cf: CompiledFunction,
     computeWithoutData(inputs, globals, outputs)
     var i = 0
     while (i < data.size) {
-      computeFirstWithData(inputs, globals, outputs, i)
-      computeRestWithData(inputs, globals, outputs, i)
+      computeWithData(inputs, globals, outputs, i)
       i += 1
     }
   }
@@ -67,96 +52,28 @@ case class DataFunction(cf: CompiledFunction,
     }
   }
 
-  private def computeFirstWithData(inputs: Array[Double],
-                                   globals: Array[Double],
-                                   outputs: Array[Double],
-                                   i: Int): Unit = {
+  private def computeWithData(inputs: Array[Double],
+                              globals: Array[Double],
+                              outputs: Array[Double],
+                              i: Int): Unit = {
 
     val d = data(i)
     val inputStartIndex = inputStartIndices(i)
     val outputStartIndex = outputStartIndices(i)
-    var j = 0
-    while (j < d.size) {
-      inputs(inputStartIndex + j) = d(j)(0)
-      j += 1
-    }
-    var o = 0
-    while (o < numOutputs) {
-      outputs(o) += cf.output(inputs, globals, outputStartIndex + o)
-      o += 1
-    }
-  }
-
-  private def computeRestWithData(inputs: Array[Double],
-                                  globals: Array[Double],
-                                  outputs: Array[Double],
-                                  i: Int): Unit =
-    computeBatch(inputs,
-                 globals,
-                 outputs,
-                 data(i),
-                 data(i)(0).size - 1,
-                 inputStartIndices(i),
-                 outputStartIndices(i))
-
-  @tailrec
-  private def computeBatch(inputs: Array[Double],
-                           globals: Array[Double],
-                           outputs: Array[Double],
-                           d: Array[Array[Double]],
-                           n: Int,
-                           inputStartIndex: Int,
-                           outputStartIndex: Int): Unit =
-    if (n > 0) {
-      val bit = DataFunction.logTwo(n).min(batchBits)
-      val newN = initBatchInputs(inputs, inputStartIndex, d, n, bit)
-      computeBatchOutputs(inputs, globals, outputs, outputStartIndex, bit)
-      computeBatch(inputs,
-                   globals,
-                   outputs,
-                   d,
-                   newN,
-                   inputStartIndex,
-                   outputStartIndex)
-    }
-
-  private def initBatchInputs(inputs: Array[Double],
-                              startIndex: Int,
-                              d: Array[Array[Double]],
-                              n: Int,
-                              bit: Int): Int = {
-
-    val batchSize = 1 << bit
-    val nextN = n - batchSize
-    val batchStartIndex = startIndex + (batchSize * d.size)
-    var j = 0
-    while (j < d.size) {
-      val dj = d(j)
-      var k = 0
-      while (k < batchSize) {
-        val inputIndex = batchStartIndex + (j * batchSize) + k
-        inputs(inputIndex) = dj(nextN + k + 1)
-        k += 1
+    var k = 0
+    val n = data(i)(0).size
+    while (k < n) {
+      var j = 0
+      while (j < d.size) {
+        inputs(inputStartIndex + j) = d(j)(k)
+        j += 1
       }
-      j += 1
-    }
-    nextN
-  }
-
-  private def computeBatchOutputs(inputs: Array[Double],
-                                  globals: Array[Double],
-                                  outputs: Array[Double],
-                                  startIndex: Int,
-                                  bit: Int): Unit = {
-    var o = 0
-    while (o < numOutputs) {
-      val outputIndex = startIndex + ((batchBits - bit + 1) * numOutputs) + o
-      outputs(o) += cf.output(inputs, globals, outputIndex)
-      o += 1
+      var o = 0
+      while (o < numOutputs) {
+        outputs(o) += cf.output(inputs, globals, outputStartIndex + o)
+        o += 1
+      }
+      k += 1
     }
   }
-}
-
-object DataFunction {
-  def logTwo(n: Int): Int = Math.floor(Math.log(n.toDouble) / Math.log(2)).toInt
 }
