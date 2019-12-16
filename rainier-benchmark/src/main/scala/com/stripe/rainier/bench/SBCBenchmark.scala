@@ -5,14 +5,13 @@ import java.util.concurrent.TimeUnit
 
 import com.stripe.rainier.compute._
 import com.stripe.rainier.core._
-import com.stripe.rainier.ir.DataFunction
 import com.stripe.rainier.sampler._
 
 @BenchmarkMode(Array(Mode.SampleTime))
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
 @Warmup(iterations = 3, time = 1)
 @Measurement(iterations = 5, time = 1)
-@Fork(3)
+@Fork(1)
 @Threads(4)
 @State(Scope.Benchmark)
 abstract class SBCBenchmark {
@@ -23,32 +22,20 @@ abstract class SBCBenchmark {
   @Param(Array("100", "1000", "10000", "100000"))
   protected var syntheticSamples: Int = _
 
-  var s: SBC[_] = _
-  var model: Model = _
   var df: DensityFunction = _
+  var params: Array[Double] = _
 
   @Setup(Level.Trial)
   def setup(): Unit = {
-    s = sbc
-    model = build
+    val model = sbc.model(syntheticSamples)._1
     df = model.density
+    params = Array.fill(df.nVars) { rng.standardUniform }
     ()
   }
 
   @Benchmark
-  def synthesize(): (Seq[_], Double) =
-    s.synthesize(syntheticSamples)
-
-  @Benchmark
-  def build(): Model = s.model(syntheticSamples)._1
-
-  @Benchmark
-  def compile(): DataFunction =
-    model.dataFn
-
-  @Benchmark
   def run(): Unit =
-    df.update(Array.fill(df.nVars) { rng.standardUniform })
+    df.update(params)
 }
 
 class NormalBenchmark extends SBCBenchmark {
