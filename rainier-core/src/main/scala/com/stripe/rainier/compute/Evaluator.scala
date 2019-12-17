@@ -27,7 +27,7 @@ class Evaluator(var cache: Map[Real, Double]) extends Numeric[Real] {
       l.ax.toList.map { case (r, d) => Math.pow(toDouble(r), d.toDouble) }.product
     case Unary(original, op) =>
       // must use Real(_) constructor since Constant(_) constructor would result in undesirable errors
-      // at infinities and unhelpful NumberFormatException on NaN, all due to conversion to BigDecimal
+      // at infinities and unhelpful NumberFormatException on NaN, all due to conversion to Decimal
       val ev = Real(toDouble(original))
       eval(RealOps.unary(ev, op))
     case Compare(left, right) =>

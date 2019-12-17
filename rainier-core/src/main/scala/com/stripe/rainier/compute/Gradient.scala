@@ -87,7 +87,7 @@ private object Gradient {
     }
   }
 
-  private final case class ProductDiff(other: BigDecimal, gradient: Diff)
+  private final case class ProductDiff(other: Decimal, gradient: Diff)
       extends Diff {
     def toReal: Real = gradient.toReal * Constant(other)
   }
@@ -130,7 +130,7 @@ private object Gradient {
 
   private final case class LogLineDiff(gradient: Diff,
                                        term: NonConstant,
-                                       exponent: BigDecimal,
+                                       exponent: Decimal,
                                        complement: Coefficients)
       extends Diff {
     def toReal: Real = {
@@ -141,7 +141,7 @@ private object Gradient {
           LogLine(complement)
       gradient.toReal *
         exponent *
-        term.pow(exponent - 1) *
+        term.pow(exponent - Decimal(1)) *
         otherTerms
     }
   }

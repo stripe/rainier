@@ -2,14 +2,14 @@ package com.stripe.rainier.compute
 
 private[compute] object LineOps {
 
-  private def axb(nc: NonConstant): (Coefficients, BigDecimal) =
+  private def axb(nc: NonConstant): (Coefficients, Decimal) =
     nc match {
       case l: Line => (l.ax, l.b)
       case l: LogLine =>
         LogLineOps
           .distribute(l)
-          .getOrElse((Coefficients(l -> Real.BigOne), Real.BigZero))
-      case _ => (Coefficients(nc -> Real.BigOne), Real.BigZero)
+          .getOrElse((Coefficients(l -> Decimal.One), Decimal.Zero))
+      case _ => (Coefficients(nc -> Decimal.One), Decimal.Zero)
     }
 
   def sum(left: NonConstant, right: NonConstant): Real = {
@@ -23,12 +23,12 @@ private[compute] object LineOps {
       simplify(merged, lb + rb)
   }
 
-  def scale(nc: NonConstant, v: BigDecimal): Real = {
+  def scale(nc: NonConstant, v: Decimal): Real = {
     val (ax, b) = axb(nc)
     simplify(ax.mapCoefficients(_ * v), b * v)
   }
 
-  def translate(nc: NonConstant, v: BigDecimal): Real = {
+  def translate(nc: NonConstant, v: Decimal): Real = {
     val (ax, b) = axb(nc)
     simplify(ax, b + v)
   }
@@ -47,7 +47,7 @@ private[compute] object LineOps {
         }
     }
     val (newAx, newB) =
-      terms.foldLeft((Coefficients.Empty, Real.BigZero)) {
+      terms.foldLeft((Coefficients.Empty, Decimal.Zero)) {
         case ((nAx, nB), (x: NonConstant, a)) =>
           (nAx.merge(Coefficients(x -> a)), nB)
         case ((nAx, nB), (Constant(x), a)) =>
@@ -68,7 +68,7 @@ private[compute] object LineOps {
   def log(line: Line): Option[Real] =
     line.ax match {
       case Coefficients.One(x, a)
-          if (a >= Real.BigZero) && (line.b == Real.BigZero) =>
+          if (a >= Decimal.Zero) && (line.b == Decimal.Zero) =>
         Some(x.log + Math.log(a.toDouble))
       case _ => None
     }
@@ -81,9 +81,9 @@ private[compute] object LineOps {
   a.pow(k) * x.pow(k). Since we can precompute a.pow(k), this just moves
   a multiply around, and there's a chance that a.pow(k) will simplify further.
    */
-  def pow(line: Line, exponent: BigDecimal): Option[Real] =
+  def pow(line: Line, exponent: Decimal): Option[Real] =
     line.ax match {
-      case Coefficients.One(x, a) if line.b == Real.BigZero =>
+      case Coefficients.One(x, a) if line.b == Decimal.Zero =>
         Some(x.pow(exponent) * RealOps.pow(a, exponent))
       case _ => None
     }
@@ -96,23 +96,23 @@ private[compute] object LineOps {
   multiplication ops needed, by reducing some of the weights in ax down to 1 or -1.
   We want to pick the k that maximizes how many get reduced that way.
    */
-  def factor(line: Line): (Coefficients, BigDecimal, BigDecimal) = {
+  def factor(line: Line): (Coefficients, Decimal, Decimal) = {
     val coefficientFreqs =
       line.ax.coefficients
         .groupBy(_.abs)
         .map { case (a, xs) => (a, xs.size) }
 
     val (k, cnt) = coefficientFreqs.maxBy(_._2)
-    if (cnt > coefficientFreqs.getOrElse(Real.BigOne, 0))
+    if (cnt > coefficientFreqs.getOrElse(Decimal.One, 0))
       (line.ax.mapCoefficients(_ / k), line.b / k, k)
     else
-      (line.ax, line.b, Real.BigOne)
+      (line.ax, line.b, Decimal.One)
   }
 
-  private def simplify(ax: Coefficients, b: BigDecimal): Real =
+  private def simplify(ax: Coefficients, b: Decimal): Real =
     ax match {
       case Coefficients.Empty => Constant(b)
-      case Coefficients.One(x, Real.BigOne) if b == Real.BigZero =>
+      case Coefficients.One(x, Decimal.One) if b == Decimal.Zero =>
         x
       case _ => Line(ax, b)
     }

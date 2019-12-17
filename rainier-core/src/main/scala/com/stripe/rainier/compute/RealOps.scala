@@ -48,7 +48,7 @@ private[compute] object RealOps {
           case AtanOp => -Real.Pi / 2
           case NoOp   => original
         }
-      case Constant(Real.BigZero) =>
+      case Constant(Decimal.Zero) =>
         op match {
           case ExpOp  => Real.one
           case LogOp  => NegInfinity
@@ -102,8 +102,8 @@ private[compute] object RealOps {
       case (_, Infinity)                  => Infinity
       case (NegInfinity, _)               => NegInfinity
       case (_, NegInfinity)               => NegInfinity
-      case (_, Constant(Real.BigZero))    => left
-      case (Constant(Real.BigZero), _)    => right
+      case (_, Constant(Decimal.Zero))    => left
+      case (Constant(Decimal.Zero), _)    => right
       case (Constant(x), Constant(y))     => Real(x + y)
       case (Constant(x), nc: NonConstant) => LineOps.translate(nc, x)
       case (nc: NonConstant, Constant(x)) => LineOps.translate(nc, x)
@@ -114,22 +114,22 @@ private[compute] object RealOps {
   def multiply(left: Real, right: Real): Real =
     (left, right) match {
       case (NegInfinity, NegInfinity) => Infinity
-      case (NegInfinity, Constant(Real.BigZero)) =>
+      case (NegInfinity, Constant(Decimal.Zero)) =>
         throw new ArithmeticException("Cannot multiply -inf by zero")
-      case (Infinity, Constant(Real.BigZero)) =>
+      case (Infinity, Constant(Decimal.Zero)) =>
         throw new ArithmeticException("Cannot multiply +inf by zero")
-      case (Constant(Real.BigZero), NegInfinity) =>
+      case (Constant(Decimal.Zero), NegInfinity) =>
         throw new ArithmeticException("Cannot multiply -inf by zero")
-      case (Constant(Real.BigZero), Infinity) =>
+      case (Constant(Decimal.Zero), Infinity) =>
         throw new ArithmeticException("Cannot multiply +inf by zero")
       case (NegInfinity, r)               => Real.gt(r, Real.zero, NegInfinity, Infinity)
       case (r, NegInfinity)               => Real.gt(r, Real.zero, NegInfinity, Infinity)
       case (Infinity, r)                  => Real.gt(r, 0, Infinity, NegInfinity)
       case (r, Infinity)                  => Real.gt(r, 0, Infinity, NegInfinity)
-      case (_, Constant(Real.BigZero))    => Real.zero
-      case (Constant(Real.BigZero), _)    => Real.zero
-      case (_, Constant(Real.BigOne))     => left
-      case (Constant(Real.BigOne), _)     => right
+      case (_, Constant(Decimal.Zero))    => Real.zero
+      case (Constant(Decimal.Zero), _)    => Real.zero
+      case (_, Constant(Decimal.One))     => left
+      case (Constant(Decimal.One), _)     => right
       case (Constant(x), Constant(y))     => Real(x * y)
       case (Constant(x), nc: NonConstant) => LineOps.scale(nc, x)
       case (nc: NonConstant, Constant(x)) => LineOps.scale(nc, x)
@@ -139,9 +139,9 @@ private[compute] object RealOps {
 
   def divide(left: Real, right: Real): Real =
     (left, right) match {
-      case (Constant(Real.BigZero), Constant(Real.BigZero)) =>
+      case (Constant(Decimal.Zero), Constant(Decimal.Zero)) =>
         throw new ArithmeticException("Cannot divide zero by zero")
-      case (_, Constant(Real.BigZero)) => left * Infinity
+      case (_, Constant(Decimal.Zero)) => left * Infinity
       case (Constant(x), Constant(y))  => Real(x / y)
       case _                           => left * right.pow(-1)
     }
@@ -160,23 +160,23 @@ private[compute] object RealOps {
       case e: NonConstant => Pow(original, e)
     }
 
-  def pow(original: Real, exponent: BigDecimal): Real =
+  def pow(original: Real, exponent: Decimal): Real =
     (original, exponent) match {
-      case (_, Real.BigZero) => Real.one
-      case (_, Real.BigOne)  => original
+      case (_, Decimal.Zero) => Real.one
+      case (_, Decimal.One)  => original
       case (Infinity, _) =>
-        if (exponent < Real.BigZero)
+        if (exponent < Decimal.Zero)
           Real.zero
         else
           Infinity
       case (NegInfinity, _) =>
-        if (exponent < Real.BigZero)
+        if (exponent < Decimal.Zero)
           Real.zero
         else if (exponent.isWhole && exponent.toInt % 2 == 1)
           NegInfinity
         else
           Infinity
-      case (Constant(Real.BigZero), _) if exponent < 0 =>
+      case (Constant(Decimal.Zero), _) if exponent < Decimal.Zero =>
         Infinity
       case (Constant(v), _) => Real(pow(v, exponent))
       case (l: Line, _) =>
@@ -187,21 +187,21 @@ private[compute] object RealOps {
         LogLineOps.pow(LogLine(nc), exponent)
     }
 
-  def pow(a: BigDecimal, b: BigDecimal): BigDecimal =
+  def pow(a: Decimal, b: Decimal): Decimal =
     if (b.isValidInt)
       a.pow(b.toInt)
-    else if (a < Real.BigZero)
+    else if (a < Decimal.Zero)
       throw new ArithmeticException(s"Undefined: $a ^ $b")
     else
-      BigDecimal(Math.pow(a.toDouble, b.toDouble))
+      Decimal(Math.pow(a.toDouble, b.toDouble))
 
   def compare(left: Real, right: Real): Real =
     (left, right) match {
       case (Infinity, Infinity)       => Real.zero
       case (Infinity, _)              => Real.one
-      case (_, Infinity)              => Constant(-1)
+      case (_, Infinity)              => Constant(Decimal(-1))
       case (NegInfinity, NegInfinity) => Real.zero
-      case (NegInfinity, _)           => Constant(-1)
+      case (NegInfinity, _)           => Constant(Decimal(-1))
       case (_, NegInfinity)           => Real.one
       case (Constant(a), Constant(b)) =>
         if (a == b)
@@ -209,7 +209,7 @@ private[compute] object RealOps {
         else if (a > b)
           Real.one
         else
-          Constant(-1)
+          Constant(Decimal(-1))
       case _ => Compare(left, right)
     }
 

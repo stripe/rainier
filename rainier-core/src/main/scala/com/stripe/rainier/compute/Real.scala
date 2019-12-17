@@ -99,19 +99,15 @@ object Real {
                             lt: Real) =
     Lookup(RealOps.compare(left, right), List(lt, eq, gt), -1)
 
-  private[compute] val BigZero = BigDecimal(0.0)
-  private[compute] val BigOne = BigDecimal(1.0)
-  private[compute] val BigTwo = BigDecimal(2.0)
-  private[compute] val BigPi = BigDecimal(math.Pi)
-  val zero: Real = Constant(BigZero)
-  val one: Real = Constant(BigOne)
-  val two: Real = Constant(BigTwo)
-  val Pi: Real = Constant(BigPi)
+  val zero: Real = Constant(Decimal.Zero)
+  val one: Real = Constant(Decimal.One)
+  val two: Real = Constant(Decimal.Two)
+  val Pi: Real = Constant(Decimal.Pi)
   val infinity: Real = Infinity
   val negInfinity: Real = NegInfinity
 }
 
-final private[rainier] case class Constant(value: BigDecimal) extends Real {
+final private[rainier] case class Constant(value: Decimal) extends Real {
   val bounds = Bounds(value)
 }
 
@@ -158,7 +154,7 @@ Because it is common for ax to have a large number of terms, this is deliberatel
 as equality comparisons would be too expensive. The impact of this is subtle, see [0] at the bottom of this file
 for an example.
  */
-private final class Line private (val ax: Coefficients, val b: BigDecimal)
+private final class Line private (val ax: Coefficients, val b: Decimal)
     extends NonConstant {
   val bounds = Bounds.sum(Bounds(b) :: ax.toList.map {
     case (x, a) =>
@@ -167,7 +163,7 @@ private final class Line private (val ax: Coefficients, val b: BigDecimal)
 }
 
 private[compute] object Line {
-  def apply(ax: Coefficients, b: BigDecimal): Line = {
+  def apply(ax: Coefficients, b: Decimal): Line = {
     require(!ax.isEmpty)
     new Line(ax, b)
   }
@@ -198,7 +194,7 @@ private object LogLine {
   def apply(nc: NonConstant): LogLine =
     nc match {
       case l: LogLine => l
-      case _          => LogLine(Coefficients(nc -> Real.BigOne))
+      case _          => LogLine(Coefficients(nc -> Decimal.One))
     }
 }
 
