@@ -204,7 +204,8 @@ private class Translator {
                            val plus: BinaryOp,
                            val minus: BinaryOp,
                            val zero: Decimal)
-  private val multiplyRing = new Ring(MultiplyOp, AddOp, SubtractOp, Decimal.Zero)
+  private val multiplyRing =
+    new Ring(MultiplyOp, AddOp, SubtractOp, Decimal.Zero)
   private val powRing = new Ring(PowOp, MultiplyOp, DivideOp, Decimal.One)
 
   /*

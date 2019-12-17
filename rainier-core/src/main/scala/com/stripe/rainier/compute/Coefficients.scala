@@ -47,8 +47,7 @@ object Coefficients {
 
   val Empty: Coefficients = EmptyCoefficients
 
-  case class One(term: NonConstant, coefficient: Decimal)
-      extends Coefficients {
+  case class One(term: NonConstant, coefficient: Decimal) extends Coefficients {
     val size = 1
     val isEmpty = false
     def coefficients = List(coefficient)

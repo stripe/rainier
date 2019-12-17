@@ -1,7 +1,13 @@
 package com.stripe.rainier
 package cats
 
-import com.stripe.rainier.compute.{Constant, Infinity, NegInfinity, Real}
+import com.stripe.rainier.compute.{
+  Decimal,
+  Constant,
+  Infinity,
+  NegInfinity,
+  Real
+}
 import com.stripe.rainier.core.{updateMap, Categorical, Generator}
 import com.stripe.rainier.sampler.RNG
 import _root_.cats.{Applicative, Group, Comonad, Eq, Monad, Monoid}
@@ -109,15 +115,15 @@ private[cats] object GroupReal extends Group[Real] {
 
 private[cats] trait EqInstances {
 
-  def eqBigDecimal(epsilon: Double): Eq[BigDecimal] =
+  def eqDecimal(epsilon: Double): Eq[Decimal] =
     Eq.instance { (left, right) =>
-      if (right == BigDecimal(0.0))
-        left.abs < epsilon
-      else ((left - right).abs / right.abs) < epsilon
+      if (right == Decimal(0.0))
+        left.abs < Decimal(epsilon)
+      else ((left - right).abs / right.abs) < Decimal(epsilon)
     }
 
   def eqReal(epsilon: Double): Eq[Real] = {
-    val bde = eqBigDecimal(epsilon)
+    val bde = eqDecimal(epsilon)
     Eq.instance { (left, right) =>
       (left, right) match {
         case (Infinity, Infinity) | (NegInfinity, NegInfinity) => true
