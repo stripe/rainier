@@ -54,10 +54,13 @@ object Decimal {
   def pow(x: Decimal, y: Int): Decimal = x match {
     case DoubleDecimal(v) => DoubleDecimal(Math.pow(v, y.toDouble))
     case FractionDecimal(n, d) =>
-      FractionDecimal(
-        Math.pow(n.toDouble, y.toDouble).toLong,
-        Math.pow(d.toDouble, y.toDouble).toLong
-      )
+      val yabs = Math.abs(y).toDouble
+      val n2 = Math.pow(n.toDouble, yabs).toLong
+      val d2 = Math.pow(d.toDouble, yabs).toLong
+      if (y >= 0)
+        FractionDecimal(n2, d2)
+      else
+        FractionDecimal(d2, n2)
   }
 
   def add(x: Decimal, y: Decimal): Decimal = (x, y) match {
@@ -102,9 +105,9 @@ object Decimal {
       FractionDecimal(n / g, d / g)
   }
 
-  val Zero = Decimal(0.0)
-  val One = Decimal(1.0)
-  val Two = Decimal(2.0)
+  val Zero = Decimal(0)
+  val One = Decimal(1)
+  val Two = Decimal(2)
   val Pi = Decimal(math.Pi)
 
   private def lcm(x: Long, y: Long): Long = {
