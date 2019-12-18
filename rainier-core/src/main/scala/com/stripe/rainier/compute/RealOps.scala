@@ -244,4 +244,11 @@ private[compute] object RealOps {
 
     vars.toSet
   }
+
+  def distribute(original: Real): Real =
+    original match {
+      case l: LogLine =>
+        LogLineOps.distribute(l).getOrElse(original)
+      case _ => original
+    }
 }

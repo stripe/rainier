@@ -50,6 +50,8 @@ sealed trait Real {
 
   def logit: Real = -((Real.one / this - 1).log)
   def logistic: Real = Real.one / (Real.one + (-this).exp)
+
+  def distribute: Real = RealOps.distribute(this)
 }
 
 object Real {

@@ -5,11 +5,7 @@ private[compute] object LineOps {
   private def axb(nc: NonConstant): (Coefficients, BigDecimal) =
     nc match {
       case l: Line => (l.ax, l.b)
-      case l: LogLine =>
-        LogLineOps
-          .distribute(l)
-          .getOrElse((Coefficients(l -> Real.BigOne), Real.BigZero))
-      case _ => (Coefficients(nc -> Real.BigOne), Real.BigZero)
+      case _       => (Coefficients(nc -> Real.BigOne), Real.BigZero)
     }
 
   def sum(left: NonConstant, right: NonConstant): Real = {
