@@ -6,7 +6,7 @@ case class Bounds(lower: Double, upper: Double) {
 }
 
 object Bounds {
-  def apply(value: BigDecimal): Bounds = Bounds(value.toDouble, value.toDouble)
+  def apply(value: Decimal): Bounds = Bounds(value.toDouble, value.toDouble)
 
   def or(seq: Seq[Bounds]): Bounds =
     Bounds(seq.map(_.lower).min, seq.map(_.upper).max)

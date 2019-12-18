@@ -60,7 +60,7 @@ private class Translator {
 
   private def logLineExpr(line: LogLine): Expr = {
     val (y, k) = LogLineOps.factor(line)
-    factoredLine(y.ax, Real.BigOne, k.toDouble, powRing)
+    factoredLine(y.ax, Decimal.One, k.toDouble, powRing)
   }
 
   /**
@@ -91,11 +91,11 @@ private class Translator {
   factored out of the original summation).
   **/
   private def factoredSumLine(ax: Coefficients,
-                              b: BigDecimal,
+                              b: Decimal,
                               factor: Double): Expr = {
     val terms = ax.toList.map { case (x, a) => (x, a.toDouble) }
     val allTerms =
-      if (b == 0.0)
+      if (b == Decimal.Zero)
         terms
       else
         (Constant(b), 1.0) :: terms
@@ -112,7 +112,7 @@ private class Translator {
   }
 
   private def factoredLine(ax: Coefficients,
-                           b: BigDecimal,
+                           b: Decimal,
                            factor: Double,
                            ring: Ring): Expr = {
     val terms = ax.toList.map { case (x, a) => (x, a.toDouble) }
@@ -140,7 +140,7 @@ private class Translator {
     (factor * sign) match {
       case 1.0 => expr
       case -1.0 =>
-        binaryExpr(Const(ring.zero), expr, ring.minus)
+        binaryExpr(Const(ring.zero.toDouble), expr, ring.minus)
       case 2.0 =>
         binaryExpr(expr, ref(expr), ring.plus)
       case k =>
@@ -159,7 +159,7 @@ private class Translator {
           binaryExpr(toExpr(x), toExpr(x), ring.plus)
       case (l: LogLine, a) => //this can only happen for a Line's terms
         () =>
-          factoredLine(l.ax, BigDecimal(a), 1.0, powRing)
+          factoredLine(l.ax, Decimal(a), 1.0, powRing)
       case (x, a) =>
         () =>
           binaryExpr(toExpr(x), Const(a), ring.times)
@@ -203,9 +203,10 @@ private class Translator {
   private final class Ring(val times: BinaryOp,
                            val plus: BinaryOp,
                            val minus: BinaryOp,
-                           val zero: Double)
-  private val multiplyRing = new Ring(MultiplyOp, AddOp, SubtractOp, 0.0)
-  private val powRing = new Ring(PowOp, MultiplyOp, DivideOp, 1.0)
+                           val zero: Decimal)
+  private val multiplyRing =
+    new Ring(MultiplyOp, AddOp, SubtractOp, Decimal.Zero)
+  private val powRing = new Ring(PowOp, MultiplyOp, DivideOp, Decimal.One)
 
   /*
   This performs hash-consing aka the flyweight pattern to ensure that we don't

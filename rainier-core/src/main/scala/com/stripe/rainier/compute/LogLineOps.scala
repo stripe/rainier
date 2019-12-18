@@ -12,7 +12,7 @@ private[compute] object LogLineOps {
       LogLine(merged)
   }
 
-  def pow(line: LogLine, v: BigDecimal): LogLine =
+  def pow(line: LogLine, v: Decimal): LogLine =
     LogLine(line.ax.mapCoefficients(_ * v))
 
   /*
@@ -41,10 +41,10 @@ private[compute] object LogLineOps {
       common with something in t (or some later thing we will add s+t to), and we can combine the constants
    */
   val DistributeToMaxTerms = 20
-  def distribute(line: LogLine): Option[(Coefficients, BigDecimal)] = {
+  def distribute(line: LogLine): Option[(Coefficients, Decimal)] = {
 
     def nTerms(l: Line): Int =
-      if (l.b == 0.0)
+      if (l.b == Decimal.Zero)
         l.ax.size
       else
         l.ax.size + 1
@@ -53,18 +53,18 @@ private[compute] object LogLineOps {
       (n * (n + 1)) / 2
     }
 
-    val initial = (List.empty[(NonConstant, BigDecimal)], Option.empty[Line])
+    val initial = (List.empty[(NonConstant, Decimal)], Option.empty[Line])
     val (factors, terms) = line.ax.toList.foldLeft(initial) {
-      case ((f, None), (l: Line, Real.BigOne))
+      case ((f, None), (l: Line, Decimal.One))
           if (nTerms(l) < DistributeToMaxTerms) =>
         (f, Some(l))
-      case ((f, Some(t)), (l: Line, Real.BigOne))
+      case ((f, Some(t)), (l: Line, Decimal.One))
           if ((nTerms(t) * nTerms(l)) < DistributeToMaxTerms) =>
         (f, Some(LineOps.multiply(t, l)))
-      case ((f, None), (l: Line, Real.BigTwo))
+      case ((f, None), (l: Line, Decimal.Two))
           if (nTerms2(l) < DistributeToMaxTerms) =>
         (f, Some(LineOps.multiply(l, l)))
-      case ((f, Some(t)), (l: Line, Real.BigTwo))
+      case ((f, Some(t)), (l: Line, Decimal.Two))
           if (nTerms(t) * nTerms2(l) < DistributeToMaxTerms) =>
         (f, Some(LineOps.multiply(t, LineOps.multiply(l, l))))
       case ((f, opt), xa) =>
@@ -77,7 +77,7 @@ private[compute] object LogLineOps {
       else {
         val ll = LogLine(Coefficients(factors))
         val (newAx, newB) =
-          l.ax.toList.foldLeft((Coefficients(ll -> l.b), Real.BigZero)) {
+          l.ax.toList.foldLeft((Coefficients(ll -> l.b), Decimal.Zero)) {
             case ((nAx, nB), (x, a)) =>
               multiply(ll, LogLine(x)) match {
                 case Infinity | NegInfinity =>
@@ -111,7 +111,7 @@ private[compute] object LogLineOps {
       else
         1
 
-    (pow(line, Real.BigOne / k), k)
+    (pow(line, Decimal.One / Decimal(k)), k)
   }
 
   @tailrec

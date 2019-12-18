@@ -25,7 +25,7 @@ trait LowPriToReal {
         else if (double.isNaN)
           throw new ArithmeticException("Trying to convert NaN to Real")
         else
-          Constant(BigDecimal(double))
+          Constant(Decimal(double))
       }
     }
 }
@@ -33,9 +33,9 @@ trait LowPriToReal {
 object ToReal extends LowPriToReal {
   def apply[A](a: A)(implicit toReal: ToReal[A]): Real = toReal(a)
 
-  implicit val fromBigDecimal: ToReal[BigDecimal] =
-    new ToReal[BigDecimal] {
-      def apply(r: BigDecimal): Real = Constant(r)
+  implicit val fromDecimal: ToReal[Decimal] =
+    new ToReal[Decimal] {
+      def apply(r: Decimal): Real = Constant(r)
     }
 
   implicit val fromReal: ToReal[Real] =
