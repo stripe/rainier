@@ -3,6 +3,11 @@ package com.stripe.rainier.compute
 import scala.annotation.tailrec
 
 sealed trait Decimal {
+  def ==(other: Decimal) =
+    toDouble == other.toDouble
+  override def hashCode(): Int =
+    toDouble.hashCode()
+
   def toDouble: Double
   def toInt: Int = toDouble.toInt
 
