@@ -141,7 +141,7 @@ private object Gradient {
           LogLine(complement)
       gradient.toReal *
         exponent *
-        term.pow(exponent - Decimal(1)) *
+        term.pow(exponent - Decimal.One) *
         otherTerms
     }
   }
