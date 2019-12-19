@@ -90,9 +90,14 @@ object Fn {
       def wrap(a: T) = choices.map { k =>
         if (a == k) (k, Real.one) else (k, Real.zero)
       }
-      def create(columns: List[Array[Double]]) = ???
+      def create(columns: List[Array[Double]]) = {
+        choices.foldLeft((List.empty[(T, Real)], columns)) {
+          case ((acc, cols), k) =>
+            ((k, Real.placeholder(cols.head)) :: acc, cols.tail)
+        }
+      }
       def extract(a: T, acc: List[Double]) =
-        choices.map { k =>
+        choices.reverse.map { k =>
           if (k == a) 1.0 else 0.0
         } ++ acc
       def xy(x: X) = x
