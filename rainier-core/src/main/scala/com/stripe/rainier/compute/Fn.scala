@@ -31,8 +31,8 @@ trait Fn[-A, +Y] { self =>
       type X = (self.X, fn.X)
       def wrap(a: (A, B)) = (self.wrap(a._1), fn.wrap(a._2))
       def create(columns: List[Array[Double]]) = {
-        val (bv, cols1) = fn.create(columns)
-        val (av, cols2) = self.create(cols1)
+        val (av, cols1) = self.create(columns)
+        val (bv, cols2) = fn.create(cols1)
         ((av, bv), cols2)
       }
       def extract(a: (A, B), acc: List[Double]) =
@@ -54,9 +54,15 @@ trait Fn[-A, +Y] { self =>
     new Fn[Map[K, A], Map[K, Y]] {
       type X = Map[K, self.X]
       def wrap(a: Map[K, A]) = a.map { case (k, v) => k -> self.wrap(v) }
-      def create(columns: List[Array[Double]]) =
-        ??? //seq.map{k => k -> self.create(columns)}.toMap
-      def extract(a: Map[K, A], acc: List[Double]) = seq.foldLeft(acc) {
+      def create(columns: List[Array[Double]]) = {
+        val (pairs, cols2) = seq.foldLeft((List.empty[(K, self.X)], columns)) {
+          case ((acc, cols), k) =>
+            val (x, cols1) = self.create(cols)
+            ((k, x) :: acc, cols1)
+        }
+        (pairs.toMap, cols2)
+      }
+      def extract(a: Map[K, A], acc: List[Double]) = seq.reverse.foldLeft(acc) {
         case (acc2, k) =>
           self.extract(a(k), acc2)
       }
