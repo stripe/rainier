@@ -56,6 +56,6 @@ object TargetGroup {
         .sortBy(_.param.sym.id)
     val priors = parameters.map(_.density)
 
-    TargetGroup(base + Real.sum(priors), batched, parameters)
+    TargetGroup(base + Real.sum(priors), batched.reverse, parameters)
   }
 }

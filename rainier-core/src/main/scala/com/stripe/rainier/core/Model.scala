@@ -4,7 +4,7 @@ import com.stripe.rainier.compute._
 import com.stripe.rainier.sampler._
 import com.stripe.rainier.optimizer._
 
-case class Model(private[rainier] val targets: Set[Target]) {
+case class Model(private[rainier] val targets: List[Target]) {
   def merge(other: Model) = Model(targets ++ other.targets)
 
   def sample(sampler: Sampler,
@@ -43,10 +43,14 @@ case class Model(private[rainier] val targets: Set[Target]) {
 }
 
 object Model {
-  def apply(real: Real): Model = Model(Set(Target(real)))
+  def apply(real: Real): Model = Model(List(Target(real)))
 
   def observe[Y](ys: Seq[Y], dist: Distribution[Y]): Model =
-    Model(dist.likelihoodFn.encode(ys))
+    Model(
+      List(
+        Target(dist.likelihoodFn.encode(List(ys.head))),
+        Target(dist.likelihoodFn.encode(ys.tail) 
+      )))
 
   def observe[X, Y](xs: Seq[X], ys: Seq[Y])(fn: X => Distribution[Y]): Model = {
     val likelihoods = (xs.zip(ys)).map {
