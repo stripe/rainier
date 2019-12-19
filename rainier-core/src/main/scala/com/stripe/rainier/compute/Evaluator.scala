@@ -1,6 +1,8 @@
 package com.stripe.rainier.compute
 
-class Evaluator(var cache: Map[Real, Double], placeholderIndex: Option[Int] = None) extends Numeric[Real] {
+class Evaluator(var cache: Map[Real, Double],
+                placeholderIndex: Option[Int] = None)
+    extends Numeric[Real] {
 
   def toDouble(x: Real): Double = x match {
     case Constant(v) => v.toDouble
@@ -39,7 +41,11 @@ class Evaluator(var cache: Map[Real, Double], placeholderIndex: Option[Int] = No
       toDouble(l.table(toDouble(l.index).toInt - l.low))
     case p: Parameter => sys.error(s"No value provided for $p")
     case p: Placeholder =>
-      placeholderIndex.map{i => p.values(i)}.getOrElse(sys.error(s"Cannot evaluate a placeholder"))
+      placeholderIndex
+        .map { i =>
+          p.values(i)
+        }
+        .getOrElse(sys.error(s"Cannot evaluate a placeholder"))
   }
 
   def compare(x: Real, y: Real): Int = toDouble(x).compare(toDouble(y))
