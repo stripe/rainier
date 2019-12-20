@@ -1,6 +1,8 @@
 package com.stripe.rainier.compute
 
-class Target(val real: Real, val placeholders: Map[Variable, Array[Double]]) {
+class Target(val real: Real,
+             val placeholders: Map[Variable, Array[Double]],
+             tryInline: Boolean) {
   val nRows: Int =
     if (placeholders.isEmpty)
       0
@@ -14,7 +16,7 @@ class Target(val real: Real, val placeholders: Map[Variable, Array[Double]]) {
   def maybeInlined: Option[Real] =
     if (nRows == 0)
       Some(real)
-    else if (Real.inlinable(real))
+    else if (tryInline && Real.inlinable(real))
       Some(PartialEvaluator.inline(real, nRows))
     else
       None
@@ -24,12 +26,12 @@ class Target(val real: Real, val placeholders: Map[Variable, Array[Double]]) {
 }
 
 object Target {
-  def apply(real: Real): Target = {
+  def apply(real: Real, tryInline: Boolean = true): Target = {
     val placeholders =
       RealOps.variables(real).collect { case v: Placeholder => v }
     new Target(real, placeholders.map { p =>
       p -> p.values
-    }.toMap)
+    }.toMap, tryInline)
   }
 
   val empty: Target = apply(Real.zero)

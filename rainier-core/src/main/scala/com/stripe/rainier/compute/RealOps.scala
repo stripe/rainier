@@ -296,13 +296,13 @@ private[compute] object RealOps {
           case Pow(base, exponent) =>
             loopNonLinear(List(base, exponent))
           case l: Lookup =>
-            val (pr1, ph1, nl1) = loopNonLinear(l.table.toList)
+            val (pr1, ph1, nl1) = loopLinear(l.table.toList)
             val (pr2, ph2, nl2) = loop(l.index)
             val pr = pr1 || pr2
             val ph = ph1 || ph2
             val nl = nl1 || nl2
 
-            if (pr1)
+            if (pr2)
               (pr, ph, nl || ph)
             else
               (pr, ph, nl)
