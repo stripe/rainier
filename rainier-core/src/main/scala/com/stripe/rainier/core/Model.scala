@@ -58,12 +58,7 @@ object Model {
     } else
       Model(dist.likelihoodFn.encode(ys))
   }
-  /*
-  def observe[Y](ys: Seq[Y], dist: Distribution[Y]): Model =
-    Model(
-      List(Target(dist.likelihoodFn.encode(List(ys.head))),
-           Target(dist.likelihoodFn.encode(ys.tail))))
-   */
+
   def observe[X, Y](xs: Seq[X], ys: Seq[Y])(fn: X => Distribution[Y]): Model = {
     val likelihoods = (xs.zip(ys)).map {
       case (x, y) => fn(x).likelihoodFn(y)
