@@ -1,6 +1,7 @@
 package com.stripe.rainier.core
 
 import com.stripe.rainier.sampler._
+import com.stripe.rainier.compute._
 import org.scalatest.FunSuite
 
 class WAICTest extends FunSuite {
@@ -62,7 +63,7 @@ class WAICTest extends FunSuite {
     val a = Normal(0, 100).param
     val b = Normal(0, 10).param
     val sigma = Uniform(0, 30).param
-    val fn = Fn.encode[Double].map { s =>
+    val fn = Fn.numeric[Double].map { s =>
       val mu = a + b * s
       Normal(mu, sigma)
     }

@@ -4,7 +4,7 @@ import com.stripe.rainier.compute._
 import com.stripe.rainier.sampler._
 import com.stripe.rainier.optimizer._
 
-case class Model(private[rainier] val targets: Set[Target]) {
+case class Model(private[rainier] val targets: List[Target]) {
   def merge(other: Model) = Model(targets ++ other.targets)
 
   def sample(sampler: Sampler,
@@ -21,9 +21,9 @@ case class Model(private[rainier] val targets: Set[Target]) {
   def optimize(): Estimate =
     Estimate(Optimizer.lbfgs(density()), this)
 
-  lazy val targetGroup = TargetGroup(targets, 500)
+  lazy val targetGroup = TargetGroup(targets)
   lazy val dataFn =
-    Compiler.default.compileTargets(targetGroup, true, 4)
+    Compiler.default.compileTargets(targetGroup, true)
 
   def parameters: List[Parameter] = targetGroup.parameters
 
@@ -43,28 +43,47 @@ case class Model(private[rainier] val targets: Set[Target]) {
 }
 
 object Model {
-  def observe[Y](ys: Seq[Y], dist: Distribution[Y]): Model = {
-    val target = dist.target(ys)
-    Model(Set(target))
-  }
+  def apply(real: Real): Model = Model(List(Target(real)))
 
+  def observe[Y](ys: Seq[Y], dist: Distribution[Y]): Model = {
+    if (ys.size > 4) {
+      val (init, splits) = split(ys, 4)
+      Model(
+        List(Target(dist.likelihoodFn.encode(init)),
+             Target(
+               Real.sum(splits.map { s =>
+                 dist.likelihoodFn.encode(s)
+               })
+             )))
+    } else
+      Model(dist.likelihoodFn.encode(ys))
+  }
+  /*
+  def observe[Y](ys: Seq[Y], dist: Distribution[Y]): Model =
+    Model(
+      List(Target(dist.likelihoodFn.encode(List(ys.head))),
+           Target(dist.likelihoodFn.encode(ys.tail))))
+   */
   def observe[X, Y](xs: Seq[X], ys: Seq[Y])(fn: X => Distribution[Y]): Model = {
-    val targets = (xs.zip(ys)).map {
-      case (x, y) => fn(x).target(y)
+    val likelihoods = (xs.zip(ys)).map {
+      case (x, y) => fn(x).likelihoodFn(y)
     }
 
-    Model(targets.toSet)
+    Model(Real.sum(likelihoods))
   }
 
   def observe[X, Y](xs: Seq[X],
                     ys: Seq[Y],
                     fn: Fn[X, Distribution[Y]]): Model = {
-    val enc = fn.encoder
-    val (v, vars) = enc.create(Nil)
-    val dist = fn.xy(v)
-    val target = dist.target(ys)
-    val cols = enc.columns(xs)
-    Model(
-      Set(new Target(target.real, target.placeholders ++ vars.zip(cols).toMap)))
+    val dist = fn.encode(xs)
+    Model(dist.likelihoodFn.encode(ys))
+  }
+
+  private def split[T](ts: Seq[T], n: Int): (List[T], List[List[T]]) = {
+    val splitSize = (ts.size - 1) / n
+    val initSize = ts.size - (splitSize * n)
+    val init = ts.take(initSize).toList
+    val splits = ts.drop(initSize).grouped(splitSize).toList.map(_.toList)
+    (init, splits)
   }
 }
