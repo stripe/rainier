@@ -12,7 +12,7 @@ trait Fn[-A, +Y] { self =>
 
   def apply(a: A): Y = xy(wrap(a))
 
-  private[rainier] def encode(as: Seq[A]): Y = {
+  def encode(as: Seq[A]): Y = {
     val first = extract(as.head, Nil)
     val buffers = first.map { v =>
       ArrayBuffer(v)

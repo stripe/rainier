@@ -5,9 +5,9 @@ import org.scalatest._
 class FnTest extends FunSuite {
   def check[T](description: String, fn: Fn[T, Real], value: T): Unit = {
     test(description) {
-      val eval = new Evaluator(Map.empty, Some(0))
-      val withApply = eval.toDouble(fn(value))
-      val withEncode = eval.toDouble(fn.encode(List(value)))
+      val eval = PartialEvaluator(0)
+      val withApply = eval(fn(value))._1
+      val withEncode = eval(fn.encode(List(value)))._1
       assert(withApply == withEncode)
     }
   }

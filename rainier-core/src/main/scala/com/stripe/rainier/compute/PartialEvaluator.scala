@@ -1,13 +1,23 @@
 package com.stripe.rainier.compute
 
-class PartialEvaluator(var cache: Map[Real, (Real, Boolean)]) {
+class PartialEvaluator(var noChange: Set[Real], placeholderIndex: Int) {
+  var cache = Map.empty[Real, Real]
+
+  def next() = new PartialEvaluator(noChange, placeholderIndex + 1)
+
   def apply(real: Real): (Real, Boolean) =
-    cache.get(real) match {
-      case Some(pair) => pair
-      case None => {
-        val pair = eval(real)
-        cache += real -> pair
-        pair
+    if (noChange.contains(real))
+      (real, false)
+    else {
+      cache.get(real) match {
+        case Some(v) => (v, true)
+        case None =>
+          val (v, changed) = eval(real)
+          if (changed)
+            cache += real -> v
+          else
+            noChange += real
+          (v, changed)
       }
     }
 
@@ -65,14 +75,23 @@ class PartialEvaluator(var cache: Map[Real, (Real, Boolean)]) {
         (Lookup(newIndex, newTable.map(_._1), l.low), true)
       else
         (l, false)
-    case v: Variable =>
-      (v, false)
+    case p: Parameter =>
+      (p, false)
+    case p: Placeholder =>
+      (p.values(placeholderIndex), true)
   }
 }
 
 object PartialEvaluator {
-  def from(map: Map[Variable, Real]): PartialEvaluator =
-    new PartialEvaluator(map.map { case (k, v) => (k, (v, true)) })
-  def inline(real: Real, map: Map[Variable, Real]): Real =
-    from(map).apply(real)._1
+  def apply(index: Int): PartialEvaluator =
+    new PartialEvaluator(Set.empty, index)
+
+  def inline(real: Real, nRows: Int): Real = {
+    0.until(nRows)
+      .foldLeft((Real.zero, PartialEvaluator(0))) {
+        case ((acc, pe), _) =>
+          (acc + pe(real)._1, pe.next())
+      }
+      ._1
+  }
 }

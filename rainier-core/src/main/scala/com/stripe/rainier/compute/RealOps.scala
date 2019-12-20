@@ -244,4 +244,76 @@ private[compute] object RealOps {
 
     vars.toSet
   }
+
+  //see whether we can reduce this from a function on a matrix of
+  //placeholder data (O(N) to compute, where N is the rows in the matrix)
+  //to an O(1) function just on the parameters; this should be possible if the function can be expressed
+  //as a linear combination of terms that are each functions of either a placeholder,
+  //or a parameter, but not both.
+  def inlinable(real: Real): Boolean = {
+    var seen = Map.empty[Real, (Boolean, Boolean, Boolean)]
+
+    def loopLinear(rs: Seq[Real]): (Boolean, Boolean, Boolean) =
+      rs.map(loop).reduce { (a, b) =>
+        (a._1 || b._1, a._2 || b._2, a._3 || b._3)
+      }
+
+    def loopNonLinear(rs: List[Real]): (Boolean, Boolean, Boolean) = {
+      val (pr, ph, nl) = rs.map(loop).reduce { (a, b) =>
+        (a._1 || b._1, a._2 || b._2, a._3 || b._3)
+      }
+
+      if (pr && ph)
+        (pr, ph, true)
+      else
+        (pr, ph, nl)
+    }
+
+    def loop(r: Real): (Boolean, Boolean, Boolean) =
+      if (!seen.contains(r)) {
+        val result = r match {
+          case Constant(_) | Infinity | NegInfinity =>
+            (false, false, false)
+          case _: Placeholder =>
+            (false, true, false)
+          case _: Parameter =>
+            (true, false, false)
+          case u: Unary =>
+            loopNonLinear(List(u.original))
+          case l: Line =>
+            loopLinear(l.ax.terms.toList)
+          case l: LogLine =>
+            val (pr, ph, nl) = loopLinear(l.ax.terms.toList)
+            if (nl || !pr || !ph)
+              (pr, ph, nl)
+            else {
+              val nl2 =
+                l.ax.terms.map(loop).exists { case (pr, ph, _) => pr && ph }
+              (pr, ph, nl2)
+            }
+          case Compare(left, right) =>
+            loopNonLinear(List(left, right))
+          case Pow(base, exponent) =>
+            loopNonLinear(List(base, exponent))
+          case l: Lookup =>
+            val (pr1, ph1, nl1) = loopNonLinear(l.table.toList)
+            val (pr2, ph2, nl2) = loop(l.index)
+            val pr = pr1 || pr2
+            val ph = ph1 || ph2
+            val nl = nl1 || nl2
+
+            if (pr1)
+              (pr, ph, nl || ph)
+            else
+              (pr, ph, nl)
+        }
+        seen += (r -> result)
+        result
+      } else {
+        seen(r)
+      }
+
+    //real+real will trigger a distribute() if warranted
+    !loop(real + real)._3
+  }
 }

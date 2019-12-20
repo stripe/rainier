@@ -12,8 +12,10 @@ class Target(val real: Real, val placeholders: Map[Variable, Array[Double]]) {
     RealOps.variables(real).collect { case v: Parameter => v }
 
   def maybeInlined: Option[Real] =
-    if (placeholders.isEmpty)
+    if (nRows == 0)
       Some(real)
+    else if (Real.inlinable(real))
+      Some(PartialEvaluator.inline(real, nRows))
     else
       None
 

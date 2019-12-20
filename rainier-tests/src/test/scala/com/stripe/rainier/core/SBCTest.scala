@@ -14,15 +14,16 @@ class SBCTest extends FunSuite {
       }
     }
   }
+  //check(SBCUniformNormal)
 
-  /** Continuous **/
+  // Continuous
   check(SBCUniformNormal)
   //check(SBCLogNormal)
   check(SBCExponential)
   check(SBCLaplace)
   check(SBCGamma)
 
-  /** Discrete **/
+  // Discrete
   check(SBCBernoulli)
   check(SBCBinomial)
   //check(SBCBinomialNormalApproximation)
@@ -31,4 +32,5 @@ class SBCTest extends FunSuite {
   //check(SBCGeometricZeroInflated)
   check(SBCNegativeBinomial)
   check(SBCLargePoisson)
+
 }
