@@ -45,13 +45,25 @@ case class Model(private[rainier] val targets: List[Target]) {
 object Model {
   def apply(real: Real): Model = Model(List(Target(real)))
 
+  def observe[Y](ys: Seq[Y], dist: Distribution[Y]): Model = {
+    if (ys.size > 4) {
+      val (init, splits) = split(ys, 4)
+      Model(
+        List(Target(dist.likelihoodFn.encode(init)),
+             Target(
+               Real.sum(splits.map { s =>
+                 dist.likelihoodFn.encode(s)
+               })
+             )))
+    } else
+      Model(dist.likelihoodFn.encode(ys))
+  }
+  /*
   def observe[Y](ys: Seq[Y], dist: Distribution[Y]): Model =
     Model(
-      List(
-        Target(dist.likelihoodFn.encode(List(ys.head))),
-        Target(dist.likelihoodFn.encode(ys.tail) 
-      )))
-
+      List(Target(dist.likelihoodFn.encode(List(ys.head))),
+           Target(dist.likelihoodFn.encode(ys.tail))))
+   */
   def observe[X, Y](xs: Seq[X], ys: Seq[Y])(fn: X => Distribution[Y]): Model = {
     val likelihoods = (xs.zip(ys)).map {
       case (x, y) => fn(x).likelihoodFn(y)
@@ -65,5 +77,13 @@ object Model {
                     fn: Fn[X, Distribution[Y]]): Model = {
     val dist = fn.encode(xs)
     Model(dist.likelihoodFn.encode(ys))
+  }
+
+  private def split[T](ts: Seq[T], n: Int): (List[T], List[List[T]]) = {
+    val splitSize = (ts.size - 1) / n
+    val initSize = ts.size - (splitSize * n)
+    val init = ts.take(initSize).toList
+    val splits = ts.drop(initSize).grouped(splitSize).toList.map(_.toList)
+    (init, splits)
   }
 }
