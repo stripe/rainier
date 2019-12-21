@@ -117,8 +117,20 @@ private[cats] trait EqInstances {
 
   def eqDecimal(epsilon: Double): Eq[Decimal] =
     Eq.instance { (left, right) =>
-      if (right == Decimal(0.0))
-        left.abs < Decimal(epsilon)
+      if (right.toDouble.abs < epsilon)
+        left.abs.toDouble < epsilon
+      else if (left.toDouble.abs < epsilon)
+        right.abs.toDouble < epsilon
+      else if (left.toDouble.isPosInfinity || left.toDouble > 1e20)
+        right.toDouble.isPosInfinity || right.toDouble.isNaN || right.toDouble > 1e10
+      else if (left.toDouble.isNegInfinity || left.toDouble < -1e20)
+        right.toDouble.isNegInfinity || right.toDouble.isNaN || right.toDouble < -1e10
+      else if (left.toDouble.isNaN)
+        right.toDouble.isNaN || right.toDouble.isInfinite()
+      else if (right.toDouble.isPosInfinity || right.toDouble > 1e10)
+        left.toDouble > 1e10 || left.toDouble.isNaN
+      else if (right.toDouble.isNegInfinity || right.toDouble < -1e10)
+        left.toDouble < -1e10 || left.toDouble.isNaN
       else ((left - right).abs / right.abs) < Decimal(epsilon)
     }
 

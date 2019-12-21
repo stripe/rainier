@@ -33,6 +33,16 @@ trait LowPriToReal {
 object ToReal extends LowPriToReal {
   def apply[A](a: A)(implicit toReal: ToReal[A]): Real = toReal(a)
 
+  implicit val fromInt: ToReal[Int] =
+    new ToReal[Int] {
+      def apply(r: Int): Real = Constant(Decimal(r))
+    }
+
+  implicit val fromLong: ToReal[Long] =
+    new ToReal[Long] {
+      def apply(r: Long): Real = Constant(Decimal(r))
+    }
+
   implicit val fromDecimal: ToReal[Decimal] =
     new ToReal[Decimal] {
       def apply(r: Decimal): Real = Constant(r)
