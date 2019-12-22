@@ -18,6 +18,7 @@ trait Continuous extends Distribution[Double] {
   def exp: Continuous = Exp.transform(this)
 
   def param: Real
+  def paramVector(k: Int) = List.fill(k)(this.param)
 }
 
 object Continuous {
