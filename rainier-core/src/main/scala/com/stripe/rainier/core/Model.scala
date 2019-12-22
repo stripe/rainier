@@ -67,19 +67,26 @@ object Model {
       Model(f.encode(ys))
   }
 
+  def observe[X, Y](xs: Seq[X],
+                    ys: Seq[Y],
+                    fn: Fn[X, Distribution[Y]]): Model = {
+    val (initX, splitsX) = split(xs, NumSplits)
+    val (initY, splitsY) = split(ys, NumSplits)
+
+    Model(
+      List(Target(fn.encode(initX).likelihoodFn.encode(initY)),
+           Target(Real.sum(splitsX.zip(splitsY).map {
+             case (sx, sy) =>
+               fn.encode(sx).likelihoodFn.encode(sy)
+           }))))
+  }
+
   def observe[X, Y](xs: Seq[X], ys: Seq[Y])(fn: X => Distribution[Y]): Model = {
     val likelihoods = (xs.zip(ys)).map {
       case (x, y) => fn(x).likelihoodFn(y)
     }
 
     Model(Real.sum(likelihoods))
-  }
-
-  def observe[X, Y](xs: Seq[X],
-                    ys: Seq[Y],
-                    fn: Fn[X, Distribution[Y]]): Model = {
-    val dist = fn.encode(xs)
-    Model(dist.likelihoodFn.encode(ys))
   }
 
   private def split[T](ts: Seq[T], n: Int): (List[T], List[List[T]]) = {
