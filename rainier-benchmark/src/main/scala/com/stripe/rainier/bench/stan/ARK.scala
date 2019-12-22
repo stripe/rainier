@@ -3,6 +3,8 @@ package com.stripe.rainier.bench.stan
 import com.stripe.rainier.core._
 
 //https://github.com/stan-dev/stat_comp_benchmarks/tree/master/benchmarks/arK
+//Stan: Gradient evaluation took 9.7e-05 seconds
+//JMH: 3.564 ± 0.011  us/op
 class ARK extends ModelBenchmark {
   def model = {
     val alpha = Normal(0, 10).param

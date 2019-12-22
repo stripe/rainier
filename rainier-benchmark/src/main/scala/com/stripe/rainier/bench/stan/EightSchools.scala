@@ -3,6 +3,8 @@ package com.stripe.rainier.bench.stan
 import com.stripe.rainier.core._
 
 //https://github.com/stan-dev/stat_comp_benchmarks/tree/master/benchmarks/eight_schools
+//Stan: Gradient evaluation took 2.4e-05 seconds
+//JMH: 1.048 ± 0.011  us/op
 class EightSchools extends ModelBenchmark {
   def model = {
     val mu = Normal(0, 5).param
