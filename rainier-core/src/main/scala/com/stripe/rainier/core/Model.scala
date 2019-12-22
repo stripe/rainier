@@ -43,11 +43,17 @@ case class Model(private[rainier] val targets: List[Target]) {
 }
 
 object Model {
+  val empty = Model(Real.zero)
+
   def apply(real: Real): Model = Model(List(Target(real)))
 
+  def observe[Y](y: Y, dist: Distribution[Y]): Model =
+    Model(dist.likelihoodFn(y))
+
+  val NumSplits = 8
   def observe[Y](ys: Seq[Y], dist: Distribution[Y]): Model = {
-    if (ys.size > 4) {
-      val (init, splits) = split(ys, 4)
+    if (ys.size > NumSplits) {
+      val (init, splits) = split(ys, NumSplits)
       Model(
         List(Target(dist.likelihoodFn.encode(init)),
              Target(
