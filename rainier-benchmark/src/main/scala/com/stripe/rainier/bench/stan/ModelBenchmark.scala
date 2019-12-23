@@ -33,4 +33,20 @@ abstract class ModelBenchmark {
   @Benchmark
   def build(): Unit =
     model.density
+
+  def main(): Unit = {
+    com.stripe.rainier.compute.Log.showFine()
+    println("Running " + this.getClass.getName)
+    setup()
+    run()
+  }
+}
+
+object ModelBenchmarks {
+  def main(args: Array[String]): Unit = {
+    new ARK().main()
+    new EightSchools().main()
+    new LowDimGaussMix().main()
+    new GLMMPoisson2().main()
+  }
 }
