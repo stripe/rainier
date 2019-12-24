@@ -5,13 +5,15 @@ import com.stripe.rainier.compute._
 
 case class Tracer(compiler: Compiler, gradient: Boolean) {
   def apply(real: Real): Unit = {
-    val targetGroup = TargetGroup(List(Target(real)))
+    val target = Target(real)
+    val params = target.parameters.toList
+    val variables = params ++ target.placeholderVariables
     val outputs =
       if (gradient)
-        Compiler.withGradient("density", real, targetGroup.parameters)
+        Compiler.withGradient("density", real, params)
       else
         List(("density", real))
-    Tracer.dump(compiler.compile(targetGroup.parameters, outputs))
+    Tracer.dump(compiler.compile(variables, outputs))
   }
 }
 

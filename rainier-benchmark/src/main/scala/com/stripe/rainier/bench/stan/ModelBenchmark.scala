@@ -7,7 +7,7 @@ import com.stripe.rainier.core._
 import com.stripe.rainier.sampler._
 
 @BenchmarkMode(Array(Mode.SampleTime))
-@OutputTimeUnit(TimeUnit.MICROSECONDS)
+@OutputTimeUnit(TimeUnit.SECONDS)
 @Warmup(iterations = 3, time = 1)
 @Measurement(iterations = 5, time = 1)
 @Fork(1)
@@ -29,4 +29,24 @@ abstract class ModelBenchmark {
   @Benchmark
   def run(): Unit =
     df.update(params)
+
+  @Benchmark
+  def build(): Unit =
+    model.density
+
+  def main(): Unit = {
+    com.stripe.rainier.compute.Log.showFine()
+    println("Running " + this.getClass.getName)
+    setup()
+    run()
+  }
+}
+
+object ModelBenchmarks {
+  def main(args: Array[String]): Unit = {
+    new ARK().main()
+    new EightSchools().main()
+    new LowDimGaussMix().main()
+    new GLMMPoisson2().main()
+  }
 }

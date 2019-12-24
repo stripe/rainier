@@ -244,4 +244,81 @@ private[compute] object RealOps {
 
     vars.toSet
   }
+
+  //see whether we can reduce this from a function on a matrix of
+  //placeholder data (O(N) to compute, where N is the rows in the matrix)
+  //to an O(1) function just on the parameters; this should be possible if the function can be expressed
+  //as a linear combination of terms that are each functions of either a placeholder,
+  //or a parameter, but not both.
+  def inlinable(real: Real): Boolean = {
+    case class State(hasParameter: Boolean,
+                     hasPlaceholder: Boolean,
+                     nonlinearCombination: Boolean) {
+      def ||(other: State) = State(
+        hasParameter || other.hasParameter,
+        hasPlaceholder || other.hasPlaceholder,
+        nonlinearCombination || other.nonlinearCombination
+      )
+
+      def combination = hasParameter && hasPlaceholder
+
+      def nonlinearOp =
+        State(hasParameter, hasPlaceholder, combination)
+
+      def inlinable = !nonlinearCombination
+    }
+
+    var seen = Map.empty[Real, State]
+
+    def loopMerge(rs: Seq[Real]): State =
+      rs.map(loop).reduce(_ || _)
+
+    def loop(r: Real): State =
+      if (!seen.contains(r)) {
+        val result = r match {
+          case Constant(_) | Infinity | NegInfinity =>
+            State(false, false, false)
+          case _: Placeholder =>
+            State(false, true, false)
+          case _: Parameter =>
+            State(true, false, false)
+          case u: Unary =>
+            loopMerge(List(u.original)).nonlinearOp
+          case l: Line =>
+            loopMerge(l.ax.terms.toList)
+          case l: LogLine =>
+            val terms = l.ax.terms.toList
+            val state = loopMerge(terms)
+            if (state.nonlinearCombination || !state.combination)
+              state
+            else {
+              val termStates = terms.map(loop)
+              if (termStates.exists(_.combination))
+                state.nonlinearOp
+              else
+                state
+            }
+          case Compare(left, right) =>
+            loopMerge(List(left, right)).nonlinearOp
+          case Pow(base, exponent) =>
+            loopMerge(List(base, exponent)).nonlinearOp
+          case l: Lookup =>
+            val tableState = loopMerge(l.table.toList)
+            val indexState = loop(l.index)
+            val state = tableState || indexState
+
+            if (indexState.hasParameter)
+              state.nonlinearOp
+            else
+              state
+        }
+        seen += (r -> result)
+        result
+      } else {
+        seen(r)
+      }
+
+    //real+real will trigger a distribute() if warranted
+    loop(real + real).inlinable
+  }
 }

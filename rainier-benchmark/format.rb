@@ -1,11 +1,14 @@
 class Benchmark
   def initialize(parts)
     method_parts = parts[1].split(".")
-    @klass = method_parts[0].split("Benchmark")[0]
-    @method = method_parts[1].split(":")[0]
-    @pctile = method_parts[2].to_i
-    @params = parts[2..-4].select{|x| x != "N/A"}.join(":")
-    @timing = parts[-2].to_f
+    if method_parts.size > 5
+      method_parts = method_parts[5..-1]
+      @klass = method_parts[0].split("Benchmark")[0]
+      @method = method_parts[1].split(":")[0]
+      @pctile = method_parts[2].to_i
+      @params = parts[2..-4].select{|x| x != "N/A"}.join(":")
+      @timing = parts[-2].to_f
+    end
   end
 
   attr_reader :klass, :method, :params, :pctile, :timing

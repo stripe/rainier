@@ -96,6 +96,8 @@ object Real {
   val Pi: Real = Constant(Decimal.Pi)
   val infinity: Real = Infinity
   val negInfinity: Real = NegInfinity
+
+  private[rainier] def inlinable(real: Real): Boolean = RealOps.inlinable(real)
 }
 
 final private[rainier] case class Constant(value: Decimal) extends Real {
