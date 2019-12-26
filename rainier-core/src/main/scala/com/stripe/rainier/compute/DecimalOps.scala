@@ -1,10 +1,70 @@
 package com.stripe.rainier.compute
 
+import com.stripe.rainier.ir._
 import scala.annotation.tailrec
 
 object DecimalOps {
+    import Decimal._
 
-    def abs(x: Decimal): Decimal = x match {
+      def add(x: Decimal, y: Decimal): Decimal = (x, y) match {
+        case (Infinity, NegInfinity) =>
+          throw new ArithmeticException("Cannot add +inf and -inf")
+        case (NegInfinity, Infinity) =>
+          throw new ArithmeticException("Cannot add +inf and -inf")
+        case (DoubleDecimal(v), _) => DoubleDecimal(v + y.toDouble)
+        case (_, DoubleDecimal(v)) => DoubleDecimal(v + x.toDouble)
+        case (FractionDecimal(n1, d1), FractionDecimal(n2, d2)) => {
+          val d = lcm(d1, d2)
+          val n = (n1 * d / d1) + (n2 * d / d2)
+          FractionDecimal(n, d)
+        }
+      }
+
+      def subtract(x: Decimal, y: Decimal): Decimal = (x, y) match {
+        case (Infinity, Infinity) =>
+          throw new ArithmeticException("Cannot subtract inf and inf")
+        case (NegInfinity, NegInfinity) =>
+          throw new ArithmeticException("Cannot subtract -inf and -inf")
+        case (DoubleDecimal(v), _) => DoubleDecimal(v - y.toDouble)
+        case (_, DoubleDecimal(v)) => DoubleDecimal(x.toDouble - v)
+        case (FractionDecimal(n1, d1), FractionDecimal(n2, d2)) => {
+          val d = lcm(d1, d2)
+          val n = (n1 * d / d1) - (n2 * d / d2)
+          FractionDecimal(n, d)
+        }
+      }
+    
+      def multiply(x: Decimal, y: Decimal): Decimal = (x, y) match {
+        case (NegInfinity, Zero) =>
+          throw new ArithmeticException("Cannot multiply -inf by zero")
+        case (Infinity, Zero) =>
+          throw new ArithmeticException("Cannot multiply +inf by zero")
+        case (Zero, NegInfinity) =>
+          throw new ArithmeticException("Cannot multiply -inf by zero")
+        case (Zero, Infinity) =>
+          throw new ArithmeticException("Cannot multiply +inf by zero")
+        case (DoubleDecimal(v), _) => DoubleDecimal(v * y.toDouble)
+        case (_, DoubleDecimal(v)) => DoubleDecimal(x.toDouble * v)
+        case (FractionDecimal(n1, d1), FractionDecimal(n2, d2)) => {
+          val n = n1 * n2
+          val d = d1 * d2
+          val g = gcd(n, d)
+          FractionDecimal(n / g, d / g)
+        }
+      }
+    
+      def divide(x: Decimal, y: Decimal): Decimal = (x, y) match {
+        case (Zero, Zero) =>
+          throw new ArithmeticException("Cannot divide zero by zero")        case (DoubleDecimal(v), _) => DoubleDecimal(v / y.toDouble)
+        case (_, DoubleDecimal(v)) => DoubleDecimal(x.toDouble / v)
+        case (FractionDecimal(n1, d1), FractionDecimal(n2, d2)) =>
+          val n = n1 * d2
+          val d = d1 * n2
+          val g = gcd(n, d)
+          FractionDecimal(n / g, d / g)
+      }
+
+      def abs(x: Decimal): Decimal = x match {
         case DoubleDecimal(v)      => DoubleDecimal(Math.abs(v))
         case FractionDecimal(n, d) => FractionDecimal(n.abs, d.abs)
       }
@@ -21,79 +81,17 @@ object DecimalOps {
             FractionDecimal(d2, n2)
       }
    
-
-      def add(x: Decimal, y: Decimal): Decimal = (x, y) match {
-        case (DoubleDecimal(v), _) => DoubleDecimal(v + y.toDouble)
-        case (_, DoubleDecimal(v)) => DoubleDecimal(v + x.toDouble)
-        case (FractionDecimal(n1, d1), FractionDecimal(n2, d2)) => {
-          val d = lcm(d1, d2)
-          val n = (n1 * d / d1) + (n2 * d / d2)
-          FractionDecimal(n, d)
-        }
-      }
-    /*
-
-      case (Constant(Decimal.Infinity), Constant(Decimal.NegInfinity)) =>
-      throw new ArithmeticException("Cannot add +inf and -inf")
-    case (Constant(Decimal.NegInfinity), Constant(Decimal.Infinity)) =>
-      throw new ArithmeticException("Cannot add +inf and -inf")
-*/
-
-
-
-      def subtract(x: Decimal, y: Decimal): Decimal = (x, y) match {
-        case (DoubleDecimal(v), _) => DoubleDecimal(v - y.toDouble)
-        case (_, DoubleDecimal(v)) => DoubleDecimal(x.toDouble - v)
-        case (FractionDecimal(n1, d1), FractionDecimal(n2, d2)) => {
-          val d = lcm(d1, d2)
-          val n = (n1 * d / d1) - (n2 * d / d2)
-          FractionDecimal(n, d)
-        }
-      }
-    
-      def multiply(x: Decimal, y: Decimal): Decimal = (x, y) match {
-        case (DoubleDecimal(v), _) => DoubleDecimal(v * y.toDouble)
-        case (_, DoubleDecimal(v)) => DoubleDecimal(x.toDouble * v)
-        case (FractionDecimal(n1, d1), FractionDecimal(n2, d2)) => {
-          val n = n1 * n2
-          val d = d1 * d2
-          val g = gcd(n, d)
-          FractionDecimal(n / g, d / g)
-        }
-    
-      }
-    
-      /*
-            case (NegInfinity, NegInfinity) => Infinity
-      case (NegInfinity, Constant(Decimal.Zero)) =>
-        throw new ArithmeticException("Cannot multiply -inf by zero")
-      case (Infinity, Constant(Decimal.Zero)) =>
-        throw new ArithmeticException("Cannot multiply +inf by zero")
-      case (Constant(Decimal.Zero), NegInfinity) =>
-        throw new ArithmeticException("Cannot multiply -inf by zero")
-      case (Constant(Decimal.Zero), Infinity) =>
-        throw new ArithmeticException("Cannot multiply +inf by zero")
-
-        */
-
-      def divide(x: Decimal, y: Decimal): Decimal = (x, y) match {
-        case (DoubleDecimal(v), _) => DoubleDecimal(v / y.toDouble)
-        case (_, DoubleDecimal(v)) => DoubleDecimal(x.toDouble / v)
-        case (FractionDecimal(n1, d1), FractionDecimal(n2, d2)) =>
-          val n = n1 * d2
-          val d = d1 * n2
-          val g = gcd(n, d)
-          FractionDecimal(n / g, d / g)
-      }
-
-      /*
-            case (Constant(Decimal.Zero), Constant(Decimal.Zero)) =>
-        throw new ArithmeticException("Cannot divide zero by zero")
-*/
-
-
-
-     /* case Infinity =>
+      def pow(a: Decimal, b: Decimal): Decimal =
+        if (b.isValidInt)
+          pow(a, b.toInt)
+        else if (a < Zero)
+          throw new ArithmeticException(s"Undefined: $a ^ $b")
+        else
+          Decimal(Math.pow(a.toDouble, b.toDouble))
+  
+      def unary(x: Decimal, op: UnaryOp): Decimal =
+        x match {
+        case Infinity =>
         op match {
           case ExpOp => Infinity
           case LogOp => Infinity
@@ -109,12 +107,12 @@ object DecimalOps {
               "No limit for 'tan' at positive infinity")
           case AcosOp => throw new ArithmeticException("acos undefined above 1")
           case AsinOp => throw new ArithmeticException("asin undefined above 1")
-          case AtanOp => Real.Pi / 2
+          case AtanOp => Pi / Decimal(2)
           case NoOp   => Infinity
         }
       case NegInfinity =>
         op match {
-          case ExpOp => Real.zero
+          case ExpOp => Zero
           case LogOp =>
             throw new ArithmeticException(
               "Cannot take the log of a negative number")
@@ -132,42 +130,45 @@ object DecimalOps {
             throw new ArithmeticException("acos undefined below -1")
           case AsinOp =>
             throw new ArithmeticException("asin undefined below -1")
-          case AtanOp => -Real.Pi / 2
-          case NoOp   => original
+          case AtanOp => Pi / Decimal(-2)
+          case NoOp   => x
         }
-      case Constant(Decimal.Zero) =>
+      case Zero =>
         op match {
-          case ExpOp  => Real.one
+          case ExpOp  => One
           case LogOp  => NegInfinity
-          case AbsOp  => Real.zero
-          case SinOp  => Real.zero
-          case CosOp  => Real.one
-          case TanOp  => Real.zero
-          case AsinOp => Real.zero
-          case AcosOp => Real.Pi / 2
-          case AtanOp => Real.zero
-          case NoOp   => original
+          case AbsOp  => Zero
+          case SinOp  => Zero
+          case CosOp  => One
+          case TanOp  => Zero
+          case AsinOp => Zero
+          case AcosOp => Pi / Decimal(2)
+          case AtanOp => Zero
+          case NoOp   => x
         }
-      case Constant(value) =>
+      case _ =>
         op match {
-          case ExpOp => Real(Math.exp(value.toDouble))
+          case ExpOp => Decimal(Math.exp(x.toDouble))
           case LogOp =>
-            if (value.toDouble < 0)
+            if (x.toDouble < 0)
               throw new ArithmeticException(
-                s"Cannot take the log of ${value.toDouble}")
+                s"Cannot take the log of ${x.toDouble}")
             else
-              Real(Math.log(value.toDouble))
-          case AbsOp  => Real(value.abs)
-          case SinOp  => Real(Math.sin(value.toDouble))
-          case CosOp  => Real(Math.cos(value.toDouble))
-          case TanOp  => Real(Math.tan(value.toDouble))
-          case AsinOp => Real(Math.asin(value.toDouble))
-          case AcosOp => Real(Math.acos(value.toDouble))
-          case AtanOp => Real(Math.atan(value.toDouble))
-          case NoOp   => original
-        }*/
+              Decimal(Math.log(x.toDouble))
+          case AbsOp  => abs(x)
+          case SinOp  => Decimal(Math.sin(x.toDouble))
+          case CosOp  => Decimal(Math.cos(x.toDouble))
+          case TanOp  => Decimal(Math.tan(x.toDouble))
+          case AsinOp => Decimal(Math.asin(x.toDouble))
+          case AcosOp => Decimal(Math.acos(x.toDouble))
+          case AtanOp => Decimal(Math.atan(x.toDouble))
+          case NoOp   => x
+        }
+      }
 
 
+      def compare(a: Decimal, b: Decimal): Decimal = {
+          ???
         /*
                 if (a == b)
           Real.zero
@@ -200,15 +201,11 @@ object DecimalOps {
         Infinity
 
 
-          def pow(a: Decimal, b: Decimal): Decimal =
-    if (b.isValidInt)
-      a.pow(b.toInt)
-    else if (a < Decimal.Zero)
-      throw new ArithmeticException(s"Undefined: $a ^ $b")
-    else
-      Decimal(Math.pow(a.toDouble, b.toDouble))
 
       */
+
+      }
+
       private def lcm(x: Long, y: Long): Long = {
         (x * y) / gcd(x, y)
       }
