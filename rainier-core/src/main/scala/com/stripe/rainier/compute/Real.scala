@@ -94,22 +94,14 @@ object Real {
   val one: Real = Constant(Decimal.One)
   val two: Real = Constant(Decimal.Two)
   val Pi: Real = Constant(Decimal.Pi)
-  val infinity: Real = Infinity
-  val negInfinity: Real = NegInfinity
+  val infinity: Real = Constant(Decimal.Infinity)
+  val negInfinity: Real = Constant(Decimal.NegInfinity)
 
   private[rainier] def inlinable(real: Real): Boolean = RealOps.inlinable(real)
 }
 
 final private[rainier] case class Constant(value: Decimal) extends Real {
   val bounds = Bounds(value)
-}
-
-final private[rainier] object Infinity extends Real {
-  val bounds = Bounds(Double.PositiveInfinity, Double.PositiveInfinity)
-}
-
-final private[rainier] object NegInfinity extends Real {
-  val bounds = Bounds(Double.NegativeInfinity, Double.NegativeInfinity)
 }
 
 sealed trait NonConstant extends Real
@@ -226,8 +218,6 @@ object Lookup {
 
   def apply(index: Real, table: Seq[Real], low: Int = 0): Real =
     index match {
-      case Infinity | NegInfinity =>
-        throw new ArithmeticException("Cannot lookup an infinite number")
       case Constant(v) =>
         if (v.isWhole)
           table(v.toInt - low)
