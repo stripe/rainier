@@ -2,16 +2,15 @@ package com.stripe.rainier.compute
 
 import Log._
 
-class Target(val real: Real,
-             val placeholders: Map[Variable, Array[Double]],
-             tryInline: Boolean) {
-  val nRows: Int =
+class Target(val real: Real, tryInline: Boolean) {
+  def nRows: Int =
     if (placeholders.isEmpty)
       0
     else
-      placeholders.head._2.size
+      placeholders.head.values.size
 
-  val placeholderVariables: List[Variable] = placeholders.keys.toList
+  val placeholders: List[Placeholder] =
+    RealOps.variables(real).collect { case v: Placeholder => v }.toList
   val parameters: Set[Parameter] =
     RealOps.variables(real).collect { case v: Parameter => v }
 
@@ -27,16 +26,12 @@ class Target(val real: Real,
     }
 
   def batched: (List[Variable], List[Real]) =
-    (placeholderVariables, List(real))
+    (placeholders, List(real))
 }
 
 object Target {
   def apply(real: Real, tryInline: Boolean = true): Target = {
-    val placeholders =
-      RealOps.variables(real).collect { case v: Placeholder => v }
-    new Target(real, placeholders.map { p =>
-      p -> p.values
-    }.toMap, tryInline)
+    new Target(real, tryInline)
   }
 
   val empty: Target = apply(Real.zero)

@@ -22,14 +22,20 @@ class InlineTest extends FunSuite {
   }
 
   def check(description: String)(fn: Real => Real): Unit = {
-    val ys = 1.to(10).map(_.toDouble).toArray
+    val ys = 1.to(1000)
     test(description) {
-      val ph = Real.placeholder(ys)
-      val result = fn(ph)
+      val ph1 = Real.doubles(ys.map(_.toDouble))
+      val ph2 = Real.longs(ys.map(_.toLong))
+      val result1 = fn(ph1)
+      val result2 = fn(ph2)
       val df1 = Compiler.default
-        .compileTargets(TargetGroup(List(Target(result, true))), false)
+        .compileTargets(TargetGroup(List(Target(result1, true))), false)
       val df2 = Compiler.default
-        .compileTargets(TargetGroup(List(Target(result, false))), false)
+        .compileTargets(TargetGroup(List(Target(result1, false))), false)
+      val df3 = Compiler.default
+        .compileTargets(TargetGroup(List(Target(result2, true))), false)
+      val df4 = Compiler.default
+        .compileTargets(TargetGroup(List(Target(result2, false))), false)
       val xs = new Array[Double](df2.numInputs)
       var i = 0
       while (i < df2.numParamInputs) {
@@ -38,7 +44,11 @@ class InlineTest extends FunSuite {
       }
       val res1 = run(df1, xs)
       val res2 = run(df2, xs)
+      val res3 = run(df3, xs)
+      val res4 = run(df4, xs)
       assertWithinEpsilon(res1, res2)
+      assertWithinEpsilon(res2, res3)
+      assertWithinEpsilon(res3, res4)
     }
   }
 
@@ -49,5 +59,9 @@ class InlineTest extends FunSuite {
   check("LogNormal") { x =>
     val y = LogNormal(0, 1).param
     LogNormal(y, y).logDensity(x)
+  }
+
+  check("factorial") { x =>
+    Combinatorics.factorial(x)
   }
 }

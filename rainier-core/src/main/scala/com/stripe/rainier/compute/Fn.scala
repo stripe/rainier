@@ -71,16 +71,42 @@ trait Fn[-A, +Y] { self =>
 }
 
 object Fn {
-  def numeric[N](implicit n: Numeric[N]): Fn[N, Real] =
-    new Fn[N, Real] {
+  def double: Fn[Double, Real] =
+    new Fn[Double, Real] {
       type X = Real
-      def wrap(a: N) = Real(a)
+      def wrap(a: Double) = Real(a)
       def create(columns: List[Array[Double]]) = {
-        val x = Real.placeholder(columns.head)
+        val x = Real.doubles(columns.head)
         (x, columns.tail)
       }
-      def extract(a: N, acc: List[Double]) =
-        n.toDouble(a) :: acc
+      def extract(a: Double, acc: List[Double]) =
+        a :: acc
+      def xy(x: Real) = x
+    }
+
+  def int: Fn[Int, Real] =
+    new Fn[Int, Real] {
+      type X = Real
+      def wrap(a: Int) = Real(a)
+      def create(columns: List[Array[Double]]) = {
+        val x = Real.longs(columns.head.map(_.toLong))
+        (x, columns.tail)
+      }
+      def extract(a: Int, acc: List[Double]) =
+        a.toDouble :: acc
+      def xy(x: Real) = x
+    }
+
+  def long: Fn[Long, Real] =
+    new Fn[Long, Real] {
+      type X = Real
+      def wrap(a: Long) = Real(a)
+      def create(columns: List[Array[Double]]) = {
+        val x = Real.longs(columns.head.map(_.toLong))
+        (x, columns.tail)
+      }
+      def extract(a: Long, acc: List[Double]) =
+        a.toDouble :: acc
       def xy(x: Real) = x
     }
 
@@ -93,7 +119,7 @@ object Fn {
       def create(columns: List[Array[Double]]) = {
         choices.foldLeft((List.empty[(T, Real)], columns)) {
           case ((acc, cols), k) =>
-            ((k, Real.placeholder(cols.head)) :: acc, cols.tail)
+            ((k, Real.doubles(cols.head)) :: acc, cols.tail)
         }
       }
       def extract(a: T, acc: List[Double]) =

@@ -63,7 +63,15 @@ object Real {
     summed.log + max
   }
 
-  def placeholder(values: Array[Double]): Placeholder = new Placeholder(values)
+  def doubles(values: Seq[Double]): Placeholder =
+    new Placeholder(values.toList.map { x =>
+      Decimal(x)
+    })
+
+  def longs(values: Seq[Long]): Placeholder =
+    new Placeholder(values.toList.map { x =>
+      Decimal(x)
+    })
 
   def parameter(): Parameter = new Parameter(Real.zero)
   def parameter(fn: Parameter => Real): Parameter = {
@@ -110,9 +118,10 @@ sealed trait Variable extends NonConstant {
   private[compute] val param = new ir.Parameter
 }
 
-final private[rainier] class Placeholder(val values: Array[Double])
+final private[rainier] class Placeholder(val values: List[Decimal])
     extends Variable {
-  val bounds = Bounds(values.min, values.max)
+  lazy val bounds =
+    Bounds(values.map(_.toDouble).min, values.map(_.toDouble).max)
 }
 
 final private[rainier] class Parameter(var density: Real) extends Variable {

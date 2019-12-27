@@ -21,6 +21,7 @@ trait SBCModel[T] {
   val (samples, trueValue) = {
     implicit val rng: RNG = ScalaRNG(1528673302081L)
     val (values, trueValue) = sbc.synthesize(syntheticSamples)
+    println((trueValue, values))
     val (model, real) = sbc.fit(values)
     val samples =
       model.sample(sampler, warmupIterations, goldset.size).predict(real)
