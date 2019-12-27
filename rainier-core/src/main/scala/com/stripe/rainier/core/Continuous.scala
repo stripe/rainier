@@ -10,7 +10,7 @@ import scala.annotation.tailrec
 trait Continuous extends Distribution[Double] {
   private[rainier] val support: Support
 
-  val likelihoodFn = Fn.numeric[Double].map(logDensity)
+  val likelihoodFn = Fn.double.map(logDensity)
   def logDensity(x: Real): Real
 
   def scale(a: Real): Continuous = Scale(a).transform(this)

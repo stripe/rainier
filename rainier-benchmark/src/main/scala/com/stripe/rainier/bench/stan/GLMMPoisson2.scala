@@ -45,7 +45,7 @@ class GLMMPoisson2 extends ModelBenchmark {
       Model.observe(
         yearSite,
         C,
-        Fn.numeric[Int].zip(Fn.numeric[Int]).map {
+        Fn.int.zip(Fn.int).map {
           case (year, site) =>
             val logLambda = Lookup(year, yearBetas) + Lookup(site, alphas)
             Poisson(logLambda.exp)

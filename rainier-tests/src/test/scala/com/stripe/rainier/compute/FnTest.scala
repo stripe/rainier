@@ -12,10 +12,9 @@ class FnTest extends FunSuite {
     }
   }
 
-  val fDouble = Fn.numeric[Double]
-  val fLong = Fn.numeric[Long]
-  val fMap = Fn
-    .numeric[Double]
+  val fDouble = Fn.double
+  val fLong = Fn.long
+  val fMap = Fn.double
     .keys(List("a", "b"))
     .map { m =>
       m("a") * 2 + m("b")

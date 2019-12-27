@@ -46,11 +46,13 @@ object NegInfinity extends Decimal {
 
 class DoubleDecimal(val toDouble: Double) extends Decimal {
   override lazy val hashCode = toDouble.hashCode
+  override def toString = toDouble.toString
 }
 
-class FractionDecimal(val n: Long, val d: Long) extends Decimal {
-  lazy val toDouble = n.toDouble / d.toDouble
+class FractionDecimal(val n: Double, val d: Double) extends Decimal {
+  lazy val toDouble = n / d
   override lazy val hashCode = toDouble.hashCode
+  override def toString = s"$n/$d"
 }
 
 object Decimal {
@@ -64,8 +66,8 @@ object Decimal {
     else
       new DoubleDecimal(value)
 
-  def apply(value: Int): Decimal = new FractionDecimal(value.toLong, 1L)
-  def apply(value: Long): Decimal = new FractionDecimal(value, 1L)
+  def apply(value: Int): Decimal = new FractionDecimal(value.toDouble, 1.0)
+  def apply(value: Long): Decimal = new FractionDecimal(value.toDouble, 1.0)
 
   val Zero = Decimal(0)
   val One = Decimal(1)

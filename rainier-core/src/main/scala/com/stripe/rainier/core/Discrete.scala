@@ -3,7 +3,7 @@ package com.stripe.rainier.core
 import com.stripe.rainier.compute._
 
 trait Discrete extends Distribution[Long] { self: Discrete =>
-  val likelihoodFn = Fn.numeric[Long].map(logDensity)
+  val likelihoodFn = Fn.long.map(logDensity)
   def logDensity(x: Real): Real
 
   def zeroInflated(psi: Real): DiscreteMixture =

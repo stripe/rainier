@@ -146,8 +146,8 @@ object DecimalOps {
     case d: DoubleDecimal => Decimal(Math.pow(d.toDouble, y.toDouble))
     case f: FractionDecimal =>
       val yabs = Math.abs(y).toDouble
-      val n2 = Math.pow(f.n.toDouble, yabs).toLong
-      val d2 = Math.pow(f.d.toDouble, yabs).toLong
+      val n2 = Math.pow(f.n.toDouble, yabs)
+      val d2 = Math.pow(f.d.toDouble, yabs)
       if (y >= 0)
         new FractionDecimal(n2, d2)
       else
@@ -248,12 +248,12 @@ object DecimalOps {
       Decimal(-1)
   }
 
-  private def lcm(x: Long, y: Long): Long = {
+  private def lcm(x: Double, y: Double): Double = {
     (x * y) / gcd(x, y)
   }
 
   @tailrec
-  private def gcd(x: Long, y: Long): Long = {
+  private def gcd(x: Double, y: Double): Double = {
     if (y == 0)
       x.abs
     else

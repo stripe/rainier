@@ -13,8 +13,8 @@ final case class Compiler(methodSizeLimit: Int, classSizeLimit: Int) {
 
   def compileTargets(targets: TargetGroup, gradient: Boolean): DataFunction = {
     val data = targets.batched.map { target =>
-      target.placeholderVariables.map { v =>
-        target.placeholders(v)
+      target.placeholders.map { v =>
+        v.values.map(_.toDouble).toArray
       }.toArray
     }.toArray
 

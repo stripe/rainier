@@ -103,7 +103,7 @@ final case class Multinomial[T](pmf: Map[T, Real], k: Real)
     extends Distribution[Map[T, Long]] { self =>
 
   val likelihoodFn =
-    Fn.numeric[Long]
+    Fn.long
       .keys(pmf.keys.toList)
       .map(logDensity)
 
