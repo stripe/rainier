@@ -16,7 +16,7 @@ class RealTest extends FunSuite {
       val deriv = Gradient.derive(List(x), result).head
 
       def evalAt(d: Double): Double = Try { fn(Real(d)) } match {
-        case Success(Constant(bd))           => bd.toDouble
+        case Success(Scalar(bd))             => bd.toDouble
         case Failure(_: ArithmeticException) => NaN
         case Failure(e)                      => throw e
         case x                               => sys.error("Non-constant value " + x)

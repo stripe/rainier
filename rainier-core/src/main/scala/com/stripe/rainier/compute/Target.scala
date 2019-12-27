@@ -4,15 +4,16 @@ import Log._
 
 class Target(val real: Real, tryInline: Boolean) {
   def nRows: Int =
-    if (placeholders.isEmpty)
+    if (columns.isEmpty)
       0
     else
-      placeholders.head.values.size
+      columns.head.values.size
 
-  val placeholders: List[Placeholder] =
-    RealOps.variables(real).collect { case v: Placeholder => v }.toList
+  val columns: List[Column] =
+    RealOps.columns(real).toList
+
   val parameters: Set[Parameter] =
-    RealOps.variables(real).collect { case v: Parameter => v }
+    RealOps.parameters(real)
 
   def maybeInlined: Option[Real] =
     if (nRows == 0)
@@ -25,8 +26,8 @@ class Target(val real: Real, tryInline: Boolean) {
       None
     }
 
-  def batched: (List[Variable], List[Real]) =
-    (placeholders, List(real))
+  def batched: (List[Column], List[Real]) =
+    (columns, List(real))
 }
 
 object Target {
@@ -52,7 +53,7 @@ object TargetGroup {
     }
     val parameters =
       batched
-        .foldLeft(RealOps.variables(base).collect { case x: Parameter => x }) {
+        .foldLeft(RealOps.parameters(base)) {
           case (set, target) =>
             set ++ target.parameters
         }

@@ -2,7 +2,7 @@ import wartremover.Wart
 
 lazy val root = project.
   in(file(".")).
-  aggregate(rainierCore, rainierPlot, rainierCats, rainierScalacheck).
+  aggregate(rainierCore, rainierPlot).
   aggregate(rainierBenchmark, rainierTests).
   aggregate(shadedAsm).
   settings(commonSettings).
@@ -64,9 +64,7 @@ lazy val unpublished = Seq(publish := {}, publishLocal := {}, publishArtifact :=
 /* dependency versions */
 lazy val V = new {
   val asm = "6.0"
-  val cats = "1.1.0"
   val evilplot = "0.6.0"
-  val scalacheck = "1.14.0"
   val scalatest = "3.0.5"
   val flogger = "0.3.1"
   val almond = "0.3.0"
@@ -103,25 +101,6 @@ lazy val rainierPlot = project.
         "sh.almond" %% "interpreter-api" % V.almond)
   )
 
-lazy val rainierCats = project.
-  in(file("rainier-cats")).
-  settings(name := "rainier-cats").
-  dependsOn(rainierCore).
-  dependsOn(rainierScalacheck % "test").
-  settings(commonSettings).
-  settings(libraryDependencies ++= Seq(
-    "org.typelevel" %% "cats-core" % V.cats))
-
-lazy val rainierScalacheck = project.
-  in(file("rainier-scalacheck")).
-  settings(name := "rainier-scalacheck").
-  dependsOn(rainierCore).
-  settings(commonSettings).
-  settings(libraryDependencies ++= Seq(
-    "org.typelevel" %% "cats-core" % V.cats,
-    "org.scalacheck" %% "scalacheck" % V.scalacheck))
-
-
 // test modules
 
 lazy val rainierBenchmark = project.
@@ -139,16 +118,11 @@ lazy val rainierTests = project.
   in(file("rainier-tests")).
   settings(name := "rainier-tests").
   dependsOn(
-    rainierCore,
-    rainierCats,
-    rainierScalacheck,
+    rainierCore
   ).
   settings(commonSettings).
   settings(libraryDependencies ++= Seq(
-    "org.scalatest" %% "scalatest" % V.scalatest,
-    "org.scalacheck" %% "scalacheck" % V.scalacheck,
-    "org.typelevel" %% "cats-laws" % V.cats,
-    "org.typelevel" %% "cats-testkit" % V.cats)).
+    "org.scalatest" %% "scalatest" % V.scalatest)).
   settings(unpublished)
 
 lazy val rainierTrace = project.

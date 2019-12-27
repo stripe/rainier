@@ -18,7 +18,7 @@ private[compute] object LineOps {
 
     val merged = lax.merge(rax)
     if (merged.isEmpty)
-      Constant(lb + rb)
+      Scalar(lb + rb)
     else
       simplify(merged, lb + rb)
   }
@@ -50,7 +50,7 @@ private[compute] object LineOps {
       terms.foldLeft((Coefficients.Empty, Decimal.Zero)) {
         case ((nAx, nB), (x: NonConstant, a)) =>
           (nAx.merge(Coefficients(x -> a)), nB)
-        case ((nAx, nB), (Constant(x), a)) =>
+        case ((nAx, nB), (Scalar(x), a)) =>
           (nAx, nB + x * a)
       }
     Line(newAx, newB)
@@ -111,7 +111,7 @@ private[compute] object LineOps {
 
   private def simplify(ax: Coefficients, b: Decimal): Real =
     ax match {
-      case Coefficients.Empty => Constant(b)
+      case Coefficients.Empty => Scalar(b)
       case Coefficients.One(x, Decimal.One) if b == Decimal.Zero =>
         x
       case _ => Line(ax, b)

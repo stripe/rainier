@@ -63,13 +63,13 @@ object Real {
     summed.log + max
   }
 
-  def doubles(values: Seq[Double]): Placeholder =
-    new Placeholder(values.toList.map { x =>
+  def doubles(values: Seq[Double]): Column =
+    new Column(values.toList.map { x =>
       Decimal(x)
     })
 
-  def longs(values: Seq[Long]): Placeholder =
-    new Placeholder(values.toList.map { x =>
+  def longs(values: Seq[Long]): Column =
+    new Column(values.toList.map { x =>
       Decimal(x)
     })
 
@@ -98,33 +98,31 @@ object Real {
                             lt: Real) =
     Lookup(RealOps.compare(left, right), List(lt, eq, gt), -1)
 
-  val zero: Real = Constant(Decimal.Zero)
-  val one: Real = Constant(Decimal.One)
-  val two: Real = Constant(Decimal.Two)
-  val Pi: Real = Constant(Decimal.Pi)
-  val infinity: Real = Constant(Infinity)
-  val negInfinity: Real = Constant(NegInfinity)
+  val zero: Real = Scalar(Decimal.Zero)
+  val one: Real = Scalar(Decimal.One)
+  val two: Real = Scalar(Decimal.Two)
+  val Pi: Real = Scalar(Decimal.Pi)
+  val infinity: Real = Scalar(Infinity)
+  val negInfinity: Real = Scalar(NegInfinity)
 
   private[rainier] def inlinable(real: Real): Boolean = RealOps.inlinable(real)
 }
 
-final private[rainier] case class Constant(value: Decimal) extends Real {
+final private[rainier] case class Scalar(value: Decimal) extends Real {
   val bounds = Bounds(value)
 }
 
 sealed trait NonConstant extends Real
 
-sealed trait Variable extends NonConstant {
-  private[compute] val param = new ir.Parameter
-}
-
-final private[rainier] class Placeholder(val values: List[Decimal])
-    extends Variable {
+final private[rainier] class Column(val values: List[Decimal])
+    extends NonConstant {
+  lazy val param = new ir.Parameter
   lazy val bounds =
     Bounds(values.map(_.toDouble).min, values.map(_.toDouble).max)
 }
 
-final private[rainier] class Parameter(var density: Real) extends Variable {
+final private[rainier] class Parameter(var density: Real) extends NonConstant {
+  val param = new ir.Parameter
   val bounds = Bounds(Double.NegativeInfinity, Double.PositiveInfinity)
 }
 
@@ -227,7 +225,7 @@ object Lookup {
 
   def apply(index: Real, table: Seq[Real], low: Int = 0): Real =
     index match {
-      case Constant(v) =>
+      case Scalar(v) =>
         if (v.isWhole)
           table(v.toInt - low)
         else
