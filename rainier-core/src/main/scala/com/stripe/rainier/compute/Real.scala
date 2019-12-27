@@ -96,7 +96,7 @@ object Real {
                             gt: Real,
                             eq: Real,
                             lt: Real) =
-    Lookup(RealOps.compare(left, right), List(lt, eq, gt), -1)
+    Lookup(RealOps.compare(left, right), Vector(lt, eq, gt), -1)
 
   val zero: Real = Scalar(Decimal.Zero)
   val one: Real = Scalar(Decimal.One)
@@ -108,18 +108,20 @@ object Real {
   private[rainier] def inlinable(real: Real): Boolean = RealOps.inlinable(real)
 }
 
-final private[rainier] case class Scalar(value: Decimal) extends Real {
+sealed trait Constant extends Real
+
+final private[rainier] case class Scalar(value: Decimal) extends Constant {
   val bounds = Bounds(value)
 }
 
-sealed trait NonConstant extends Real
-
 final private[rainier] class Column(val values: List[Decimal])
-    extends NonConstant {
+    extends Constant {
   lazy val param = new ir.Parameter
   lazy val bounds =
     Bounds(values.map(_.toDouble).min, values.map(_.toDouble).max)
 }
+
+sealed trait NonConstant extends Real
 
 final private[rainier] class Parameter(var density: Real) extends NonConstant {
   val param = new ir.Parameter
@@ -220,19 +222,23 @@ private final class Lookup(val index: NonConstant,
 }
 
 object Lookup {
-  def apply(table: Seq[Real]): Real => Real =
+  def apply(table: IndexedSeq[Real]): Real => Real =
     apply(_, table)
 
-  def apply(index: Real, table: Seq[Real], low: Int = 0): Real =
+  def apply(index: Real, table: IndexedSeq[Real], low: Int = 0): Real =
     index match {
-      case Scalar(v) =>
-        if (v.isWhole)
-          table(v.toInt - low)
-        else
-          throw new ArithmeticException("Cannot lookup a non-integral number")
+      case Scalar(v) => lookup(v, table, low)
+      case _:Column => ???
       case nc: NonConstant =>
         new Lookup(nc, table.toArray, low)
     }
+
+  private def lookup(index: Decimal, table: Seq[Real], low: Int): Real = {
+    if (index.isWhole)
+      table(index.toInt - low)
+    else
+      throw new ArithmeticException("Cannot lookup a non-integral number")
+  }
 }
 
 /*

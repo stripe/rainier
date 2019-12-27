@@ -6,7 +6,7 @@ private class RealViz {
   import GraphViz._
   val gv = new GraphViz
 
-  private var ids = Map.empty[NonConstant, String]
+  private var ids = Map.empty[Real, String]
 
   def output(name: String,
              r: Real,
@@ -57,6 +57,7 @@ private class RealViz {
   private def idOrLabel(r: Real): Either[String, String] =
     r match {
       case nc: NonConstant => Left(nonConstant(nc))
+      case c: Column =>   Left(ids(c))
       case Scalar(c)       => Right(formatDouble(c.toDouble))
     }
 
@@ -100,8 +101,6 @@ private class RealViz {
             id
           case _: Parameter =>
             gv.node(label("θ"), shape("doublecircle"))
-          case _: Column =>
-            sys.error("columns should be registered")
         }
         ids += (nc -> id)
         id
