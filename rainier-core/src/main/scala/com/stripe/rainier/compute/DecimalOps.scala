@@ -240,40 +240,12 @@ object DecimalOps {
     }
 
   def compare(a: Decimal, b: Decimal): Decimal = {
-    ???
-    /*
-                if (a == b)
-          Real.zero
-        else if (a > b)
-          Real.one
-        else
-          Constant(Decimal(-1))
-      case (NegInfinity, NegInfinity) => Real.zero
-
-                case (Infinity, Infinity)       => Real.zero
-
-     */
-    /*pow
-
-                case (Infinity, _) =>
-        if (exponent < Decimal.Zero)
-          Real.zero
-        else
-          Infinity
-      case (NegInfinity, _) =>
-        if (exponent < Decimal.Zero)
-          Zero
-        else if (exponent.isWhole && exponent.toInt % 2 == 1)
-          NegInfinity
-        else
-          Infinity
-      case (Zero, _) if exponent < Decimal.Zero =>
-        Infinity
-
-
-
-   */
-
+    if (a == b)
+      Zero
+    else if (a > b)
+      One
+    else
+      Decimal(-1)
   }
 
   private def lcm(x: Long, y: Long): Long = {

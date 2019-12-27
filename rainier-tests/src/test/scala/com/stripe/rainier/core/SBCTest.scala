@@ -10,9 +10,7 @@ class SBCTest extends FunSuite {
       sbcModel.samples.zip(sbcModel.goldset).foreach {
         case (a, b) =>
           val err = Math.abs((a - b) / b)
-          if (err >= Epsilon)
-            println((a, b))
-        //assert(err < Epsilon)
+          assert(err < Epsilon)
       }
     }
   }
