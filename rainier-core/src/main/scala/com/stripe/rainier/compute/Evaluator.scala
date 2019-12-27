@@ -4,8 +4,6 @@ class Evaluator(var cache: Map[Real, Double]) extends Numeric[Real] {
 
   def toDouble(x: Real): Double = x match {
     case Constant(v) => v.toDouble
-    case Infinity    => Double.PositiveInfinity
-    case NegInfinity => Double.NegativeInfinity
     case _ =>
       cache.get(x) match {
         case Some(v) => v
@@ -18,8 +16,6 @@ class Evaluator(var cache: Map[Real, Double]) extends Numeric[Real] {
   }
 
   private def eval(real: Real): Double = real match {
-    case Infinity        => 1.0 / 0.0
-    case NegInfinity     => -1.0 / 0.0
     case Constant(value) => value.toDouble
     case l: Line =>
       l.ax.toList.map { case (r, d) => toDouble(r) * d.toDouble }.sum + l.b.toDouble

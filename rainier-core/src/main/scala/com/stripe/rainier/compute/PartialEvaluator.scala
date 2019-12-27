@@ -22,7 +22,7 @@ class PartialEvaluator(var noChange: Set[Real], placeholderIndex: Int) {
     }
 
   private def eval(real: Real): (Real, Boolean) = real match {
-    case Infinity | NegInfinity | Constant(_) => (real, false)
+    case Constant(_) => (real, false)
     case l: Line =>
       val terms = l.ax.toList.map { case (r, d) => (apply(r), d) }
       val anyModified =

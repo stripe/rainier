@@ -1,13 +1,7 @@
 package com.stripe.rainier
 package cats
 
-import com.stripe.rainier.compute.{
-  Decimal,
-  Constant,
-  Infinity,
-  NegInfinity,
-  Real
-}
+import com.stripe.rainier.compute.{Decimal, Constant, Real}
 import com.stripe.rainier.core.{updateMap, Categorical, Generator}
 import com.stripe.rainier.sampler.RNG
 import _root_.cats.{Applicative, Group, Comonad, Eq, Monad, Monoid}
@@ -138,8 +132,7 @@ private[cats] trait EqInstances {
     val bde = eqDecimal(epsilon)
     Eq.instance { (left, right) =>
       (left, right) match {
-        case (Infinity, Infinity) | (NegInfinity, NegInfinity) => true
-        case (Constant(a), Constant(b))                        => bde.eqv(a, b)
+        case (Constant(a), Constant(b)) => bde.eqv(a, b)
         // TODO - the Eq instance returned here doesn't test for full
         // DAG equality; this final case needs to be expanded to
         // compare the various NonConstant options.
