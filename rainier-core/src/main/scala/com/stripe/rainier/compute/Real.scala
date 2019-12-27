@@ -94,8 +94,8 @@ object Real {
   val one: Real = Constant(Decimal.One)
   val two: Real = Constant(Decimal.Two)
   val Pi: Real = Constant(Decimal.Pi)
-  val infinity: Real = Constant(Decimal.Infinity)
-  val negInfinity: Real = Constant(Decimal.NegInfinity)
+  val infinity: Real = Constant(Infinity)
+  val negInfinity: Real = Constant(NegInfinity)
 
   private[rainier] def inlinable(real: Real): Boolean = RealOps.inlinable(real)
 }

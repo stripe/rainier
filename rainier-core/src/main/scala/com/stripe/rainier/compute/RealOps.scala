@@ -27,13 +27,13 @@ private[compute] object RealOps {
 
   def add(left: Real, right: Real): Real =
     (left, right) match {
-      case (Constant(x), Constant(y))     => Constant(DecimalOps.add(x,y))
+      case (Constant(x), Constant(y))     => Constant(DecimalOps.add(x, y))
       case (Infinity, _)                  => left
-      case (_,  Infinity)                  => right
+      case (_, Infinity)                  => right
       case (NegInfinity, _)               => left
       case (_, NegInfinity)               => right
-      case (_, Zero)    => left
-      case (Zero, _)    => right
+      case (_, Zero)                      => left
+      case (Zero, _)                      => right
       case (Constant(x), nc: NonConstant) => LineOps.translate(nc, x)
       case (nc: NonConstant, Constant(x)) => LineOps.translate(nc, x)
       case (nc1: NonConstant, nc2: NonConstant) =>
@@ -42,15 +42,15 @@ private[compute] object RealOps {
 
   def multiply(left: Real, right: Real): Real =
     (left, right) match {
-      case (Constant(x), Constant(y))     => Constant(DecimalOps.multiply(x,y))
+      case (Constant(x), Constant(y))     => Constant(DecimalOps.multiply(x, y))
       case (Infinity, r)                  => Real.gt(r, 0, Infinity, NegInfinity)
-      case (r,  Infinity)                  => Real.gt(r, 0, Infinity, NegInfinity)
+      case (r, Infinity)                  => Real.gt(r, 0, Infinity, NegInfinity)
       case (NegInfinity, r)               => Real.gt(r, Real.zero, NegInfinity, Infinity)
       case (r, NegInfinity)               => Real.gt(r, Real.zero, NegInfinity, Infinity)
-      case (_, Zero)    => Real.zero
-      case (Zero, _)    => Real.zero
-      case (_, One)     => left
-      case (One, _)     => right
+      case (_, Zero)                      => Real.zero
+      case (Zero, _)                      => Real.zero
+      case (_, One)                       => left
+      case (One, _)                       => right
       case (Constant(x), nc: NonConstant) => LineOps.scale(nc, x)
       case (nc: NonConstant, Constant(x)) => LineOps.scale(nc, x)
       case (nc1: NonConstant, nc2: NonConstant) =>
@@ -59,9 +59,9 @@ private[compute] object RealOps {
 
   def divide(left: Real, right: Real): Real =
     (left, right) match {
-      case (Constant(x), Constant(y))  => Constant(DecimalOps.divide(x,y))
-      case (_, Zero) => left * Infinity
-      case _                           => left * right.pow(-1)
+      case (Constant(x), Constant(y)) => Constant(DecimalOps.divide(x, y))
+      case (_, Zero)                  => left * Infinity
+      case _                          => left * right.pow(-1)
     }
 
   def min(left: Real, right: Real): Real =
@@ -78,9 +78,9 @@ private[compute] object RealOps {
 
   def pow(original: Real, exponent: Decimal): Real =
     (original, exponent) match {
-      case (Constant(v), _) => Real(DecimalOps.pow(v, exponent))
-      case (_, Decimal.Infinity)       => Infinity
-      case (_, Decimal.NegInfinity)    => Zero
+      case (Constant(v), _)  => Real(DecimalOps.pow(v, exponent))
+      case (_, Infinity)     => Infinity
+      case (_, NegInfinity)  => Zero
       case (_, Decimal.Zero) => One
       case (_, Decimal.One)  => original
       case (l: Line, _) =>
@@ -95,11 +95,11 @@ private[compute] object RealOps {
     (left, right) match {
       case (Constant(a), Constant(b)) =>
         Constant(DecimalOps.compare(a, b))
-      case ( Infinity, _)              => One
-      case (_,  Infinity)              => Constant(Decimal(-1))
-      case (NegInfinity, _)           => Constant(Decimal(-1))
-      case (_, NegInfinity)           => One
-      case _ => Compare(left, right)
+      case (Infinity, _)    => One
+      case (_, Infinity)    => Constant(Decimal(-1))
+      case (NegInfinity, _) => Constant(Decimal(-1))
+      case (_, NegInfinity) => One
+      case _                => Compare(left, right)
     }
 
   def variables(real: Real): Set[Variable] = {
@@ -109,8 +109,8 @@ private[compute] object RealOps {
       if (!seen.contains(r)) {
         seen += r
         r match {
-          case Constant(_) => ()
-          case v: Placeholder                       => vars = v :: vars
+          case Constant(_)    => ()
+          case v: Placeholder => vars = v :: vars
           case v: Parameter =>
             vars = v :: vars
             loop(v.density)
@@ -165,7 +165,7 @@ private[compute] object RealOps {
     def loop(r: Real): State =
       if (!seen.contains(r)) {
         val result = r match {
-          case Constant(_)  =>
+          case Constant(_) =>
             State(false, false, false)
           case _: Placeholder =>
             State(false, true, false)

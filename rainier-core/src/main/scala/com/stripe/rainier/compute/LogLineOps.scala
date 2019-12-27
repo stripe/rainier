@@ -80,8 +80,6 @@ private[compute] object LogLineOps {
           l.ax.toList.foldLeft((Coefficients(ll -> l.b), Decimal.Zero)) {
             case ((nAx, nB), (x, a)) =>
               multiply(ll, LogLine(x)) match {
-                case Infinity | NegInfinity =>
-                  ??? //I think this should never happen
                 case Constant(v) => (nAx, nB + v * a)
                 case nc: NonConstant =>
                   (nAx.merge(Coefficients(nc -> a)), nB)
