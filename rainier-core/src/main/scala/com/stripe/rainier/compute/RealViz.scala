@@ -11,8 +11,8 @@ private class RealViz {
   def output(name: String,
              r: Real,
              gradVars: List[Parameter],
-             placeholders: List[Placeholder]): Unit = {
-    output(name, r, placeholders)
+             columns: List[Column]): Unit = {
+    output(name, r, columns)
     if (!gradVars.isEmpty) {
       Gradient.derive(gradVars, r).zipWithIndex.foreach {
         case (g, i) =>
@@ -21,9 +21,9 @@ private class RealViz {
     }
   }
 
-  def output(name: String, r: Real, placeholders: List[Placeholder]): Unit = {
-    if (!placeholders.isEmpty)
-      registerPlaceholders(placeholders)
+  def output(name: String, r: Real, columns: List[Column]): Unit = {
+    if (!columns.isEmpty)
+      registerColumns(columns)
     val id = idOrLabel(r) match {
       case Left(id) => id
       case Right(l) =>
@@ -37,7 +37,7 @@ private class RealViz {
     gv.rank("sink", List(oid))
   }
 
-  private def registerPlaceholders(cols: List[Placeholder]): Unit =
+  private def registerColumns(cols: List[Column]): Unit =
     gv.cluster(label("X"), justify("l")) {
       val colData = cols.map { p =>
         p.values.take(5).map { d =>
@@ -57,7 +57,7 @@ private class RealViz {
   private def idOrLabel(r: Real): Either[String, String] =
     r match {
       case nc: NonConstant => Left(nonConstant(nc))
-      case Constant(c)     => Right(formatDouble(c.toDouble))
+      case Scalar(c)       => Right(formatDouble(c.toDouble))
     }
 
   private def nonConstant(nc: NonConstant): String =
@@ -98,8 +98,10 @@ private class RealViz {
               case _             => ()
             }
             id
-          case _: Variable =>
+          case _: Parameter =>
             gv.node(label("θ"), shape("doublecircle"))
+          case _: Column =>
+            sys.error("columns should be registered")
         }
         ids += (nc -> id)
         id
@@ -131,9 +133,9 @@ object RealViz {
     val v = new RealViz
     reals.foreach {
       case (name, real) =>
-        val placeholders =
-          RealOps.variables(real).collect { case p: Placeholder => p }
-        v.output(name, real, gradVars, placeholders.toList)
+        val cols =
+          RealOps.columns(real)
+        v.output(name, real, gradVars, cols.toList)
     }
     v.gv
   }

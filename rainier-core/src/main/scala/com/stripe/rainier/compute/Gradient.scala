@@ -20,8 +20,9 @@ private object Gradient {
       if (!visited.contains(real)) {
         visited += real
         real match {
-          case _: Variable => ()
-          case _: Constant => ()
+          case _: Parameter => ()
+          case _: Scalar    => ()
+          case _: Column    => ()
 
           case p: Pow =>
             diff(p.base).register(PowDiff(p, diff(p), false))
@@ -88,7 +89,7 @@ private object Gradient {
 
   private final case class ProductDiff(other: Decimal, gradient: Diff)
       extends Diff {
-    def toReal: Real = gradient.toReal * Constant(other)
+    def toReal: Real = gradient.toReal * Scalar(other)
   }
 
   private final case class UnaryDiff(child: Unary, gradient: Diff)

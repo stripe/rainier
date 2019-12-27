@@ -1,9 +1,9 @@
 package com.stripe.rainier.compute
 
-class PartialEvaluator(var noChange: Set[Real], placeholderIndex: Int) {
+class PartialEvaluator(var noChange: Set[Real], rowIndex: Int) {
   var cache = Map.empty[Real, Real]
 
-  def next() = new PartialEvaluator(noChange, placeholderIndex + 1)
+  def next() = new PartialEvaluator(noChange, rowIndex + 1)
 
   def apply(real: Real): (Real, Boolean) =
     if (noChange.contains(real))
@@ -22,7 +22,7 @@ class PartialEvaluator(var noChange: Set[Real], placeholderIndex: Int) {
     }
 
   private def eval(real: Real): (Real, Boolean) = real match {
-    case Constant(_) => (real, false)
+    case Scalar(_) => (real, false)
     case l: Line =>
       val terms = l.ax.toList.map { case (r, d) => (apply(r), d) }
       val anyModified =
@@ -77,8 +77,8 @@ class PartialEvaluator(var noChange: Set[Real], placeholderIndex: Int) {
         (l, false)
     case p: Parameter =>
       (p, false)
-    case p: Placeholder =>
-      (p.values(placeholderIndex), true)
+    case c: Column =>
+      (c.values(rowIndex), true)
   }
 }
 

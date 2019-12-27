@@ -11,8 +11,9 @@ private class Translator {
     case Some(expr) => ref(expr)
     case None =>
       val expr = r match {
-        case v: Variable         => v.param
-        case Constant(value)     => Const(value.toDouble)
+        case v: Parameter        => v.param
+        case c: Column           => c.param
+        case Scalar(value)       => Const(value.toDouble)
         case Unary(original, op) => unaryExpr(toExpr(original), op)
         case l: Line             => lineExpr(l)
         case l: LogLine          => logLineExpr(l)
@@ -96,7 +97,7 @@ private class Translator {
       if (b == Decimal.Zero)
         terms
       else
-        (Constant(b), 1.0) :: terms
+        (Scalar(b), 1.0) :: terms
     val expr = combineSumTerms(allTerms)
     factor match {
       case 1.0 => expr
@@ -122,7 +123,7 @@ private class Translator {
       if (b == ring.zero)
         posTerms
       else
-        (Constant(b), 1.0) :: posTerms
+        (Scalar(b), 1.0) :: posTerms
 
     val (expr, sign) =
       (allPosTerms.isEmpty, negTerms.isEmpty) match {
