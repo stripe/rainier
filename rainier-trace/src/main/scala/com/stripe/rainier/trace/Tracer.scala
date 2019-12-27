@@ -7,7 +7,7 @@ case class Tracer(compiler: Compiler, gradient: Boolean) {
   def apply(real: Real): Unit = {
     val target = Target(real)
     val params = target.parameters.toList
-    val variables = params ++ target.placeholderVariables
+    val variables = params ++ target.placeholders
     val outputs =
       if (gradient)
         Compiler.withGradient("density", real, params)
