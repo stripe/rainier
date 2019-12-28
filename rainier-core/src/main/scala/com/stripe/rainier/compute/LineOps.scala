@@ -23,12 +23,12 @@ private[compute] object LineOps {
       simplify(merged, lb + rb)
   }
 
-  def scale(nc: NonConstant, v: Decimal): Real = {
+  def scale(nc: NonConstant, v: Constant): Real = {
     val (ax, b) = axb(nc)
     simplify(ax.mapCoefficients(_ * v), b * v)
   }
 
-  def translate(nc: NonConstant, v: Decimal): Real = {
+  def translate(nc: NonConstant, v: Constant): Real = {
     val (ax, b) = axb(nc)
     simplify(ax, b + v)
   }

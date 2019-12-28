@@ -116,6 +116,10 @@ final private[rainier] case class Scalar(value: Decimal) extends Constant {
 
 final private[rainier] class Column(val values: List[Decimal])
     extends Constant {
+  def map(fn: Decimal => Decimal) = 
+      new Column(values.map(fn))
+  def zipMap(other: Column)(fn: (Decimal, Decimal) => Decimal) = 
+      new Column(values.zip(other.values).map{case (x,y) => fn(x,y)})
   lazy val param = new ir.Parameter
   lazy val bounds =
     Bounds(values.map(_.toDouble).min, values.map(_.toDouble).max)

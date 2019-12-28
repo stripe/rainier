@@ -12,6 +12,8 @@ private[compute] object RealOps {
     original match {
       case Scalar(value) =>
         Scalar(DecimalOps.unary(value, op))
+      case c: Column =>
+        c.map{x => DecimalOps.unary(x, op)}
       case nc: NonConstant =>
         val opt = (op, nc) match {
           case (ExpOp, Unary(x, LogOp))     => Some(x)
@@ -27,22 +29,34 @@ private[compute] object RealOps {
 
   def add(left: Real, right: Real): Real =
     (left, right) match {
-      case (Scalar(x), Scalar(y))       => Scalar(DecimalOps.add(x, y))
+      case (x: Constant, y: Constant)   => addC(x, y)
       case (Infinity, _)                => left
       case (_, Infinity)                => right
       case (NegInfinity, _)             => left
       case (_, NegInfinity)             => right
       case (_, Zero)                    => left
       case (Zero, _)                    => right
-      case (Scalar(x), nc: NonConstant) => LineOps.translate(nc, x)
-      case (nc: NonConstant, Scalar(x)) => LineOps.translate(nc, x)
+      case (c: Constant, nc: NonConstant) => LineOps.translate(nc, c)
+      case (nc: NonConstant, c: Constant) => LineOps.translate(nc, c)
       case (nc1: NonConstant, nc2: NonConstant) =>
         LineOps.sum(nc1, nc2)
     }
 
+  def addC(left: Constant, right: Constant): Constant = 
+    (left, right) match {
+      case (Scalar(x), Scalar(y))       =>
+        Scalar(DecimalOps.add(x, y))
+      case (Scalar(x), ys: Column) =>
+        ys.map{y => DecimalOps.add(x, y)}
+      case (xs: Column, Scalar(y)) =>
+        xs.map{x => DecimalOps.add(x, y)}
+      case (xs: Column, ys: Column) =>
+        xs.zipMap(ys){(x,y) => DecimalOps.add(x, y)}
+    }
+
   def multiply(left: Real, right: Real): Real =
     (left, right) match {
-      case (Scalar(x), Scalar(y))       => Scalar(DecimalOps.multiply(x, y))
+      case (x: Constant, y: Constant)       => multiplyC(x, y)
       case (Infinity, r)                => Real.gt(r, 0, Infinity, NegInfinity)
       case (r, Infinity)                => Real.gt(r, 0, Infinity, NegInfinity)
       case (NegInfinity, r)             => Real.gt(r, Real.zero, NegInfinity, Infinity)
@@ -51,11 +65,13 @@ private[compute] object RealOps {
       case (Zero, _)                    => Real.zero
       case (_, One)                     => left
       case (One, _)                     => right
-      case (Scalar(x), nc: NonConstant) => LineOps.scale(nc, x)
-      case (nc: NonConstant, Scalar(x)) => LineOps.scale(nc, x)
+      case (c: Constant, nc: NonConstant) => LineOps.scale(nc, c)
+      case (nc: NonConstant, c: Constant) => LineOps.scale(nc, c)
       case (nc1: NonConstant, nc2: NonConstant) =>
         LogLineOps.multiply(LogLine(nc1), LogLine(nc2))
     }
+
+  def multiplyC(left: Constant, right: Constant): Constant = ???
 
   def divide(left: Real, right: Real): Real =
     (left, right) match {

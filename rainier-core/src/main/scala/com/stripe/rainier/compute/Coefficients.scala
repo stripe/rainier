@@ -5,25 +5,25 @@ import scala.annotation.tailrec
 sealed trait Coefficients extends Product with Serializable {
   def isEmpty: Boolean
   def size: Int
-  def coefficients: Iterable[Decimal]
+  def coefficients: Iterable[Constant]
   def terms: Iterable[NonConstant]
-  def toList: List[(NonConstant, Decimal)]
-  def toMap: Map[NonConstant, Decimal]
-  def withComplements: Iterable[(NonConstant, Decimal, Coefficients)]
-  def mapCoefficients(fn: Decimal => Decimal): Coefficients
+  def toList: List[(NonConstant, Constant)]
+  def toMap: Map[NonConstant, Constant]
+  def withComplements: Iterable[(NonConstant, Constant, Coefficients)]
+  def mapCoefficients(fn: Constant => Constant): Coefficients
   def merge(other: Coefficients): Coefficients
-  def +(pair: (NonConstant, Decimal)): Coefficients
+  def +(pair: (NonConstant, Constant)): Coefficients
 }
 
 object Coefficients {
-  def apply(pair: (NonConstant, Decimal)): Coefficients =
-    if (pair._2 == Decimal.Zero)
+  def apply(pair: (NonConstant, Constant)): Coefficients =
+    if (pair._2 == Real.zero)
       Empty
     else
       One(pair._1, pair._2)
 
-  def apply(seq: Seq[(NonConstant, Decimal)]): Coefficients = {
-    val filtered = seq.filter(_._2 != Decimal.Zero)
+  def apply(seq: Seq[(NonConstant, Constant)]): Coefficients = {
+    val filtered = seq.filter(_._2 != Real.zero)
     if (filtered.isEmpty)
       Empty
     else if (filtered.size == 1)
@@ -38,16 +38,16 @@ object Coefficients {
     val coefficients = Nil
     val terms = Nil
     val toList = Nil
-    val toMap = Map.empty[NonConstant, Decimal]
+    val toMap = Map.empty[NonConstant, Constant]
     val withComplements = Nil
-    def mapCoefficients(fn: Decimal => Decimal) = this
-    def +(pair: (NonConstant, Decimal)) = apply(pair)
+    def mapCoefficients(fn: Constant => Constant) = this
+    def +(pair: (NonConstant, Constant)) = apply(pair)
     def merge(other: Coefficients) = other
   }
 
   val Empty: Coefficients = EmptyCoefficients
 
-  case class One(term: NonConstant, coefficient: Decimal) extends Coefficients {
+  case class One(term: NonConstant, coefficient: Constant) extends Coefficients {
     val size = 1
     val isEmpty = false
     def coefficients = List(coefficient)
@@ -55,13 +55,13 @@ object Coefficients {
     def toList = List((term, coefficient))
     def toMap = Map(term -> coefficient)
     def withComplements = List((term, coefficient, Empty))
-    def mapCoefficients(fn: Decimal => Decimal) =
+    def mapCoefficients(fn: Constant => Constant) =
       One(term, fn(coefficient))
     def merge(other: Coefficients) = other + (term -> coefficient)
-    def +(pair: (NonConstant, Decimal)) =
+    def +(pair: (NonConstant, Constant)) =
       if (pair._1 == term) {
-        val newCoefficient = coefficient + pair._2
-        if (newCoefficient == Decimal.Zero)
+        val newCoefficient = RealOps.addC(coefficient, pair._2)
+        if (newCoefficient == Real.zero)
           Empty
         else
           One(term, newCoefficient)
@@ -70,7 +70,7 @@ object Coefficients {
       }
   }
 
-  case class Many(toMap: Map[NonConstant, Decimal], terms: List[NonConstant])
+  case class Many(toMap: Map[NonConstant, Constant], terms: List[NonConstant])
       extends Coefficients {
     val isEmpty = false
     def size = toMap.size
@@ -79,15 +79,15 @@ object Coefficients {
       x -> toMap(x)
     }
 
-    def mapCoefficients(fn: Decimal => Decimal) =
+    def mapCoefficients(fn: Constant => Constant) =
       Many(toMap.map { case (x, a) => x -> fn(a) }, terms)
 
     def withComplements = {
       @tailrec
       def loop(
-          acc: List[(NonConstant, Decimal, Coefficients)],
+          acc: List[(NonConstant, Constant, Coefficients)],
           a: List[NonConstant],
-          b: List[NonConstant]): List[(NonConstant, Decimal, Coefficients)] =
+          b: List[NonConstant]): List[(NonConstant, Constant, Coefficients)] =
         b match {
           case head :: tail =>
             val complementTerms =
@@ -115,11 +115,11 @@ object Coefficients {
           case (acc, pair) => acc + pair
         }
 
-    def +(pair: (NonConstant, Decimal)) = {
+    def +(pair: (NonConstant, Constant)) = {
       val (term, coefficient) = pair
       if (toMap.contains(term)) {
-        val newCoefficient = coefficient + toMap(term)
-        if (newCoefficient == Decimal.Zero) {
+        val newCoefficient = RealOps.addC(coefficient, toMap(term))
+        if (newCoefficient == Real.zero) {
           val newMap = toMap - term
           val newTerms = terms.filterNot(_ == term)
           if (newTerms.size == 1)
