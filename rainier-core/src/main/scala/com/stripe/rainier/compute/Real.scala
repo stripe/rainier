@@ -98,8 +98,10 @@ object Real {
                             lt: Real) =
     Lookup(RealOps.compare(left, right), List(lt, eq, gt), -1)
 
-  val zero: Real = Scalar(Decimal.Zero)
-  val one: Real = Scalar(Decimal.One)
+  private[compute] val constZero: Constant = Scalar(Decimal.Zero)
+  private[compute] val constOne: Constant = Scalar(Decimal.One)
+  val zero: Real = constZero
+  val one: Real = constOne
   val two: Real = Scalar(Decimal.Two)
   val Pi: Real = Scalar(Decimal.Pi)
   val infinity: Real = Scalar(Infinity)
@@ -108,7 +110,12 @@ object Real {
   private[rainier] def inlinable(real: Real): Boolean = RealOps.inlinable(real)
 }
 
-final private[rainier] case class Scalar(value: Decimal) extends Real {
+trait Constant extends Real {
+  def isZero: Boolean
+}
+
+final private[rainier] case class Scalar(value: Decimal) extends Constant {
+  def isZero = value == Decimal.Zero
   val bounds = Bounds(value)
 }
 
@@ -151,16 +158,16 @@ Because it is common for ax to have a large number of terms, this is deliberatel
 as equality comparisons would be too expensive. The impact of this is subtle, see [0] at the bottom of this file
 for an example.
  */
-private final class Line private (val ax: Coefficients, val b: Decimal)
+private final class Line private (val ax: Coefficients, val b: Constant)
     extends NonConstant {
-  val bounds = Bounds.sum(Bounds(b) :: ax.toList.map {
+  val bounds = Bounds.sum(b.bounds :: ax.toList.map {
     case (x, a) =>
-      Bounds.multiply(x.bounds, Bounds(a))
+      Bounds.multiply(x.bounds, a.bounds)
   })
 }
 
 private[compute] object Line {
-  def apply(ax: Coefficients, b: Decimal): Line = {
+  def apply(ax: Coefficients, b: Constant): Line = {
     require(!ax.isEmpty)
     new Line(ax, b)
   }
@@ -182,7 +189,7 @@ private final case class LogLine(
   require(!ax.isEmpty)
   val bounds = {
     val b =
-      ax.toList.map { case (x, a) => Bounds.pow(x.bounds, Bounds(a)) }
+      ax.toList.map { case (x, a) => Bounds.pow(x.bounds, a.bounds) }
     b.tail.foldLeft(b.head) { case (l, r) => Bounds.multiply(l, r) } //I was failing to use reduce for some reason so did this
   }
 }
@@ -191,7 +198,7 @@ private object LogLine {
   def apply(nc: NonConstant): LogLine =
     nc match {
       case l: LogLine => l
-      case _          => LogLine(Coefficients(nc -> Decimal.One))
+      case _          => LogLine(Coefficients(nc -> Scalar(Decimal.One)))
     }
 }
 

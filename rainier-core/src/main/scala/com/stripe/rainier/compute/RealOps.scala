@@ -5,8 +5,8 @@ import com.stripe.rainier.ir._
 private[compute] object RealOps {
   private val Infinity = Real.infinity
   private val NegInfinity = Real.negInfinity
-  private val Zero = Real.zero
-  private val One = Real.one
+  private val Zero = Real.constZero
+  private val One = Real.constOne
 
   def unary(original: Real, op: UnaryOp): Real =
     original match {
@@ -25,19 +25,26 @@ private[compute] object RealOps {
         opt.getOrElse(Unary(nc, op))
     }
 
+  def absC(original: Constant): Constant = ???
+
   def add(left: Real, right: Real): Real =
     (left, right) match {
-      case (Scalar(x), Scalar(y))       => Scalar(DecimalOps.add(x, y))
+      case (x: Constant, y: Constant)       => addC(x, y)
       case (Infinity, _)                => left
       case (_, Infinity)                => right
       case (NegInfinity, _)             => left
       case (_, NegInfinity)             => right
       case (_, Zero)                    => left
       case (Zero, _)                    => right
-      case (Scalar(x), nc: NonConstant) => LineOps.translate(nc, x)
-      case (nc: NonConstant, Scalar(x)) => LineOps.translate(nc, x)
+      case (x: Scalar, nc: NonConstant) => LineOps.translate(nc, x)
+      case (nc: NonConstant, x: Scalar) => LineOps.translate(nc, x)
       case (nc1: NonConstant, nc2: NonConstant) =>
         LineOps.sum(nc1, nc2)
+    }
+
+  def addC(left: Constant, right: Constant): Constant = 
+    (left, right) match {
+      case (Scalar(x), Scalar(y))       => Scalar(DecimalOps.add(x, y))
     }
 
   def multiply(left: Real, right: Real): Real =
@@ -51,11 +58,13 @@ private[compute] object RealOps {
       case (Zero, _)                    => Real.zero
       case (_, One)                     => left
       case (One, _)                     => right
-      case (Scalar(x), nc: NonConstant) => LineOps.scale(nc, x)
-      case (nc: NonConstant, Scalar(x)) => LineOps.scale(nc, x)
+      case (x: Scalar, nc: NonConstant) => LineOps.scale(nc, x)
+      case (nc: NonConstant, x: Scalar) => LineOps.scale(nc, x)
       case (nc1: NonConstant, nc2: NonConstant) =>
         LogLineOps.multiply(LogLine(nc1), LogLine(nc2))
     }
+
+  def mulC(left: Constant, right: Constant): Constant = ???
 
   def divide(left: Real, right: Real): Real =
     (left, right) match {
@@ -63,6 +72,8 @@ private[compute] object RealOps {
       case (_, Zero)              => left * Infinity
       case _                      => left * right.pow(-1)
     }
+
+  def divC(left: Constant, right: Constant): Constant = ???
 
   def min(left: Real, right: Real): Real =
     Real.lt(left, right, left, right)
@@ -72,17 +83,17 @@ private[compute] object RealOps {
 
   def pow(original: Real, exponent: Real): Real =
     exponent match {
-      case Scalar(e)      => pow(original, e)
+      case c: Constant      => pow(original, c)
       case e: NonConstant => Pow(original, e)
     }
 
-  def pow(original: Real, exponent: Decimal): Real =
+  def pow(original: Real, exponent: Constant): Real =
     (original, exponent) match {
-      case (Scalar(v), _)    => Real(DecimalOps.pow(v, exponent))
+      case (c: Constant, _)    => powC(c, exponent)
       case (_, Infinity)     => Infinity
       case (_, NegInfinity)  => Zero
-      case (_, Decimal.Zero) => One
-      case (_, Decimal.One)  => original
+      case (_, Zero) => One
+      case (_, One)  => original
       case (l: Line, _) =>
         LineOps.pow(l, exponent).getOrElse {
           LogLineOps.pow(LogLine(l), exponent)
@@ -90,6 +101,8 @@ private[compute] object RealOps {
       case (nc: NonConstant, _) =>
         LogLineOps.pow(LogLine(nc), exponent)
     }
+
+  def powC(left: Constant, right: Constant): Constant = ???
 
   def compare(left: Real, right: Real): Real =
     (left, right) match {

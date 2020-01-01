@@ -90,14 +90,14 @@ private class Translator {
   factored out of the original summation).
   **/
   private def factoredSumLine(ax: Coefficients,
-                              b: Decimal,
+                              b: Constant,
                               factor: Double): Expr = {
     val terms = ax.toList.map { case (x, a) => (x, a.toDouble) }
     val allTerms =
-      if (b == Decimal.Zero)
+      if (b.isZero)
         terms
       else
-        (Scalar(b), 1.0) :: terms
+        (b, 1.0) :: terms
     val expr = combineSumTerms(allTerms)
     factor match {
       case 1.0 => expr
@@ -111,7 +111,7 @@ private class Translator {
   }
 
   private def factoredLine(ax: Coefficients,
-                           b: Decimal,
+                           b: Constant,
                            factor: Double,
                            ring: Ring): Expr = {
     val terms = ax.toList.map { case (x, a) => (x, a.toDouble) }

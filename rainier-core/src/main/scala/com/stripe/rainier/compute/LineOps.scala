@@ -2,14 +2,14 @@ package com.stripe.rainier.compute
 
 private[compute] object LineOps {
 
-  private def axb(nc: NonConstant): (Coefficients, Decimal) =
+  private def axb(nc: NonConstant): (Coefficients, Constant) =
     nc match {
       case l: Line => (l.ax, l.b)
       case l: LogLine =>
         LogLineOps
           .distribute(l)
-          .getOrElse((Coefficients(l -> Decimal.One), Decimal.Zero))
-      case _ => (Coefficients(nc -> Decimal.One), Decimal.Zero)
+          .getOrElse((Coefficients.one(l), Real.constZero))
+      case _ => (Coefficients.one(nc), Real.constZero)
     }
 
   def sum(left: NonConstant, right: NonConstant): Real = {
@@ -18,19 +18,19 @@ private[compute] object LineOps {
 
     val merged = lax.merge(rax)
     if (merged.isEmpty)
-      Scalar(lb + rb)
+      lb + rb
     else
-      simplify(merged, lb + rb)
+      simplify(merged, RealOps.addC(lb, rb))
   }
 
-  def scale(nc: NonConstant, v: Decimal): Real = {
+  def scale(nc: NonConstant, v: Constant): Real = {
     val (ax, b) = axb(nc)
-    simplify(ax.mapCoefficients(_ * v), b * v)
+    simplify(ax.mapCoefficients{a => RealOps.mulC(a, v)}, RealOps.mulC(b, v))
   }
 
-  def translate(nc: NonConstant, v: Decimal): Real = {
+  def translate(nc: NonConstant, v: Constant): Real = {
     val (ax, b) = axb(nc)
-    simplify(ax, b + v)
+    simplify(ax, RealOps.addC(b, v))
   }
 
   /*
@@ -43,15 +43,15 @@ private[compute] object LineOps {
       case (x, a) =>
         allRight.map {
           case (y, c) =>
-            (x * y, a * c)
+            (x * y, RealOps.mulC(a, c))
         }
     }
     val (newAx, newB) =
-      terms.foldLeft((Coefficients.Empty, Decimal.Zero)) {
+      terms.foldLeft((Coefficients.Empty, Real.constZero)) {
         case ((nAx, nB), (x: NonConstant, a)) =>
           (nAx.merge(Coefficients(x -> a)), nB)
-        case ((nAx, nB), (Scalar(x), a)) =>
-          (nAx, nB + x * a)
+        case ((nAx, nB), (x: Constant, a)) =>
+          (nAx, RealOps.addC(nB, RealOps.mulC(x, a)))
       }
     Line(newAx, newB)
   }
@@ -68,8 +68,8 @@ private[compute] object LineOps {
   def log(line: Line): Option[Real] =
     line.ax match {
       case Coefficients.One(x, a)
-          if (a >= Decimal.Zero) && (line.b == Decimal.Zero) =>
-        Some(x.log + Math.log(a.toDouble))
+          if (a >= Decimal.Zero) && (line.b.isZero) =>
+        Some(x.log + a.log)
       case _ => None
     }
 
@@ -81,10 +81,10 @@ private[compute] object LineOps {
   a.pow(k) * x.pow(k). Since we can precompute a.pow(k), this just moves
   a multiply around, and there's a chance that a.pow(k) will simplify further.
    */
-  def pow(line: Line, exponent: Decimal): Option[Real] =
+  def pow(line: Line, exponent: Constant): Option[Real] =
     line.ax match {
-      case Coefficients.One(x, a) if line.b == Decimal.Zero =>
-        Some(x.pow(exponent) * RealOps.pow(a, exponent))
+      case Coefficients.One(x, a) if line.b.isZero =>
+        Some(x.pow(exponent) * RealOps.powC(a, exponent))
       case _ => None
     }
 
@@ -96,23 +96,23 @@ private[compute] object LineOps {
   multiplication ops needed, by reducing some of the weights in ax down to 1 or -1.
   We want to pick the k that maximizes how many get reduced that way.
    */
-  def factor(line: Line): (Coefficients, Decimal, Decimal) = {
+  def factor(line: Line): (Coefficients, Constant, Constant) = {
     val coefficientFreqs =
       line.ax.coefficients
-        .groupBy(_.abs)
+        .groupBy{a => RealOps.absC(a)}
         .map { case (a, xs) => (a, xs.size) }
 
     val (k, cnt) = coefficientFreqs.maxBy(_._2)
-    if (cnt > coefficientFreqs.getOrElse(Decimal.One, 0))
-      (line.ax.mapCoefficients(_ / k), line.b / k, k)
+    if (cnt > coefficientFreqs.getOrElse(Real.constOne, 0))
+      (line.ax.mapCoefficients{a => RealOps.divC(a, k)}, RealOps.divC(line.b, k), k)
     else
-      (line.ax, line.b, Decimal.One)
+      (line.ax, line.b, Real.constOne)
   }
 
-  private def simplify(ax: Coefficients, b: Decimal): Real =
+  private def simplify(ax: Coefficients, b: Constant): Real =
     ax match {
-      case Coefficients.Empty => Scalar(b)
-      case Coefficients.One(x, Decimal.One) if b == Decimal.Zero =>
+      case Coefficients.Empty => b
+      case Coefficients.One(x, Real.one) if b.isZero =>
         x
       case _ => Line(ax, b)
     }

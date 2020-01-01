@@ -12,8 +12,8 @@ private[compute] object LogLineOps {
       LogLine(merged)
   }
 
-  def pow(line: LogLine, v: Decimal): LogLine =
-    LogLine(line.ax.mapCoefficients(_ * v))
+  def pow(line: LogLine, v: Constant): LogLine =
+    LogLine(line.ax.mapCoefficients{a => RealOps.mulC(a, v)})
 
   /*
   Return Some(real) if an optimization is possible here,
@@ -41,10 +41,10 @@ private[compute] object LogLineOps {
       common with something in t (or some later thing we will add s+t to), and we can combine the constants
    */
   val DistributeToMaxTerms = 20
-  def distribute(line: LogLine): Option[(Coefficients, Decimal)] = {
+  def distribute(line: LogLine): Option[(Coefficients, Constant)] = {
 
     def nTerms(l: Line): Int =
-      if (l.b == Decimal.Zero)
+      if (l.b.isZero)
         l.ax.size
       else
         l.ax.size + 1
