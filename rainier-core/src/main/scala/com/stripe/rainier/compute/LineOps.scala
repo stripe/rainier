@@ -68,7 +68,7 @@ private[compute] object LineOps {
   def log(line: Line): Option[Real] =
     line.ax match {
       case Coefficients.One(x, a)
-          if (a >= Decimal.Zero) && (line.b.isZero) =>
+          if a.bounds.isPositive && (line.b.isZero) =>
         Some(x.log + a.log)
       case _ => None
     }
