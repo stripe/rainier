@@ -2,8 +2,7 @@ import wartremover.Wart
 
 lazy val root = project.
   in(file(".")).
-  aggregate(rainierCore, rainierPlot).
-  aggregate(rainierBenchmark, rainierTests).
+  aggregate(rainierCore).
   aggregate(shadedAsm).
   settings(commonSettings).
   settings(unpublished)
@@ -36,7 +35,7 @@ def getPublishTo(snapshot: Boolean) = {
 
 lazy val commonSettings = Seq(
   organization:= "com.stripe",
-  scalaVersion := "2.12.8",
+  scalaVersion := "2.12.10",
   crossScalaVersions := List(scalaVersion.value, "2.11.12"),
   releaseCrossBuild := true,
   releasePublishArtifactsAction := PgpKeys.publishSigned.value,
@@ -84,53 +83,6 @@ lazy val rainierCore = project.
       "com.google.flogger" % "flogger-system-backend" % V.flogger,
       "com.stripe" % "rainier-shaded-asm_6.0" % V.shadedAsm)
   )
-
-lazy val rainierPlot = project.
-  in(file("rainier-plot")).
-  settings(name := "rainier-plot").
-  dependsOn(rainierCore).
-  settings(commonSettings).
-  settings(
-    resolvers ++=
-      Seq(
-        Resolver.bintrayRepo("cibotech", "public"),
-        "jitpack" at "https://jitpack.io"),
-    libraryDependencies ++=
-      Seq(
-        "com.cibo" %% "evilplot" % V.evilplot,
-        "sh.almond" %% "interpreter-api" % V.almond)
-  )
-
-// test modules
-
-lazy val rainierBenchmark = project.
-  in(file("rainier-benchmark")).
-  settings(name := "rainier-benchmark").
-  enablePlugins(JmhPlugin).
-  settings(
-    scalacOptions ~= (_.filterNot(Set(
-      "-Ywarn-value-discard")))).
-  dependsOn(rainierCore).
-  settings(commonSettings).
-  settings(unpublished)
-
-lazy val rainierTests = project.
-  in(file("rainier-tests")).
-  settings(name := "rainier-tests").
-  dependsOn(
-    rainierCore
-  ).
-  settings(commonSettings).
-  settings(libraryDependencies ++= Seq(
-    "org.scalatest" %% "scalatest" % V.scalatest)).
-  settings(unpublished)
-
-lazy val rainierTrace = project.
-  in(file("rainier-trace")).
-  settings(name := "rainier-trace").
-  dependsOn(rainierCore).
-  settings(commonSettings).
-  settings(unpublished)
 
 // shaded asm dep trickery
 
