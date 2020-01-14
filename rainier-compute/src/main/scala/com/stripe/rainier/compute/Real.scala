@@ -63,22 +63,15 @@ object Real {
     summed.log + max
   }
 
-  def doubles(values: Seq[Double]): Column =
-    new Column(values.toList.map { x =>
-      Decimal(x)
-    })
-
-  def longs(values: Seq[Long]): Column =
-    new Column(values.toList.map { x =>
-      Decimal(x)
-    })
-
   def parameter(): Parameter = new Parameter(Real.zero)
   def parameter(fn: Parameter => Real): Parameter = {
     val x = parameter()
     x.density = fn(x)
     x
   }
+
+  def doubles(seq: Seq[Double]): Real = Column(seq.toArray)
+  def longs(seq: Seq[Long]): Real = doubles(seq.map(_.toDouble))
 
   def eq(left: Real, right: Real, ifTrue: Real, ifFalse: Real): Real =
     lookupCompare(left, right, ifFalse, ifTrue, ifFalse)
@@ -98,28 +91,86 @@ object Real {
                             lt: Real) =
     Lookup(RealOps.compare(left, right), List(lt, eq, gt), -1)
 
-  val zero: Real = Scalar(Decimal.Zero)
-  val one: Real = Scalar(Decimal.One)
-  val two: Real = Scalar(Decimal.Two)
-  val Pi: Real = Scalar(Decimal.Pi)
-  val infinity: Real = Scalar(Infinity)
-  val negInfinity: Real = Scalar(NegInfinity)
-
-  private[rainier] def inlinable(real: Real): Boolean = RealOps.inlinable(real)
+  val zero: Real = Constant.Zero
+  val one: Real = Constant.One
+  val two: Real = Constant.Two
+  val negOne: Real = Constant.NegOne
+  val Pi: Real = Constant.Pi
+  val infinity: Real = Constant.Infinity
+  val negInfinity: Real = Constant.NegInfinity
 }
 
-final private[rainier] case class Scalar(value: Decimal) extends Real {
-  val bounds = Bounds(value)
+sealed trait Constant extends Real {
+  def isZero: Boolean =
+    bounds.lower == 0.0 && bounds.upper == 0.0
+  def isOne: Boolean =
+    bounds.lower == 1.0 && bounds.upper == 1.0
+  def isTwo: Boolean =
+    bounds.lower == 2.0 && bounds.upper == 2.0
+  def isPosInfinity: Boolean =
+    bounds.lower.isPosInfinity && bounds.upper.isPosInfinity
+  def isNegInfinity: Boolean =
+    bounds.lower.isNegInfinity && bounds.upper.isNegInfinity
+  def isPositive: Boolean =
+    bounds.lower >= 0.0
+
+  def getDouble: Double
+  def map(fn: Double => Double): Constant
+  def mapWith(other: Constant)(fn: (Double, Double) => Double): Constant
+  def +(other: Constant): Constant = ConstantOps.add(this, other)
+  def *(other: Constant): Constant = ConstantOps.multiply(this, other)
+  def /(other: Constant): Constant = ConstantOps.divide(this, other)
+}
+
+object Constant {
+  val Zero: Constant = Scalar(0.0)
+  val One: Constant = Scalar(1.0)
+  val Two: Constant = Scalar(2.0)
+  val NegOne: Constant = Scalar(-1.0)
+  val NegTwo: Constant = Scalar(-2.0)
+  val Pi: Constant = Scalar(math.Pi)
+  val Infinity: Constant = Scalar(Double.PositiveInfinity)
+  val NegInfinity: Constant = Scalar(Double.NegativeInfinity)
+}
+
+final private case class Scalar(value: Double) extends Constant {
+  val bounds = Bounds(value, value)
+  def getDouble = value
+  def map(fn: Double => Double) = Scalar(fn(value))
+  def mapWith(other: Constant)(fn: (Double, Double) => Double) =
+    other match {
+      case Scalar(v) => Scalar(fn(value, v))
+      case c: Column =>
+        c.map { v =>
+          fn(value, v)
+        }
+    }
+}
+
+final private[rainier] case class Column(values: Array[Double])
+    extends Constant {
+  val param = new ir.Parameter
+  val bounds = Bounds(values.min, values.max)
+  def getDouble = sys.error("Not a scalar")
+  def map(fn: Double => Double) = Column(values.map(fn))
+  def mapWith(other: Constant)(fn: (Double, Double) => Double) =
+    other match {
+      case Scalar(v) =>
+        map { u =>
+          fn(u, v)
+        }
+      case Column(vs) =>
+        Column(values.zip(vs).map { case (u, v) => fn(u, v) })
+    }
+
+  def maybeScalar: Option[Double] =
+    if (bounds.lower == bounds.upper)
+      Some(bounds.lower)
+    else
+      None
 }
 
 sealed trait NonConstant extends Real
-
-final private[rainier] class Column(val values: List[Decimal])
-    extends NonConstant {
-  lazy val param = new ir.Parameter
-  lazy val bounds =
-    Bounds(values.map(_.toDouble).min, values.map(_.toDouble).max)
-}
 
 final private[rainier] class Parameter(var density: Real) extends NonConstant {
   val param = new ir.Parameter
@@ -151,16 +202,16 @@ Because it is common for ax to have a large number of terms, this is deliberatel
 as equality comparisons would be too expensive. The impact of this is subtle, see [0] at the bottom of this file
 for an example.
  */
-private final class Line private (val ax: Coefficients, val b: Decimal)
+private final class Line private (val ax: Coefficients, val b: Constant)
     extends NonConstant {
-  val bounds = Bounds.sum(Bounds(b) :: ax.toList.map {
+  val bounds = Bounds.sum(b.bounds :: ax.toList.map {
     case (x, a) =>
-      Bounds.multiply(x.bounds, Bounds(a))
+      Bounds.multiply(x.bounds, a.bounds)
   })
 }
 
 private[compute] object Line {
-  def apply(ax: Coefficients, b: Decimal): Line = {
+  def apply(ax: Coefficients, b: Constant): Line = {
     require(!ax.isEmpty)
     new Line(ax, b)
   }
@@ -182,7 +233,7 @@ private final case class LogLine(
   require(!ax.isEmpty)
   val bounds = {
     val b =
-      ax.toList.map { case (x, a) => Bounds.pow(x.bounds, Bounds(a)) }
+      ax.toList.map { case (x, a) => Bounds.pow(x.bounds, a.bounds) }
     b.tail.foldLeft(b.head) { case (l, r) => Bounds.multiply(l, r) } //I was failing to use reduce for some reason so did this
   }
 }
@@ -191,7 +242,7 @@ private object LogLine {
   def apply(nc: NonConstant): LogLine =
     nc match {
       case l: LogLine => l
-      case _          => LogLine(Coefficients(nc -> Decimal.One))
+      case _          => LogLine(Coefficients(nc))
     }
 }
 
@@ -212,7 +263,7 @@ private final case class Pow private (base: Real, exponent: NonConstant)
 /*
 Evaluates to the (index-low)'th element of table.
  */
-private final class Lookup(val index: NonConstant,
+private final class Lookup(val index: Real,
                            val table: Array[Real],
                            val low: Int)
     extends NonConstant {
@@ -226,13 +277,21 @@ object Lookup {
   def apply(index: Real, table: Seq[Real], low: Int = 0): Real =
     index match {
       case Scalar(v) =>
-        if (v.isWhole)
-          table(v.toInt - low)
-        else
-          throw new ArithmeticException("Cannot lookup a non-integral number")
-      case nc: NonConstant =>
-        new Lookup(nc, table.toArray, low)
+        lookup(v, table, low)
+      case c: Column =>
+        c.maybeScalar match {
+          case Some(v) => lookup(v, table, low)
+          case None    => new Lookup(index, table.toArray, low)
+        }
+      case _ =>
+        new Lookup(index, table.toArray, low)
     }
+
+  private def lookup(index: Double, table: Seq[Real], low: Int): Real =
+    if (index.isWhole)
+      table(index.toInt - low)
+    else
+      throw new ArithmeticException("Cannot lookup a non-integral number")
 }
 
 /*

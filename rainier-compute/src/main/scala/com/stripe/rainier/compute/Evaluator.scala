@@ -3,7 +3,7 @@ package com.stripe.rainier.compute
 class Evaluator(var cache: Map[Real, Double]) extends Numeric[Real] {
 
   def toDouble(x: Real): Double = x match {
-    case Scalar(v) => v.toDouble
+    case c: Constant => c.getDouble
     case _ =>
       cache.get(x) match {
         case Some(v) => v
@@ -16,7 +16,7 @@ class Evaluator(var cache: Map[Real, Double]) extends Numeric[Real] {
   }
 
   private def eval(real: Real): Double = real match {
-    case Scalar(value) => value.toDouble
+    case c: Constant => c.getDouble
     case l: Line =>
       l.ax.toList.map { case (r, d) => toDouble(r) * d.toDouble }.sum + l.b.toDouble
     case l: LogLine =>
@@ -34,7 +34,6 @@ class Evaluator(var cache: Map[Real, Double]) extends Numeric[Real] {
     case l: Lookup =>
       toDouble(l.table(toDouble(l.index).toInt - l.low))
     case p: Parameter => sys.error(s"No value provided for $p")
-    case _: Column    => sys.error("Evaluator should never see a column")
   }
 
   def compare(x: Real, y: Real): Int = toDouble(x).compare(toDouble(y))

@@ -1,8 +1,6 @@
 package com.stripe.rainier.compute
 
-import Log._
-
-class Target(val real: Real, tryInline: Boolean) {
+class Target(val real: Real) {
   def nRows: Int =
     if (columns.isEmpty)
       0
@@ -18,21 +16,16 @@ class Target(val real: Real, tryInline: Boolean) {
   def maybeInlined: Option[Real] =
     if (nRows == 0)
       Some(real)
-    else if (tryInline && Real.inlinable(real)) {
-      FINE.log("Inlining %d rows of data", nRows)
-      Some(PartialEvaluator.inline(real, nRows))
-    } else {
-      FINE.log("Did not inline %d rows of data", nRows)
+    else
       None
-    }
 
-  def batched: (List[Column], List[Real]) =
+  private[compute] def batched: (List[Column], List[Real]) =
     (columns, List(real))
 }
 
 object Target {
-  def apply(real: Real, tryInline: Boolean = true): Target = {
-    new Target(real, tryInline)
+  def apply(real: Real): Target = {
+    new Target(real)
   }
 
   val empty: Target = apply(Real.zero)
