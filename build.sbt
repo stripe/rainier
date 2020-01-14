@@ -2,7 +2,7 @@ import wartremover.Wart
 
 lazy val root = project.
   in(file(".")).
-  aggregate(rainierCore, rainierPlot).
+  aggregate(rainierCompute, rainierCore, rainierPlot).
   aggregate(rainierBenchmark, rainierTests).
   aggregate(shadedAsm).
   settings(commonSettings).
@@ -36,7 +36,7 @@ def getPublishTo(snapshot: Boolean) = {
 
 lazy val commonSettings = Seq(
   organization:= "com.stripe",
-  scalaVersion := "2.12.8",
+  scalaVersion := "2.12.10",
   crossScalaVersions := List(scalaVersion.value, "2.11.12"),
   releaseCrossBuild := true,
   releasePublishArtifactsAction := PgpKeys.publishSigned.value,
@@ -74,9 +74,10 @@ lazy val V = new {
 
 // primary modules
 
-lazy val rainierCore = project.
-  in(file("rainier-core")).
-  settings(name := "rainier-core").
+
+lazy val rainierCompute = project.
+  in(file("rainier-compute")).
+  settings(name := "rainier-compute").
   settings(commonSettings).
   settings(
     libraryDependencies ++= Seq(
@@ -84,6 +85,12 @@ lazy val rainierCore = project.
       "com.google.flogger" % "flogger-system-backend" % V.flogger,
       "com.stripe" % "rainier-shaded-asm_6.0" % V.shadedAsm)
   )
+
+lazy val rainierCore = project.
+  in(file("rainier-core")).
+  settings(name := "rainier-core").
+  dependsOn(rainierCompute).
+  settings(commonSettings)
 
 lazy val rainierPlot = project.
   in(file("rainier-plot")).
