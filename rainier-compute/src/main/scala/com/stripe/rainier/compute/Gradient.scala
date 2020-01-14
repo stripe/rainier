@@ -21,8 +21,7 @@ private object Gradient {
         visited += real
         real match {
           case _: Parameter => ()
-          case _: Scalar    => ()
-          case _: Column    => ()
+          case _: Constant  => ()
 
           case p: Pow =>
             diff(p.base).register(PowDiff(p, diff(p), false))
@@ -87,9 +86,9 @@ private object Gradient {
     }
   }
 
-  private final case class ProductDiff(other: Decimal, gradient: Diff)
+  private final case class ProductDiff(other: Constant, gradient: Diff)
       extends Diff {
-    def toReal: Real = gradient.toReal * Scalar(other)
+    def toReal: Real = gradient.toReal * other
   }
 
   private final case class UnaryDiff(child: Unary, gradient: Diff)
@@ -130,7 +129,7 @@ private object Gradient {
 
   private final case class LogLineDiff(gradient: Diff,
                                        term: NonConstant,
-                                       exponent: Decimal,
+                                       exponent: Constant,
                                        complement: Coefficients)
       extends Diff {
     def toReal: Real = {
@@ -141,7 +140,7 @@ private object Gradient {
           LogLine(complement)
       gradient.toReal *
         exponent *
-        term.pow(exponent - Decimal.One) *
+        term.pow(exponent - Real.one) *
         otherTerms
     }
   }

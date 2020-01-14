@@ -12,7 +12,7 @@ private[compute] object LogLineOps {
       LogLine(merged)
   }
 
-  def pow(line: LogLine, v: Decimal): LogLine =
+  def pow(line: LogLine, v: Constant): LogLine =
     LogLine(line.ax.mapCoefficients(_ * v))
 
   /*
@@ -41,10 +41,10 @@ private[compute] object LogLineOps {
       common with something in t (or some later thing we will add s+t to), and we can combine the constants
    */
   val DistributeToMaxTerms = 20
-  def distribute(line: LogLine): Option[(Coefficients, Decimal)] = {
+  def distribute(line: LogLine): Option[(Coefficients, Constant)] = {
 
     def nTerms(l: Line): Int =
-      if (l.b == Decimal.Zero)
+      if (l.b.isZero)
         l.ax.size
       else
         l.ax.size + 1
@@ -53,19 +53,19 @@ private[compute] object LogLineOps {
       (n * (n + 1)) / 2
     }
 
-    val initial = (List.empty[(NonConstant, Decimal)], Option.empty[Line])
+    val initial = (List.empty[(NonConstant, Constant)], Option.empty[Line])
     val (factors, terms) = line.ax.toList.foldLeft(initial) {
-      case ((f, None), (l: Line, Decimal.One))
-          if (nTerms(l) < DistributeToMaxTerms) =>
+      case ((f, None), (l: Line, c))
+          if c.isOne && (nTerms(l) < DistributeToMaxTerms) =>
         (f, Some(l))
-      case ((f, Some(t)), (l: Line, Decimal.One))
-          if ((nTerms(t) * nTerms(l)) < DistributeToMaxTerms) =>
+      case ((f, Some(t)), (l: Line, c))
+          if c.isOne && ((nTerms(t) * nTerms(l)) < DistributeToMaxTerms) =>
         (f, Some(LineOps.multiply(t, l)))
-      case ((f, None), (l: Line, Decimal.Two))
-          if (nTerms2(l) < DistributeToMaxTerms) =>
+      case ((f, None), (l: Line, c))
+          if c.isTwo && (nTerms2(l) < DistributeToMaxTerms) =>
         (f, Some(LineOps.multiply(l, l)))
-      case ((f, Some(t)), (l: Line, Decimal.Two))
-          if (nTerms(t) * nTerms2(l) < DistributeToMaxTerms) =>
+      case ((f, Some(t)), (l: Line, c))
+          if c.isTwo && (nTerms(t) * nTerms2(l) < DistributeToMaxTerms) =>
         (f, Some(LineOps.multiply(t, LineOps.multiply(l, l))))
       case ((f, opt), xa) =>
         (xa :: f, opt)
@@ -77,10 +77,10 @@ private[compute] object LogLineOps {
       else {
         val ll = LogLine(Coefficients(factors))
         val (newAx, newB) =
-          l.ax.toList.foldLeft((Coefficients(ll -> l.b), Decimal.Zero)) {
+          l.ax.toList.foldLeft((Coefficients(ll -> l.b), Constant.Zero)) {
             case ((nAx, nB), (x, a)) =>
               multiply(ll, LogLine(x)) match {
-                case Scalar(v) => (nAx, nB + v * a)
+                case c: Constant => (nAx, nB + c * a)
                 case nc: NonConstant =>
                   (nAx.merge(Coefficients(nc -> a)), nB)
               }
@@ -88,28 +88,6 @@ private[compute] object LogLineOps {
         (newAx, newB)
       }
     }
-  }
-
-  /*
-  Factor a scalar constant exponent k out of ax and return it along with
-  (a/k)x. We don't want to do this while we're building up the
-  computation because we want terms to aggregate and cancel out as much as possible.
-  But at the last minute before compilation, this can reduce the total number of
-  pow ops needed, or simplify them to optimizable special cases like 2.
-
-  Our current approach for picking k is to find the GCD of the exponents
-  if they are all integers; otherwise, give up and just pick 1. (We don't
-  want a fractional k since non-integer exponents are presumed to be expensive.)
-   */
-  def factor(line: LogLine): (LogLine, Int) = {
-    val exponents = line.ax.coefficients.toList
-    val k =
-      if (exponents.forall(_.isValidInt))
-        exponents.map(_.toInt).reduce(gcd)
-      else
-        1
-
-    (pow(line, Decimal.One / Decimal(k)), k)
   }
 
   @tailrec
