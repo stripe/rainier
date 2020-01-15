@@ -7,7 +7,6 @@ Input layout:
    - data[i].size inputs
 
 Output layout:
-- numOutputs data-less outputs
 - for 0 <= i < data.size:
    - numOutputs outputs
  */
@@ -33,6 +32,12 @@ case class DataFunction(cf: CompiledFunction,
   def apply(inputs: Array[Double],
             globals: Array[Double],
             outputs: Array[Double]): Unit = {
+    var k = 0
+    while (k < outputs.size) {
+      outputs(k) = 0.0
+      k += 1
+    }
+
     var i = 0
     while (i < data.size) {
       compute(inputs, globals, outputs, i)
@@ -58,7 +63,10 @@ case class DataFunction(cf: CompiledFunction,
         }
         var o = 0
         while (o < numOutputs) {
-          outputs(o) += cf.output(inputs, globals, outputStartIndex + o)
+          outputs(o) += CompiledFunction.output(cf,
+                                                inputs,
+                                                globals,
+                                                outputStartIndex + o)
           o += 1
         }
         k += 1
@@ -66,7 +74,10 @@ case class DataFunction(cf: CompiledFunction,
     } else {
       var o = 0
       while (o < numOutputs) {
-        outputs(o) = cf.output(inputs, globals, outputStartIndex + o)
+        outputs(o) += CompiledFunction.output(cf,
+                                              inputs,
+                                              globals,
+                                              outputStartIndex + o)
         o += 1
       }
     }

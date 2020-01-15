@@ -12,10 +12,14 @@ private[ir] case class OutputClassGenerator(name: String,
 
   def superClasses = Array("com/stripe/rainier/ir/CompiledFunction")
   def methods: Seq[MethodNode] =
-    List(
-      OutputMethodGenerator(classSizeLimit, outputIDs).methodNode,
-      createConstantMethod("numInputs", numInputs),
-      createConstantMethod("numGlobals", numGlobals),
-      createConstantMethod("numOutputs", numOutputs)
-    )
+    0.to(9).map { i =>
+      val ids =
+        outputIDs.zipWithIndex.filter { case (_, j) => j % 10 == i }.map(_._1)
+      OutputMethodGenerator(i, classSizeLimit, ids).methodNode
+    } ++
+      List(
+        createConstantMethod("numInputs", numInputs),
+        createConstantMethod("numGlobals", numGlobals),
+        createConstantMethod("numOutputs", numOutputs)
+      )
 }

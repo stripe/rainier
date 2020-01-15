@@ -7,7 +7,26 @@ class Target(val real: Real, val gradient: List[Real]) {
     }.toList
 }
 
-case class TargetGroup(targets: List[Target], parameters: List[Parameter])
+class TargetGroup(targets: List[Target], val parameters: List[Parameter]) {
+  val data =
+    targets.map { target =>
+      target.columns.map { v =>
+        v.values.map(_.toDouble).toArray
+      }.toArray
+    }.toArray
+
+  val columns = targets.flatMap(_.columns)
+  val inputs = parameters.map(_.param) ++ columns.map(_.param)
+  val outputs = targets.zipWithIndex.flatMap {
+    case (t, i) =>
+      val name = s"target_$i"
+      (name -> t.real) ::
+        t.gradient.zipWithIndex.map {
+        case (g, j) =>
+          s"target_${i}_grad_$j" -> g
+      }
+  }
+}
 
 object TargetGroup {
   def apply(reals: List[Real]): TargetGroup = {
@@ -23,7 +42,7 @@ object TargetGroup {
       new Target(r, grads)
     }
 
-    TargetGroup(targets, parameters)
+    new TargetGroup(targets, parameters)
   }
 
   def findParameters(real: Real): Set[Parameter] =

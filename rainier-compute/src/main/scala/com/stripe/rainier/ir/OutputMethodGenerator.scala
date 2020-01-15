@@ -1,16 +1,21 @@
 package com.stripe.rainier.ir
 
-final private case class OutputMethodGenerator(classSizeLimit: Int,
+final private case class OutputMethodGenerator(methodNum: Int,
+                                               classSizeLimit: Int,
                                                outputIDs: Seq[(String, Int)])
     extends MethodGenerator {
   val isStatic: Boolean = false
-  val methodName: String = "output"
+  val methodName: String = s"output$methodNum"
   val methodDesc: String = "([D[DI)D"
 
-  loadOutputIndex()
-  tableSwitch(outputIDs, 0) {
-    case Some((c, i)) => callExprMethod(c, i)
-    case None         => throwNPE() //easiest exception to generate
+  if (outputIDs.isEmpty)
+    constant(0.0)
+  else {
+    loadOutputIndex()
+    tableSwitch(outputIDs, 0) {
+      case Some((c, i)) => callExprMethod(c, i)
+      case None         => throwNPE() //easiest exception to generate
+    }
   }
   returnDouble()
 }
