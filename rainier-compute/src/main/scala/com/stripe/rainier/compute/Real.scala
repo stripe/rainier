@@ -70,7 +70,7 @@ object Real {
     x
   }
 
-  def doubles(seq: Seq[Double]): Real = Column(seq.toArray)
+  def doubles(seq: Seq[Double]): Real = new Column(seq.toArray)
   def longs(seq: Seq[Long]): Real = doubles(seq.map(_.toDouble))
 
   def eq(left: Real, right: Real, ifTrue: Real, ifFalse: Real): Real =
@@ -147,20 +147,20 @@ final private case class Scalar(value: Double) extends Constant {
     }
 }
 
-final private[rainier] case class Column(values: Array[Double])
+final private[rainier] class Column(val values: Array[Double])
     extends Constant {
   val param = new ir.Parameter
   val bounds = Bounds(values.min, values.max)
   def getDouble = sys.error("Not a scalar")
-  def map(fn: Double => Double) = Column(values.map(fn))
+  def map(fn: Double => Double) = new Column(values.map(fn))
   def mapWith(other: Constant)(fn: (Double, Double) => Double) =
     other match {
       case Scalar(v) =>
         map { u =>
           fn(u, v)
         }
-      case Column(vs) =>
-        Column(values.zip(vs).map { case (u, v) => fn(u, v) })
+      case c: Column =>
+        new Column(values.zip(c.values).map { case (u, v) => fn(u, v) })
     }
 
   def maybeScalar: Option[Double] =

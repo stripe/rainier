@@ -12,38 +12,26 @@ final case class Compiler(methodSizeLimit: Int, classSizeLimit: Int) {
     }
   }
 
-  def compileTargets(targets: TargetGroup,
-                     gradient: Boolean): ir.DataFunction = {
-    val data = targets.batched.map { target =>
+  def compileTargets(group: TargetGroup): ir.DataFunction = {
+    val data = group.targets.map { target =>
       target.columns.map { v =>
         v.values.map(_.toDouble).toArray
       }.toArray
     }.toArray
 
-    val gradVars = if (gradient) targets.parameters else Nil
-    val (columns, batchOutputs) =
-      targets.batched.zipWithIndex
-        .foldLeft((List.empty[Column], List.empty[(String, Real)])) {
-          case ((ins, outs), (target, i)) =>
-            val (newIns, newOuts) = target.batched
-            val newOutsWithGradient =
-              newOuts.zipWithIndex.flatMap {
-                case (o, j) =>
-                  Compiler.withGradient(s"target${i}_bit${j}", o, gradVars)
-              }
-            (ins ++ newIns, outs ++ newOutsWithGradient)
+    val columns = group.targets.flatMap(_.columns)
+    val inputs = group.parameters.map(_.param) ++ columns.map(_.param)
+    val allOutputs = group.targets.zipWithIndex.flatMap {
+      case (t, i) =>
+        val name = s"target_$i"
+        (name -> t.real) ::
+          t.gradient.zipWithIndex.map {
+          case (g, j) =>
+            s"target_${i}_grad_$j" -> g
         }
-
-    val inputs = targets.parameters.map(_.param) ++ columns.map(_.param)
-    val cf = compile(
-      inputs,
-      Compiler.withGradient("base", targets.base, gradVars) ++ batchOutputs)
-    val numOutputs =
-      if (gradient)
-        targets.parameters.size + 1
-      else
-        1
-    ir.DataFunction(cf, targets.parameters.size, numOutputs, data)
+    }
+    val cf = compile(inputs, allOutputs)
+    ir.DataFunction(cf, group.parameters.size, group.parameters.size + 1, data)
   }
 
   def compile(inputs: Seq[ir.Parameter],

@@ -110,13 +110,25 @@ private[compute] object RealOps {
         seen += r
         r match {
           case Scalar(_) => ()
-          case v: Column => leaves = Right(v) :: leaves
+          case v: Column =>
+            leaves = Right(v) :: leaves
           case v: Parameter =>
             leaves = Left(v) :: leaves
             loop(v.density)
-          case u: Unary   => loop(u.original)
-          case l: Line    => l.ax.terms.foreach(loop)
-          case l: LogLine => l.ax.terms.foreach(loop)
+          case u: Unary => loop(u.original)
+          case l: Line =>
+            l.ax.toList.foreach {
+              case (x, a) =>
+                loop(x)
+                loop(a)
+            }
+            loop(l.b)
+          case l: LogLine =>
+            l.ax.toList.foreach {
+              case (x, a) =>
+                loop(x)
+                loop(a)
+            }
           case Compare(left, right) =>
             loop(left)
             loop(right)
