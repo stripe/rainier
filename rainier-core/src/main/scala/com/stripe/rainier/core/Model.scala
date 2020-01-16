@@ -66,15 +66,18 @@ object Model {
   def observe[X, Y](xs: Seq[X],
                     ys: Seq[Y],
                     fn: Fn[X, Distribution[Y]]): Model = {
-    val (initX, splitsX) = split(xs, NumSplits)
-    val (initY, splitsY) = split(ys, NumSplits)
+    if (ys.size > NumSplits) {
+      val (initX, splitsX) = split(xs, NumSplits)
+      val (initY, splitsY) = split(ys, NumSplits)
 
-    Model(
-      List(fn.encode(initX).likelihoodFn.encode(initY),
-           Real.sum(splitsX.zip(splitsY).map {
-             case (sx, sy) =>
-               fn.encode(sx).likelihoodFn.encode(sy)
-           })))
+      Model(
+        List(fn.encode(initX).likelihoodFn.encode(initY),
+             Real.sum(splitsX.zip(splitsY).map {
+               case (sx, sy) =>
+                 fn.encode(sx).likelihoodFn.encode(sy)
+             })))
+    } else
+      Model(List(fn.encode(xs).likelihoodFn.encode(ys)))
   }
 
   def observe[X, Y](xs: Seq[X], ys: Seq[Y])(fn: X => Distribution[Y]): Model = {

@@ -1,31 +1,48 @@
 package com.stripe.rainier.compute
 
-class Target(val real: Real, val gradient: List[Real]) {
-  val columns: List[Column] =
-    (real :: gradient).toSet.flatMap { r =>
-      TargetGroup.findColumns(r)
-    }.toList
+import com.stripe.rainier.ir.GraphViz
+
+case class Target(name: String, real: Real, gradient: List[Real]) {
+  val columns: List[Column] = TargetGroup.findColumns(real).toList
+  val gradientColumns: List[Column] = gradient.toSet.flatMap { r: Real =>
+    TargetGroup.findColumns(r) -- columns
+  }.toList
+}
+
+object Target {
+  def derive(name: String, real: Real, parameters: List[Parameter]): Target = {
+    if (parameters.isEmpty)
+      Target(name, real, Nil)
+    else
+      Target(name, real, Gradient.derive(parameters, real))
+  }
 }
 
 class TargetGroup(targets: List[Target], val parameters: List[Parameter]) {
+
+  val columns = targets.flatMap { t =>
+    t.columns ++ t.gradientColumns
+  }
+  val inputs = parameters.map(_.param) ++ columns.map(_.param)
+
   val data =
     targets.map { target =>
-      target.columns.map { v =>
-        v.values.map(_.toDouble).toArray
+      (target.columns ++ target.gradientColumns).map { v =>
+        v.values
       }.toArray
     }.toArray
 
-  val columns = targets.flatMap(_.columns)
-  val inputs = parameters.map(_.param) ++ columns.map(_.param)
-  val outputs = targets.zipWithIndex.flatMap {
-    case (t, i) =>
-      val name = s"target_$i"
-      (name -> t.real) ::
-        t.gradient.zipWithIndex.map {
-        case (g, j) =>
-          s"target_${i}_grad_$j" -> g
-      }
+  val outputs = targets.flatMap { t =>
+    (t.name -> t.real) ::
+      t.gradient.zipWithIndex.map {
+      case (g, i) =>
+        s"${t.name}_grad_$i" -> g
+    }
   }
+
+  def graphViz: GraphViz = RealViz(outputs)
+  def graphViz(filter: String => Boolean): GraphViz =
+    RealViz(outputs.filter { case (n, _) => filter(n) })
 }
 
 object TargetGroup {
@@ -36,13 +53,12 @@ object TargetGroup {
         .toList
         .sortBy(_.param.sym.id)
 
-    val priors = Real.sum(parameters.map(_.density))
-    val targets = (priors :: reals).map { r =>
-      val grads = Gradient.derive(parameters, r)
-      new Target(r, grads)
+    val priors =
+      Target.derive("prior", Real.sum(parameters.map(_.density)), parameters)
+    val others = reals.zipWithIndex.map {
+      case (r, i) => Target.derive(s"t_$i", r, parameters)
     }
-
-    new TargetGroup(targets, parameters)
+    new TargetGroup(priors :: others, parameters)
   }
 
   def findParameters(real: Real): Set[Parameter] =
