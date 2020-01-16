@@ -281,17 +281,30 @@ object Lookup {
       case c: Column =>
         c.maybeScalar match {
           case Some(v) => lookup(v, table, low)
-          case None    => new Lookup(index, table.toArray, low)
+          case None    =>
+            new Lookup(index, table.toArray, low)
+            //TODO: heuristic for when to use this dense representation instead
+            /*
+              Real.sum(table.zipWithIndex.map {
+                case (x, i) =>
+                  val idx = (i + low).toDouble
+                  val a = c.map { v =>
+                    if (v == idx) 1.0 else 0.0
+                  }
+                  a * x
+              })
+             */
         }
-      case _ =>
-        new Lookup(index, table.toArray, low)
+      case nc: NonConstant =>
+        new Lookup(nc, table.toArray, low)
     }
 
-  private def lookup(index: Double, table: Seq[Real], low: Int): Real =
-    if (index.isWhole)
-      table(index.toInt - low)
+  private def lookup(v: Double, table: Seq[Real], low: Int) =
+    if (v.isWhole)
+      table(v.toInt - low)
     else
       throw new ArithmeticException("Cannot lookup a non-integral number")
+
 }
 
 /*
