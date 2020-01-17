@@ -23,24 +23,27 @@ class PartialEvaluator(var noChange: Set[Real], rowIndex: Int) {
 
   private def eval(real: Real): (Real, Boolean) = real match {
     case Scalar(_) => (real, false)
+    case c: Column =>
+      (c.values(rowIndex), true)
     case l: Line =>
-      val terms = l.ax.toList.map { case (r, d) => (apply(r), d) }
+      val terms = l.ax.toList.map { case (x, a) => (apply(x), apply(a)) }
+      val (b, bModified) = apply(l.b)
       val anyModified =
-        terms.exists { case ((_, modified), _) => modified }
+        terms.exists { case ((_, m1), (_, m2)) => m1 || m2 } || bModified
       if (anyModified) {
-        val sum = Real.sum(terms.map { case ((r, _), d) => r * d })
-        (sum + l.b, true)
+        val sum = Real.sum(terms.map { case ((x, _), (a, _)) => x * a })
+        (sum + b, true)
       } else {
         (real, false)
       }
     case l: LogLine =>
-      val terms = l.ax.toList.map { case (r, d) => (apply(r), d) }
+      val terms = l.ax.toList.map { case (x, a) => (apply(x), apply(a)) }
       val anyModified =
-        terms.exists { case ((_, modified), _) => modified }
+        terms.exists { case ((_, m1), (_, m2)) => m1 || m2 }
       if (anyModified) {
         val product =
           terms
-            .map { case ((r, _), d) => r.pow(d) }
+            .map { case ((x, _), (a, _)) => x.pow(a) }
             .reduce { _ * _ }
         (product, true)
       } else {
@@ -77,8 +80,6 @@ class PartialEvaluator(var noChange: Set[Real], rowIndex: Int) {
         (l, false)
     case p: Parameter =>
       (p, false)
-    case c: Column =>
-      (c.values(rowIndex), true)
   }
 }
 

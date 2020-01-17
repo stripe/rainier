@@ -2,17 +2,34 @@ package com.stripe.rainier.compute
 
 import com.stripe.rainier.ir.GraphViz
 
-case class Target(name: String, real: Real, columns: List[Column], gradient: List[Real], gradientColumns: List[Column])
+case class Target(name: String,
+                  real: Real,
+                  columns: List[Column],
+                  gradient: List[Real],
+                  gradientColumns: List[Column])
 
 object Target {
   def apply(name: String, real: Real, parameters: List[Parameter]): Target = {
     val columns = TargetGroup.findColumns(real).toList
-    val gradient = if (parameters.isEmpty) Nil else Gradient.derive(parameters, real)
+    val nRows =
+      if (columns.isEmpty)
+        0
+      else
+        columns.head.values.size
+
+    val (real2, columns2) =
+      if (nRows > 0 && TargetGroup.inlinable(real))
+        (PartialEvaluator.inline(real, nRows), Nil)
+      else
+        (real, columns)
+
+    val gradient =
+      if (parameters.isEmpty) Nil else Gradient.derive(parameters, real2)
     val gradientColumns = gradient.toSet.flatMap { r: Real =>
-      TargetGroup.findColumns(r) -- columns
+      TargetGroup.findColumns(r) -- columns2
     }.toList
 
-    Target(name, real, columns, gradient, gradientColumns)
+    Target(name, real2, columns2, gradient, gradientColumns)
   }
 }
 
@@ -108,7 +125,6 @@ object TargetGroup {
     leaves.toSet
   }
 
-
   //see whether we can reduce this from a function on a matrix of
   //placeholder data (O(N) to compute, where N is the rows in the matrix)
   //to an O(1) function just on the parameters; this should be possible if the function can be expressed
@@ -149,10 +165,10 @@ object TargetGroup {
           case u: Unary =>
             loopMerge(List(u.original)).nonlinearOp
           case l: Line =>
-            loopMerge(l.ax.toList.flatMap{case (x,a) => List(x,a)})
+            loopMerge(l.ax.toList.flatMap { case (x, a) => List(x, a) })
           case l: LogLine =>
-            val termStates = l.ax.toList.map{
-              case (x,a) => loopMerge(List(x,a)).nonlinearOp
+            val termStates = l.ax.toList.map {
+              case (x, a) => loopMerge(List(x, a)).nonlinearOp
             }
             val state = termStates.reduce(_ || _)
             if (state.nonlinearCombination || !state.combination)
