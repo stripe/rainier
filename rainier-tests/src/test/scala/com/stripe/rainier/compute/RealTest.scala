@@ -175,7 +175,7 @@ class RealTest extends FunSuite {
       (x * x)) * x) +
       (x * x * x))
   }
-/*
+  /*
   run("x^(10(2/10 + 1/10))") { x =>
     x.pow((Real.one / 10 + Real.two / 10) * 10)
   }
@@ -183,7 +183,7 @@ class RealTest extends FunSuite {
   run("x^((4/3 + 1)*3)") { x =>
     x.pow((Real(4) / 3 + 1) * 3)
   }
-*/
+   */
   run("lookup",
       defined = x => x.abs <= 2 && (x.abs * 2).isValidInt,
       derivable = _ => false,
