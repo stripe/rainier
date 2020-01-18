@@ -165,7 +165,7 @@ object TargetGroup {
           case u: Unary =>
             loopMerge(List(u.original)).nonlinearOp
           case l: Line =>
-            loopMerge(l.ax.toList.flatMap { case (x, a) => List(x, a) })
+            loopMerge(l.b :: l.ax.toList.flatMap { case (x, a) => List(x, a) })
           case l: LogLine =>
             val termStates = l.ax.toList.map {
               case (x, a) => loopMerge(List(x, a)).nonlinearOp
