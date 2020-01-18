@@ -281,10 +281,10 @@ object Lookup {
       case c: Column =>
         c.maybeScalar match {
           case Some(v) => lookup(v, table, low)
-          case None    =>
+          case None =>
             new Lookup(index, table.toArray, low)
-            //TODO: heuristic for when to use this dense representation instead
-            /*
+          //TODO: heuristic for when to use this dense representation instead
+          /*
               Real.sum(table.zipWithIndex.map {
                 case (x, i) =>
                   val idx = (i + low).toDouble
@@ -293,7 +293,7 @@ object Lookup {
                   }
                   a * x
               })
-             */
+         */
         }
       case nc: NonConstant =>
         new Lookup(nc, table.toArray, low)
