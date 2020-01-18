@@ -4,7 +4,7 @@ import com.stripe.rainier.compute._
 import com.stripe.rainier.sampler._
 import com.stripe.rainier.optimizer._
 
-case class Model(private[rainier] val targets: List[Target]) {
+case class Model(private[rainier] val targets: List[Real]) {
   def merge(other: Model) = Model(targets ++ other.targets)
 
   def sample(sampler: Sampler,
@@ -23,7 +23,7 @@ case class Model(private[rainier] val targets: List[Target]) {
 
   lazy val targetGroup = TargetGroup(targets)
   lazy val dataFn =
-    Compiler.default.compileTargets(targetGroup, true)
+    Compiler.default.compileTargets(targetGroup)
 
   def parameters: List[Parameter] = targetGroup.parameters
 
@@ -45,7 +45,7 @@ case class Model(private[rainier] val targets: List[Target]) {
 object Model {
   val empty = Model(Real.zero)
 
-  def apply(real: Real): Model = Model(List(Target(real)))
+  def apply(real: Real): Model = Model(List(real))
 
   def observe[Y](y: Y, dist: Distribution[Y]): Model =
     Model(dist.likelihoodFn(y))
@@ -56,13 +56,9 @@ object Model {
     if (ys.size > NumSplits) {
       val (init, splits) = split(ys, NumSplits)
       val initReal = f.encode(init)
-      Model(
-        List(Target(initReal),
-             Target(
-               Real.sum(splits.map { s =>
-                 f.encode(s)
-               })
-             )))
+      Model(List(initReal, Real.sum(splits.map { s =>
+        f.encode(s)
+      })))
     } else
       Model(f.encode(ys))
   }
@@ -70,15 +66,18 @@ object Model {
   def observe[X, Y](xs: Seq[X],
                     ys: Seq[Y],
                     fn: Fn[X, Distribution[Y]]): Model = {
-    val (initX, splitsX) = split(xs, NumSplits)
-    val (initY, splitsY) = split(ys, NumSplits)
+    if (ys.size > NumSplits) {
+      val (initX, splitsX) = split(xs, NumSplits)
+      val (initY, splitsY) = split(ys, NumSplits)
 
-    Model(
-      List(Target(fn.encode(initX).likelihoodFn.encode(initY)),
-           Target(Real.sum(splitsX.zip(splitsY).map {
-             case (sx, sy) =>
-               fn.encode(sx).likelihoodFn.encode(sy)
-           }))))
+      Model(
+        List(fn.encode(initX).likelihoodFn.encode(initY),
+             Real.sum(splitsX.zip(splitsY).map {
+               case (sx, sy) =>
+                 fn.encode(sx).likelihoodFn.encode(sy)
+             })))
+    } else
+      Model(List(fn.encode(xs).likelihoodFn.encode(ys)))
   }
 
   def observe[X, Y](xs: Seq[X], ys: Seq[Y])(fn: X => Distribution[Y]): Model = {

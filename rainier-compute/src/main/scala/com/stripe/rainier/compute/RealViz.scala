@@ -8,56 +8,36 @@ private class RealViz {
 
   private var ids = Map.empty[NonConstant, String]
 
-  def output(name: String,
-             r: Real,
-             gradVars: List[Parameter],
-             columns: List[Column]): Unit = {
-    output(name, r, columns)
-    if (!gradVars.isEmpty) {
-      Gradient.derive(gradVars, r).zipWithIndex.foreach {
-        case (g, i) =>
-          output(name + s"_grad$i", g, Nil)
-      }
-    }
+  def output(name: String, r: Real): Unit = {
+    val id = real(r)
+    val oid = gv.node(label(name), shape("house"))
+    gv.edge(oid, id)
+    gv.rank("sink", List(oid))
   }
 
-  def output(name: String, r: Real, columns: List[Column]): Unit = {
-    if (!columns.isEmpty)
-      registerColumns(columns)
-    val id = idOrLabel(r) match {
+  private def formatVector(v: Array[Double]): String =
+    "[" + v.take(5).mkString(",") + "]"
+
+  private def idOrLabel(r: Real): Either[String, String] =
+    r match {
+      case nc: NonConstant => Left(nonConstant(nc))
+      case c: Constant     => Right(formatConstant(c))
+    }
+
+  private def formatConstant(c: Constant): String =
+    c match {
+      case Scalar(v)  => formatDouble(v)
+      case cl: Column => formatVector(cl.values)
+    }
+
+  private def real(r: Real): String =
+    idOrLabel(r) match {
       case Left(id) => id
       case Right(l) =>
         gv.node(
           label(l),
           shape("square")
         )
-    }
-    val oid = gv.node(label(name), shape("house"))
-    gv.edge(oid, id)
-    gv.rank("sink", List(oid))
-  }
-
-  private def registerColumns(cols: List[Column]): Unit =
-    gv.cluster(label("X"), justify("l")) {
-      val colData = cols.map { p =>
-        p.values.take(5).map { d =>
-          formatDouble(d.toDouble)
-        }
-      }
-      val colIDs = colData.map { d =>
-        val (id, _) = gv.record(true, d)
-        id
-      }
-      cols.zip(colIDs).foreach {
-        case (v, cid) =>
-          ids += (v -> cid)
-      }
-    }
-
-  private def idOrLabel(r: Real): Either[String, String] =
-    r match {
-      case nc: NonConstant => Left(nonConstant(nc))
-      case Scalar(c)       => Right(formatDouble(c.toDouble))
     }
 
   private def nonConstant(nc: NonConstant): String =
@@ -82,7 +62,7 @@ private class RealViz {
             coefficients("∏^", ax, None)
           case l: Line =>
             val b =
-              if (l.b == Decimal.Zero)
+              if (l.b.isZero)
                 None
               else
                 Some(l.b)
@@ -91,7 +71,7 @@ private class RealViz {
             val tableEs = l.table.toList.map(idOrLabel)
             val labels = tableEs.map(_.right.getOrElse(""))
             val (id, slotIDs) = gv.record("⋲" :: labels)
-            val indexID = nonConstant(l.index)
+            val indexID = real(l.index)
             gv.edge(slotIDs.head, indexID)
             slotIDs.tail.zip(tableEs).foreach {
               case (s, Left(id)) => gv.edge(s, id)
@@ -100,8 +80,6 @@ private class RealViz {
             id
           case _: Parameter =>
             gv.node(label("θ"), shape("doublecircle"))
-          case _: Column =>
-            sys.error("columns should be registered")
         }
         ids += (nc -> id)
         id
@@ -109,11 +87,9 @@ private class RealViz {
 
   private def coefficients(name: String,
                            ax: Coefficients,
-                           b: Option[Decimal]): String = {
+                           b: Option[Constant]): String = {
     val (xs, as) = ax.toList.unzip
-    val vals = (as ++ b.toList).map { a =>
-      formatDouble(a.toDouble)
-    }
+    val vals = (as ++ b.toList).map(formatConstant)
     val (recordID, weightIDs) = gv.record(name :: vals)
     weightIDs.tail.take(xs.size).zip(xs).foreach {
       case (wid, x) =>
@@ -126,16 +102,13 @@ private class RealViz {
 
 object RealViz {
   def apply(reals: (String, Real)*): GraphViz =
-    apply(reals.toList, Nil)
+    apply(reals.toList)
 
-  def apply(reals: List[(String, Real)],
-            gradVars: List[Parameter]): GraphViz = {
+  def apply(reals: List[(String, Real)]): GraphViz = {
     val v = new RealViz
     reals.foreach {
       case (name, real) =>
-        val cols =
-          RealOps.columns(real)
-        v.output(name, real, gradVars, cols.toList)
+        v.output(name, real)
     }
     v.gv
   }

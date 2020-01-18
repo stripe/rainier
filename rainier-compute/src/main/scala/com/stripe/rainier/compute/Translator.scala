@@ -12,8 +12,7 @@ private class Translator {
     case None =>
       val expr = r match {
         case v: Parameter        => v.param
-        case c: Column           => c.param
-        case Scalar(value)       => Const(value.toDouble)
+        case c: Constant         => constToExpr(c)
         case Unary(original, op) => unaryExpr(toExpr(original), op)
         case l: Line             => lineExpr(l)
         case l: LogLine          => logLineExpr(l)
@@ -25,6 +24,15 @@ private class Translator {
       }
       reals += r -> expr
       expr
+  }
+
+  private def constToExpr(c: Constant) = c match {
+    case Scalar(value) => Const(value)
+    case c: Column =>
+      c.maybeScalar match {
+        case Some(value) => Const(value)
+        case None        => c.param
+      }
   }
 
   private def unaryExpr(original: Expr, op: UnaryOp): Expr =
@@ -53,17 +61,15 @@ private class Translator {
   }
 
   private def lineExpr(line: Line): Expr = {
-    val (ax, b, k) = LineOps.factor(line)
-    factoredSumLine(ax, b, k.toDouble)
+    makeLine(line.ax, line.b, multiplyRing)
   }
 
   private def logLineExpr(line: LogLine): Expr = {
-    val (y, k) = LogLineOps.factor(line)
-    factoredLine(y.ax, Decimal.One, k.toDouble, powRing)
+    makeLine(line.ax, Constant.One, powRing)
   }
 
   /**
-  factoredLine(), along with combineTerms() and combineTree(),
+  makeLine(), along with combineTerms() and combineTree(),
   is responsible for producing IR for both Line and LogLine.
   It is expressed, and most easily understood, in terms of the Line case,
   where it is computing ax + b. The LogLine case uses the same logic, but
@@ -75,105 +81,46 @@ private class Translator {
   divide by zero, but this code will not introduce any divisions by zero that
   were not already there to begin with.)
 
-  In general, the strategy is to split the summation into a set of positively-weighted
-  terms and negatively-weighted terms, sum the positive terms to get x, sum the
-  absolute value of the negative terms to get y, and return x-y.
-
   Each of the sub-summations proceeds by recursively producing a balanced binary tree
   where every interior node is the sum of its two children; this keeps the tree-depth
   of the AST small.
 
   Since the summation is a dot product, most of the terms will be of the form a*x.
   If a=1, we can just take x. If a=2, it can be a minor optimization to take x+x.
-
-  The result may also be multiplied by a constant scaling factor (generally
-  factored out of the original summation).
   **/
-  private def factoredSumLine(ax: Coefficients,
-                              b: Decimal,
-                              factor: Double): Expr = {
-    val terms = ax.toList.map { case (x, a) => (x, a.toDouble) }
+  private def makeLine(ax: Coefficients, b: Constant, ring: Ring): Expr = {
+    val terms = ax.toList.map { case (x, a) => (x, constToExpr(a)) }
     val allTerms =
-      if (b == Decimal.Zero)
+      if (b.isZero)
         terms
       else
-        (Scalar(b), 1.0) :: terms
-    val expr = combineSumTerms(allTerms)
-    factor match {
-      case 1.0 => expr
-      case -1.0 =>
-        binaryExpr(Const(0.0), expr, SubtractOp)
-      case 2.0 =>
-        binaryExpr(expr, ref(expr), AddOp)
-      case k =>
-        binaryExpr(expr, Const(k), MultiplyOp)
-    }
+        (b, Const(1.0)) :: terms
+    combineTerms(allTerms, ring)
   }
 
-  private def factoredLine(ax: Coefficients,
-                           b: Decimal,
-                           factor: Double,
-                           ring: Ring): Expr = {
-    val terms = ax.toList.map { case (x, a) => (x, a.toDouble) }
-    val posTerms = terms.filter(_._2 > 0.0)
-    val negTerms =
-      terms.filter(_._2 < 0.0).map { case (x, a) => x -> a.abs }
-
-    val allPosTerms =
-      if (b == ring.zero)
-        posTerms
-      else
-        (Scalar(b), 1.0) :: posTerms
-
-    val (expr, sign) =
-      (allPosTerms.isEmpty, negTerms.isEmpty) match {
-        case (true, true)  => (Const(0.0), 1.0)
-        case (true, false) => (combineTerms(negTerms, ring), -1.0)
-        case (false, true) => (combineTerms(allPosTerms, ring), 1.0)
-        case (false, false) =>
-          val posSum = combineTerms(allPosTerms, ring)
-          val negSum = combineTerms(negTerms, ring)
-          (binaryExpr(posSum, negSum, ring.minus), 1.0)
-      }
-
-    (factor * sign) match {
-      case 1.0 => expr
-      case -1.0 =>
-        binaryExpr(Const(ring.zero.toDouble), expr, ring.minus)
-      case 2.0 =>
-        binaryExpr(expr, ref(expr), ring.plus)
-      case k =>
-        binaryExpr(expr, Const(k), ring.times)
-    }
-  }
-
-  private def makeLazyExprs(terms: Seq[(Real, Double)],
+  private def makeLazyExprs(terms: Seq[(Real, Expr)],
                             ring: Ring): Seq[() => Expr] = {
     terms.map {
-      case (x, 1.0) =>
+      case (x, Const(1.0)) =>
         () =>
           toExpr(x)
-      case (x, 2.0) =>
+      case (x, Const(2.0)) =>
         () =>
           binaryExpr(toExpr(x), toExpr(x), ring.plus)
-      case (l: LogLine, a) => //this can only happen for a Line's terms
-        () =>
-          factoredLine(l.ax, Decimal(a), 1.0, powRing)
       case (x, a) =>
         () =>
-          binaryExpr(toExpr(x), Const(a), ring.times)
+          binaryExpr(toExpr(x), a, ring.times)
     }
   }
 
-  private def combineTerms(terms: Seq[(Real, Double)], ring: Ring): Expr = {
+  private def combineTerms(terms: Seq[(Real, Expr)], ring: Ring): Expr = {
     val lazyExprs = makeLazyExprs(terms, ring)
-    combineTree(lazyExprs, ring)
-  }
-
-  private def combineSumTerms(terms: Seq[(Real, Double)]): Expr = {
-    val lazyExprs = makeLazyExprs(terms, multiplyRing)
-    lazyExprs.tail.foldLeft(lazyExprs.head()) {
-      case (accum, t) => binaryExpr(accum, t(), AddOp)
+    if (ring.useTree)
+      combineTree(lazyExprs, ring)
+    else { //TODO: remember why we don't use the tree for summation
+      lazyExprs.tail.foldLeft(lazyExprs.head()) {
+        case (accum, t) => binaryExpr(accum, t(), ring.plus)
+      }
     }
   }
 
@@ -202,10 +149,11 @@ private class Translator {
   private final class Ring(val times: BinaryOp,
                            val plus: BinaryOp,
                            val minus: BinaryOp,
-                           val zero: Decimal)
+                           val zero: Double,
+                           val useTree: Boolean)
   private val multiplyRing =
-    new Ring(MultiplyOp, AddOp, SubtractOp, Decimal.Zero)
-  private val powRing = new Ring(PowOp, MultiplyOp, DivideOp, Decimal.One)
+    new Ring(MultiplyOp, AddOp, SubtractOp, 0.0, false)
+  private val powRing = new Ring(PowOp, MultiplyOp, DivideOp, 1.0, true)
 
   /*
   This performs hash-consing aka the flyweight pattern to ensure that we don't

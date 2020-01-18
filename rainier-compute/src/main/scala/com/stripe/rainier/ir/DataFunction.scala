@@ -7,7 +7,6 @@ Input layout:
    - data[i].size inputs
 
 Output layout:
-- numOutputs data-less outputs
 - for 0 <= i < data.size:
    - numOutputs outputs
  */
@@ -25,7 +24,7 @@ case class DataFunction(cf: CompiledFunction,
   require(inputStartIndices(data.size) == cf.numInputs)
 
   private val outputStartIndices =
-    data.scanLeft(numOutputs) {
+    data.scanLeft(0) {
       case (x, _) => x + numOutputs
     }
   require(outputStartIndices(data.size) == cf.numOutputs)
@@ -33,47 +32,54 @@ case class DataFunction(cf: CompiledFunction,
   def apply(inputs: Array[Double],
             globals: Array[Double],
             outputs: Array[Double]): Unit = {
-    computeWithoutData(inputs, globals, outputs)
+    var k = 0
+    while (k < outputs.size) {
+      outputs(k) = 0.0
+      k += 1
+    }
+
     var i = 0
     while (i < data.size) {
-      computeWithData(inputs, globals, outputs, i)
+      compute(inputs, globals, outputs, i)
       i += 1
     }
   }
 
-  private def computeWithoutData(inputs: Array[Double],
-                                 globals: Array[Double],
-                                 outputs: Array[Double]): Unit = {
-
-    var o = 0
-    while (o < numOutputs) {
-      outputs(o) = cf.output(inputs, globals, o)
-      o += 1
-    }
-  }
-
-  private def computeWithData(inputs: Array[Double],
-                              globals: Array[Double],
-                              outputs: Array[Double],
-                              i: Int): Unit = {
-
-    val d = data(i)
+  private def compute(inputs: Array[Double],
+                      globals: Array[Double],
+                      outputs: Array[Double],
+                      i: Int): Unit = {
     val inputStartIndex = inputStartIndices(i)
     val outputStartIndex = outputStartIndices(i)
-    var k = 0
-    val n = data(i)(0).size
-    while (k < n) {
-      var j = 0
-      while (j < d.size) {
-        inputs(inputStartIndex + j) = d(j)(k)
-        j += 1
+    val d = data(i)
+    if (d.size > 0) {
+      var k = 0
+      val n = d(0).size
+      while (k < n) {
+        var j = 0
+        while (j < d.size) {
+          inputs(inputStartIndex + j) = d(j)(k)
+          j += 1
+        }
+        var o = 0
+        while (o < numOutputs) {
+          outputs(o) += CompiledFunction.output(cf,
+                                                inputs,
+                                                globals,
+                                                outputStartIndex + o)
+          o += 1
+        }
+        k += 1
       }
+    } else {
       var o = 0
       while (o < numOutputs) {
-        outputs(o) += cf.output(inputs, globals, outputStartIndex + o)
+        outputs(o) += CompiledFunction.output(cf,
+                                              inputs,
+                                              globals,
+                                              outputStartIndex + o)
         o += 1
       }
-      k += 1
     }
   }
 }
