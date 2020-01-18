@@ -1,5 +1,6 @@
 package com.stripe.rainier.core
 
+import com.stripe.rainier.ir.CompiledFunction
 import com.stripe.rainier.compute._
 import com.stripe.rainier.sampler.RNG
 
@@ -77,7 +78,7 @@ sealed trait Generator[+T] { self =>
           val globalBuf = new Array[Double](cf.numGlobals)
           val reqValues = new Array[Double](cf.numOutputs)
           0.until(cf.numOutputs).foreach { i =>
-            reqValues(i) = cf.output(array, globalBuf, i)
+            reqValues(i) = CompiledFunction.output(cf, array, globalBuf, i)
           }
           implicit val evaluator: Evaluator =
             new Evaluator(
