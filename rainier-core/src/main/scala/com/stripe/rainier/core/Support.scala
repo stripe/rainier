@@ -8,9 +8,9 @@ import com.stripe.rainier.compute._
   * and its log-jacobian.
   */
 private[rainier] sealed trait Support {
-  def transform(v: Parameter): Real
+  def transform(v: Real): Real
 
-  def logJacobian(v: Parameter): Real
+  def logJacobian(v: Real): Real
 
   /**
     * Unions two supports together.
@@ -54,9 +54,9 @@ private[rainier] object Support {
   * A support representing the whole real line.
   */
 private[rainier] object UnboundedSupport extends Support {
-  def transform(v: Parameter): Real = v
+  def transform(v: Real): Real = v
 
-  def logJacobian(v: Parameter): Real = Real.zero
+  def logJacobian(v: Real): Real = Real.zero
 }
 
 /**
@@ -64,10 +64,10 @@ private[rainier] object UnboundedSupport extends Support {
   */
 private[rainier] case class BoundedSupport(min: Real, max: Real)
     extends Support {
-  def transform(v: Parameter): Real =
+  def transform(v: Real): Real =
     v.logistic * (max - min) + min
 
-  def logJacobian(v: Parameter): Real =
+  def logJacobian(v: Real): Real =
     v.logistic.log + (1 - v.logistic).log + (max - min).log
 }
 
@@ -77,10 +77,10 @@ private[rainier] case class BoundedSupport(min: Real, max: Real)
   */
 private[rainier] case class BoundedBelowSupport(min: Real = Real.zero)
     extends Support {
-  def transform(v: Parameter): Real =
+  def transform(v: Real): Real =
     v.exp + min
 
-  def logJacobian(v: Parameter): Real = v
+  def logJacobian(v: Real): Real = v
 }
 
 /**
@@ -89,8 +89,8 @@ private[rainier] case class BoundedBelowSupport(min: Real = Real.zero)
   */
 private[rainier] case class BoundedAboveSupport(max: Real = Real.zero)
     extends Support {
-  def transform(v: Parameter): Real =
+  def transform(v: Real): Real =
     max - (-1 * v).exp
 
-  def logJacobian(v: Parameter): Real = v * -1
+  def logJacobian(v: Real): Real = v * -1
 }

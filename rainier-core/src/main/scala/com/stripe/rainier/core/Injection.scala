@@ -35,7 +35,7 @@ private[rainier] trait Injection { self =>
         fastForwards(dist.generator.get(r, n))(n)
       }
 
-    def param: Real = forwards(dist.param)
+    def paramVector(k: Int): Vec[Real] = dist.paramVector(k).map(forwards)
   }
 }
 

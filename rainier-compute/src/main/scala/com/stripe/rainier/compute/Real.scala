@@ -70,8 +70,22 @@ object Real {
     x
   }
 
-  def doubles(seq: Seq[Double]): Real = new Column(seq.toArray)
-  def longs(seq: Seq[Long]): Real = doubles(seq.map(_.toDouble))
+  def paramVector(k: Int)(fn: Real => Real): Vec[Real] = {
+    val xs = List.fill(k) { parameter() }
+    val prior = fn(Lookup(longs(0L.until(k.toLong)), xs))
+    xs.foreach { x =>
+      x.density = prior
+    }
+    Vec(xs)
+  }
+
+  private[rainier] def doubles(seq: Seq[Double]): Real =
+    if (seq.size == 1)
+      Scalar(seq.head)
+    else
+      new Column(seq.toArray)
+  private[rainier] def longs(seq: Seq[Long]): Real =
+    doubles(seq.map(_.toDouble))
 
   def eq(left: Real, right: Real, ifTrue: Real, ifFalse: Real): Real =
     lookupCompare(left, right, ifFalse, ifTrue, ifFalse)

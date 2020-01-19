@@ -68,12 +68,21 @@ object TargetGroup {
         .toList
         .sortBy(_.param.sym.id)
 
-    val priors =
-      Target("prior", Real.sum(parameters.map(_.density)), parameters)
+    val priors = parameters.zipWithIndex.map {
+      case (p, i) =>
+        Target(s"p_$i", p.density, parameters)
+    }
     val others = reals.zipWithIndex.map {
       case (r, i) => Target(s"t_$i", r, parameters)
     }
-    new TargetGroup(priors :: others, parameters)
+    val all = priors ++ others
+    val (noData, hasData) = all.partition(_.columns.isEmpty)
+    val targets =
+      if (noData.isEmpty)
+        all
+      else
+        Target("base", Real.sum(noData.map(_.real)), parameters) :: hasData
+    new TargetGroup(targets, parameters)
   }
 
   def findParameters(real: Real): Set[Parameter] =
