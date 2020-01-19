@@ -68,9 +68,9 @@ object TargetGroup {
         .toList
         .sortBy(_.param.sym.id)
 
-    val priors = parameters.zipWithIndex.map {
+    val priors = parameters.map(_.density).toSet.toList.zipWithIndex.map {
       case (p, i) =>
-        Target(s"p_$i", p.density, parameters)
+        Target(s"p_$i", p, parameters)
     }
     val others = reals.zipWithIndex.map {
       case (r, i) => Target(s"t_$i", r, parameters)

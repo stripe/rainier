@@ -30,18 +30,18 @@ class GLMMPoisson2 extends ModelBenchmark {
     val betas = Normal(0, 10).paramVector(3)
     val eps = Normal(0, sdYear).paramVector(nYears.toInt)
 
-    val yearBetas = year.take(nYears.toInt).zip(eps).map {
-      case (y, ep) =>
+    val yearBetas = Vec(year.take(nYears.toInt).zipWithIndex.map {
+      case (y, i) =>
         y * betas(0) +
           y * y * betas(1) +
           y * y * y * betas(2) +
-          ep
-    }
+          eps(i)
+    })
 
     observe(yearBetas, alphas)
   }
 
-  def observe(yearBetas: List[Real], alphas: List[Real]): Model = {
+  def observe(yearBetas: Vec[Real], alphas: Vec[Real]): Model = {
     if (observeUsing == "direct")
       Model.observe(yearSite, C) {
         case (year, site) =>
@@ -53,7 +53,7 @@ class GLMMPoisson2 extends ModelBenchmark {
         C,
         Fn.int.zip(Fn.int).map {
           case (year, site) =>
-            val logLambda = Lookup(year, yearBetas) + Lookup(site, alphas)
+            val logLambda = yearBetas(year) + alphas(site)
             Poisson(logLambda.exp)
         }
       )
