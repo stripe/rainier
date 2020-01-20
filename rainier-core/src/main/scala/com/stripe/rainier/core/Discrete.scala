@@ -39,6 +39,10 @@ final case class DiscreteConstant(constant: Real) extends Discrete {
   * @param p The probability of success
   */
 final case class Bernoulli(p: Real) extends Discrete {
+  Bounds.check(p, "0 <= p <= 1") { v =>
+    v >= 0.0 && v <= 1.0
+  }
+
   val generator: Generator[Long] =
     Generator.require(Set(p)) { (r, n) =>
       val u = r.standardUniform
@@ -56,6 +60,10 @@ final case class Bernoulli(p: Real) extends Discrete {
   * @param p The probability of success
   */
 final case class Geometric(p: Real) extends Discrete {
+  Bounds.check(p, "0 <= p <= 1") { v =>
+    v >= 0.0 && v <= 1.0
+  }
+
   val generator: Generator[Long] =
     Generator.require(Set(p)) { (r, n) =>
       val u = r.standardUniform
@@ -74,6 +82,11 @@ final case class Geometric(p: Real) extends Discrete {
   * @param p Probability of success
   */
 final case class NegativeBinomial(p: Real, n: Real) extends Discrete {
+  Bounds.check(p, "0 <= p <= 1") { v =>
+    v >= 0.0 && v <= 1.0
+  }
+  Bounds.check(n, "n >= 0")(_ >= 0.0)
+
   val generator: Generator[Long] = {
     val nbGenerator = Generator.require(Set(n, p)) { (r, m) =>
       (1L to m.toLong(n))
@@ -110,6 +123,8 @@ final case class NegativeBinomial(p: Real, n: Real) extends Discrete {
   * @param lambda The mean of the Poisson distribution
   */
 final case class Poisson(lambda: Real) extends Discrete {
+  Bounds.check(lambda, "λ >= 0")(_ >= 0.0)
+
   val Step = 500
   val eStep = math.exp(Step.toDouble)
 
@@ -150,6 +165,11 @@ final case class Poisson(lambda: Real) extends Discrete {
   * @param k The number of trials
   */
 final case class Binomial(p: Real, k: Real) extends Discrete {
+  Bounds.check(p, "0 <= p <= 1") { v =>
+    v >= 0.0 && v <= 1.0
+  }
+  Bounds.check(k, "k >= 0")(_ >= 0.0)
+
   val multi: Multinomial[Boolean] =
     Multinomial(Map(true -> p, false -> (1 - p)), k)
 
@@ -214,6 +234,12 @@ object BetaBinomial {
   */
 final case class DiscreteMixture(components: Map[Discrete, Real])
     extends Discrete {
+  components.values.foreach { r =>
+    Bounds.check(r, "0 <= p <= 1") { p =>
+      p >= 0.0 && p <= 1.0
+    }
+  }
+
   val generator: Generator[Long] =
     Categorical(components).generator.flatMap { d =>
       d.generator
