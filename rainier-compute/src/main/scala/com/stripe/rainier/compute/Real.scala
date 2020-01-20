@@ -296,6 +296,17 @@ object Lookup {
         c.maybeScalar match {
           case Some(v) => lookup(v, table, low)
           case None    => new Lookup(index, table.toArray, low)
+          //TODO: heuristic for when to use this dense representation instead
+          /*
+            Real.sum(table.zipWithIndex.map {
+              case (x, i) =>
+                val idx = (i + low).toDouble
+                val a = c.map { v =>
+                  if (v == idx) 1.0 else 0.0
+                }
+                a * x
+            })
+         */
         }
       case _ =>
         new Lookup(index, table.toArray, low)

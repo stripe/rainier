@@ -102,7 +102,6 @@ object TargetGroup {
             leaves = Right(v) :: leaves
           case v: Parameter =>
             leaves = Left(v) :: leaves
-            loop(v.density)
           case u: Unary => loop(u.original)
           case l: Line =>
             l.ax.toList.foreach {
