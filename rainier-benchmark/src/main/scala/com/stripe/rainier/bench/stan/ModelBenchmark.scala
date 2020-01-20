@@ -7,7 +7,7 @@ import com.stripe.rainier.core._
 import com.stripe.rainier.sampler._
 
 @BenchmarkMode(Array(Mode.SampleTime))
-@OutputTimeUnit(TimeUnit.SECONDS)
+@OutputTimeUnit(TimeUnit.MICROSECONDS)
 @Warmup(iterations = 3, time = 1)
 @Measurement(iterations = 5, time = 1)
 @Fork(1)

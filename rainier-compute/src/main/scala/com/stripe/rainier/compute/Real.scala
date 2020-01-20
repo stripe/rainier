@@ -72,9 +72,10 @@ object Real {
 
   def paramVector(k: Int)(fn: Real => Real): Vec[Real] = {
     val xs = List.fill(k) { parameter() }
-    val prior = fn(Lookup(longs(0L.until(k.toLong)), xs))
+    //TODO: tradeoff performance here vs code size
+    //val prior = fn(Lookup(longs(0L.until(k.toLong)), xs))
     xs.foreach { x =>
-      x.density = prior
+      x.density = fn(x) //prior
     }
     Vec(xs)
   }

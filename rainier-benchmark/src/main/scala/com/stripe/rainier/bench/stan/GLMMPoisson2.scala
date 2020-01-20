@@ -12,13 +12,13 @@ import com.stripe.rainier.compute._
 
 class GLMMPoisson2 extends ModelBenchmark {
 
-  @Param(Array("fn", "direct"))
+  @Param(Array("fn"))
   var observeUsing: String = _
 
-  @Param(Array("10", "100"))
+  @Param(Array("100"))
   var nSites: String = _
 
-  @Param(Array("4", "40"))
+  @Param(Array("40"))
   var nYears: String = _
 
   def model = {

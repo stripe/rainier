@@ -50,34 +50,28 @@ object Model {
   def observe[Y](y: Y, dist: Distribution[Y]): Model =
     Model(dist.likelihoodFn(y))
 
-  val NumSplits = 8
+  val NumSplits = 32
   def observe[Y](ys: Seq[Y], dist: Distribution[Y]): Model = {
     val f = dist.likelihoodFn
-    if (ys.size > NumSplits) {
-      val (init, splits) = split(ys, NumSplits)
-      val initReal = f.encode(init)
-      Model(List(initReal, Real.sum(splits.map { s =>
-        f.encode(s)
-      })))
-    } else
-      Model(f.encode(ys))
+    val (init, splits) = split(ys, NumSplits.min(ys.size))
+    val initReal = f.encode(init)
+    Model(List(initReal, Real.sum(splits.map { s =>
+      f.encode(s)
+    })))
   }
 
   def observe[X, Y](xs: Seq[X],
                     ys: Seq[Y],
                     fn: Fn[X, Distribution[Y]]): Model = {
-    if (ys.size > NumSplits) {
-      val (initX, splitsX) = split(xs, NumSplits)
-      val (initY, splitsY) = split(ys, NumSplits)
+    val (initX, splitsX) = split(xs, NumSplits.min(xs.size))
+    val (initY, splitsY) = split(ys, NumSplits.min(ys.size))
 
-      Model(
-        List(fn.encode(initX).likelihoodFn.encode(initY),
-             Real.sum(splitsX.zip(splitsY).map {
-               case (sx, sy) =>
-                 fn.encode(sx).likelihoodFn.encode(sy)
-             })))
-    } else
-      Model(List(fn.encode(xs).likelihoodFn.encode(ys)))
+    Model(
+      List(fn.encode(initX).likelihoodFn.encode(initY),
+           Real.sum(splitsX.zip(splitsY).map {
+             case (sx, sy) =>
+               fn.encode(sx).likelihoodFn.encode(sy)
+           })))
   }
 
   def observe[X, Y](xs: Seq[X], ys: Seq[Y])(fn: X => Distribution[Y]): Model = {
@@ -89,7 +83,7 @@ object Model {
   }
 
   private def split[T](ts: Seq[T], n: Int): (List[T], List[List[T]]) = {
-    val splitSize = (ts.size - 1) / n
+    val splitSize = (ts.size - 2) / n
     val initSize = ts.size - (splitSize * n)
     val init = ts.take(initSize).toList
     val splits = ts.drop(initSize).grouped(splitSize).toList.map(_.toList)

@@ -15,8 +15,8 @@ run                  Exponential               100                           10.
 run                  Exponential               1000                         100.000
 run                  Exponential               10000                       1000.000
 run                  Exponential               100000                     10000.000
-run                  GaussianMixture           100                           40.000
-run                  GaussianMixture           1000                         400.000
+run                  GaussianMixture           100                           30.000
+run                  GaussianMixture           1000                         300.000
 run                  GaussianMixture           10000                       3000.000
 run                  GaussianMixture           100000                     30000.000
 run                  Geometric                 100                            1.000
@@ -28,12 +28,12 @@ run                  GeometricZeroInflated     1000                        1000.
 run                  GeometricZeroInflated     10000                      10000.000
 run                  GeometricZeroInflated     100000                     50000.000
 run                  Laplace                   100                           20.000
-run                  Laplace                   1000                         200.000
+run                  Laplace                   1000                         100.000
 run                  Laplace                   10000                       1000.000
 run                  Laplace                   100000                     20000.000
-run                  LogNormal                 100                            1.000
-run                  LogNormal                 1000                           1.000
-run                  LogNormal                 10000                          1.000
+run                  LogNormal                 100                            0.500
+run                  LogNormal                 1000                           0.500
+run                  LogNormal                 10000                          0.500
 run                  LogNormal                 100000                         1.000
 run                  NegativeBinomial          100                            1.000
 run                  NegativeBinomial          1000                           1.000
