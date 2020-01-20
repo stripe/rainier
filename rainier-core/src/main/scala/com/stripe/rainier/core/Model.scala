@@ -53,7 +53,7 @@ object Model {
   val NumSplits = 32
   def observe[Y](ys: Seq[Y], dist: Distribution[Y]): Model = {
     val f = dist.likelihoodFn
-    val (init, splits) = split(ys, NumSplits.min(ys.size))
+    val (init, splits) = split(ys, NumSplits)
     val initReal = f.encode(init)
     Model(List(initReal, Real.sum(splits.map { s =>
       f.encode(s)
@@ -63,9 +63,9 @@ object Model {
   def observe[X, Y](xs: Seq[X],
                     ys: Seq[Y],
                     fn: Fn[X, Distribution[Y]]): Model = {
-    val (initX, splitsX) = split(xs, NumSplits.min(xs.size))
-    val (initY, splitsY) = split(ys, NumSplits.min(ys.size))
-
+    val (initX, splitsX) = split(xs, NumSplits)
+    val (initY, splitsY) = split(ys, NumSplits)
+    println(initX.size)
     Model(
       List(fn.encode(initX).likelihoodFn.encode(initY),
            Real.sum(splitsX.zip(splitsY).map {
@@ -83,10 +83,17 @@ object Model {
   }
 
   private def split[T](ts: Seq[T], n: Int): (List[T], List[List[T]]) = {
-    val splitSize = (ts.size - 2) / n
-    val initSize = ts.size - (splitSize * n)
-    val init = ts.take(initSize).toList
-    val splits = ts.drop(initSize).grouped(splitSize).toList.map(_.toList)
-    (init, splits)
+    if (ts.size <= 1)
+      (ts.toList, Nil)
+    else if (ts.size <= n + 1)
+      (ts.take(2).toList, List(ts.drop(2).toList))
+    else {
+      val splitSize = ((ts.size - 2) / n).max(0)
+      val initSize = ts.size - (splitSize * n)
+      val init = ts.take(initSize).toList
+      val splits =
+        ts.drop(initSize).grouped(splitSize).toList.map(_.toList)
+      (init, splits)
+    }
   }
 }

@@ -1,6 +1,6 @@
 package com.stripe.rainier.compute
 
-import com.stripe.rainier.ir.GraphViz
+import com.stripe.rainier.ir._
 
 case class Target(name: String,
                   real: Real,
@@ -58,6 +58,17 @@ class TargetGroup(targets: List[Target], val parameters: List[Parameter]) {
   def graphViz: GraphViz = RealViz(outputs)
   def graphViz(filter: String => Boolean): GraphViz =
     RealViz(outputs.filter { case (n, _) => filter(n) })
+
+  def irViz(filter: String => Boolean): GraphViz = {
+    val translator = new Translator
+    val exprs = outputs
+      .map {
+        case (s, r) =>
+          s -> translator.toExpr(r)
+      }
+      .filter { case (n, _) => filter(n) }
+    IRViz(exprs, inputs, None)
+  }
 }
 
 object TargetGroup {
@@ -86,7 +97,7 @@ object TargetGroup {
           terms(r)
         }
         .zipWithIndex
-        .map { case (r, i) => Target(s"t_$i", r, parameters) }
+        .map { case (r, i) => Target(s"L_$i", r, parameters) }
 
     val targets = (priors ++ others)
     /*  val (noData, hasData) = all.partition(_.columns.isEmpty)

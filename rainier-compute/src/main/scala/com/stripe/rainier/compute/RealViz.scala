@@ -78,8 +78,9 @@ private class RealViz {
               case _             => ()
             }
             id
-          case _: Parameter =>
-            gv.node(label("θ"), shape("doublecircle"))
+          case p: Parameter =>
+            val i = p.param.sym.id
+            gv.node(label(s"θ_$i"), shape("doublecircle"))
         }
         ids += (nc -> id)
         id
