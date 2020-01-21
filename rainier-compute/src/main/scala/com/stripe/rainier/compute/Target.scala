@@ -58,6 +58,8 @@ class TargetGroup(targets: List[Target], val parameters: List[Parameter]) {
   def graphViz: GraphViz = RealViz(outputs)
   def graphViz(filter: String => Boolean): GraphViz =
     RealViz(outputs.filter { case (n, _) => filter(n) })
+  def boundsViz(filter: String => Boolean): GraphViz =
+    BoundsViz(outputs.filter { case (n, _) => filter(n) })
 }
 
 object TargetGroup {

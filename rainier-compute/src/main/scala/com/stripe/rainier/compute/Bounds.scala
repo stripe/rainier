@@ -16,12 +16,22 @@ object Bounds {
 
   def multiply(left: Bounds, right: Bounds): Bounds = {
     val options =
-      List(left.lower * right.lower,
-           left.lower * right.upper,
-           left.upper * right.lower,
-           left.upper * right.upper)
+      List(multiply(left.lower, right.lower),
+           multiply(left.lower, right.upper),
+           multiply(left.upper, right.lower),
+           multiply(left.upper, right.upper))
     Bounds(options.min, options.max)
   }
+
+  //we want, eg, 0*inf = inf here, to capture the limit as right->inf,
+  //since the limit as left->0 will be captured by the other bound
+  private def multiply(left: Double, right: Double): Double =
+    if (left.isInfinite && right == 0.0)
+      left
+    else if (left == 0.0 && right.isInfinite)
+      right
+    else
+      left * right
 
   def pow(x: Bounds, y: Bounds): Bounds = {
     if (y.lower >= 0.0)
@@ -76,13 +86,11 @@ object Bounds {
     }
   }
 
-  def reciprocal(x: Bounds): Bounds = {
-    val options = List(
-      1.0 / x.lower,
-      1.0 / x.upper
-    )
-    Bounds(options.min, options.max)
-  }
+  def reciprocal(x: Bounds): Bounds =
+    if (x.lower <= 0.0 && x.upper >= 0.0)
+      Bounds(Double.NegativeInfinity, Double.PositiveInfinity)
+    else
+      Bounds(1.0 / x.upper, 1.0 / x.lower)
 
   def abs(x: Bounds) =
     if (x.lower <= 0.0 && x.upper >= 0.0)

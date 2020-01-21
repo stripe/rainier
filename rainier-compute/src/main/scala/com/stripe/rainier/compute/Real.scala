@@ -231,11 +231,12 @@ private final case class LogLine(
     ax: Coefficients
 ) extends NonConstant {
   require(!ax.isEmpty)
-  val bounds = {
-    val b =
-      ax.toList.map { case (x, a) => Bounds.pow(x.bounds, a.bounds) }
-    b.tail.foldLeft(b.head) { case (l, r) => Bounds.multiply(l, r) } //I was failing to use reduce for some reason so did this
-  }
+  val bounds =
+    ax.toList
+      .map { case (x, a) => Bounds.pow(x.bounds, a.bounds) }
+      .reduce { (l, r) =>
+        Bounds.multiply(l, r)
+      }
 }
 
 private object LogLine {
