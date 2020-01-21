@@ -143,7 +143,7 @@ final case class Poisson(lambda: Real) extends Discrete {
 }
 
 object Poisson {
-  private def small(lambda: Double, r: RNG): Int = {
+  private def small(lambda: Double, r: RNG): Long = {
     val l = math.exp(-lambda)
     if (l >= 1.0) { 0 } else {
       var k = 0
@@ -157,7 +157,7 @@ object Poisson {
   }
 
   //from https://www.johndcook.com/blog/2010/06/14/generating-poisson-random-values/
-  private def large(lambda: Double, r: RNG): Int = {
+  private def large(lambda: Double, r: RNG): Long = {
     val c = 0.767 - 3.36 / lambda
     val beta = math.Pi / math.sqrt(3.0 * lambda)
     val alpha = beta * lambda
