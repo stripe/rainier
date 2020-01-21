@@ -121,6 +121,8 @@ class GraphViz {
 object GraphViz {
   def label(v: String): (String, String) =
     "label" -> v
+  def xlabel(v: String): (String, String) =
+    "xlabel" -> v
   def color(v: String): (String, String) =
     "color" -> v
   def shape(v: String): (String, String) =
