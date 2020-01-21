@@ -30,6 +30,12 @@ private class RealViz {
       case cl: Column => formatVector(cl.values)
     }
 
+  private def bounds(r: Real): (String, String) = {
+    val l = formatDouble(r.bounds.lower)
+    val u = formatDouble(r.bounds.upper)
+    xlabel(s"($l,$u)")
+  }
+
   private def real(r: Real): String =
     idOrLabel(r) match {
       case Left(id) => id
@@ -47,7 +53,7 @@ private class RealViz {
         val id = nc match {
           case Unary(original, op) =>
             val origID = nonConstant(original)
-            val id = gv.node(label(IRViz.opLabel(op)), shape("oval"))
+            val id = gv.node(label(IRViz.opLabel(op)), shape("oval"), bounds(nc))
             gv.edge(id, origID)
             id
           case Pow(base, exponent) =>
