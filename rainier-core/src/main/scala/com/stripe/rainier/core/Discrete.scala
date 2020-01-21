@@ -1,6 +1,7 @@
 package com.stripe.rainier.core
 
 import com.stripe.rainier.compute._
+import com.stripe.rainier.sampler.RNG
 
 trait Discrete extends Distribution[Long] { self: Discrete =>
   val likelihoodFn = Fn.long.map(logDensity)
@@ -130,32 +131,62 @@ final case class Poisson(lambda: Real) extends Discrete {
 
   val generator: Generator[Long] =
     Generator.require(Set(lambda)) { (r, n) =>
-      var lambdaLeft = n.toDouble(lambda)
-      var k = 0
-      var p = 1.0
-
-      def update() = {
-        k = k + 1
-        p *= r.standardUniform
-        while (p < 1.0 && lambdaLeft > 0.0) {
-          if (lambdaLeft > Step) {
-            p *= eStep
-            lambdaLeft -= Step
-          } else {
-            p *= math.exp(lambdaLeft)
-            lambdaLeft = 0
-          }
-        }
-      }
-
-      update()
-      while (p > 1.0) update()
-
-      k - 1L
+      val lambdaDouble = n.toDouble(lambda)
+      if (lambdaDouble < 30.0)
+        Poisson.small(lambdaDouble, r)
+      else
+        Poisson.large(lambdaDouble, r)
     }
 
   def logDensity(v: Real) =
     lambda.log * v - lambda - Combinatorics.factorial(v)
+}
+
+object Poisson {
+  private def small(lambda: Double, r: RNG): Int = {
+    val l = math.exp(-lambda)
+    if (l >= 1.0) { 0 } else {
+      var k = 0
+      var p = 1.0
+      while (p > l) {
+        k += 1
+        p *= r.standardUniform
+      }
+      k - 1
+    }
+  }
+
+  //from https://www.johndcook.com/blog/2010/06/14/generating-poisson-random-values/
+  private def large(lambda: Double, r: RNG): Int = {
+    val c = 0.767 - 3.36 / lambda
+    val beta = math.Pi / math.sqrt(3.0 * lambda)
+    val alpha = beta * lambda
+    val k = math.log(c) - lambda - math.log(beta)
+
+    while (true) {
+      val u = r.standardUniform
+      val x = (alpha - math.log((1.0 - u) / u)) / beta
+      val n = math.floor(x + 0.5).toInt
+      if (n >= 0) {
+        val v = r.standardUniform
+        val y = alpha - beta * x
+        val lhs = y + math.log(v / math.pow(1.0 + math.exp(y), 2))
+        val rhs = k + n * math.log(lambda) - logFactorial(n)
+        if (lhs <= rhs)
+          return n
+      }
+    }
+
+    0
+  }
+
+  //from https://www.johndcook.com/blog/2010/08/16/how-to-compute-log-factorial/
+  //we're using the roughest approximation here because we're only using this for
+  //large lambda, which leads to generally large n, where the approximation works
+  private def logFactorial(n: Int): Double = {
+    val x = (n + 1).toDouble
+    ((x - 0.5) * math.log(x)) - x + (0.5 * math.log(2 * math.Pi))
+  }
 }
 
 /**
@@ -175,17 +206,17 @@ final case class Binomial(p: Real, k: Real) extends Discrete {
 
   def generator: Generator[Long] = {
     val kGenerator = Generator.real(k)
-    val poissonGenerator =
+    lazy val poissonGenerator =
       Poisson(p * k).generator
         .zip(kGenerator)
         .map { case (x, kd) => x.min(kd.toLong) }
-    val normalGenerator =
+    lazy val normalGenerator =
       Normal(k * p, (k * p * (1 - p)).pow(0.5)).generator
         .zip(kGenerator)
         .map {
           case (x, kd) => x.toLong.max(0).min(kd.toLong)
         }
-    val binomialGenerator = multi.generator.map { m =>
+    lazy val binomialGenerator = multi.generator.map { m =>
       m.getOrElse(true, 0L)
     }
 
