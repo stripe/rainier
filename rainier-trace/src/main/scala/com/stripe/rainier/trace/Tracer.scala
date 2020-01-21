@@ -2,18 +2,17 @@ package com.stripe.rainier.trace
 
 import com.stripe.rainier.ir._
 import com.stripe.rainier.compute._
+import com.stripe.rainier.core._
 
 case class Tracer(compiler: Compiler, gradient: Boolean) {
-  def apply(real: Real): Unit = {
-    val target = Target(real)
-    val params = target.parameters.toList
-    val variables = params.map(_.param) ++ target.columns.map(_.param)
+  def apply(model: Model): Unit = apply(model.targetGroup)
+  def apply(targetGroup: TargetGroup): Unit = {
     val outputs =
       if (gradient)
-        Compiler.withGradient("density", real, params)
+        targetGroup.outputs
       else
-        List(("density", real))
-    Tracer.dump(compiler.compile(variables, outputs))
+        targetGroup.outputs.filterNot(_._1.contains("grad"))
+    Tracer.dump(compiler.compile(targetGroup.inputs, outputs))
   }
 }
 
