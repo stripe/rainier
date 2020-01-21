@@ -1,5 +1,7 @@
 package com.stripe.rainier.compute
 
+import Log._
+
 case class Bounds(lower: Double, upper: Double) {
   def isPositive = lower >= 0.0
   def betweenZeroAndOne = isPositive && (upper <= 1.0)
@@ -92,4 +94,40 @@ object Bounds {
 
   def log(x: Bounds) = Bounds(Math.log(x.lower), Math.log(x.upper))
   def exp(x: Bounds) = Bounds(Math.exp(x.lower), Math.exp(x.upper))
+
+  def positive(value: Real)(calc: => Real): Real = {
+    if (test(value)(_ >= 0.0))
+      calc
+    else {
+      warn(value, "x >= 0")
+      Real.gte(value, Real.zero, calc, Real.negInfinity)
+    }
+  }
+
+  def zeroToOne(value: Real)(calc: => Real): Real = {
+    if (test(value) { v =>
+          v >= 0.0 && v <= 1.0
+        })
+      calc
+    else {
+      warn(value, "0 <= x <= 1")
+      Real.gte(value,
+               Real.zero,
+               Real.lte(value, Real.one, calc, Real.negInfinity),
+               Real.negInfinity)
+    }
+  }
+
+  def test(value: Real)(fn: Double => Boolean): Boolean =
+    fn(value.bounds.lower) && fn(value.bounds.upper)
+
+  def check(value: Real, description: String)(fn: Double => Boolean): Unit =
+    if (!test(value)(fn))
+      warn(value, description)
+
+  private def warn(value: Real, description: String): Unit =
+    WARNING.log("Couldn't prove %s for bounds (%f,%f)",
+                description,
+                value.bounds.lower,
+                value.bounds.upper)
 }
