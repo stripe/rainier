@@ -12,7 +12,9 @@ sealed trait Vec[T] {
   def ++(other: Vec[Real])(implicit ev: T <:< Real): Vec[Real] =
     ConcatVec(this.map(ev), other)
   def dot(other: Vec[Real])(implicit ev: T <:< Real): Real =
-    Real.sum(0.until(size).map{i => apply(i) * other(i)})
+    Real.sum(0.until(size).map { i =>
+      apply(i) * other(i)
+    })
 }
 
 object Vec {
@@ -39,12 +41,13 @@ private case class ZipVec[T, U](left: Vec[T], right: Vec[U])
   def apply(index: Real) = (left(index), right(index))
 }
 
-private case class ConcatVec(left: Vec[Real], right: Vec[Real]) extends Vec[Real] {
+private case class ConcatVec(left: Vec[Real], right: Vec[Real])
+    extends Vec[Real] {
   def size = left.size + right.size
   def apply(index: Int) =
-    if(index >= left.size)
+    if (index >= left.size)
       right(index - left.size)
     else left(index)
-  def apply(index: Real) = 
+  def apply(index: Real) =
     Real.gte(index, left.size, right(index - left.size), left(index))
 }

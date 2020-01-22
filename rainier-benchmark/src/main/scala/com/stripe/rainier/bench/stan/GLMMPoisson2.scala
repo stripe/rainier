@@ -30,7 +30,7 @@ class GLMMPoisson2 extends ModelBenchmark {
     val betas = Normal(0, 10).paramVector(3)
     val eps = Normal(0, sdYear).paramVector(nYears.toInt)
 
-    val yearBetas = Vec(year.take(nYears.toInt)).zip(eps).map {
+    val yearBetas = Vec(year.take(nYears.toInt): _*).zip(eps).map {
       case (y, ep) =>
         y * betas(0) +
           y * y * betas(1) +
