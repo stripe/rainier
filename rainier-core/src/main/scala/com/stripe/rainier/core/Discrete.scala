@@ -1,6 +1,7 @@
 package com.stripe.rainier.core
 
 import com.stripe.rainier.compute._
+import com.stripe.rainier.sampler.RNG
 
 trait Discrete extends Distribution[Long] { self: Discrete =>
   val likelihoodFn = Fn.long.map(logDensity)
@@ -151,7 +152,7 @@ object Poisson {
         k += 1
         p *= r.standardUniform
       }
-      k - 1
+      k - 1 
     }
   }
 
