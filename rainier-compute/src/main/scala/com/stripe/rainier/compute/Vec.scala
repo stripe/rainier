@@ -9,6 +9,8 @@ sealed trait Vec[T] {
     require(this.size == other.size)
     ZipVec(this, other)
   }
+
+  override def toString = s"Vec[$size]"
 }
 
 object Vec {

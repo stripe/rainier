@@ -5,6 +5,7 @@ import com.stripe.rainier.compute._
 trait Distribution[T] {
   def likelihoodFn: Fn[T, Real]
   def generator: Generator[T]
+  override def toString = "Distribution()"
 }
 
 object Distribution {
