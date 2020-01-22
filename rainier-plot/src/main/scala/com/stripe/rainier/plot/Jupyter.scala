@@ -1,6 +1,5 @@
 package com.stripe.rainier.plot
 
-import almond.interpreter.api._
 import com.cibo.evilplot.geometry._
 import com.cibo.evilplot.plot._
 import com.cibo.evilplot.numeric._
@@ -58,8 +57,7 @@ object Jupyter {
   implicit val theme: Theme = PlotThemes.default
 
   def trace(t: Trace)(implicit
-                      theme: Theme,
-                      oh: OutputHandler): Unit = {
+                      theme: Theme): Drawable = {
     val nVariables = t.model.parameters.size
     val lines =
       0.until(nVariables).toList.map { v =>
@@ -73,7 +71,7 @@ object Jupyter {
               .yLabel("param " + (v + 1))
         }
       }
-    show(Facets(lines))(Extent(800, 800), theme, oh)
+    show(Facets(lines))(Extent(800, 800), theme)
   }
 
   def density[N](seq: Seq[N], minX: Double, maxX: Double)(
@@ -269,8 +267,7 @@ object Jupyter {
 
   def show(xLabel: String, yLabel: String, title: String, plots: Plot*)(
       implicit extent: Extent,
-      theme: Theme,
-      oh: OutputHandler): Unit =
+      theme: Theme): Drawable =
     show(
       Overlay
         .fromSeq(plots)
@@ -283,8 +280,7 @@ object Jupyter {
 
   def show(xLabel: String, yLabel: String, plots: Plot*)(
       implicit extent: Extent,
-      theme: Theme,
-      oh: OutputHandler): Unit =
+      theme: Theme): Drawable =
     show(
       Overlay
         .fromSeq(plots)
@@ -295,8 +291,7 @@ object Jupyter {
         .yLabel(yLabel))
 
   def show(xLabel: String, plots: Plot*)(implicit extent: Extent,
-                                         theme: Theme,
-                                         oh: OutputHandler): Unit =
+                                         theme: Theme): Drawable =
     show(
       Overlay
         .fromSeq(plots)
@@ -304,12 +299,8 @@ object Jupyter {
         .frame()
         .xLabel(xLabel))
 
-  def show(plot: Plot)(implicit extent: Extent,
-                       theme: Theme,
-                       oh: OutputHandler): Unit =
-    DisplayData
-      .png(renderBytes(plot))
-      .show()
+  def show(plot: Plot)(implicit extent: Extent, theme: Theme): Drawable =
+    plot.render(extent)(theme)
 
   def renderBytes(plot: Plot)(implicit extent: Extent,
                               theme: Theme): Array[Byte] = {
