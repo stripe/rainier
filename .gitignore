@@ -1,3 +1,4 @@
+*.swp
 bazel-*
 .idea
 project/target
