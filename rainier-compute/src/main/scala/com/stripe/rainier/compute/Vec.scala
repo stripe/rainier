@@ -9,10 +9,14 @@ sealed trait Vec[T] {
     require(this.size == other.size)
     ZipVec(this, other)
   }
+  def ++(other: Vec[Real])(implicit ev: T <:< Real): Vec[Real] =
+    ConcatVec(this.map(ev), other)
+  def dot(other: Vec[Real])(implicit ev: T <:< Real): Real =
+    Real.sum(0.until(size).map{i => apply(i) * other(i)})
 }
 
 object Vec {
-  def apply[T](seq: Seq[T])(implicit toReal: ToReal[T]): Vec[Real] =
+  def apply[T](seq: T*)(implicit toReal: ToReal[T]): Vec[Real] =
     RealVec(seq.map(toReal(_)).toVector)
 }
 
@@ -33,4 +37,14 @@ private case class ZipVec[T, U](left: Vec[T], right: Vec[U])
   def size = left.size
   def apply(index: Int) = (left(index), right(index))
   def apply(index: Real) = (left(index), right(index))
+}
+
+private case class ConcatVec(left: Vec[Real], right: Vec[Real]) extends Vec[Real] {
+  def size = left.size + right.size
+  def apply(index: Int) =
+    if(index >= left.size)
+      right(index - left.size)
+    else left(index)
+  def apply(index: Real) = 
+    Real.gte(index, left.size, right(index - left.size), left(index))
 }
