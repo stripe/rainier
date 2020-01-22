@@ -8,7 +8,7 @@ case class Model(private[rainier] val targets: List[Real]) {
   def merge(other: Model) = Model(targets ++ other.targets)
 
   def sample(sampler: Sampler, nChains: Int = 1, parallel: Boolean = true)(
-      implicit rng: RNG): Sample = {
+      implicit rng: RNG): Trace = {
     val range =
       if (parallel)
         1.to(nChains).par
@@ -17,7 +17,7 @@ case class Model(private[rainier] val targets: List[Real]) {
     val chains = range.map { _ =>
       sampler.sample(density())
     }.toList
-    Sample(chains, this)
+    Trace(chains, this)
   }
 
   def optimize(): Estimate =
