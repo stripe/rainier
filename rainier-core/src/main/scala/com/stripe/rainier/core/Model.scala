@@ -6,7 +6,8 @@ import com.stripe.rainier.optimizer._
 
 case class Model(private[rainier] val targets: List[Real], track: Set[Real]) {
   def prior: Model = Model.track(track ++ targets)
-  def merge(other: Model) = Model(targets ++ other.targets, track ++ other.track)
+  def merge(other: Model) =
+    Model(targets ++ other.targets, track ++ other.track)
 
   def sample(sampler: Sampler, nChains: Int = 1, parallel: Boolean = true)(
       implicit rng: RNG): Trace = {
