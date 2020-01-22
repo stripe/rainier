@@ -152,7 +152,7 @@ object Poisson {
         k += 1
         p *= r.standardUniform
       }
-      k - 1 
+      k - 1
     }
   }
 
