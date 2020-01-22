@@ -7,6 +7,11 @@ A Real is a DAG which represents a mathematical function
 from 0 or more real-valued input parameters to a single real-valued output.
  */
 sealed trait Real {
+  override def toString =
+    if (bounds.lower == bounds.upper)
+      f"Real(${bounds.lower}%.3g)"
+    else
+      f"Real(${bounds.lower}%.3g, ${bounds.upper}%.3g)"
   def bounds: Bounds
 
   def +(other: Real): Real = RealOps.add(this, other)

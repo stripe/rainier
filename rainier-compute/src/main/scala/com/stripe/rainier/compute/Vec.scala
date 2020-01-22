@@ -15,6 +15,8 @@ sealed trait Vec[T] {
     Real.sum(0.until(size).map { i =>
       apply(i) * other(i)
     })
+
+  override def toString = s"Vec[$size]"
 }
 
 object Vec {
