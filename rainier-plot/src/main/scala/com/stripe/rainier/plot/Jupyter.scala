@@ -59,8 +59,8 @@ object Jupyter {
   implicit val theme: Theme = PlotThemes.default
 
   def trace(t: Trace)(implicit
-                            theme: Theme,
-                            oh: OutputHandler): Unit = {
+                      theme: Theme,
+                      oh: OutputHandler): Unit = {
     val nVariables = t.model.parameters.size
     val lines =
       0.until(nVariables).toList.map { v =>

@@ -63,9 +63,9 @@ class TargetGroup(targets: List[Target], val parameters: List[Parameter]) {
 }
 
 object TargetGroup {
-  def apply(reals: List[Real]): TargetGroup = {
+  def apply(reals: List[Real], track: Set[Real]): TargetGroup = {
     val parameters =
-      reals.toSet
+      (reals.toSet ++ track)
         .flatMap(findParameters)
         .toList
         .sortBy(_.param.sym.id)
