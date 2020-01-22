@@ -4,11 +4,10 @@ import scala.collection.mutable.ListBuffer
 import Log._
 import java.util.concurrent.TimeUnit._
 
-final case class HMC(nSteps: Int) extends Sampler {
-  def sample(density: DensityFunction,
-             warmupIterations: Int,
-             iterations: Int,
-             keepEvery: Int)(implicit rng: RNG): List[Array[Double]] = {
+final case class HMC(nSteps: Int, warmupIterations: Int, iterations: Int)
+    extends Sampler {
+  def sample(density: DensityFunction)(
+      implicit rng: RNG): List[Array[Double]] = {
     val lf = LeapFrog(density)
     val params = lf.initialize
 
@@ -35,8 +34,7 @@ final case class HMC(nSteps: Int) extends Sampler {
       while (i < iterations) {
         val logAccept = lf.step(params, nSteps, stepSize)
         acceptSum += Math.exp(logAccept)
-        if (i % keepEvery == 0)
-          buf += lf.variables(params)
+        buf += lf.variables(params)
         i += 1
         FINER
           .atMostEvery(1, SECONDS)

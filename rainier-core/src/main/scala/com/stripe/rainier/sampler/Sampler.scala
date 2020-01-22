@@ -3,10 +3,7 @@ package com.stripe.rainier.sampler
 import scala.annotation.tailrec
 
 trait Sampler {
-  def sample(density: DensityFunction,
-             warmupIterations: Int,
-             iterations: Int,
-             keepEvery: Int)(implicit rng: RNG): List[Array[Double]]
+  def sample(density: DensityFunction)(implicit rng: RNG): List[Array[Double]]
 }
 
 final case class Diagnostics(rHat: Double, effectiveSampleSize: Double)
@@ -22,8 +19,6 @@ object Diagnostics {
     val n = traces.head.size.toDouble
     val (rHat, v) = rHatAndV(traces, n, m)
     val ac = autocorrelation(traces, n, m, v, 1, 0.0)
-    //note: this doesn't match the stan manual 2.17 because of a known bug
-    //that will be fixed in 2.18
     val ess = n * m / (1 + (2 * ac))
     Diagnostics(rHat, ess)
   }
@@ -91,12 +86,6 @@ object Diagnostics {
 }
 
 object Sampler {
-  object Default {
-    val sampler: Sampler = HMC(5)
-    val iterations: Int = 10000
-    val warmupIterations: Int = 1000
-  }
-
   def diagnostics(chains: List[List[Array[Double]]]): List[Diagnostics] = {
     val nParams = chains.head.head.size
     0.until(nParams).toList.map { i =>
@@ -108,17 +97,4 @@ object Sampler {
       Diagnostics(traces)
     }
   }
-
-  def sample(density: DensityFunction,
-             sampler: Sampler,
-             warmupIterations: Int,
-             iterations: Int,
-             keepEvery: Int)(implicit rng: RNG): List[Array[Double]] =
-    if (density.nVars == 0)
-      1.to(iterations / keepEvery).toList.map { _ =>
-        Array.empty[Double]
-      } else
-      sampler
-        .sample(density, warmupIterations, iterations, keepEvery)
-
 }
