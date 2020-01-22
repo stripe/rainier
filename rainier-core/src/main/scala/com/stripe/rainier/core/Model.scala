@@ -4,10 +4,11 @@ import com.stripe.rainier.compute._
 import com.stripe.rainier.sampler._
 import com.stripe.rainier.optimizer._
 
-case class Model(private[rainier] val targets: List[Real], track: Set[Real]) {
-  def prior: Model = Model.track(track ++ targets)
+case class Model(private[rainier] val likelihoods: List[Real],
+                 track: Set[Real]) {
+  def prior: Model = Model.track(track ++ likelihoods)
   def merge(other: Model) =
-    Model(targets ++ other.targets, track ++ other.track)
+    Model(likelihoods ++ other.likelihoods, track ++ other.track)
 
   def sample(sampler: Sampler, nChains: Int = 1, parallel: Boolean = true)(
       implicit rng: RNG): Trace = {
@@ -25,7 +26,7 @@ case class Model(private[rainier] val targets: List[Real], track: Set[Real]) {
   def optimize(): Estimate =
     Estimate(Optimizer.lbfgs(density()), this)
 
-  lazy val targetGroup = TargetGroup(targets, track)
+  lazy val targetGroup = TargetGroup(likelihoods, track)
   lazy val dataFn =
     Compiler.default.compileTargets(targetGroup)
 
