@@ -10,13 +10,10 @@ import java.util.concurrent.TimeUnit._
   * @param k the number of iterations to use when determining the
   * empirical distribution of the total number of leapfrog steps until a u-turn
   */
-final case class EHMC(l0: Int, k: Int) extends Sampler {
-
-  def sample(density: DensityFunction,
-             warmupIterations: Int,
-             iterations: Int,
-             keepEvery: Int)(implicit rng: RNG): List[Array[Double]] = {
-
+final case class EHMC(l0: Int, k: Int, warmupIterations: Int, iterations: Int)
+    extends Sampler {
+  def sample(density: DensityFunction)(
+      implicit rng: RNG): List[Array[Double]] = {
     val lf = LeapFrog(density)
     val params = lf.initialize
 
@@ -61,16 +58,11 @@ final case class EHMC(l0: Int, k: Int) extends Sampler {
 
         val logAccept = lf.step(params, nSteps, stepSize)
         acceptSum += Math.exp(logAccept)
-        if (i % keepEvery == 0)
-          buf += lf.variables(params)
+        buf += lf.variables(params)
         i += 1
       }
       FINE.log("Finished sampling, acceptance rate %f", (acceptSum / i))
       buf.toList
     }
   }
-}
-
-object EHMC {
-  def apply(l0: Int): EHMC = EHMC(l0, 100)
 }
