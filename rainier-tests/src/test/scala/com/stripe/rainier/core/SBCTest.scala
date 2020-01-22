@@ -21,7 +21,7 @@ class SBCTest extends FunSuite {
   check(SBCLogNormal)
   check(SBCExponential)
   check(SBCLaplace)
-  check(SBCGamma)
+  check(SBCGamma) //Couldn't prove x >= 0 for bounds (-Infinity,Infinity)
 
   // Discrete
   check(SBCBernoulli)
@@ -30,7 +30,7 @@ class SBCTest extends FunSuite {
   check(SBCBinomialPoissonApproximation)
   check(SBCGeometric)
   //check(SBCGeometricZeroInflated)
-  check(SBCNegativeBinomial)
+  check(SBCNegativeBinomial) // Couldn't prove σ >= 0 for bounds (-Infinity,Infinity)
   check(SBCLargePoisson)
 
 }
