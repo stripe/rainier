@@ -139,6 +139,25 @@ lazy val rainierTrace = project.
   settings(commonSettings).
   settings(unpublished)
 
+// documentation modules
+
+lazy val rainierDocs = project.
+  in(file("docs")).
+  settings(name := "rainier-docs").
+  enablePlugins(MdocPlugin).
+  dependsOn(
+    rainierCore,
+    rainierTrace,
+  ).
+  settings(commonSettings).
+  settings(
+   mdocIn := new java.io.File("rainier-docs"),
+   mdocVariables := Map(
+     "VERSION" -> version.value
+   )
+  ).
+  settings(unpublished)
+
 // shaded asm dep trickery
 
 /* publishable project with the shaded deps */
