@@ -70,6 +70,8 @@ lazy val V = new {
   val almond = "0.3.0"
   val scala = "2.12.8"
   val shadedAsm = "0.2.1"
+  val scalameta = "4.2.3"
+  val mdoc = "2.1.1"
 }
 
 // primary modules
@@ -105,6 +107,8 @@ lazy val rainierPlot = project.
     libraryDependencies ++=
       Seq(
         "com.cibo" %% "evilplot" % V.evilplot,
+        "org.scalameta" %% "scalameta" % V.scalameta,
+        "org.scalameta" %% "mdoc" % V.mdoc,
         "sh.almond" %% "interpreter-api" % V.almond)
   )
 
@@ -147,7 +151,7 @@ lazy val rainierDocs = project.
   enablePlugins(MdocPlugin).
   dependsOn(
     rainierCore,
-    rainierTrace,
+    rainierPlot,
   ).
   settings(commonSettings).
   settings(

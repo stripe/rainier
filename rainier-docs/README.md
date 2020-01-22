@@ -45,3 +45,26 @@ val sampler: Sampler = HMC(1)
 val params: Array[Double] = Array.fill(model.parameters.size) { rng.standardUniform }
 model.sample(sampler, 1, 2)
 ```
+
+## Evilplot?
+
+```scala mdoc:evilplot:assets/scatterplot.png
+import com.cibo.evilplot._
+import com.cibo.evilplot.plot._
+import com.cibo.evilplot.plot.aesthetics.DefaultTheme._
+import com.cibo.evilplot.numeric.Point
+
+val data = Seq.tabulate(90) { i =>
+  val degree = i * 8
+  val radian = math.toRadians(degree)
+  Point(i.toDouble, math.sin(radian))
+}
+
+ScatterPlot(data)
+  .xAxis()
+  .yAxis()
+  .frame()
+  .xLabel("x")
+  .yLabel("y")
+  .render()
+```
