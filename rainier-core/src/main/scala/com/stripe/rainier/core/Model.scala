@@ -7,14 +7,16 @@ import com.stripe.rainier.optimizer._
 case class Model(private[rainier] val targets: List[Real]) {
   def merge(other: Model) = Model(targets ++ other.targets)
 
-  def sample(sampler: Sampler,
-             warmupIterations: Int,
-             iterations: Int,
-             keepEvery: Int = 1,
-             nChains: Int = 1)(implicit rng: RNG): Sample = {
-    val chains = 1.to(nChains).toList.map { _ =>
-      sampler.sample(density(), warmupIterations, iterations, keepEvery)
-    }
+  def sample(sampler: Sampler, nChains: Int = 1, parallel: Boolean = true)(
+      implicit rng: RNG): Sample = {
+    val range =
+      if (parallel)
+        1.to(nChains).par
+      else
+        1.to(nChains)
+    val chains = range.map { _ =>
+      sampler.sample(density())
+    }.toList
     Sample(chains, this)
   }
 

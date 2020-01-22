@@ -20,12 +20,10 @@ final case class SBC[T](priors: Seq[Continuous],
   val priorGenerator: Generator[Seq[Double]] =
     Generator.traverse(priors.map(_.generator))
 
-  def animate(sampler: Sampler,
-              warmupIterations: Int,
-              syntheticSamples: Int,
-              logBins: Int = 3)(implicit rng: RNG): Unit = {
+  def animate(syntheticSamples: Int, logBins: Int = 3)(
+      samplerFn: Int => Sampler)(implicit rng: RNG): Unit = {
     val t0 = System.currentTimeMillis
-    val stream = simulate(sampler, warmupIterations, syntheticSamples, logBins)
+    val stream = simulate(syntheticSamples, logBins)(samplerFn)
     val bins = 1 << logBins
     val reps = bins * RepsPerBin
 
@@ -42,16 +40,14 @@ final case class SBC[T](priors: Seq[Continuous],
     }
   }
 
-  def simulate(sampler: Sampler,
-               warmupIterations: Int,
-               syntheticSamples: Int,
-               logBins: Int = 3)(implicit rng: RNG): Stream[Rep] = {
+  def simulate(syntheticSamples: Int, logBins: Int = 3)(
+      samplerFn: Int => Sampler)(implicit rng: RNG): Stream[Rep] = {
     require(logBins > 0)
     val bins = 1 << logBins
     require(bins <= Samples)
 
     val reps = bins * RepsPerBin
-    repStream(sampler, warmupIterations, syntheticSamples, bins, reps)
+    repStream(samplerFn, syntheticSamples, bins, reps)
   }
 
   def synthesize(samples: Int)(implicit rng: RNG): (Seq[T], Double) =
@@ -72,8 +68,7 @@ final case class SBC[T](priors: Seq[Continuous],
   def model(syntheticSamples: Int)(implicit rng: RNG): (Model, Real) =
     fit(synthesize(syntheticSamples)._1)
 
-  private def repStream(sampler: Sampler,
-                        warmupIterations: Int,
+  private def repStream(samplerFn: Int => Sampler,
                         syntheticSamples: Int,
                         bins: Int,
                         remaining: Int)(implicit rng: RNG): Stream[Rep] =
@@ -81,23 +76,18 @@ final case class SBC[T](priors: Seq[Continuous],
       Stream.empty
     else {
       val rep =
-        repetition(sampler, warmupIterations, syntheticSamples, bins, Trials, 1)
-      rep #:: repStream(sampler,
-                        warmupIterations,
-                        syntheticSamples,
-                        bins,
-                        remaining - 1)
+        repetition(samplerFn, syntheticSamples, bins, Trials, 1)
+      rep #:: repStream(samplerFn, syntheticSamples, bins, remaining - 1)
     }
 
-  private def repetition(sampler: Sampler,
-                         warmupIterations: Int,
+  private def repetition(samplerFn: Int => Sampler,
                          syntheticSamples: Int,
                          bins: Int,
                          trials: Int,
                          thin: Int)(implicit rng: RNG): Rep = {
     val t0 = System.currentTimeMillis
     val (rawRank, rHat, effectiveSampleSize) =
-      sample(sampler, warmupIterations, syntheticSamples, thin)
+      sample(samplerFn, syntheticSamples, thin)
     val ms = System.currentTimeMillis - t0
 
     if (trials > 1 && effectiveSampleSize < Samples) {
@@ -105,31 +95,21 @@ final case class SBC[T](priors: Seq[Continuous],
         Math
           .ceil(Samples.toDouble / effectiveSampleSize)
           .toInt
-      repetition(sampler,
-                 warmupIterations,
-                 syntheticSamples,
-                 bins,
-                 trials - 1,
-                 newThin)
+      repetition(samplerFn, syntheticSamples, bins, trials - 1, newThin)
     } else {
       val rank = (rawRank * bins) / Samples
       Rep(rank, rHat, thin, effectiveSampleSize, ms)
     }
   }
 
-  private def sample(sampler: Sampler,
-                     warmupIterations: Int,
+  private def sample(samplerFn: Int => Sampler,
                      syntheticSamples: Int,
                      thin: Int)(implicit rng: RNG): (Int, Double, Double) = {
     val (syntheticValues, trueOutput) = synthesize(syntheticSamples)
     val (model, real) = fit(syntheticValues)
 
     val sample =
-      model.sample(sampler,
-                   warmupIterations,
-                   (Samples / Chains) * thin,
-                   thin,
-                   Chains)
+      model.sample(samplerFn(Samples * thin / Chains), Chains).thin(thin)
     val diag = sample.diagnostics
     val maxRHat = diag.map(_.rHat).max
     val minEffectiveSampleSize = diag.map(_.effectiveSampleSize).min

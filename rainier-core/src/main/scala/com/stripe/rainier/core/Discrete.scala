@@ -133,7 +133,7 @@ final case class Poisson(lambda: Real) extends Discrete {
     Generator.require(Set(lambda)) { (r, n) =>
       val lambdaDouble = n.toDouble(lambda)
       if (lambdaDouble < 30.0)
-        Poisson.small(lambdaDouble, r)
+        Poisson.small(lambdaDouble, r).toLong
       else
         Poisson.large(lambdaDouble, r)
     }
@@ -143,7 +143,7 @@ final case class Poisson(lambda: Real) extends Discrete {
 }
 
 object Poisson {
-  private def small(lambda: Double, r: RNG): Long = {
+  private def small(lambda: Double, r: RNG): Int = {
     val l = math.exp(-lambda)
     if (l >= 1.0) { 0 } else {
       var k = 0
@@ -166,7 +166,7 @@ object Poisson {
     while (true) {
       val u = r.standardUniform
       val x = (alpha - math.log((1.0 - u) / u)) / beta
-      val n = math.floor(x + 0.5).toInt
+      val n = math.floor(x + 0.5).toLong
       if (n >= 0) {
         val v = r.standardUniform
         val y = alpha - beta * x
@@ -183,7 +183,7 @@ object Poisson {
   //from https://www.johndcook.com/blog/2010/08/16/how-to-compute-log-factorial/
   //we're using the roughest approximation here because we're only using this for
   //large lambda, which leads to generally large n, where the approximation works
-  private def logFactorial(n: Int): Double = {
+  private def logFactorial(n: Long): Double = {
     val x = (n + 1).toDouble
     ((x - 0.5) * math.log(x)) - x + (0.5 * math.log(2 * math.Pi))
   }

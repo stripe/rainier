@@ -5,13 +5,13 @@ import com.stripe.rainier.sampler._
 
 trait SBCModel[T] {
   def sbc: SBC[T]
-  val sampler: Sampler = HMC(1)
   val warmupIterations: Int = 10000
   val syntheticSamples: Int = 1000
   val nSamples: Int = 10
+  def sampler(iterations: Int) = HMC(1, warmupIterations, iterations)
   def main(args: Array[String]): Unit = {
     implicit val rng: RNG = ScalaRNG(1528673302081L)
-    sbc.animate(sampler, warmupIterations, syntheticSamples)
+    sbc.animate(syntheticSamples)(sampler)
     println(s"\nnew goldset:")
     println(s"$samples")
     println(s"\ngoldset true value: $trueValue")
@@ -23,7 +23,7 @@ trait SBCModel[T] {
     val (values, trueValue) = sbc.synthesize(syntheticSamples)
     val (model, real) = sbc.fit(values)
     val samples =
-      model.sample(sampler, warmupIterations, goldset.size).predict(real)
+      model.sample(sampler(goldset.size)).predict(real)
     (samples, trueValue)
   }
 
@@ -236,16 +236,16 @@ object SBCLargePoisson extends SBCModel[Long] {
   def sbc =
     SBC(Uniform(0.8, 1))((x: Real) => Poisson(x * 1000))
   def goldset =
-    List(0.8902523892378561, 0.8894101477677453, 0.8894101477677453,
-      0.8894101477677453, 0.8890463069962267, 0.8890463069962267,
-      0.890183160979603, 0.8881010466194766, 0.8881010466194766,
-      0.8884207893064865, 0.8888333225342642, 0.8888333225342642,
-      0.889889599728347, 0.8878835577534551, 0.8879041857949256,
-      0.8879041857949256, 0.8893390100909158, 0.8893390100909158,
-      0.8893390100909158, 0.8897324465923421, 0.8897324465923421,
-      0.8892958893404649, 0.8872175357648857, 0.8904474084861191,
-      0.8904474084861191, 0.8918876090760044, 0.8876882548913582,
-      0.8882753374287777, 0.890400429337372, 0.888212301217307)
+    List(0.8896349481612058, 0.8896349481612058, 0.8885818635805025,
+      0.8877725908728087, 0.8896466850658817, 0.8896466850658817,
+      0.8865420383245867, 0.8890007745543766, 0.8890007745543766,
+      0.8890007745543766, 0.889214282921085, 0.889214282921085,
+      0.889214282921085, 0.8884035373062821, 0.8884035373062821,
+      0.8884035373062821, 0.8901419470474745, 0.8893965196352073,
+      0.8904689666375939, 0.887781151309036, 0.887781151309036,
+      0.8900459067906088, 0.8877582818307215, 0.890099748824956,
+      0.8895989110588538, 0.8880595333887795, 0.8880595333887795,
+      0.8894558924425451, 0.8879694546000153, 0.8891662635397245)
 
   val description =
     "Poisson(x*1000) with Uniform(0.8, 1) prior"
