@@ -58,13 +58,13 @@ object Jupyter {
   implicit val extent: Extent = Extent(400, 400)
   implicit val theme: Theme = PlotThemes.default
 
-  def trace(sample: Sample)(implicit
+  def trace(t: Trace)(implicit
                             theme: Theme,
                             oh: OutputHandler): Unit = {
-    val nVariables = sample.model.parameters.size
+    val nVariables = t.model.parameters.size
     val lines =
       0.until(nVariables).toList.map { v =>
-        sample.chains.zipWithIndex.map {
+        t.chains.zipWithIndex.map {
           case (c, n) =>
             line(c.zipWithIndex.map { case (a, i) => i -> a(v) })
               .xAxis()
