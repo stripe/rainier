@@ -2,9 +2,6 @@
 
 # Rainier
 
-[![Build status](https://img.shields.io/travis/stripe/rainier/master.svg)](https://travis-ci.org/stripe/rainier)
-[![Gitter chat](https://badges.gitter.im/com_stripe_rainier/Lobby.png)](https://gitter.im/com_stripe_rainier/Lobby)
-
 Rainier provides a high-performance Scala API for bayesian inference via Markov Chain Monte Carlo.
 
 Rainier supports fixed-structure generative models with continuous parameters. Models are built using idiomatic, functional Scala to compose primitive distributions and mathematical transformations. Once built, you can condition the model on observed data to infer a posterior distribution over the parameter values, and then use that posterior distribution to generate decisions and predictions.
