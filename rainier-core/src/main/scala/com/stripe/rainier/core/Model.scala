@@ -52,6 +52,15 @@ case class Model(private[rainier] val likelihoods: List[Real],
 object Model {
   val empty = Model.likelihood(Real.zero)
 
+  def sample[T, U](t: T, sampler: Sampler = Sampler.default)(
+      implicit toGen: ToGenerator[T, U],
+      rng: RNG): List[U] = {
+    val gen = toGen(t)
+    val model = Model.track(gen.requirements)
+    val trace = model.sample(sampler)
+    trace.thin(10).predict(gen)
+  }
+
   def apply(reals: Real*): Model = track(reals.toSet)
   def track(track: Set[Real]): Model = Model(List(Real.zero), track)
   def likelihood(real: Real) = Model(List(real), Set.empty[Real])
