@@ -10,7 +10,8 @@
       }
     },
     "links": {
-      "Docs": "Docs"
+      "Docs": "Docs",
+      "GitHub": "GitHub"
     },
     "categories": {
       "Docusaurus": "Docusaurus",

@@ -18,10 +18,12 @@ const siteConfig = {
   // Used for publishing and more
   projectName: 'rainier',
   organizationName: 'stripe',
+  copyright: "Stripe, Inc",
 
   // For no header links in the top nav bar -> headerLinks: [],
   headerLinks: [
     {doc: 'intro', label: 'Docs'},
+    {href: 'https://github.com/stripe/rainier', label: "GitHub", external: true }
   ],
 
   /* path to images for header/footer */
