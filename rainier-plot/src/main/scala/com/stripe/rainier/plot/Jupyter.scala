@@ -8,7 +8,6 @@ import com.cibo.evilplot.colors._
 import com.cibo.evilplot.plot.renderers._
 import com.cibo.evilplot.plot.aesthetics._
 
-import com.stripe.rainier.repl.{hdpi, mean}
 import com.stripe.rainier.core._
 
 object Jupyter {
@@ -142,7 +141,7 @@ object Jupyter {
     val seq = labels
       .map { k =>
         val dist = samples.map(_(k))
-        val (low, high) = hdpi(dist)
+        val (low, high) = REPL.hdpi(dist)
         val stats =
           BoxPlotSummaryStatistics(
             dist.min,
@@ -150,7 +149,7 @@ object Jupyter {
             dist.min,
             dist.max,
             low,
-            mean(dist),
+            REPL.mean(dist),
             high,
             Nil,
             dist
