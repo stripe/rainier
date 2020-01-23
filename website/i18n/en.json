@@ -6,7 +6,7 @@
     "tagline": "Bayesian inference for scala",
     "docs": {
       "intro": {
-        "title": "intro"
+        "title": "Introduction to Rainier"
       }
     },
     "links": {
@@ -14,9 +14,7 @@
       "GitHub": "GitHub"
     },
     "categories": {
-      "Docusaurus": "Docusaurus",
-      "First Category": "First Category",
-      "Second Category": "Second Category"
+      "Overview": "Overview"
     }
   },
   "pages-strings": {

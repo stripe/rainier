@@ -1,4 +1,7 @@
-# Introduction to Rainier
+---
+id: intro
+title: Introduction to Rainier
+---
 
 ## Who Rainier is for
 
