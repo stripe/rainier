@@ -3,6 +3,8 @@ id: intro
 title: Introduction to Rainier
 ---
 
+![](/img/rainier-large.jpg)
+
 ## Who Rainier is for
 
 Rainier is for building and sampling from Bayesian statistical models. Specifically, it's for building generative models with fixed structure, continuous parameters, and data that can comfortably fit in memory. Very often, that means some kind of generalized linear mixed model (GLMM).
