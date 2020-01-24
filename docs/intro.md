@@ -1,4 +1,9 @@
-# Introduction to Rainier
+---
+id: intro
+title: Introduction to Rainier
+---
+
+![](/img/rainier-large.jpg)
 
 ## Who Rainier is for
 
