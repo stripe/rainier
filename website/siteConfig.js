@@ -10,7 +10,7 @@
 
 const siteConfig = {
   title: 'Rainier', // Title for your website.
-  tagline: 'Bayesian inference for scala',
+  tagline: 'Bayesian inference for Scala',
   url: 'https://samplerainier.com', // Your website URL
   baseUrl: '/', // Base URL for your project */
   customDocsPath: "rainier-docs/target/mdoc",
@@ -18,7 +18,6 @@ const siteConfig = {
   // Used for publishing and more
   projectName: 'rainier',
   organizationName: 'stripe',
-  copyright: "Stripe, Inc",
 
   // For no header links in the top nav bar -> headerLinks: [],
   headerLinks: [
