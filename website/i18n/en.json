@@ -3,7 +3,7 @@
   "localized-strings": {
     "next": "Next",
     "previous": "Previous",
-    "tagline": "Bayesian inference for scala",
+    "tagline": "Bayesian inference for Scala",
     "docs": {
       "intro": {
         "title": "Introduction to Rainier"

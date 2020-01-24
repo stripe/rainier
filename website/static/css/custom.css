@@ -7,14 +7,6 @@
  
 /* your custom css */
 
-.banner {
-    background-image: url(/img/rainier.jpg);
-    background-position: top; 
-    background-repeat: no-repeat;
-    background-size: cover;
-    height: 500px;
-}
-
 @media only screen and (min-device-width: 360px) and (max-device-width: 736px) {
 }
 

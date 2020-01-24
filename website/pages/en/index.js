@@ -37,8 +37,7 @@ class HomeSplash extends React.Component {
 
     const ProjectTitle = props => (
       <h2 className="projectTitle">
-        {props.title}
-        <small>{props.tagline}</small>
+        {props.tagline}
       </h2>
     );
 
@@ -89,15 +88,22 @@ class Index extends React.Component {
             }}
           >
             <div style={{ display: "flex", flexDirection: "column" }}>
-              <h2>Features</h2>
-              <ul className="featureSection" style={{ flex: "1" }}>
-                <li>Things</li>
+              <h2>What</h2>
+              <ul className="whatSection" style={{ flex: "1" }}>
+                <li>Build a probabilistic simulation in idiomatic, immutable Scala</li>
+                <li>Match the simulation with real-world observations</li>
+                <li>Rainier will infer the parameters for your simulation that could lead to that data</li>
+                <li>Make predictions from those parameters to optimize your decision-making</li>
               </ul>
             </div>
             <div style={{ display: "flex", flexDirection: "column" }}>
-              <h2>More features</h2>
+              <h2>How</h2>
               <ul className="whySection" style={{ flex: "1" }}>
-                <li>More things</li>
+                <li>Fixed-structure, continuous-parameter models like Stan or PyMC3</li>
+                <li>Custom TensorFlow-like computation graph with auto-diff</li>
+                <li>Gradient-based inference with Hamiltonian Monte Carlo</li>
+                <li>Dynamic compilation to low-level bytecode for speed</li>
+                <li>Pure JVM operation for ease of production deployment</li>
               </ul>
             </div>
           </div>
