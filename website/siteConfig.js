@@ -33,8 +33,11 @@ const siteConfig = {
 
   /* Colors for website */
   colors: {
-    primaryColor: '#814015',
-    secondaryColor: '#5a2c0e',
+    primaryColor: 'rgb(17, 42, 68)',
+    secondaryColor: '#1EC2EF',
+    heroBackgroundColor: 'rgba(14, 40, 68, 0.94)',
+    tintColor: '#005068',
+    backgroundColor: '#f5fcff',
   },
 
   /* Custom fonts for website */
@@ -53,12 +56,13 @@ const siteConfig = {
 
   highlight: {
     // Highlight.js theme to use for syntax highlighting in code blocks.
-    theme: 'default',
+    theme: 'mono-blue',
   },
 
   // Add custom scripts here that would be placed in <script> tags.
-  scripts: ['https://buttons.github.io/buttons.js'],
-
+  scripts: [
+    'https://buttons.github.io/buttons.js',
+  ],
   // On page navigation for the current documentation page.
   onPageNav: 'separate',
   // No .html extensions for paths.
