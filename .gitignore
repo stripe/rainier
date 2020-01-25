@@ -7,3 +7,6 @@ target/
 .bloop/
 .metals/
 .ipynb_checkpoints/
+node_modules/
+yarn.lock
+website/build/
