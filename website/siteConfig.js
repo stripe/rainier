@@ -26,8 +26,8 @@ const siteConfig = {
   ],
 
   /* path to images for header/footer */
-  headerIcon: 'img/rainier.jpg',
-  footerIcon: 'img/rainier.jpg',
+  headerIcon: 'img/rainier.svg',
+  footerIcon: 'img/rainier.svg',
 
   /* Colors for website */
   colors: {
