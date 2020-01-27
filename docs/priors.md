@@ -1,6 +1,6 @@
 ---
 id: priors
-title: Random Variables and Priors
+title: Priors and Random Variables
 ---
 
 ```scala mdoc:invisible

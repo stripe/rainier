@@ -37,15 +37,15 @@ import com.stripe.rainier.core._
 
 The rest of this overview is split into three sections. We recommend you read them all before you start working with Rainier. They are:
 
-* [Random Variables and Priors](priors.md)
+* [Priors and Random Variables](priors.md)
 
 This introduces the `Real` type and shows you how to construct random variables from prior distributions.
 
-* [Observations and Likelihoods](likelihoods.md)
+* [Likelihoods and Observations](likelihoods.md)
 
 This introduces the `Model` and `Trace` types, shows how to condition a model on observations, and how to tune sampling from diagnostics.
 
-* [Predictions and Posteriors](posteriors.md)
+* [Posteriors and Predictions](posteriors.md)
 
 This introduces the `Generator` type, and shows how to make posterior predictions from a sampled trace.
 

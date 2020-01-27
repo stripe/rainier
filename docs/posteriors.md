@@ -1,6 +1,6 @@
 ---
 id: posteriors
-title: Predictions and Posteriors
+title: Posteriors and Predictions
 ---
 
 Blah blah
