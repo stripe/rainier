@@ -7,6 +7,21 @@
     "docs": {
       "intro": {
         "title": "Introduction to Rainier"
+      },
+      "likelihoods": {
+        "title": "Likelihoods and Observations"
+      },
+      "observations": {
+        "title": "Updating your beliefs from observations"
+      },
+      "posteriors": {
+        "title": "Predictions and Posteriors"
+      },
+      "predictions": {
+        "title": "Making predictions about the future"
+      },
+      "priors": {
+        "title": "Random Variables and Priors"
       }
     },
     "links": {
