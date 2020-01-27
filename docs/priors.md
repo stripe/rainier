@@ -3,7 +3,7 @@ id: priors
 title: Random Variables and Priors
 ---
 
-```scala mdoc:silent
+```scala mdoc:invisible
 import com.stripe.rainier.core._
 ```
 

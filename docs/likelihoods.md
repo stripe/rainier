@@ -1,6 +1,6 @@
 ---
 id: likelihoods
-title: Likelihoods and Observations
+title: Observations and Likelihoods 
 ---
 
 Hey hey
