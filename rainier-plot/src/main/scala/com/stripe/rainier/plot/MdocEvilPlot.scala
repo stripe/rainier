@@ -12,12 +12,11 @@ class EvilplotModifier extends PostModifier {
     val relpath = Paths.get(ctx.info)
     val out = ctx.outputFile.toNIO.getParent.resolve(relpath)
     ctx.lastValue match {
-      case d: Drawable =>
+      case d: Drawable => {
         Files.createDirectories(out.getParent)
-        if (!Files.isRegularFile(out)) {
-          d.write(out.toFile)
-        }
+        d.write(out.toFile)
         s"![](${ctx.info})"
+      }
       case _ =>
         val (pos, obtained) = ctx.variables.lastOption match {
           case Some(variable) =>
