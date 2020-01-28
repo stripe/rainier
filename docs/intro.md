@@ -11,7 +11,7 @@ Rainier is for building and sampling from Bayesian statistical models. Specifica
 
 This documentation assumes you have at least some basic familiarity with Bayesian modeling and with GLMs. If you don't, the single best text on that subject is McElreath's [Statistical Rethinking](https://xcelab.net/rm/statistical-rethinking/), and we highly recommend reading it.
 
-We also assume you are familiar with Scala. Perhaps this goes without saying, but: Rainier is a Scala library, and letting you build and run your models in Scala, on the JVM, is one of Rainier's distinguishing features.
+We also assume you are familiar with Scala. Perhaps this goes without saying, but: Rainier is a Scala library, and letting you build models in Scala, and run them on the JVM, is one of Rainier's distinguishing features.
 
 ## Getting Rainier
 

@@ -2,7 +2,7 @@ import wartremover.Wart
 
 lazy val root = project.
   in(file(".")).
-  aggregate(rainierCompute, rainierCore, rainierPlot).
+  aggregate(rainierCompute, rainierSampler, rainierCore, rainierPlot).
   aggregate(rainierBenchmark, rainierTest).
   aggregate(shadedAsm).
   settings(commonSettings).
@@ -77,21 +77,35 @@ lazy val V = new {
 // primary modules
 
 
-lazy val rainierCompute = project.
-  in(file("rainier-compute")).
-  settings(name := "rainier-compute").
+lazy val rainierBase = project.
+  in(file("rainier-base")).
+  settings(name := "rainier-base").
   settings(commonSettings).
   settings(
     libraryDependencies ++= Seq(
       "com.google.flogger" % "flogger" % V.flogger,
-      "com.google.flogger" % "flogger-system-backend" % V.flogger,
+      "com.google.flogger" % "flogger-system-backend" % V.flogger))
+
+lazy val rainierCompute = project.
+  in(file("rainier-compute")).
+  dependsOn(rainierBase).
+  settings(name := "rainier-compute").
+  settings(commonSettings).
+  settings(
+    libraryDependencies ++= Seq(
       "com.stripe" % "rainier-shaded-asm_6.0" % V.shadedAsm)
   )
+
+lazy val rainierSampler = project.
+  in(file("rainier-sampler")).
+  dependsOn(rainierBase).
+  settings(name := "rainier-sampler").
+  settings(commonSettings)
 
 lazy val rainierCore = project.
   in(file("rainier-core")).
   settings(name := "rainier-core").
-  dependsOn(rainierCompute).
+  dependsOn(rainierCompute, rainierSampler).
   settings(commonSettings)
 
 lazy val rainierPlot = project.
