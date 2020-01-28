@@ -25,3 +25,11 @@
 .tldrSection li {
     font-size: larger
 }
+
+.tldrSection img {
+    padding: 50px
+}
+
+.lightBackground {
+    background-color: #fcfcfc
+}

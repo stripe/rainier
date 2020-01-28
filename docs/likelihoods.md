@@ -73,7 +73,7 @@ It might seem a little bit strange that we have to pass in `lambda` here. After 
 val dozens = eggModel.optimize(lambda / 12)
 ```
 
-All well and good. But if all we wanted were point estimates, we probably wouldn't be here. What about sampling?
+All well and good. But if all we wanted were point estimates, we probably wouldn't be here.
 
 ## Finding a Trace
 
