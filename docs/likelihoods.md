@@ -70,7 +70,7 @@ There we have, it folks: the answer to... well, our egg question, anyway.
 It might seem a little bit strange that we have to pass in `lambda` here. After all, that's the only parameter our model has. What else could we want to find the MAP for? But Rainier tries to discourage thinking too much about the raw parameterization of a model, and instead to examine whatever random variable represents the quantites you're actually interested in. In this case, that was pretty much the same thing, but it would have been equally valid, for example, to ask for some other MAP instead:
 
 ```scala mdoc
-eggModel.optimize(lambda * 30)
+val dozens = eggModel.optimize(lambda / 12)
 ```
 
 All well and good. But if all we wanted were point estimates, we probably wouldn't be here. What about sampling?
