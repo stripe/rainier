@@ -38,7 +38,8 @@ case class Trace(chains: List[List[Array[Double]]], model: Model)(
     }
   }
 
-  override def toString = s"Trace[${chains.size}][${chains.head.head.size}]"
+  override def toString =
+    s"Trace[${chains.size}][${chains.head.size}][${chains.head.head.size}]"
 }
 
 /**

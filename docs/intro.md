@@ -43,7 +43,7 @@ This introduces the `Distribution` and `Real` types and shows you how to constru
 
 * [Likelihoods and Observations](likelihoods.md)
 
-This introduces the `Model` and `Trace` types, shows how to condition a model on observations, and how to tune sampling from diagnostics.
+This introduces the `Model` and `Trace` types, shows how to condition a model on observations, and how to check your sampling diagnostics.
 
 * [Vectors and Covariates](vectors.md)
 

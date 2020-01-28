@@ -67,7 +67,7 @@ eggModel.optimize(lambda)
 
 There we have, it folks: the answer to... well, our egg question, anyway.
 
-It might seem a little bit strange that we have to pass in `lambda` here. After all, that's the only parameter our model has. What else could we want to find the MAP for? But Rainier tries to discourage thinking too much about the raw parameterization of a model, and instead to examine whatever random variable represents the quantites you're actually interested in. In this case, that was pretty much the same thing, but it would have been equally valid, for example, to ask for some other MAP instead:
+It might seem a little bit strange that we have to pass in `lambda` here. After all, that's the only parameter our model has. What else could we want to find the MAP for? But Rainier tries to discourage thinking too much about the raw parameterization of a model, and instead to examine whichever random variable represents the quantites you're actually interested in. In this case, that was pretty much the same thing, but it would have been equally valid, for example, to ask for some other MAP instead:
 
 ```scala mdoc
 val dozens = eggModel.optimize(lambda / 12)
@@ -77,3 +77,51 @@ All well and good. But if all we wanted were point estimates, we probably wouldn
 
 ## Finding a Trace
 
+What we'd really like to do is sample the full posterior of `lambda`. We said that `optimize` is "low ceremony". Sampling, by contrast, has more steps, more to configure, and (importantly) more diagnostics to verify along the way.
+
+The first thing we need to do is configure a sampler. For that, we'll need to import the sampler package.
+
+```scala mdoc:silent
+import com.stripe.rainier.sampler._
+```
+
+What we're creating here is an `EHMC`, or _empirical Hamiltonian Monte Carlo_ sampler. The `warmupIterations` are used to tune the sampler and find the right region to sample from; the `iterations` will produce actual samples we'll use. There are other tuning parameters but we'll keep the defaults.
+
+```scala mdoc:to-string
+val sampler = EHMC(warmupIterations = 5000, iterations = 500)
+```
+
+Next, we'll run the sampler on our model. What we get back is a `Trace`: a record of the raw parameter values produced by the sampler.
+
+```scala mdoc:to-string
+val eggTrace = eggModel.sample(sampler)
+```
+
+By default, we run 4 chains, in parallel, giving us 2000 samples in total. The `Trace[4][500][1]` shows us that, as well as reminding us that our model only has one parameter.
+
+Before we keep going, we should check to make sure our sample converged. Because we ran multiple chains, we can make use of `diagnostics` on the trace to get back a `Diagnostics(rHat, effectiveSampleSize)` object for each parameter.
+
+```scala mdoc
+eggTrace.diagnostics
+```
+
+In this case, we've got an rHat close to 1, and a healthy effective sample size, so we're looking good. If our diagnostics looked worse, one thing we might want to do is thin out the trace, say by only keeping every other sample.
+
+```scala mdoc:to-string
+val thinTrace = eggTrace.thin(2)
+thinTrace.diagnostics
+```
+
+## Plotting a Posterior
+
+Finally, we're reading to take a look at the posterior for `lambda`. As with `optimize`, we need to specify which random variable we're interested in, by using the `predict` method on `Trace`. (It's cheap to do this for multiple different predictions, because the inference has already been run and stored in the trace.)
+
+```scala
+val posterior = eggTrace.predict(lambda)
+show("lambda", density(posterior))
+```
+
+```scala mdoc:evilplot:assets/lambda2.png
+val posterior = eggTrace.predict(lambda)
+show("lambda", density(posterior))
+```

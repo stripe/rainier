@@ -5,5 +5,6 @@ trait Sampler {
 }
 
 object Sampler {
-  val default = EHMC(20, 1000, 10000, 10000)
+  val default =
+    EHMC(warmupIterations = 10000, iterations = 10000, l0 = 10, k = 1000)
 }
