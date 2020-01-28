@@ -1,6 +1,6 @@
 ---
-id: priors
-title: Priors and Random Variables
+id: vectors
+title: Vectors and Covariates
 ---
 
 TODO

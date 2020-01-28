@@ -22,6 +22,9 @@
       },
       "priors": {
         "title": "Priors and Random Variables"
+      },
+      "vectors": {
+        "title": "Vectors and Covariates"
       }
     },
     "links": {
