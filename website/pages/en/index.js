@@ -97,6 +97,9 @@ class Index extends React.Component {
               </ul>
             </div>
             <div style={{ display: "flex", flexDirection: "column" }}>
+              <img src="/img/model1.png"></img>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column" }}>
               <h2>How</h2>
               <ul className="whySection" style={{ flex: "1" }}>
                 <li>Fixed-structure, continuous-parameter models like Stan or PyMC3</li>
@@ -105,6 +108,9 @@ class Index extends React.Component {
                 <li>Dynamic compilation to low-level bytecode for speed</li>
                 <li>Pure JVM operation for ease of production deployment</li>
               </ul>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <img src="/img/model2.png"></img>
             </div>
           </div>
         </Container>

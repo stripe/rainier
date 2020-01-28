@@ -15,13 +15,13 @@
         "title": "Updating your beliefs from observations"
       },
       "posteriors": {
-        "title": "Predictions and Posteriors"
+        "title": "Posteriors and Predictions"
       },
       "predictions": {
         "title": "Making predictions about the future"
       },
       "priors": {
-        "title": "Random Variables and Priors"
+        "title": "Priors and Random Variables"
       }
     },
     "links": {
