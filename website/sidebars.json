@@ -1,5 +1,6 @@
 {
   "docs": {
-    "Overview": ["intro", "priors", "likelihoods", "vectors", "posteriors"]
+    "Overview": ["intro", "priors", "likelihoods", "vectors", "posteriors"],
+    "Reference": ["probprog"]
   }
 }
