@@ -23,6 +23,9 @@ case class Model(private[rainier] val likelihoods: List[Real],
     Trace(chains, this)
   }
 
+  def optimize[T, U](t: T)(implicit toGen: ToGenerator[T, U]): U =
+    optimize().predict(t)
+
   def optimize(): Estimate =
     Estimate(Optimizer.lbfgs(density()), this)
 

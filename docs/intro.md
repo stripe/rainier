@@ -39,7 +39,7 @@ The rest of this overview is split into three sections. We recommend you read th
 
 * [Priors and Random Variables](priors.md)
 
-This introduces the `Real` type and shows you how to construct random variables from prior distributions.
+This introduces the `Distribution` and `Real` types and shows you how to construct random variables from prior distributions.
 
 * [Likelihoods and Observations](likelihoods.md)
 
