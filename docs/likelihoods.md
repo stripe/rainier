@@ -114,7 +114,7 @@ thinTrace.diagnostics
 
 ## Plotting a Posterior
 
-Finally, we're reading to take a look at the posterior for `lambda`. As with `optimize`, we need to specify which random variable we're interested in, by using the `predict` method on `Trace`. (It's cheap to do this for multiple different predictions, because the inference has already been run and stored in the trace.)
+Finally, we're ready to take a look at the posterior for `lambda`. As with `optimize`, we need to specify which random variable we're interested in, by using the `predict` method on `Trace`. (It's cheap to do this for multiple different predictions, because the inference has already been run and stored in the trace.)
 
 ```scala
 val posterior = eggTrace.predict(lambda)
