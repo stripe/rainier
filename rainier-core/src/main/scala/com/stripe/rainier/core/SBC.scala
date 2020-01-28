@@ -109,7 +109,7 @@ final case class SBC[T](priors: Seq[Continuous],
     val (model, real) = fit(syntheticValues)
 
     val sample =
-      model.sample(samplerFn(Samples * thin / Chains), Chains).thin(thin)
+      model.sample(samplerFn(Samples * thin / Chains), Chains, false).thin(thin)
     val diag = sample.diagnostics
     val maxRHat = diag.map(_.rHat).max
     val minEffectiveSampleSize = diag.map(_.effectiveSampleSize).min

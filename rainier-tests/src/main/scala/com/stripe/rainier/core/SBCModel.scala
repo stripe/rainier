@@ -8,7 +8,7 @@ trait SBCModel[T] {
   val warmupIterations: Int = 10000
   val syntheticSamples: Int = 1000
   val nSamples: Int = 10
-  def sampler(iterations: Int) = HMC(1, warmupIterations, iterations)
+  def sampler(iterations: Int) = HMC(warmupIterations, iterations, 1)
   def main(args: Array[String]): Unit = {
     implicit val rng: RNG = ScalaRNG(1528673302081L)
     sbc.animate(syntheticSamples)(sampler)
@@ -23,7 +23,7 @@ trait SBCModel[T] {
     val (values, trueValue) = sbc.synthesize(syntheticSamples)
     val (model, real) = sbc.fit(values)
     val samples =
-      model.sample(sampler(goldset.size)).predict(real)
+      model.sample(sampler(goldset.size), 1).predict(real)
     (samples, trueValue)
   }
 
