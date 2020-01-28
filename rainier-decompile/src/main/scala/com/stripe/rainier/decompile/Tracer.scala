@@ -1,18 +1,18 @@
-package com.stripe.rainier.trace
+package com.stripe.rainier.decompile
 
 import com.stripe.rainier.ir._
 import com.stripe.rainier.compute._
 import com.stripe.rainier.core._
 
-case class Tracer(compiler: Compiler, filter: String => Boolean) {
+case class Decompiler(compiler: Compiler, filter: String => Boolean) {
   def apply(model: Model): Unit = apply(model.targetGroup)
   def apply(targetGroup: TargetGroup): Unit = {
     val outputs = targetGroup.outputs.filter { case (s, _) => filter(s) }
-    Tracer.dump(compiler.compile(targetGroup.inputs, outputs))
+    Decompiler.dump(compiler.compile(targetGroup.inputs, outputs))
   }
 }
 
-object Tracer {
+object Decompiler {
   def dump(cf: CompiledFunction): Unit =
     cf.getClass.getClassLoader match {
       case cl: GeneratedClassLoader =>
@@ -21,6 +21,6 @@ object Tracer {
         sys.error("Cannot find bytecode for class")
     }
 
-  val default: Tracer = Tracer(Compiler.default, s => !s.contains("grad"))
-  val gradient: Tracer = Tracer(Compiler.default, _ => true)
+  val default: Decompiler = Decompiler(Compiler.default, s => !s.contains("grad"))
+  val gradient: Decompiler = Decompiler(Compiler.default, _ => true)
 }

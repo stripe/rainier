@@ -26,7 +26,7 @@ A simple model for this is to assume that the number of eggs per day is Poisson-
 val lambda = Gamma(0.5, 100).param
 ```
 
-Sanity check: we can see that `lambda` is between (0, infinity), which is good, because it doesn't make sense to lay a negative number of eggs.
+Sanity check: we can see that `lambda` is between (0, ∞), which is good, because it doesn't make sense to lay a negative number of eggs.
 
 We can also confirm with a quick plot that our prior is very broad, and not very helpful for making predictions.
 

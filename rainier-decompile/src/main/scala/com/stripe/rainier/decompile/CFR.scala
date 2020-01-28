@@ -1,4 +1,4 @@
-package com.stripe.rainier.trace
+package com.stripe.rainier.decompile
 
 import org.benf.cfr.reader
 import reader.entities.ClassFile

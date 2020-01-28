@@ -3,7 +3,7 @@ import wartremover.Wart
 lazy val root = project.
   in(file(".")).
   aggregate(rainierCompute, rainierCore, rainierPlot).
-  aggregate(rainierBenchmark, rainierTests).
+  aggregate(rainierBenchmark, rainierTest).
   aggregate(shadedAsm).
   settings(commonSettings).
   settings(unpublished)
@@ -125,9 +125,9 @@ lazy val rainierBenchmark = project.
   settings(commonSettings).
   settings(unpublished)
 
-lazy val rainierTests = project.
-  in(file("rainier-tests")).
-  settings(name := "rainier-tests").
+lazy val rainierTest = project.
+  in(file("rainier-test")).
+  settings(name := "rainier-test").
   dependsOn(
     rainierCore
   ).
@@ -136,9 +136,9 @@ lazy val rainierTests = project.
     "org.scalatest" %% "scalatest" % V.scalatest)).
   settings(unpublished)
 
-lazy val rainierTrace = project.
-  in(file("rainier-trace")).
-  settings(name := "rainier-trace").
+lazy val rainierDecompile = project.
+  in(file("rainier-decompile")).
+  settings(name := "rainier-decompile").
   dependsOn(rainierCore).
   settings(commonSettings).
   settings(unpublished)
