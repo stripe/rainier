@@ -59,7 +59,7 @@ But what can we do with a `Model`?
 
 ## Maximum a Posteriori 
 
-One thing we can do with very little ceremony is to get a single point estimate &emdash; the maximum a posteriori, or MAP &emdash using the L-BFGS optimizer. That just looks like this:
+One thing we can do with very little ceremony is to get a single point estimate — the maximum a posteriori, or MAP — using the L-BFGS optimizer. That just looks like this:
 
 ```scala mdoc
 eggModel.optimize(lambda)
