@@ -35,7 +35,7 @@ import com.stripe.rainier.core._
 
 ## This Overview
 
-The rest of this overview is split into three sections. We recommend you read them all before you start working with Rainier. They are:
+The rest of this overview is split into four sections. We recommend you read them all before you start working with Rainier. They are:
 
 * [Priors and Random Variables](priors.md)
 
@@ -44,6 +44,10 @@ This introduces the `Distribution` and `Real` types and shows you how to constru
 * [Likelihoods and Observations](likelihoods.md)
 
 This introduces the `Model` and `Trace` types, shows how to condition a model on observations, and how to tune sampling from diagnostics.
+
+* [Vectors and Covariates](vectors.md)
+
+This introduces the `Vec` and `Fn` types, shows how to deal with larger numbers of parameters and observations.
 
 * [Posteriors and Predictions](posteriors.md)
 
