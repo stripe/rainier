@@ -14,7 +14,8 @@ case class Model(private[rainier] val likelihoods: List[Real],
       implicit rng: RNG): Trace = {
     val range =
       if (parallel)
-        1.to(nChains).par
+        // TODO this used to return a ParRange. To do that in 2.13 we would need scala-parallel-collections
+        1.to(nChains)
       else
         1.to(nChains)
     val chains = range.map { _ =>

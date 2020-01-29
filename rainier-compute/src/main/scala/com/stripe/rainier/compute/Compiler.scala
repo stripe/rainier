@@ -19,7 +19,7 @@ final case class Compiler(methodSizeLimit: Int, classSizeLimit: Int) {
                     group.data)
   }
 
-  def compile(inputs: Seq[ir.Parameter],
+  def compile(inputs: Seq[ir.IParameter],
               outputs: Seq[(String, Real)]): ir.CompiledFunction = {
     val translator = new Translator
     val exprs = outputs.map {

@@ -1,6 +1,6 @@
 package com.stripe.rainier.compute
 
-import com.stripe.rainier.ir._
+import com.stripe.rainier.ir.GraphViz
 
 private class BoundsViz {
   import GraphViz._

@@ -154,7 +154,7 @@ final private case class Scalar(value: Double) extends Constant {
 
 final private[rainier] class Column(val values: Array[Double])
     extends Constant {
-  val param = new ir.Parameter
+  val param = new ir.IParameter
   val bounds = Bounds(values.min, values.max)
   def getDouble = sys.error("Not a scalar")
   def map(fn: Double => Double) = new Column(values.map(fn))
@@ -178,7 +178,7 @@ final private[rainier] class Column(val values: Array[Double])
 sealed trait NonConstant extends Real
 
 final private[rainier] class Parameter(var density: Real) extends NonConstant {
-  val param = new ir.Parameter
+  val param = new ir.IParameter
   val bounds = Bounds(Double.NegativeInfinity, Double.PositiveInfinity)
 }
 

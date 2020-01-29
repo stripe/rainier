@@ -2,7 +2,7 @@ package com.stripe.rainier.ir
 
 sealed trait Expr
 sealed trait Ref extends Expr
-final class Parameter extends Ref {
+final class IParameter extends Ref {
   val sym: Sym = Sym.freshSym
 }
 final case class Const(value: Double) extends Ref

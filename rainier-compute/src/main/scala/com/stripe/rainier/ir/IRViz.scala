@@ -1,6 +1,6 @@
 package com.stripe.rainier.ir
 
-private class IRViz(parameters: Seq[Parameter], methodDefs: List[MethodDef]) {
+private class IRViz(parameters: Seq[IParameter], methodDefs: List[MethodDef]) {
   import GraphViz._
   val gv = new GraphViz
 
@@ -29,7 +29,7 @@ private class IRViz(parameters: Seq[Parameter], methodDefs: List[MethodDef]) {
       case ref: Ref         => Right(refLabel(ref))
     }
 
-  def paramLabel(p: Parameter): String =
+  def paramLabel(p: IParameter): String =
     paramMap.get(p) match {
       case Some(s) => s
       case None =>
@@ -41,9 +41,9 @@ private class IRViz(parameters: Seq[Parameter], methodDefs: List[MethodDef]) {
 
   def refLabel(r: Ref): String =
     r match {
-      case Const(c)     => formatDouble(c)
-      case p: Parameter => paramLabel(p)
-      case VarRef(sym)  => varSlot(sym)
+      case Const(c)      => formatDouble(c)
+      case p: IParameter => paramLabel(p)
+      case VarRef(sym)   => varSlot(sym)
     }
 
   def traverse(r: Expr): String =
@@ -112,7 +112,7 @@ private class IRViz(parameters: Seq[Parameter], methodDefs: List[MethodDef]) {
 
 object IRViz {
   def apply(exprs: Seq[(String, Expr)],
-            parameters: Seq[Parameter],
+            parameters: Seq[IParameter],
             methodSizeLimit: Option[Int]): GraphViz = {
     val methodGroups = exprs.toList.map {
       case (name, expr) =>
