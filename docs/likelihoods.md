@@ -97,7 +97,7 @@ Next, we'll run the sampler on our model. What we get back is a `Trace`: a recor
 val eggTrace = eggModel.sample(sampler)
 ```
 
-By default, we run 4 chains, in parallel, giving us 2000 samples in total. The `Trace[4][500][1]` shows us that, as well as reminding us that our model only has one parameter.
+By default, we run 4 chains, giving us 2000 samples in total. The `Trace[4][500][1]` shows us that, as well as reminding us that our model only has one parameter.
 
 Before we keep going, we should check to make sure our sample converged. Because we ran multiple chains, we can make use of `diagnostics` on the trace to get back a `Diagnostics(rHat, effectiveSampleSize)` object for each parameter.
 
@@ -114,7 +114,7 @@ thinTrace.diagnostics
 
 ## Plotting a Posterior
 
-Finally, we're ready to take a look at the posterior for `lambda`. As with `optimize`, we need to specify which random variable we're interested in, by using the `predict` method on `Trace`. (It's cheap to do this for multiple different predictions, because the inference has already been run and stored in the trace.)
+Finally, we're ready to take a look at the posterior for `lambda`. As with `optimize`, we need to specify which random variable we're interested in, by using the `predict` method on `Trace`.
 
 ```scala
 val posterior = eggTrace.predict(lambda)
