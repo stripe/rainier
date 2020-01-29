@@ -40,7 +40,11 @@ You can see a few things here: the sampling process has converted our `(a, c)` t
 
 ## Visualizing Samples
 
-Rainier comes with plotting support, based on [EvilPlot](https://cibotech.github.io/evilplot/), in a separate `rainier-notebook` module. If you were in Jupyter, for example, you should do this as well as importing `rainier-core`:
+Rainier comes with plotting support, based on [EvilPlot](https://cibotech.github.io/evilplot/), in a separate `rainier-notebook` module. 
+
+_NOTE: this currently is only supported for Scala 2.12._
+
+If you were in Jupyter, for example, you should do this as well as importing `rainier-core`:
 
 ```scala
 import $ivy.`com.stripe:rainier-notebook:@VERSION@`
