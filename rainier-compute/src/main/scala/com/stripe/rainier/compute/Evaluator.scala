@@ -1,10 +1,6 @@
 package com.stripe.rainier.compute
 
-class Evaluator(var cache: Map[Real, Double]) extends Numeric[Real] {
-
-  def parseString(str: String): Option[Real] =
-    (try { Some(str.toDouble) } catch { case _: Throwable => None })
-      .map(Real(_))
+class Evaluator(var cache: Map[Real, Double]) {
 
   def toDouble(x: Real): Double = x match {
     case c: Constant => c.getDouble
@@ -22,9 +18,9 @@ class Evaluator(var cache: Map[Real, Double]) extends Numeric[Real] {
   private def eval(real: Real): Double = real match {
     case c: Constant => c.getDouble
     case l: Line =>
-      l.ax.toList.map { case (r, d) => toDouble(r) * d.toDouble }.sum + l.b.toDouble
+      l.ax.toList.map { case (r, d) => toDouble(r) * d.getDouble }.sum + l.b.getDouble
     case l: LogLine =>
-      l.ax.toList.map { case (r, d) => Math.pow(toDouble(r), d.toDouble) }.product
+      l.ax.toList.map { case (r, d) => Math.pow(toDouble(r), d.getDouble) }.product
     case Unary(original, op) =>
       // must use Real(_) constructor since Constant(_) constructor would result in undesirable errors
       // at infinities and unhelpful NumberFormatException on NaN, all due to conversion to Decimal
