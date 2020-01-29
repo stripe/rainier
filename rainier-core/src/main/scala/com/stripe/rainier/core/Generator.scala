@@ -12,7 +12,7 @@ sealed trait Generator[+T] { self =>
 
   def requirements: Set[Real]
 
-  def get(implicit r: RNG, n: Numeric[Real]): T
+  def get(implicit r: RNG, n: Evaluator): T
 
   def map[U](fn: T => U): Generator[U] = self match {
     case Const(reqs, t)     => Const(reqs, fn(t))
@@ -105,24 +105,24 @@ object Generator {
     gen(l)
 
   case class Const[T](requirements: Set[Real], t: T) extends Generator[T] {
-    def get(implicit r: RNG, n: Numeric[Real]): T = t
+    def get(implicit r: RNG, n: Evaluator): T = t
   }
 
-  case class From[T](requirements: Set[Real], fn: (RNG, Numeric[Real]) => T)
+  case class From[T](requirements: Set[Real], fn: (RNG, Evaluator) => T)
       extends Generator[T] {
-    def get(implicit r: RNG, n: Numeric[Real]): T = fn(r, n)
+    def get(implicit r: RNG, n: Evaluator): T = fn(r, n)
   }
 
   def constant[T](t: T): Generator[T] = Const(Set.empty, t)
 
-  def from[T](fn: (RNG, Numeric[Real]) => T): Generator[T] = From(Set.empty, fn)
+  def from[T](fn: (RNG, Evaluator) => T): Generator[T] = From(Set.empty, fn)
 
   def real(x: Real): Generator[Double] =
     From(Set(x), { (_, n) =>
       n.toDouble(x)
     })
 
-  def require[T](reqs: Set[Real])(fn: (RNG, Numeric[Real]) => T): Generator[T] =
+  def require[T](reqs: Set[Real])(fn: (RNG, Evaluator) => T): Generator[T] =
     From(reqs, fn)
 
   def vector[T](v: Vector[T]) = from((r, _) => v(r.int(v.size)))

@@ -16,7 +16,7 @@ import com.stripe.rainier.sampler._
 @State(Scope.Benchmark)
 class CategoricalBenchmark {
   implicit val rng: RNG = RNG.default
-  implicit val eval: Numeric[Real] = new Evaluator(Map.empty)
+  implicit val eval: Evaluator = new Evaluator(Map.empty)
 
   @Benchmark
   def run(): Unit = {
