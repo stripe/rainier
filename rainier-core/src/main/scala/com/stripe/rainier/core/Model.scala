@@ -10,14 +10,8 @@ case class Model(private[rainier] val likelihoods: List[Real],
   def merge(other: Model) =
     Model(likelihoods ++ other.likelihoods, track ++ other.track)
 
-  def sample(sampler: Sampler, nChains: Int = 4, parallel: Boolean = true)(
-      implicit rng: RNG): Trace = {
-    val range =
-      if (parallel)
-        // TODO this used to return a ParRange. To do that in 2.13 we would need scala-parallel-collections
-        1.to(nChains)
-      else
-        1.to(nChains)
+  def sample(sampler: Sampler, nChains: Int = 4)(implicit rng: RNG): Trace = {
+    val range = 1.to(nChains)
     val chains = range.map { _ =>
       sampler.sample(density())
     }.toList
@@ -61,7 +55,7 @@ object Model {
       rng: RNG): List[U] = {
     val gen = toGen(t)
     val model = Model.track(gen.requirements)
-    val trace = model.sample(sampler, 1, false)
+    val trace = model.sample(sampler, 1)
     trace.thin(10).predict(gen)
   }
 
