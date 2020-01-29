@@ -40,9 +40,7 @@ def getPublishTo(snapshot: Boolean) = {
 
 lazy val commonSettings = Seq(
   organization:= "com.stripe",
-  scalaVersion := "2.13.1",
-  crossScalaVersions := List(scalaVersion.value, "2.12.10", "2.11.12"),
-  releaseCrossBuild := true,
+  scalaVersion := "2.12.10",
   releasePublishArtifactsAction := PgpKeys.publishSigned.value,
   homepage := Some(url("https://github.com/stripe/rainier")),
   licenses := Seq("Apache 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
@@ -61,6 +59,11 @@ lazy val commonSettings = Seq(
   developers := List(
     Developer("avibryant", "Avi Bryant", "", url("https://twitter.com/avibryant"))
   ),
+)
+
+lazy val crossBuildSettings = Seq(
+  crossScalaVersions := List("2.13.1", "2.12.10", "2.11.12"),
+  releaseCrossBuild := true
 )
 
 lazy val unpublished = Seq(publish := {}, publishLocal := {}, publishArtifact := false)
@@ -84,6 +87,7 @@ lazy val rainierBase = project.
   in(file("rainier-base")).
   settings(name := "rainier-base").
   settings(commonSettings).
+  settings(crossBuildSettings).
   settings(
     libraryDependencies ++= Seq(
       "com.google.flogger" % "flogger" % V.flogger,
@@ -94,6 +98,7 @@ lazy val rainierCompute = project.
   dependsOn(rainierBase).
   settings(name := "rainier-compute").
   settings(commonSettings).
+  settings(crossBuildSettings).
   settings(
     libraryDependencies ++= Seq(
       "com.stripe" % "rainier-shaded-asm_6.0" % V.shadedAsm)
@@ -103,13 +108,15 @@ lazy val rainierSampler = project.
   in(file("rainier-sampler")).
   dependsOn(rainierBase).
   settings(name := "rainier-sampler").
-  settings(commonSettings)
+  settings(commonSettings).
+  settings(crossBuildSettings)
 
 lazy val rainierCore = project.
   in(file("rainier-core")).
   settings(name := "rainier-core").
   dependsOn(rainierCompute, rainierSampler).
-  settings(commonSettings)
+  settings(commonSettings).
+  settings(crossBuildSettings)
 
 lazy val rainierPlot = project.
   in(file("rainier-plot")).
@@ -117,9 +124,6 @@ lazy val rainierPlot = project.
   dependsOn(rainierCore).
   settings(commonSettings).
   settings(
-    // Evilplot not yet available on 2.13.x
-    scalaVersion := "2.12.10",
-    crossScalaVersions := List("2.11.12", "2.12.10"),
     resolvers ++=
       Seq(
         Resolver.bintrayRepo("cibotech", "public"),

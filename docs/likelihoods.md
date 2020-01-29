@@ -5,6 +5,7 @@ title: Likelihoods and Observations
 
 ```scala mdoc:invisible
 import com.stripe.rainier.core._
+import com.stripe.rainier.compute._
 import com.stripe.rainier.plot._
 import Jupyter._
 ```
