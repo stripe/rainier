@@ -72,7 +72,6 @@ lazy val V = new {
   val scalatest = "3.0.8"
   val flogger = "0.3.1"
   val almond = "0.3.0"
-  val scala = "2.12.8"
   val shadedAsm = "0.2.1"
   val scalameta = "4.2.3"
   val mdoc = "2.1.1"
