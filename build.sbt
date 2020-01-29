@@ -114,6 +114,7 @@ lazy val rainierCore = project.
 lazy val rainierPlot = project.
   in(file("rainier-plot")).
   settings(name := "rainier-plot").
+  dependsOn(rainierCore).
   settings(commonSettings).
   settings(
     // Evilplot not yet available on 2.13.x
@@ -129,8 +130,7 @@ lazy val rainierPlot = project.
         "org.scalameta" %% "scalameta" % V.scalameta,
         "org.scalameta" %% "mdoc" % V.mdoc,
         "sh.almond" %% "interpreter-api" % V.almond)
-  ).
-  dependsOn(rainierCore)
+  )
 
 // test modules
 
