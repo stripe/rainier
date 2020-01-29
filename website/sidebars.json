@@ -1,6 +1,6 @@
 {
   "docs": {
     "Overview": ["intro", "priors", "likelihoods", "vectors", "posteriors"],
-    "Reference": ["probprog"]
+    "Reference": ["modules", "probprog"] 
   }
 }

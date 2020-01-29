@@ -11,6 +11,10 @@
       "likelihoods": {
         "title": "Likelihoods and Observations"
       },
+      "modules": {
+        "title": "Rainier's Modules",
+        "sidebar_label": "Modules"
+      },
       "observations": {
         "title": "Updating your beliefs from observations"
       },
