@@ -45,7 +45,7 @@ This introduces the `Distribution` and `Real` types and shows you how to constru
 
 This introduces the `Model` and `Trace` types, shows how to condition a model on observations, and how to check your sampling diagnostics.
 
-* [Vectors and Covariates](vectors.md)
+* [Vectors and Variables](vectors.md)
 
 This introduces the `Vec` and `Fn` types, and shows how to deal with larger numbers of parameters and observations.
 
