@@ -37,7 +37,7 @@ This gives us back a `Vec[Real]`, which is a type defined by Rainier. It's simil
 Like a regular `Vector`, we can transform it using `map`: here, to bring these random variables back out of log-space.
 
 ```scala mdoc:to-string
-val feeds = logFeed.map(_.exp)
+val feeds = logFeeds.map(_.exp)
 ```
 
 Again, a sanity check on the bounds: everything in the `Vec` is now >= 0, so we haven't screwed up our ability to use these as rates.
