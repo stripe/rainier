@@ -117,7 +117,7 @@ lazy val rainierNotebook = project.
   settings(commonSettings).
   settings(
     // Evilplot not yet available on 2.13.x
-    crossScalaVersions := List("2.11.12", "2.12.10"),
+    crossScalaVersions := List("2.12.10"),
     resolvers ++=
       Seq(
         Resolver.bintrayRepo("cibotech", "public"),
