@@ -1,7 +1,7 @@
 package com.stripe.rainier.ir
 
 final private case class ExprMethodGenerator(method: MethodDef,
-                                             inputs: Seq[IParameter],
+                                             inputs: Seq[Param],
                                              varTypes: VarTypes,
                                              classPrefix: String,
                                              classSizeLimit: Int)
@@ -20,7 +20,7 @@ final private case class ExprMethodGenerator(method: MethodDef,
     expr match {
       case Const(value) =>
         constant(value)
-      case p: IParameter =>
+      case p: Param =>
         loadParameter(varIndices(p))
       case v: VarDef =>
         varTypes(v.sym) match {
