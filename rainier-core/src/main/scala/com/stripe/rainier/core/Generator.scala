@@ -82,10 +82,10 @@ sealed trait Generator[+T] { self =>
           }
           implicit val evaluator: Evaluator =
             new Evaluator(
-              parameters
+              (parameters
                 .zip(array)
-                .toMap ++
-                reqs.zip(reqValues).toMap
+                ++
+                  reqs.zip(reqValues)).toMap
             )
           get
         }
@@ -127,7 +127,7 @@ object Generator {
 
   def vector[T](v: Vector[T]) = from((r, _) => v(r.int(v.size)))
 
-  def fromSet[T](items: Set[T]) = vector(items.to[Vector])
+  def fromSet[T](items: Set[T]) = vector(items.toVector)
 
   def traverse[T, U](seq: Seq[T])(
       implicit toGen: ToGenerator[T, U]

@@ -1,7 +1,7 @@
 language: scala
 
 scala:
-  - 2.12.10
+  - 2.13.1
 
 jdk:
   - openjdk8
@@ -17,7 +17,7 @@ jobs:
         - NAME="COMPILE"
         - SCALAC_FATAL_WARNINGS=true
       script:
-        - sbt compile
+        - sbt +compile
 
     - env:
         - NAME="TESTS"

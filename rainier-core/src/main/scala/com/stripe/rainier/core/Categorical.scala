@@ -76,9 +76,13 @@ object Categorical {
   }
 
   def list[T](seq: Seq[T]): Categorical[T] =
-    normalize(seq.groupBy(identity).mapValues { l =>
-      Real(l.size)
-    })
+    normalize(
+      seq
+        .groupBy(identity)
+        .mapValues { l =>
+          Real(l.size)
+        }
+        .toMap)
 
   def fromSet[T](ts: Set[T]): Categorical[T] = {
     val p = Real.one / ts.size

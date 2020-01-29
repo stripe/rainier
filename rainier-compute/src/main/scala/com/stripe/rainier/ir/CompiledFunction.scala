@@ -39,7 +39,7 @@ trait CompiledFunction {
 }
 
 object CompiledFunction {
-  def apply(inputs: Seq[Parameter],
+  def apply(inputs: Seq[Param],
             exprs: Seq[(String, Expr)],
             methodSizeLimit: Int,
             classSizeLimit: Int): CompiledFunction = {

@@ -6,7 +6,11 @@ lazy val root = project.
   aggregate(rainierBenchmark, rainierTest).
   aggregate(shadedAsm).
   settings(commonSettings).
-  settings(unpublished)
+  settings(unpublished).
+  settings(
+    // crossScalaVersions must be set to Nil on the aggregating project
+    crossScalaVersions := Nil
+  )
 
 scalafmtOnCompile in ThisBuild := true
 
@@ -36,8 +40,8 @@ def getPublishTo(snapshot: Boolean) = {
 
 lazy val commonSettings = Seq(
   organization:= "com.stripe",
-  scalaVersion := "2.12.10",
-  crossScalaVersions := List(scalaVersion.value, "2.11.12"),
+  scalaVersion := "2.13.1",
+  crossScalaVersions := List(scalaVersion.value, "2.12.10", "2.11.12"),
   releaseCrossBuild := true,
   releasePublishArtifactsAction := PgpKeys.publishSigned.value,
   homepage := Some(url("https://github.com/stripe/rainier")),
@@ -65,10 +69,9 @@ lazy val unpublished = Seq(publish := {}, publishLocal := {}, publishArtifact :=
 lazy val V = new {
   val asm = "6.0"
   val evilplot = "0.6.0"
-  val scalatest = "3.0.5"
+  val scalatest = "3.0.8"
   val flogger = "0.3.1"
   val almond = "0.3.0"
-  val scala = "2.12.8"
   val shadedAsm = "0.2.1"
   val scalameta = "4.2.3"
   val mdoc = "2.1.1"
@@ -114,6 +117,9 @@ lazy val rainierPlot = project.
   dependsOn(rainierCore).
   settings(commonSettings).
   settings(
+    // Evilplot not yet available on 2.13.x
+    scalaVersion := "2.12.10",
+    crossScalaVersions := List("2.11.12", "2.12.10"),
     resolvers ++=
       Seq(
         Resolver.bintrayRepo("cibotech", "public"),
