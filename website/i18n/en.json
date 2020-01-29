@@ -15,14 +15,8 @@
         "title": "Rainier's Modules",
         "sidebar_label": "Modules"
       },
-      "observations": {
-        "title": "Updating your beliefs from observations"
-      },
       "posteriors": {
         "title": "Posteriors and Predictions"
-      },
-      "predictions": {
-        "title": "Making predictions about the future"
       },
       "priors": {
         "title": "Priors and Random Variables"

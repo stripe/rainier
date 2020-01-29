@@ -2,7 +2,7 @@ import wartremover.Wart
 
 lazy val root = project.
   in(file(".")).
-  aggregate(rainierCompute, rainierSampler, rainierCore, rainierPlot).
+  aggregate(rainierCompute, rainierSampler, rainierCore, rainierNotebook).
   aggregate(rainierBenchmark, rainierTest).
   aggregate(shadedAsm).
   settings(commonSettings).
@@ -40,8 +40,8 @@ def getPublishTo(snapshot: Boolean) = {
 
 lazy val commonSettings = Seq(
   organization:= "com.stripe",
-  scalaVersion := "2.13.1",
-  crossScalaVersions := List(scalaVersion.value, "2.12.10", "2.11.12"),
+  scalaVersion := "2.12.10",
+  crossScalaVersions := List("2.13.1", "2.12.10", "2.11.12"),
   releaseCrossBuild := true,
   releasePublishArtifactsAction := PgpKeys.publishSigned.value,
   homepage := Some(url("https://github.com/stripe/rainier")),
@@ -71,7 +71,7 @@ lazy val V = new {
   val evilplot = "0.6.0"
   val scalatest = "3.0.8"
   val flogger = "0.3.1"
-  val almond = "0.3.0"
+  val almond = "0.9.1"
   val shadedAsm = "0.2.1"
   val scalameta = "4.2.3"
   val mdoc = "2.1.1"
@@ -111,14 +111,12 @@ lazy val rainierCore = project.
   dependsOn(rainierCompute, rainierSampler).
   settings(commonSettings)
 
-lazy val rainierPlot = project.
-  in(file("rainier-plot")).
-  settings(name := "rainier-plot").
-  dependsOn(rainierCore).
+lazy val rainierNotebook = project.
+  in(file("rainier-notebook")).
+  settings(name := "rainier-notebook").
   settings(commonSettings).
   settings(
     // Evilplot not yet available on 2.13.x
-    scalaVersion := "2.12.10",
     crossScalaVersions := List("2.11.12", "2.12.10"),
     resolvers ++=
       Seq(
@@ -129,7 +127,7 @@ lazy val rainierPlot = project.
         "com.cibo" %% "evilplot" % V.evilplot,
         "org.scalameta" %% "scalameta" % V.scalameta,
         "org.scalameta" %% "mdoc" % V.mdoc,
-        "sh.almond" %% "interpreter-api" % V.almond)
+        "sh.almond" %% "jupyter-api" % V.almond)
   )
 
 // test modules
@@ -171,7 +169,7 @@ lazy val docs = project.
   enablePlugins(MdocPlugin, DocusaurusPlugin).
   dependsOn(
     rainierCore,
-    rainierPlot,
+    rainierNotebook,
   ).
   settings(commonSettings).
   settings(

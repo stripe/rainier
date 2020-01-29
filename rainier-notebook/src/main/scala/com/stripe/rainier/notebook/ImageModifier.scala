@@ -1,20 +1,19 @@
-package com.stripe.rainier.plot
+package com.stripe.rainier.notebook
 
-import com.cibo.evilplot.geometry.Drawable
-import java.nio.file.Files
-import java.nio.file.Paths
+import almond.display.Image
+import java.nio.file.{Files, Paths, StandardOpenOption}
 import mdoc._
 import scala.meta.inputs.Position
 
-class EvilplotModifier extends PostModifier {
-  val name = "evilplot"
+class ImageModifier extends PostModifier {
+  val name = "image"
   def process(ctx: PostModifierContext): String = {
     val relpath = Paths.get(ctx.info)
     val out = ctx.outputFile.toNIO.getParent.resolve(relpath)
     ctx.lastValue match {
-      case d: Drawable => {
+      case img: Image => {
         Files.createDirectories(out.getParent)
-        d.write(out.toFile)
+        Files.write(out, img.byteArrayOpt.get, StandardOpenOption.CREATE)
         s"![](${ctx.info})"
       }
       case _ =>
@@ -29,7 +28,7 @@ class EvilplotModifier extends PostModifier {
         ctx.reporter.error(
           pos,
           s"""type mismatch:
-  expected: com.cibo.evilplot.geometry.Drawable
+  expected: almond.display.Image
   obtained: $obtained"""
         )
         ""

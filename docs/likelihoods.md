@@ -5,8 +5,7 @@ title: Likelihoods and Observations
 
 ```scala mdoc:invisible
 import com.stripe.rainier.core._
-import com.stripe.rainier.plot._
-import Jupyter._
+import com.stripe.rainier.notebook._
 ```
 
 The [previous section](priors.md) briefly showed you how to create random variables from prior distributions. In this section, we'll show you how to use distributions as likelihoods, to update our beliefs about those random variables based on real-world data.
@@ -34,7 +33,7 @@ We can also confirm with a quick plot that our prior is very broad, and not very
 show("lambda", density(Model.sample(lambda)))
 ```
 
-```scala mdoc:evilplot:assets/lambda.png
+```scala mdoc:image:assets/lambda.png
 show("lambda", density(Model.sample(lambda)))
 ```
 
@@ -121,7 +120,7 @@ val posterior = eggTrace.predict(lambda)
 show("lambda", density(posterior))
 ```
 
-```scala mdoc:evilplot:assets/lambda2.png
+```scala mdoc:image:assets/lambda2.png
 val posterior = eggTrace.predict(lambda)
 show("lambda", density(posterior))
 ```
