@@ -34,6 +34,9 @@
       "real": {
         "title": "Real and Vec"
       },
+      "samplers": {
+        "title": "Samplers"
+      },
       "vectors": {
         "title": "Vectors and Variables"
       }
