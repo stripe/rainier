@@ -27,7 +27,7 @@ Run L-BFGS. `value: T` must be something that can be converted to a `Generator[U
 
 ### Object Methods
 
-* `observe[Y](ys: Seq[Y], dist: Distribution[Y]): Model`
+* `observe[Y](ys: Seq[Y], likelihood: Distribution[Y]): Model`
 * `observe[X, Y](xs: Seq[X], ys: Seq[Y])(fn: X => Distribution[Y]): Model`
 * `observe[X, Y](xs: Seq[X], ys: Seq[Y], fn: Fn[X, Distribution[Y]]): Model`
 

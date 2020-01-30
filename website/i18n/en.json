@@ -37,6 +37,9 @@
       "samplers": {
         "title": "Samplers"
       },
+      "trace": {
+        "title": "Trace and Generator"
+      },
       "vectors": {
         "title": "Vectors and Variables"
       }

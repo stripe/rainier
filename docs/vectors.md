@@ -54,3 +54,64 @@ It's worth noting that we can just keep reusing the same `feeds` random variable
 
 ## Merging Models
 
+For any single type of feed, creating a model looks exactly as it did in the [previous section](likelihoods.md). For example, we could filter to just type 0:
+
+```scala mdoc:to-string
+val eggs0 = eggs.filter{case (f, _) => f == 0}.map{case (_, c) => c}
+val model0 = Model.observe(eggs0, Poisson(feeds(0)))
+```
+
+You'll notice that this is a `Model[2]`, because it has two parameters: the baseline `lambda`, and then the `feeds(0)` which is derived from it.
+
+Similarly, we can do this for all the feed types at once by first grouping the data by feed type, and then mapping over the groups:
+
+```scala mdoc:to-string
+val models = eggs.groupBy(_._1).toList.map{
+    case (i, data) =>
+        val counts = data.map(_._2)
+        Model.observe(counts, Poisson(feeds(i)))
+}
+```
+
+Now we have three different `Model[2]` objects, each of them referencing the same `lambda` but a different element of `feeds`.
+
+Finally, we can use `Model`'s `merge` method to _combine_ all three models into a single joint model for all three feed types.
+
+```scala mdoc:to-string
+val mergedModel = models.reduce{(m1, m2) => m1.merge(m2)}
+```
+
+This model has 4 parameters, as it should.
+
+There's nothing wrong with building the model this way in this situation, where you have a categorical independent variable. However, if you had a continuous covariate, this wouldn't work, so it's good to see an alternative way of solving the same problem.
+
+## Mapping Variables
+
+So far we've used `Model.observe` with the following signature: `observe[Y](ys: Seq[Y], likelihood: Distribution[Y])`. That is: a single vector of observations, and a single distribution that provides its likelihood function.
+
+Another option is `observe[X, Y](xs: Seq[X], ys: Seq[Y])(fn: X => Distribution[Y])`. In this case, we assume we can structure our data as `(X,Y)` pairs, and describe a function of `X` that will produce a new `Distribution[Y]` for each observation.
+
+To make use of it, we first have to split our data into separate `xs` and `ys` vectors, for our independent variables and dependent variable, respectively.
+
+```scala mdoc:to-string
+val eggFeeds = eggs.map(_._1)
+val eggCounts = eggs.map(_._2)
+
+val mappedModel =
+    Model.observe(eggFeeds, eggCounts){feed: Int =>
+        Poisson(feeds(feed))
+    }
+```
+
+What we end up with is a `Model[4]` that is semantically identical to the `mergedModel` we produced before. In fact, this approach is identical to first producing a separate model for each observation, and then merging all of them together. So we could, equivalently, have done something like this:
+
+```scala
+eggs
+    .map{case (feed, count) => Model.observe(List(count), Poisson(feeds(feed)))}
+    .reduce((m1, m2) => m1.merge(m2))
+```
+
+Unfortunately, that also highlights a problem with this approach: by creating so many individual tiny models, you open yourself up to performance problems. It's not an issue with small scale data like we're working with here, but if you had tens or hundreds of thousands of observations, you would definitely notice it. Luckily, with a little bit more work, there's a way around that.
+
+## Encoding Variables
+
