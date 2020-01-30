@@ -6,13 +6,17 @@ title: Vectors and Variables
 ```scala mdoc:invisible
 import com.stripe.rainier.core._
 import com.stripe.rainier.compute._
-import com.stripe.rainier.plot._
-import Jupyter._
 ```
 
-Our imaginary chicken farmer from the [previous section](likelihoods.md) has gotten more sophisticated: she's testing three different types of feed to see which one produces more eggs.
+For this section, we'll need an additional import, of the `compute` module, so that we can work directly with the types `Real`, `Vec`, and `Fn`.
 
-## Counting your Chickens, Redux
+```scala
+import com.stripe.rainier.compute._
+```
+
+## Counting More Chickens
+
+Our imaginary chicken farmer from the [previous section](likelihoods.md) has gotten more sophisticated: she's testing three different types of feed to see which one produces more eggs.
 
 The egg dataset now includes a `0`, `1`, or `2` for each day that indicates which type of feed they got.
 
@@ -115,3 +119,18 @@ Unfortunately, that also highlights a problem with this approach: by creating so
 
 ## Encoding Variables
 
+To get ahead of this potential performance problem, we need to introduce a new type, the `Fn`. Just like `Vec` is a specialized `Vector`, `Fn` is a specialized Scala function.
+
+Let's use it first, and explain afterwards:
+
+```scala mdoc:to-string
+val encoder = Fn.int
+val likelihood = encoder.map{feed: Real => Poisson(feeds(feed))}
+val encodedModel = Model.observe(eggFeeds, eggCounts, likelihood)
+```
+
+You can see that this ends up not especially different from the `mappedModel` code above. However, it will perform much better, especially with larger amounts of data.
+
+So what's going on?
+
+TODO
