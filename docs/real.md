@@ -19,6 +19,8 @@ Trigonometry: `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `sinh`, `cosh`, `tanh
 
 ### Object methods
 
+Construct with `Real(a)` for any numeric value `a`
+
 Constants: `zero`, `one`, `two`, `negOne`, `Pi`, `infinity`, `negInfinity`
 
 Control flow:
@@ -48,7 +50,13 @@ Applicative:
 * `map[U](fn: T => U): Vec[U]`
 * `zip[U](other: Vec[U]): Vec[(T, U)]`
 
+Collections: `size`, `toList`
+
 Only for `Vec[Real]`:
 
 * `++(other: Vec[Real]): Vec[Real]`
 * `dot(other: Vec[Real]): Real`
+
+### Object methods
+
+Construct with `Vec(a, b, c, ...)`, where the values are either numeric or `Real`
