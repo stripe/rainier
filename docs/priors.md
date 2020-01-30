@@ -41,17 +41,20 @@ You can see a few things here: the sampling process has converted our `(a, c)` t
 
 ## Visualizing Samples
 
-Rainier comes with plotting support, based on [EvilPlot](https://cibotech.github.io/evilplot/), in a separate `rainier-plot` module. If you were in Jupyter, for example, you should do this as well as (or instead of) importing `rainier-core`:
+Rainier comes with plotting support, based on [EvilPlot](https://cibotech.github.io/evilplot/), in a separate `rainier-notebook` module. 
+
+_NOTE: this currently is only supported for Scala 2.12._
+
+If you were in Jupyter, for example, you should do this as well as importing `rainier-core`:
 
 ```scala
-import $ivy.`com.stripe:rainier-plot:@VERSION@`
+import $ivy.`com.stripe:rainier-notebook:@VERSION@`
 ```
 
-Followed by importing the package, and the `Jupyter` object where all the plotting methods live:
+Followed by importing the package, which exposes all of the plotting methods:
 
 ```scala mdoc
-import com.stripe.rainier.plot._
-import Jupyter._
+import com.stripe.rainier.notebook._
 ```
 
 Finally, we can create and render a basic scatter plot of our `(a,c)` tuples.
@@ -61,7 +64,7 @@ val ac = Model.sample((a,c)))
 show("a", "c", scatter(ac))
 ```
 
-```scala mdoc:evilplot:assets/ac.png
+```scala mdoc:image:assets/ac.png
 show("a", "c", scatter(Model.sample((a,c))))
 ```
 

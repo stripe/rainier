@@ -2,7 +2,7 @@ import wartremover.Wart
 
 lazy val root = project.
   in(file(".")).
-  aggregate(rainierCompute, rainierSampler, rainierCore, rainierPlot).
+  aggregate(rainierCompute, rainierSampler, rainierCore, rainierNotebook).
   aggregate(rainierBenchmark, rainierTest).
   aggregate(shadedAsm).
   settings(commonSettings).
@@ -74,7 +74,7 @@ lazy val V = new {
   val evilplot = "0.6.0"
   val scalatest = "3.0.8"
   val flogger = "0.3.1"
-  val almond = "0.3.0"
+  val almond = "0.9.1"
   val shadedAsm = "0.2.1"
   val scalameta = "4.2.3"
   val mdoc = "2.1.1"
@@ -118,10 +118,9 @@ lazy val rainierCore = project.
   settings(commonSettings).
   settings(crossBuildSettings)
 
-lazy val rainierPlot = project.
-  in(file("rainier-plot")).
-  settings(name := "rainier-plot").
-  dependsOn(rainierCore).
+lazy val rainierNotebook = project.
+  in(file("rainier-notebook")).
+  settings(name := "rainier-notebook").
   settings(commonSettings).
   settings(
     resolvers ++=
@@ -133,7 +132,7 @@ lazy val rainierPlot = project.
         "com.cibo" %% "evilplot" % V.evilplot,
         "org.scalameta" %% "scalameta" % V.scalameta,
         "org.scalameta" %% "mdoc" % V.mdoc,
-        "sh.almond" %% "interpreter-api" % V.almond)
+        "sh.almond" %% "jupyter-api" % V.almond)
   )
 
 // test modules
@@ -175,7 +174,7 @@ lazy val docs = project.
   enablePlugins(MdocPlugin, DocusaurusPlugin).
   dependsOn(
     rainierCore,
-    rainierPlot,
+    rainierNotebook,
   ).
   settings(commonSettings).
   settings(

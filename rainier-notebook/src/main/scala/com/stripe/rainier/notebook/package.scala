@@ -1,4 +1,4 @@
-package com.stripe.rainier.plot
+package com.stripe.rainier
 
 import com.cibo.evilplot.geometry._
 import com.cibo.evilplot.plot._
@@ -6,10 +6,9 @@ import com.cibo.evilplot.numeric._
 import com.cibo.evilplot.colors._
 import com.cibo.evilplot.plot.renderers._
 import com.cibo.evilplot.plot.aesthetics._
+import almond.display.Image
 
-import com.stripe.rainier.core._
-
-object Jupyter {
+package object notebook {
   object PlotThemes {
     private val blueColor = HSLA(211, 38, 48, 0.5)
     private val grayColor = HSLA(210, 100, 0, 0.2)
@@ -55,24 +54,6 @@ object Jupyter {
 
   implicit val extent: Extent = Extent(400, 400)
   implicit val theme: Theme = PlotThemes.default
-
-  def trace(t: Trace)(implicit
-                      theme: Theme): Drawable = {
-    val nVariables = t.model.parameters.size
-    val lines =
-      0.until(nVariables).toList.map { v =>
-        t.chains.zipWithIndex.map {
-          case (c, n) =>
-            line(c.zipWithIndex.map { case (a, i) => i -> a(v) })
-              .xAxis()
-              .yAxis()
-              .frame()
-              .xLabel("chain " + (n + 1))
-              .yLabel("param " + (v + 1))
-        }
-      }
-    show(Facets(lines))(Extent(800, 800), theme)
-  }
 
   def density[N](seq: Seq[N], minX: Double, maxX: Double)(
       implicit num: Numeric[N],
@@ -139,7 +120,7 @@ object Jupyter {
     val seq = labels
       .map { k =>
         val dist = samples.map(_(k))
-        val (low, high) = REPL.hdpi(dist)
+        val (low, high) = hdpi(dist)
         val stats =
           BoxPlotSummaryStatistics(
             dist.min,
@@ -147,7 +128,7 @@ object Jupyter {
             dist.min,
             dist.max,
             low,
-            REPL.mean(dist),
+            mean(dist),
             high,
             Nil,
             dist
@@ -267,7 +248,7 @@ object Jupyter {
 
   def show(xLabel: String, yLabel: String, title: String, plots: Plot*)(
       implicit extent: Extent,
-      theme: Theme): Drawable =
+      theme: Theme): Image =
     show(
       Overlay
         .fromSeq(plots)
@@ -280,7 +261,7 @@ object Jupyter {
 
   def show(xLabel: String, yLabel: String, plots: Plot*)(
       implicit extent: Extent,
-      theme: Theme): Drawable =
+      theme: Theme): Image =
     show(
       Overlay
         .fromSeq(plots)
@@ -291,7 +272,7 @@ object Jupyter {
         .yLabel(yLabel))
 
   def show(xLabel: String, plots: Plot*)(implicit extent: Extent,
-                                         theme: Theme): Drawable =
+                                         theme: Theme): Image =
     show(
       Overlay
         .fromSeq(plots)
@@ -299,8 +280,9 @@ object Jupyter {
         .frame()
         .xLabel(xLabel))
 
-  def show(plot: Plot)(implicit extent: Extent, theme: Theme): Drawable =
-    plot.render(extent)(theme)
+  def show(plot: Plot)(implicit extent: Extent, theme: Theme): Image =
+    Image.fromRenderedImage(plot.render(extent)(theme).asBufferedImage,
+                            format = Image.PNG)
 
   def renderBytes(plot: Plot)(implicit extent: Extent,
                               theme: Theme): Array[Byte] = {
@@ -324,4 +306,163 @@ object Jupyter {
     baos.close
     array
   }
+
+//Convenience methods modeled after _Statistical Rethinking_
+  def loadCSV(path: String,
+              delimiter: String = ","): List[Map[String, String]] = {
+    val (head :: tail) = scala.io.Source.fromFile(path).getLines.toList
+    val headings = head.split(delimiter).map { s =>
+      s.stripPrefix("\"").stripSuffix("\"")
+    }
+    tail.map { line =>
+      headings.zip(line.split(delimiter)).toMap
+    }
+  }
+
+  def hdpi(samples: Seq[Double], prob: Double = 0.89): (Double, Double) = {
+    val sorted = samples.sorted.toArray
+    val idx = math.ceil(prob * sorted.size).toInt
+    if (idx == sorted.size)
+      (sorted.head, sorted.last)
+    else {
+      val cis = 0.until(sorted.size - idx).toList.map { i =>
+        val bottom = sorted(i)
+        val top = sorted(i + idx)
+        val width = top - bottom
+        (width, bottom, top)
+      }
+      val res = cis.minBy(_._1)
+      (res._2, res._3)
+    }
+  }
+
+  def mean[N](seq: Seq[N])(implicit num: Numeric[N]): Double =
+    seq.map { n =>
+      num.toDouble(n)
+    }.sum / seq.size
+
+  def stddev[N](seq: Seq[N])(implicit num: Numeric[N]): Double = {
+    val doubles = seq.map { n =>
+      num.toDouble(n)
+    }
+    val mean = doubles.sum / doubles.size
+    math.sqrt(doubles.map { x =>
+      math.pow(x - mean, 2)
+    }.sum / doubles.size)
+  }
+
+  def standardize[N](seq: Seq[N])(implicit num: Numeric[N]): Seq[Double] = {
+    val m = mean(seq)
+    val sd = stddev(seq)
+    seq.map { x =>
+      (num.toDouble(x) - m) / sd
+    }
+  }
+
+  def precis(samples: Seq[Traversable[(String, Double)]],
+             corr: Boolean = false): Unit = {
+    val sampleSeqs = samples.map(_.toSeq)
+    val meansSDs = computeParamStats(sampleSeqs)
+    val keys = meansSDs.map(_._1)
+
+    val correlations = keys.zipWithIndex.flatMap {
+      case (k, i) =>
+        val diffs = sampleSeqs.map(_(i)._2 - meansSDs(i)._2._1)
+        keys.zipWithIndex.map {
+          case (l, j) =>
+            val diffs2 = sampleSeqs.map(_(j)._2 - meansSDs(j)._2._1)
+            val sumDiffProd = diffs.zip(diffs2).map { case (a, b) => a * b }.sum
+            val r = sumDiffProd / (meansSDs(i)._2._2 * meansSDs(j)._2._2 * (sampleSeqs.size - 1))
+            (k, l) -> r
+        }
+    }.toMap
+
+    val cis = keys.zipWithIndex.map {
+      case (k, i) =>
+        val data = sampleSeqs.map(_(i)._2).sorted
+        val low = data(math.floor(data.size * 0.055).toInt)
+        val high = data(math.floor(data.size * 0.945).toInt)
+        (k, (low, high))
+    }.toMap
+
+    val maxKeyLength = keys.map(_.size).max
+    val corrKeys = if (corr) keys else Nil
+    println(
+      "".padTo(maxKeyLength, ' ') +
+        "Mean".formatted("%10s") +
+        "StdDev".formatted("%10s") +
+        "5.5%".formatted("%10s") +
+        "94.5%".formatted("%10s") +
+        corrKeys.map(_.formatted("%7s")).mkString(" "))
+
+    keys.zipWithIndex.foreach {
+      case (k, i) =>
+        val corrValues = if (corr) keys.map { j =>
+          correlations(k -> j)
+        } else Nil
+        val (mean, sd) = meansSDs(i)._2
+        val (lowCI, highCI) = cis(k)
+        println(
+          k.padTo(maxKeyLength, ' ') +
+            mean.formatted("%10.2f") +
+            sd.formatted("%10.2f") +
+            lowCI.formatted("%10.2f") +
+            highCI.formatted("%10.2f") +
+            corrValues.map(_.formatted("%7.2f")).mkString(" "))
+    }
+  }
+
+  def coeftab(models: (String, Seq[Traversable[(String, Double)]])*): Unit = {
+    val coefs = models.map {
+      case (_, samples) =>
+        coef(samples.map(_.toSeq)).toMap
+    }
+
+    val modelNames = models.map(_._1)
+    val valWidth = 10.max(modelNames.map(_.size).max)
+
+    val keys = models.flatMap(_._2.head.map(_._1)).distinct
+    val maxKeyLength = keys.map(_.size).max
+
+    println(
+      "".padTo(maxKeyLength, ' ') +
+        modelNames.map(leftPad(_, valWidth, ' ')).mkString("")
+    )
+    keys.foreach { k =>
+      println(
+        k.padTo(maxKeyLength, ' ') +
+          coefs
+            .map(
+              _.get(k)
+                .map(_.formatted("%10.2f"))
+                .getOrElse(leftPad("NA", valWidth, ' '))
+            )
+            .mkString("")
+      )
+    }
+  }
+
+  def coef(samples: Seq[Map[String, Double]]): Map[String, Double] =
+    computeParamStats(samples.map(_.toSeq)).map { case (k, v) => k -> v._1 }.toMap
+
+  def coef(samples: Seq[Seq[(String, Double)]]): Seq[(String, Double)] =
+    computeParamStats(samples).map { case (k, v) => k -> v._1 }
+
+  private def computeParamStats(samples: Seq[Seq[(String, Double)]])
+    : IndexedSeq[(String, (Double, Double))] = {
+    val keys = samples.head.map(_._1).toVector
+
+    keys.zipWithIndex.map {
+      case (k, i) =>
+        val data = samples.map(_(i)._2)
+        val mean = data.sum / data.size
+        val stdDev = math.sqrt(data.map { x =>
+          math.pow(x - mean, 2)
+        }.sum / data.size)
+        (k, (mean, stdDev))
+    }
+  }
+
+  private def leftPad(s: String, len: Int, elem: Char): String =
+    s.reverse.padTo(len, elem).reverse
 }
