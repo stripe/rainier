@@ -32,9 +32,9 @@ This time, however, we'll also create a vector of 3 random variables that repres
 val logFeeds = Normal(lambda.log, 0.1).paramVector(3)
 ```
 
-This gives us back a `Vec[Real]`, which is a type defined by Rainier. It's similar to a Scala `Vector[Real]`, but adapted to work well with `Real`. We'll see more about that later.
+This gives us back a `Vec[Real]`, which is a type defined by Rainier. It's similar to a Scala `Vector[Real]`, but adapted to work better with random variables.
 
-Like a regular `Vector`, we can transform it using `map`: here, to bring these random variables back out of log-space.
+Like a regular `Vector`, we can transform it using `map`. Here, we want to bring these random variables back out of log-space:
 
 ```scala mdoc:to-string
 val feeds = logFeeds.map(_.exp)
@@ -52,5 +52,5 @@ We'd now like to construct a model that associates these three different (but re
 
 It's worth noting that we can just keep reusing the same `feeds` random variables as we construct each of these models. That's because everything in Rainier is immutable - there's no global context that you're modifying when you create parameters or make observations. That makes things a lot easier to reason about, especially when messing around in a REPL or a notebook.
 
-
+## Merging Models
 

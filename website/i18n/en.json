@@ -5,11 +5,17 @@
     "previous": "Previous",
     "tagline": "Bayesian inference for Scala",
     "docs": {
+      "distributions": {
+        "title": "Distributions"
+      },
       "intro": {
         "title": "Introduction to Rainier"
       },
       "likelihoods": {
         "title": "Likelihoods and Observations"
+      },
+      "model": {
+        "title": "Model and Fn"
       },
       "modules": {
         "title": "Rainier's Modules",
@@ -25,6 +31,9 @@
         "title": "A Bayesian Computation Graph for High-Performance Gradient Evaluation on the JVM",
         "sidebar_label": "Bryant (2020)"
       },
+      "real": {
+        "title": "Real and Vec"
+      },
       "vectors": {
         "title": "Vectors and Variables"
       }
@@ -35,7 +44,8 @@
     },
     "categories": {
       "Overview": "Overview",
-      "Reference": "Reference"
+      "Reference": "Reference",
+      "Implementation": "Implementation"
     }
   },
   "pages-strings": {
