@@ -50,6 +50,16 @@ trait Fn[-A, +Y] { self =>
       def xy(x: X) = g(self.xy(x))
     }
 
+  def contramap[T](g: T => A): Fn[T, Y] =
+    new Fn[T, Y] {
+      type X = self.X
+      def wrap(a: T) = self.wrap(g(a))
+      def create(columns: List[Array[Double]]) = self.create(columns)
+      def extract(a: T, acc: List[Double]) = self.extract(g(a), acc)
+
+      def xy(x: X) = self.xy(x)
+    }
+
   def keys[K](seq: Seq[K]): Fn[Map[K, A], Map[K, Y]] =
     new Fn[Map[K, A], Map[K, Y]] {
       type X = Map[K, self.X]

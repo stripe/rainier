@@ -9,6 +9,9 @@ sealed trait Vec[T] {
     require(this.size == other.size)
     ZipVec(this, other)
   }
+  def toList: List[T] =
+    0.until(size).toList.map(apply)
+
   def ++(other: Vec[Real])(implicit ev: T <:< Real): Vec[Real] =
     ConcatVec(this.map(ev), other)
   def dot(other: Vec[Real])(implicit ev: T <:< Real): Real =
@@ -16,7 +19,18 @@ sealed trait Vec[T] {
       apply(i) * other(i)
     })
 
-  override def toString = s"Vec[$size]"
+  override def toString = {
+    val base = s"Vec[$size]"
+    val allBounds = toList.map {
+      case r: Real => Some(r.bounds)
+      case _       => None
+    }
+    if (allBounds.forall(_.isDefined)) {
+      val bounds = Bounds.or(allBounds.map(_.get))
+      base + f"(${bounds.lower}%.3g, ${bounds.upper}%.3g)"
+    } else
+      base
+  }
 }
 
 object Vec {

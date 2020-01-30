@@ -6,6 +6,7 @@ title: Likelihoods and Observations
 ```scala mdoc:invisible
 import com.stripe.rainier.core._
 import com.stripe.rainier.notebook._
+import com.stripe.rainier.compute._
 ```
 
 The [previous section](priors.md) briefly showed you how to create random variables from prior distributions. In this section, we'll show you how to use distributions as likelihoods, to update our beliefs about those random variables based on real-world data.
