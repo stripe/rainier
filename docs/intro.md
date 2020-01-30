@@ -35,7 +35,7 @@ import com.stripe.rainier.core._
 
 ## This Overview
 
-The rest of this overview is split into four sections. We recommend you read them all before you start working with Rainier. They are:
+The rest of this overview is split into four sections. We recommend that you read through each of them before you start working with Rainier. They are:
 
 * [Priors and Random Variables](priors.md)
 

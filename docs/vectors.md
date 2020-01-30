@@ -21,7 +21,7 @@ Our imaginary chicken farmer from the [previous section](likelihoods.md) has got
 The egg dataset now includes a `0`, `1`, or `2` for each day that indicates which type of feed they got.
 
 ```scala mdoc:silent
-val eggs = List[(Int, Long)]((0, 45), (1, 52), (2, 45))
+val eggs = List[(Int, Long)]((0,31), (2,47), (0,35), (2,40), (0,33), (2,44), (0,30), (2,46), (0,33), (0,30), (2,36), (2,54), (1,45), (1,39), (2,62), (2,54), (1,30), (2,40), (2,48), (1,33), (0,40), (2,38), (0,31), (2,46), (1,41), (1,42), (0,39), (1,29), (0,28), (1,36), (2,46), (2,33), (2,41), (2,48), (1,32), (0,24), (1,34), (2,48), (1,52), (1,37), (0,28), (0,37), (2,51), (2,44), (1,40), (0,41), (0,36), (1,44), (0,32), (0,31), (0,31), (0,32), (0,33), (1,27), (0,40), (2,45), (2,40), (1,46), (0,35), (2,46), (0,34), (1,41), (0,38), (0,34), (2,46), (1,44), (2,49), (2,39), (1,41), (2,37), (1,29), (0,29), (2,41), (2,46), (1,42), (1,34), (1,32), (1,35), (0,32), (1,40), (1,37), (1,38), (1,42), (1,38), (1,36), (0,38), (0,41), (1,51), (1,40))
 ```
 
 As before, we'll create a `lambda` that captures the baseline egg-laying rate for the flock.
@@ -107,7 +107,7 @@ val mappedModel =
     }
 ```
 
-What we end up with is a `Model[4]` that is semantically identical to the `mergedModel` we produced before. In fact, this approach is identical to first producing a separate model for each observation, and then merging all of them together. So we could, equivalently, have done something like this:
+What we end up with is a `Model[4]` that is, mathematically, the same as the `mergedModel` we produced before. In fact, this approach is identical to first producing a separate model for each observation, and then merging all of them together. So we could, equivalently, have done something like this:
 
 ```scala
 eggs
@@ -125,8 +125,8 @@ Let's use it first, and explain afterwards:
 
 ```scala mdoc:to-string
 val encoder = Fn.int
-val likelihood = encoder.map{feed: Real => Poisson(feeds(feed))}
-val encodedModel = Model.observe(eggFeeds, eggCounts, likelihood)
+val noise = encoder.map{feed: Real => Poisson(feeds(feed))}
+val encodedModel = Model.observe(eggFeeds, eggCounts, noise)
 ```
 
 You can see that this ends up not especially different from the `mappedModel` code above. However, it will perform much better, especially with larger amounts of data.
