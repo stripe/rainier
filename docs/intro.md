@@ -9,9 +9,9 @@ title: Introduction to Rainier
 
 Rainier is for building and sampling from Bayesian statistical models. Specifically, it's for building generative models with fixed structure, continuous parameters, and data that can comfortably fit in memory. Generalized linear mixed models (GLMMs), for example, are a very common and flexible class of models that fit that description.
 
-This documentation assumes you have at least some basic familiarity with Bayesian modeling. If you don't, the single best introduction is McElreath's [Statistical Rethinking](https://xcelab.net/rm/statistical-rethinking/), and we highly recommend reading it.
+This documentation assumes you have at least some basic familiarity with Bayesian modeling. If you don't have that background, you may struggle with the terminology used here. The single best introduction to the topic is McElreath's [Statistical Rethinking](https://xcelab.net/rm/statistical-rethinking/), and we highly recommend reading it.
 
-We also assume you are familiar with Scala. Perhaps this goes without saying, but: Rainier is a Scala library, and letting you build models in Scala, and run them on the JVM, is one of Rainier's distinguishing features.
+We also assume you are at least somewhat familiar with Scala. Perhaps this goes without saying, but: Rainier is a Scala library, and letting you build models in Scala, and run them on the JVM, is one of Rainier's distinguishing features.
 
 ## Getting Rainier
 
