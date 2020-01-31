@@ -25,6 +25,12 @@ class FnTest extends FunSuite {
       val m = ls.toMap
       m("a") * 4 + m("b") * 5 + m("c") * 6
     }
+  val fDoubleList = fDouble.list(3).map { ls =>
+    ls(0) * 4 + ls(1) * 5 + ls(2) * 6
+  }
+  val fDoubleVec = fDouble.vec(3).map { ls =>
+    ls(0) * 4 + ls(1) * 5 + ls(2) * 6
+  }
 
   check("numeric[Double]", fDouble, 1.0)
   check("numeric[Long]", fLong, 1L)
@@ -40,4 +46,6 @@ class FnTest extends FunSuite {
           .zip(fMap)
           .map { case (a, b) => a * 10 + b },
         ("b", Map("a" -> 2.0, "b" -> 1.0)))
+  check("List[Double]", fDoubleList, List(1.0, 2.0, 3.0))
+  check("Vec[Double]", fDoubleVec, List(1.0, 2.0, 3.0))
 }
