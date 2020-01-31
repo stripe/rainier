@@ -51,14 +51,6 @@ Then import `com.stripe.rainier.core` to get started.
 import com.stripe.rainier.core._
 ```
 
-## A Note on Performance and Scale
-
-Rainier requires that all of the observations or training data for a given model fit comfortably into RAM on a single machine. It does not make use of GPUs or of SIMD instructions.
-
-Within those constraints, however, it is extremely fast. Rainier takes advantage of knowing all of your data ahead of time by aggressively precomputing as much as it can, which can be a significant practical benefit relative to systems that compile a data-agnostic model. It produces optimized, unboxed, JIT-friendly JVM bytecode for all numerical calculations. This compilation happens in-process and is fast enough for interactive use at a REPL.
-
-Our benchmarking shows that you should expect gradient evaluation to be roughly on par with [Stan](https://mc-stan.org/) (some models will be faster, some will be slower). However, please note that Stan has a more sophisticated dynamic HMC implementation that may well produce more effective samples per second (at least if you ignore the lengthy C++ compilation times).
-
 ## This Overview
 
 The rest of this overview is split into four sections. We recommend that you read through each of them before you start working with Rainier. They are:
@@ -79,3 +71,10 @@ This introduces the `Vec` and `Fn` types, and shows how to manage larger numbers
 
 This introduces the `Generator` type, and shows how to make posterior predictions and decisions from a sampled trace.
 
+## A Note on Performance and Scale
+
+Rainier requires that all of the observations or training data for a given model fit comfortably into RAM on a single machine. It does not make use of GPUs or of SIMD instructions.
+
+Within those constraints, however, it is extremely fast. Rainier takes advantage of knowing all of your data ahead of time by aggressively precomputing as much as it can, which can be a significant practical benefit relative to systems that compile a data-agnostic model. It produces optimized, unboxed, JIT-friendly JVM bytecode for all numerical calculations. This compilation happens in-process and is fast enough for interactive use at a REPL.
+
+Our benchmarking shows that you should expect gradient evaluation to be roughly on par with [Stan](https://mc-stan.org/) (some models will be faster, some will be slower). However, please note that Stan has a more sophisticated dynamic HMC implementation that may well produce more effective samples per second (at least if you ignore the lengthy C++ compilation times).
