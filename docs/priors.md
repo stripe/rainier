@@ -8,7 +8,7 @@ import com.stripe.rainier.core._
 import com.stripe.rainier.compute._
 ```
 
-The most fundamental data type in Rainier is the `Real`, which represents a real-valued scalar random variable. A real-valued scalar is simple enough: that sounds like a `Double`, and indeed you can treat a `Real` just like a `Double` in a lot of ways. But since it's a [random variable](https://en.wikipedia.org/wiki/Random_variable), it represents a set of possible values rather than one, known, specific value.
+The most fundamental data type in Rainier is the `Real`, which represents a real-valued scalar random variable. A real-valued scalar is simple enough: that sounds like a `Double`, and indeed you can treat a `Real` just like a `Double` in a lot of ways. But since it's a [random variable](https://en.wikipedia.org/wiki/Random_variable), it represents a set of possible values rather than one specific known value.
 
 ## Constructing Random Variables
 
