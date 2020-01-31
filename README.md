@@ -30,16 +30,9 @@ val model = Model.observe(xs, ys){case (u, v, w) =>
 }
 ```
 
-## Getting Started
+## Getting Started and Documentation
 
-Rainier is published on sonatype. To use it in your SBT project, you can add the following to your build.sbt:
-
-```scala
-libraryDependencies += "com.stripe" %% "rainier-core" % "0.3.0"
-```
-
-TODO: talk about ammonite/jupyter
-TODO: link to docs
+There's a detailed overview and reference documentation at [rainier.fit](https://rainier.fit/docs/intro).
 
 ## Performance and Scale
 
