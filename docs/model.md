@@ -21,9 +21,9 @@ Combines two models.
 
 Run inference using the provided sampler.
 
-* `optimize[T, U](value: T): U`
+* `optimize[T](generator: Generator[T]): T`
 
-Run L-BFGS. `value: T` must be something that can be converted to a `Generator[U]`. See the [Trace and Generator](trace.md) documentation for more on this. 
+Run L-BFGS. Note that this method also accepts values that can be automatically converted via [ToGenerator](trace.md).
 
 ### Object Methods
 

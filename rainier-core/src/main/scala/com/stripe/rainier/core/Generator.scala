@@ -19,15 +19,16 @@ sealed trait Generator[+T] { self =>
     case From(reqs, fromFn) => From(reqs, (r, n) => fn(fromFn(r, n)))
   }
 
-  def flatMap[U](fn: T => Generator[U]): Generator[U] = self match {
+  def flatMap[G, U](fn: T => G)(
+      implicit toGen: ToGenerator[G, U]): Generator[U] = self match {
     case Const(reqsL, t) =>
-      fn(t) match {
+      toGen(fn(t)) match {
         case Const(reqsR, u)     => Const(reqsL ++ reqsR, u)
         case From(reqsR, fromFn) => From(reqsL ++ reqsR, fromFn)
       }
     case From(reqs, fromFn) =>
       From(reqs, { (r, n) =>
-        fn(fromFn(r, n)) match {
+        toGen(fn(fromFn(r, n))) match {
           case Const(_, u)          => u
           case From(_, innerFromFn) => innerFromFn(r, n)
         }

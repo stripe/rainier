@@ -8,8 +8,14 @@
       "distributions": {
         "title": "Distributions"
       },
+      "install": {
+        "title": "Getting Rainier"
+      },
       "intro": {
         "title": "Introduction to Rainier"
+      },
+      "jupyter": {
+        "title": "Using Jupyter"
       },
       "likelihoods": {
         "title": "Likelihoods and Observations"
