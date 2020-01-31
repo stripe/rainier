@@ -44,4 +44,6 @@ As before, these don't look too bad. Seems like we've got a solid posterior samp
 
 ## Making Predictions
 
-TODO
+We mentioned before that Rainier prefers not to focus on the raw parameter values, but instead to inspect distributions of random variables. That's not quite the whole story: calling `predict` with a random variable helps us capture our uncertainty about what the parameter values are (sometimes called "epistemic uncertainty", uncertainty from a lack of knowledge), but it does not capture our uncertainty about the inherent randomness of the world (sometimes called "aleatoric uncertainty", or just "noise"). More concretely: even if we knew very precisely to 10 decimal places what the "true" egg-laying rate was for our flock of chickens, we *still* wouldn't know exactly how many eggs, as an integer, we will get tomorrow.
+
+This kind of uncertainty is modeled in Rainier by the `Generator[T]` type. `Generator`s are only used once we already have a `Model`, to make posterior predictions from a sampled `Trace`.

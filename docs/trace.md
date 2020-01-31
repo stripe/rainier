@@ -26,6 +26,7 @@ More or less anywhere you can use a `Generator[T]`, you can also use some value 
 In plain terms, this means that:
 
 * `Real` will automatically convert to `Generator[Double]`
+* `Distribution[T]` will convert to `Generator[T]`
 * `(Generator[A], Generator[B])` will convert to `Generator[(A,B)]`, and similarly for tuples of size 3 or 4
 * `Seq[Generator[T]` or `Vec[Generator[T]]` will convert to `Generator[Seq[T]]`
 * `Map[K,Generator[V]]` will convert to `Generator[Map[K,V]]`
