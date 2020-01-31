@@ -127,3 +127,5 @@ show("lambda", density(posterior))
 val posterior = eggTrace.predict(lambda)
 show("lambda", density(posterior))
 ```
+
+Maybe the Answer isn't 42 after all; but we can at least be pretty confident that it's somewhere between 40 and 45.
