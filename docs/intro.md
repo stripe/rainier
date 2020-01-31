@@ -39,10 +39,10 @@ To add Rainier to your project include the following in your `build.sbt`:
 libraryDependencies += "com.stripe" % "rainier-core" % "@VERSION@"
 ```
 
-Or, in Ammonite or Jupyter, import it like this:
+Or, in Ammonite or [Jupyter](jupyter.md), import it like this:
 
 ```scala
-import $ivy.`com.stripe:rainier-core:@VERSION@`
+import $ivy.`com.stripe::rainier-core:@VERSION@`
 ```
 
 Then import `com.stripe.rainier.core` to get started.

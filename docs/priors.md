@@ -45,10 +45,10 @@ Rainier comes with plotting support, based on [EvilPlot](https://cibotech.github
 
 _NOTE: this currently is only supported for Scala 2.12._
 
-If you were in Jupyter, for example, you should do this as well as importing `rainier-core`:
+If you were in [Jupyter](jupyter.md), for example, you should do this as well as importing `rainier-core`:
 
 ```scala
-import $ivy.`com.stripe:rainier-notebook:@VERSION@`
+import $ivy.`com.stripe::rainier-notebook:@VERSION@`
 ```
 
 Followed by importing the package, which exposes all of the plotting methods:

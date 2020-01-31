@@ -1,6 +1,6 @@
 {
   "docs": {
-    "Overview": ["intro", "priors", "likelihoods", "vectors", "posteriors"],
+    "Overview": ["intro", "priors", "likelihoods", "vectors", "posteriors", "jupyter"],
     "Reference": ["distributions", "model", "real", "samplers", "trace", "modules"],
     "Implementation": ["probprog"] 
   }
