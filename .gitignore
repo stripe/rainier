@@ -6,6 +6,7 @@ target/
 .DS_Store
 .bloop/
 .metals/
+project/metals.sbt
 .ipynb_checkpoints/
 node_modules/
 yarn.lock
