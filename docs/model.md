@@ -33,4 +33,31 @@ Run L-BFGS. `value: T` must be something that can be converted to a `Generator[U
 
 ## Fn
 
-TODO
+Assuming `Fn[A,B]`
+
+### Instance Methods
+
+* `apply(a: A): B`
+
+Applicative:
+
+* `map[C](g: B => C): Fn[A, C]`
+* `zip[X,Y](fn: Fn[X,Y]): Fn[(A,X),(B,Y)]`
+* `contramap[T](g: T => A): Fn[T,B]`
+
+Repetition:
+
+* `list(k: Int): Fn[Seq[A], List[B]]`
+* `keys[K](seq: Seq[K]): Fn[Map[K,A], Map[K,B]]`
+
+Only for `Fn[A,Real]`:
+
+* `vec(k: Int): Fn[Seq[A], Vec[Real]]`
+
+### Object Methods
+
+* `double: Fn[Double, Real]`
+* `int: Fn[Int, Real]`
+* `long: Fn[Long, Real]`
+* `enum[T](choices: List[T]): Fn[T, List[(T, Real)]]`
+
