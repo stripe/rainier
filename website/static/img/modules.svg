@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="747px" height="466px" viewBox="0 0 747 466" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 61 (89581) - https://sketch.com -->
+    <title>modules</title>
+    <desc>Created with Sketch.</desc>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="modules">
+            <rect id="Rectangle" stroke="#979797" fill="#D8D8D8" x="0.5" y="97.5" width="120" height="95.9337017"></rect>
+            <text id="base" font-family="Helvetica" font-size="24" font-weight="normal" fill="#000000">
+                <tspan x="34" y="127">base</tspan>
+            </text>
+            <text id="Logger" font-family="AndaleMono, Andale Mono" font-size="16" font-weight="normal" fill="#000000">
+                <tspan x="32" y="173">Logger</tspan>
+            </text>
+            <rect id="Rectangle" stroke="#979797" x="1.5" y="368.5" width="120" height="95.9337017"></rect>
+            <text id="flogger" font-family="Helvetica" font-size="24" font-weight="normal" fill="#000000">
+                <tspan x="25" y="425">flogger</tspan>
+            </text>
+            <rect id="Rectangle" stroke="#979797" x="186.5" y="368.5" width="120" height="95.9337017"></rect>
+            <text id="asm" font-family="Helvetica" font-size="24" font-weight="normal" fill="#000000">
+                <tspan x="224" y="425">asm</tspan>
+            </text>
+            <rect id="Rectangle" stroke="#979797" x="465.5" y="369" width="120" height="95.9337017"></rect>
+            <text id="evilplot" font-family="Helvetica" font-size="24" font-weight="normal" fill="#000000">
+                <tspan x="488" y="425.5">evilplot</tspan>
+            </text>
+            <rect id="Rectangle" stroke="#979797" x="626.5" y="369" width="120" height="95.9337017"></rect>
+            <text id="almond" font-family="Helvetica" font-size="24" font-weight="normal" fill="#000000">
+                <tspan x="649" y="425.5">almond</tspan>
+            </text>
+            <rect id="Rectangle" stroke="#979797" fill="#D8D8D8" x="186.5" y="0.5" width="120" height="95.9337017"></rect>
+            <text id="sampler" font-family="Helvetica" font-size="24" font-weight="normal" fill="#000000">
+                <tspan x="201" y="36">sampler</tspan>
+            </text>
+            <text id="HMC" font-family="AndaleMono, Andale Mono" font-size="16" font-weight="normal" fill="#000000">
+                <tspan x="227" y="76">HMC</tspan>
+            </text>
+            <rect id="Rectangle" stroke="#979797" fill="#D8D8D8" x="360.5" y="97.5" width="120" height="95.9337017"></rect>
+            <text id="core" font-family="Helvetica" font-size="24" font-weight="normal" fill="#000000">
+                <tspan x="397" y="133">core</tspan>
+            </text>
+            <text id="Model" font-family="AndaleMono, Andale Mono" font-size="16" font-weight="normal" fill="#000000">
+                <tspan x="396" y="173">Model</tspan>
+            </text>
+            <rect id="Rectangle" stroke="#979797" fill="#D8D8D8" x="545.5" y="97.5" width="120" height="95.9337017"></rect>
+            <text id="notebook" font-family="Helvetica" font-size="24" font-weight="normal" fill="#000000">
+                <tspan x="558" y="133">notebook</tspan>
+            </text>
+            <text id="scatter" font-family="AndaleMono, Andale Mono" font-size="16" font-weight="normal" fill="#000000">
+                <tspan x="574" y="173">scatter</tspan>
+            </text>
+            <rect id="Rectangle" stroke="#979797" fill="#D8D8D8" x="186.5" y="194.5" width="120" height="95.9337017"></rect>
+            <text id="compute" font-family="Helvetica" font-size="24" font-weight="normal" fill="#000000">
+                <tspan x="201" y="230">compute</tspan>
+            </text>
+            <text id="Real" font-family="AndaleMono, Andale Mono" font-size="16" font-weight="normal" fill="#000000">
+                <tspan x="227" y="270">Real</tspan>
+            </text>
+            <path id="Line" d="M186.815585,95.4022856 L188.597714,97.8155854 L187.391065,98.7066499 L137.272,135.716 L142.025424,142.15232 L121.097783,145.797022 L130.738607,126.868088 L135.49,133.303 L185.608935,96.2933501 L186.815585,95.4022856 Z" fill="#979797" fill-rule="nonzero"></path>
+            <path id="Line-2" d="M121.100738,145.199018 L141.991339,149.050358 L137.175,155.438 L187.402946,193.302215 L188.600731,194.205161 L186.794839,196.600731 L185.597054,195.697785 L135.37,157.833 L130.554027,164.222302 L121.100738,145.199018 Z" fill="#979797" fill-rule="nonzero"></path>
+            <path id="Line-3" d="M307.129398,97.1643603 L327.589436,102.877228 L322.219,108.806 L361.506919,144.388193 L362.618726,145.395113 L360.604887,147.618726 L359.493081,146.611807 L320.205,111.03 L314.835126,116.960111 L307.129398,97.1643603 Z" fill="#979797" fill-rule="nonzero"></path>
+            <path id="Line-4" d="M360.583125,143.380309 L362.619691,145.583125 L361.518283,146.601408 L322.102,183.042 L327.533159,188.916761 L307.132864,194.839428 L314.634908,174.965592 L320.065,180.839 L359.481717,144.398592 L360.583125,143.380309 Z" fill="#979797" fill-rule="nonzero"></path>
+            <path id="Line-6" d="M63.4884729,192.488539 L63.499967,194.488506 L64.361,344.489 L74.3618731,344.431432 L62.5,368.5 L50.3622694,344.569361 L60.361,344.512 L59.500033,194.511494 L59.488539,192.511527 L63.4884729,192.488539 Z" fill="#979797" fill-rule="nonzero"></path>
+            <path id="Line-6" d="M248,289 L248,345 L258,345 L246,369 L234,345 L244,345 L244,289 L248,289 Z" fill="#979797" fill-rule="nonzero"></path>
+            <path id="Line-6" d="M604.983242,193.360643 L608.639357,194.983242 L607.828057,196.811299 L540.563,348.374 L549.703935,352.431107 L529,369.5 L527.767247,342.695517 L536.907,346.752 L604.171943,195.188701 L604.983242,193.360643 Z" fill="#979797" fill-rule="nonzero"></path>
+            <path id="Line-6" d="M606.903717,193.319833 L607.791942,195.111775 L683.132,347.108 L692.092954,342.667345 L692,369.5 L670.589648,353.326044 L679.549,348.884 L604.208058,196.888225 L603.319833,195.096283 L606.903717,193.319833 Z" fill="#979797" fill-rule="nonzero"></path>
+            <text id="Scala-2.12-only" font-family="Helvetica-Oblique, Helvetica" font-size="14" font-style="italic" font-weight="normal" fill="#000000">
+                <tspan x="560" y="87">Scala 2.12 only</tspan>
+            </text>
+        </g>
+    </g>
+</svg>

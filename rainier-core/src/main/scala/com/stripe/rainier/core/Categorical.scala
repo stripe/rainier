@@ -11,6 +11,15 @@ import com.stripe.rainier.compute._
 final case class Categorical[T](pmf: Map[T, Real]) extends Distribution[T] {
   self =>
 
+  val likelihoodFn = Fn.enum(pmf.keys.toList).map { value =>
+    Real
+      .sum(value.map {
+        case (t, r) =>
+          (r * pmf.getOrElse(t, Real.zero))
+      })
+      .log
+  }
+
   def map[U](fn: T => U): Categorical[U] =
     Categorical(
       pmf.foldLeft(Map.empty[U, Real]) {
@@ -53,47 +62,13 @@ final case class Categorical[T](pmf: Map[T, Real]) extends Distribution[T] {
     }
   }
 
-  def toMixture[V](implicit ev: T <:< Continuous): Mixture =
+  def toMixture[U](implicit ev: T <:< Continuous): Mixture =
     Mixture(pmf.map { case (k, v) => (ev(k), v) })
-
-  def toMultinomial: Predictor[Int, Multinomial[T]] =
-    Predictor[Int].from { i =>
-      Multinomial(pmf, i)
-    }
-
-  def likelihood: Likelihood[T] =
-    new Likelihood[T] {
-      val choices = pmf.keys.toList
-      val u = choices.map { k =>
-        k -> Real.variable()
-      }
-      val real = Categorical.logDensity(self, u)
-      val placeholders = u.map(_._2)
-
-      def extract(t: T) =
-        choices.map { k =>
-          if (t == k)
-            1.0
-          else
-            0.0
-        }
-    }
 }
 
 object Categorical {
-  def logDensity[T](cat: Categorical[T], value: List[(T, Real)]): Real =
-    Real
-      .sum(value.map {
-        case (t, r) =>
-          (r * cat.pmf.getOrElse(t, Real.zero))
-      })
-      .log
-
   def boolean(p: Real): Categorical[Boolean] =
     Categorical(Map(true -> p, false -> (Real.one - p)))
-
-  def binomial(p: Real): Predictor[Int, Binomial] =
-    Predictor[Int].from(Binomial(p, _))
 
   def normalize[T](pmf: Map[T, Real]): Categorical[T] = {
     val total = Real.sum(pmf.values.toList)
@@ -101,9 +76,13 @@ object Categorical {
   }
 
   def list[T](seq: Seq[T]): Categorical[T] =
-    normalize(seq.groupBy(identity).mapValues { l =>
-      Real(l.size)
-    })
+    normalize(
+      seq
+        .groupBy(identity)
+        .mapValues { l =>
+          Real(l.size)
+        }
+        .toMap)
 
   def fromSet[T](ts: Set[T]): Categorical[T] = {
     val p = Real.one / ts.size
@@ -125,25 +104,25 @@ object Categorical {
   * @param k The number of multinomial trials
   */
 final case class Multinomial[T](pmf: Map[T, Real], k: Real)
-    extends Distribution[Map[T, Int]] { self =>
-  def generator: Generator[Map[T, Int]] =
+    extends Distribution[Map[T, Long]] { self =>
+
+  val likelihoodFn =
+    Fn.long
+      .keys(pmf.keys.toList)
+      .map(logDensity)
+
+  def logDensity(v: Map[T, Real]): Real =
+    Combinatorics.factorial(k) + Real.sum(v.map {
+      case (t, i) =>
+        val p = pmf.getOrElse(t, Real.zero)
+        val pTerm =
+          Real.eq(i, Real.zero, Real.zero, i * p.log)
+        pTerm - Combinatorics.factorial(i)
+    })
+
+  def generator: Generator[Map[T, Long]] =
     Categorical(pmf).generator.repeat(k).map { seq =>
-      seq.groupBy(identity).map { case (t, ts) => (t, ts.size) }
-    }
-
-  def likelihood =
-    new Likelihood[Map[T, Int]] {
-      val choices = pmf.keys.toList
-      val u = choices.map { k =>
-        k -> Real.variable()
-      }
-      val real = Multinomial.logDensity(self, u)
-      val placeholders = u.map(_._2)
-
-      def extract(t: Map[T, Int]) =
-        choices.map { k =>
-          t.getOrElse(k, 0).toDouble
-        }
+      seq.groupBy(identity).map { case (t, ts) => (t, ts.size.toLong) }
     }
 }
 
@@ -154,17 +133,8 @@ object Multinomial {
     Multinomial(newPMF, k)
   }
 
-  def logDensity[T](multi: Multinomial[T], v: List[(T, Real)]): Real =
-    Combinatorics.factorial(multi.k) + Real.sum(v.map {
-      case (t, i) =>
-        val p = multi.pmf.getOrElse(t, Real.zero)
-        val pTerm =
-          Real.eq(i, Real.zero, Real.zero, i * p.log)
-        pTerm - Combinatorics.factorial(i)
-    })
-
-  implicit def gen[T]: ToGenerator[Multinomial[T], Map[T, Int]] =
-    new ToGenerator[Multinomial[T], Map[T, Int]] {
+  implicit def gen[T]: ToGenerator[Multinomial[T], Map[T, Long]] =
+    new ToGenerator[Multinomial[T], Map[T, Long]] {
       def apply(m: Multinomial[T]) = m.generator
     }
 }

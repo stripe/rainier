@@ -1,5 +1,6 @@
 package com.stripe.rainier.core
 
+import com.stripe.rainier.ir.CompiledFunction
 import com.stripe.rainier.compute._
 import com.stripe.rainier.sampler.RNG
 
@@ -11,7 +12,7 @@ sealed trait Generator[+T] { self =>
 
   def requirements: Set[Real]
 
-  def get(implicit r: RNG, n: Numeric[Real]): T
+  def get(implicit r: RNG, n: Evaluator): T
 
   def map[U](fn: T => U): Generator[U] = self match {
     case Const(reqs, t)     => Const(reqs, fn(t))
@@ -54,14 +55,14 @@ sealed trait Generator[+T] { self =>
           Seq.fill(n.toInt(k))(fromFn(r, n))
     })
 
-  private[core] def prepare(variables: Seq[Variable])(
+  private[core] def prepare(parameters: Seq[Parameter])(
       implicit r: RNG): Array[Double] => T = {
     val reqs = requirements.toList.take(Generator.MaxRequirements)
     if (reqs.isEmpty) { array =>
       {
         implicit val evaluator: Evaluator =
           new Evaluator(
-            variables
+            parameters
               .zip(array)
               .toMap)
         get
@@ -71,25 +72,27 @@ sealed trait Generator[+T] { self =>
         case (r, i) =>
           (s"req$i", r)
       }
-      val cf = Compiler.default.compile(variables, namedReqs)
+      val cf = Compiler.default.compile(parameters.map(_.param), namedReqs)
       array =>
         {
           val globalBuf = new Array[Double](cf.numGlobals)
           val reqValues = new Array[Double](cf.numOutputs)
           0.until(cf.numOutputs).foreach { i =>
-            reqValues(i) = cf.output(array, globalBuf, i)
+            reqValues(i) = CompiledFunction.output(cf, array, globalBuf, i)
           }
           implicit val evaluator: Evaluator =
             new Evaluator(
-              variables
+              (parameters
                 .zip(array)
-                .toMap ++
-                reqs.zip(reqValues).toMap
+                ++
+                  reqs.zip(reqValues)).toMap
             )
           get
         }
     }
   }
+
+  override def toString = "Generator()"
 }
 
 /**
@@ -102,29 +105,29 @@ object Generator {
     gen(l)
 
   case class Const[T](requirements: Set[Real], t: T) extends Generator[T] {
-    def get(implicit r: RNG, n: Numeric[Real]): T = t
+    def get(implicit r: RNG, n: Evaluator): T = t
   }
 
-  case class From[T](requirements: Set[Real], fn: (RNG, Numeric[Real]) => T)
+  case class From[T](requirements: Set[Real], fn: (RNG, Evaluator) => T)
       extends Generator[T] {
-    def get(implicit r: RNG, n: Numeric[Real]): T = fn(r, n)
+    def get(implicit r: RNG, n: Evaluator): T = fn(r, n)
   }
 
   def constant[T](t: T): Generator[T] = Const(Set.empty, t)
 
-  def from[T](fn: (RNG, Numeric[Real]) => T): Generator[T] = From(Set.empty, fn)
+  def from[T](fn: (RNG, Evaluator) => T): Generator[T] = From(Set.empty, fn)
 
   def real(x: Real): Generator[Double] =
     From(Set(x), { (_, n) =>
       n.toDouble(x)
     })
 
-  def require[T](reqs: Set[Real])(fn: (RNG, Numeric[Real]) => T): Generator[T] =
+  def require[T](reqs: Set[Real])(fn: (RNG, Evaluator) => T): Generator[T] =
     From(reqs, fn)
 
   def vector[T](v: Vector[T]) = from((r, _) => v(r.int(v.size)))
 
-  def fromSet[T](items: Set[T]) = vector(items.to[Vector])
+  def fromSet[T](items: Set[T]) = vector(items.toVector)
 
   def traverse[T, U](seq: Seq[T])(
       implicit toGen: ToGenerator[T, U]
@@ -164,11 +167,33 @@ object ToGenerator {
       def apply(t: String) = Generator.constant(t)
     }
 
-  implicit def zip[A, B, X, Y](
-      implicit ab: ToGenerator[A, B],
-      xy: ToGenerator[X, Y]): ToGenerator[(A, X), (B, Y)] =
-    new ToGenerator[(A, X), (B, Y)] {
-      def apply(t: (A, X)) = ab(t._1).zip(xy(t._2))
+  implicit def zip[A, B, Z, Y](
+      implicit az: ToGenerator[A, Z],
+      by: ToGenerator[B, Y]): ToGenerator[(A, B), (Z, Y)] =
+    new ToGenerator[(A, B), (Z, Y)] {
+      def apply(t: (A, B)) = az(t._1).zip(by(t._2))
+    }
+
+  implicit def zip3[A, B, C, Z, Y, X](
+      implicit az: ToGenerator[A, Z],
+      by: ToGenerator[B, Y],
+      cx: ToGenerator[C, X]): ToGenerator[(A, B, C), (Z, Y, X)] =
+    new ToGenerator[(A, B, C), (Z, Y, X)] {
+      def apply(t: (A, B, C)) = az(t._1).zip(by(t._2)).zip(cx(t._3)).map {
+        case ((z, y), x) => (z, y, x)
+      }
+    }
+
+  implicit def zip4[A, B, C, D, Z, Y, X, W](
+      implicit az: ToGenerator[A, Z],
+      by: ToGenerator[B, Y],
+      cx: ToGenerator[C, X],
+      dw: ToGenerator[D, W]): ToGenerator[(A, B, C, D), (Z, Y, X, W)] =
+    new ToGenerator[(A, B, C, D), (Z, Y, X, W)] {
+      def apply(t: (A, B, C, D)) =
+        az(t._1).zip(by(t._2)).zip(cx(t._3)).zip(dw(t._4)).map {
+          case (((z, y), x), w) => (z, y, x, w)
+        }
     }
 
   implicit def seq[T, U](
@@ -192,5 +217,14 @@ object ToGenerator {
               }
           })
           .map(_.toMap)
+    }
+
+  implicit def vec[T, U](
+      implicit tu: ToGenerator[T, U]): ToGenerator[Vec[T], Seq[U]] =
+    new ToGenerator[Vec[T], Seq[U]] {
+      def apply(t: Vec[T]) =
+        Generator.traverse(t.toList.map { x =>
+          tu(x)
+        })
     }
 }

@@ -2,12 +2,15 @@ import wartremover.Wart
 
 lazy val root = project.
   in(file(".")).
-  aggregate(rainierCore, rainierPlot, rainierCats, rainierScalacheck).
-  aggregate(rainierDocs, rainierExample).
-  aggregate(rainierBenchmark, rainierTests).
+  aggregate(rainierCompute, rainierSampler, rainierCore, rainierNotebook).
+  aggregate(rainierBenchmark, rainierTest).
   aggregate(shadedAsm).
   settings(commonSettings).
-  settings(unpublished)
+  settings(unpublished).
+  settings(
+    // crossScalaVersions must be set to Nil on the aggregating project
+    crossScalaVersions := Nil
+  )
 
 scalafmtOnCompile in ThisBuild := true
 
@@ -37,9 +40,7 @@ def getPublishTo(snapshot: Boolean) = {
 
 lazy val commonSettings = Seq(
   organization:= "com.stripe",
-  scalaVersion := "2.12.8",
-  crossScalaVersions := List(scalaVersion.value, "2.11.12"),
-  releaseCrossBuild := true,
+  scalaVersion := "2.12.10",
   releasePublishArtifactsAction := PgpKeys.publishSigned.value,
   homepage := Some(url("https://github.com/stripe/rainier")),
   licenses := Seq("Apache 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
@@ -60,38 +61,66 @@ lazy val commonSettings = Seq(
   ),
 )
 
+lazy val crossBuildSettings = Seq(
+  crossScalaVersions := List("2.13.1", "2.12.10", "2.11.12"),
+  releaseCrossBuild := true
+)
+
 lazy val unpublished = Seq(publish := {}, publishLocal := {}, publishArtifact := false)
 
 /* dependency versions */
 lazy val V = new {
   val asm = "6.0"
-  val cats = "1.1.0"
   val evilplot = "0.6.0"
-  val scalacheck = "1.14.0"
-  val scalatest = "3.0.5"
+  val scalatest = "3.0.8"
   val flogger = "0.3.1"
-  val almond = "0.3.0"
-  val scala = "2.12.8"
+  val almond = "0.9.1"
   val shadedAsm = "0.2.1"
+  val scalameta = "4.2.3"
+  val mdoc = "2.1.1"
 }
 
 // primary modules
 
-lazy val rainierCore = project.
-  in(file("rainier-core")).
-  settings(name := "rainier-core").
+
+lazy val rainierBase = project.
+  in(file("rainier-base")).
+  settings(name := "rainier-base").
   settings(commonSettings).
+  settings(crossBuildSettings).
   settings(
     libraryDependencies ++= Seq(
       "com.google.flogger" % "flogger" % V.flogger,
-      "com.google.flogger" % "flogger-system-backend" % V.flogger,
+      "com.google.flogger" % "flogger-system-backend" % V.flogger))
+
+lazy val rainierCompute = project.
+  in(file("rainier-compute")).
+  dependsOn(rainierBase).
+  settings(name := "rainier-compute").
+  settings(commonSettings).
+  settings(crossBuildSettings).
+  settings(
+    libraryDependencies ++= Seq(
       "com.stripe" % "rainier-shaded-asm_6.0" % V.shadedAsm)
   )
 
-lazy val rainierPlot = project.
-  in(file("rainier-plot")).
-  settings(name := "rainier-plot").
-  dependsOn(rainierCore).
+lazy val rainierSampler = project.
+  in(file("rainier-sampler")).
+  dependsOn(rainierBase).
+  settings(name := "rainier-sampler").
+  settings(commonSettings).
+  settings(crossBuildSettings)
+
+lazy val rainierCore = project.
+  in(file("rainier-core")).
+  settings(name := "rainier-core").
+  dependsOn(rainierCompute, rainierSampler).
+  settings(commonSettings).
+  settings(crossBuildSettings)
+
+lazy val rainierNotebook = project.
+  in(file("rainier-notebook")).
+  settings(name := "rainier-notebook").
   settings(commonSettings).
   settings(
     resolvers ++=
@@ -101,56 +130,10 @@ lazy val rainierPlot = project.
     libraryDependencies ++=
       Seq(
         "com.cibo" %% "evilplot" % V.evilplot,
-        "sh.almond" %% "interpreter-api" % V.almond)
+        "org.scalameta" %% "scalameta" % V.scalameta,
+        "org.scalameta" %% "mdoc" % V.mdoc,
+        "sh.almond" %% "jupyter-api" % V.almond)
   )
-
-lazy val rainierCats = project.
-  in(file("rainier-cats")).
-  settings(name := "rainier-cats").
-  dependsOn(rainierCore).
-  dependsOn(rainierScalacheck % "test").
-  settings(commonSettings).
-  settings(libraryDependencies ++= Seq(
-    "org.typelevel" %% "cats-core" % V.cats))
-
-lazy val rainierScalacheck = project.
-  in(file("rainier-scalacheck")).
-  settings(name := "rainier-scalacheck").
-  dependsOn(rainierCore).
-  settings(commonSettings).
-  settings(libraryDependencies ++= Seq(
-    "org.typelevel" %% "cats-core" % V.cats,
-    "org.scalacheck" %% "scalacheck" % V.scalacheck))
-
-// documentation modules
-
-lazy val rainierDocs = project.
-  in(file("rainier-docs")).
-  settings(name := "rainier-docs").
-  enablePlugins(TutPlugin).
-  dependsOn(
-    rainierCore,
-    rainierTrace,
-  ).
-  settings(commonSettings).
-  settings(
-    resolvers := Seq(Resolver.bintrayRepo("tpolecat", "maven")),
-    scalacOptions in Tut ~= {
-      _.filterNot(sc => sc.contains("-Ywarn-unused") || sc == "-Yno-predef" )
-    },
-    tutTargetDirectory := (baseDirectory in LocalRootProject).value / "docs"
-  ).
-  settings(unpublished)
-
-lazy val rainierExample = project.
-  in(file("rainier-example")).
-  settings(name := "rainier-example").
-  dependsOn(
-    rainierCore,
-    rainierPlot,
-  ).
-  settings(commonSettings).
-  settings(unpublished)
 
 // test modules
 
@@ -165,27 +148,40 @@ lazy val rainierBenchmark = project.
   settings(commonSettings).
   settings(unpublished)
 
-lazy val rainierTests = project.
-  in(file("rainier-tests")).
-  settings(name := "rainier-tests").
+lazy val rainierTest = project.
+  in(file("rainier-test")).
+  settings(name := "rainier-test").
   dependsOn(
-    rainierCore,
-    rainierCats,
-    rainierScalacheck,
+    rainierCore
   ).
   settings(commonSettings).
   settings(libraryDependencies ++= Seq(
-    "org.scalatest" %% "scalatest" % V.scalatest,
-    "org.scalacheck" %% "scalacheck" % V.scalacheck,
-    "org.typelevel" %% "cats-laws" % V.cats,
-    "org.typelevel" %% "cats-testkit" % V.cats)).
+    "org.scalatest" %% "scalatest" % V.scalatest)).
   settings(unpublished)
 
-lazy val rainierTrace = project.
-  in(file("rainier-trace")).
-  settings(name := "rainier-trace").
+lazy val rainierDecompile = project.
+  in(file("rainier-decompile")).
+  settings(name := "rainier-decompile").
   dependsOn(rainierCore).
   settings(commonSettings).
+  settings(unpublished)
+
+// documentation modules
+
+lazy val docs = project.
+  in(file("rainier-docs")).
+  settings(moduleName := "rainier-docs").
+  enablePlugins(MdocPlugin, DocusaurusPlugin).
+  dependsOn(
+    rainierCore,
+    rainierNotebook,
+  ).
+  settings(commonSettings).
+  settings(
+   mdocVariables := Map(
+     "VERSION" -> version.value
+   )
+  ).
   settings(unpublished)
 
 // shaded asm dep trickery

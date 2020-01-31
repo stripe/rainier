@@ -1,0 +1,103 @@
+#!/bin/bash
+
+die () {
+    echo "$1"
+    exit 1
+}
+
+print_usage () {
+    read -d '' USAGE << EOF
+Usage:
+  sbt-install [options] VERSION
+
+OPTIONS:
+  -d                Directory sbt will be installed
+  --xms             Minimum heap size
+  --xmx             Maximum heap size
+  --xss             Thread stack size
+  --ivy-home        Set sbt.ivy.home
+  --help            show this message
+
+EOF
+
+    echo "$USAGE"
+}
+
+INSTALL_DIR=$HOME/bin
+SBT_IVY_HOME='${HOME}/.ivy2'
+XMS=512M
+XMX=1536M
+XSS=1M
+
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        -d)
+            INSTALL_DIR=$2
+            shift
+            shift
+            ;;
+        --ivy-home)
+            SBT_IVY_HOME=$2
+            shift
+            shift
+            ;;
+        --xms)
+            XMS=$2
+            shift
+            shift
+            ;;
+        --xmx)
+            XMX=$2
+            shift
+            shift
+            ;;
+        --xss)
+            XSS=$2
+            shift
+            shift
+            ;;
+        --help)
+            print_usage
+            exit 0
+            ;;
+        *)
+            VERSION=$1
+            shift
+            ;;
+    esac
+done
+
+test -n "$VERSION" || die "VERSION is required."
+
+mkdir $INSTALL_DIR > /dev/null 2>&1
+
+cd $INSTALL_DIR
+
+if [ -f $INSTALL_DIR/sbt ]; then
+    read -p "$INSTALL_DIR/sbt already exists. Overwrite? [y/n]" -n 1 -r
+    if [[ $REPLY =~ ^[Nn]$ ]]; then
+        exit 0
+    fi
+fi
+
+TYPESAFE_REPO=https://dl.bintray.com/sbt/maven-releases/org/scala-sbt/sbt-launch
+JAR_URL=$TYPESAFE_REPO/${VERSION}/sbt-launch.jar
+JAR=sbt-launch-${VERSION}.jar
+
+echo "Downloading $JAR from $JAR_URL"
+
+curl -L -f -o $JAR $JAR_URL
+if [ $? -ne 0 ]; then
+    rm $JAR
+    die "ERROR: $JAR not found"
+fi
+
+read -d '' SCRIPT <<EOF
+#!/bin/sh
+java -Dfile.encoding=utf-8 -Xms${XMS} -Xmx${XMX} -Xss${XSS} -XX:+CMSClassUnloadingEnabled -Dsbt.ivy.home=${SBT_IVY_HOME} -jar \`dirname \$0\`/sbt-launch-${VERSION}.jar "\$@"
+EOF
+echo "$SCRIPT" > sbt
+
+chmod +x sbt
+
+echo "Successfully installed at $INSTALL_DIR/sbt"

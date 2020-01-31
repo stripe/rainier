@@ -12,27 +12,18 @@ and returns a (Distribution[T], Real) which is a pair of values:
 1) a distribution describing the likelihood of the observed data, given the parameter values,
 2) the parameter value or summary stat we're calibrating on
  */
-final case class SBC[T, L](priors: Seq[Continuous], fn: Seq[Real] => (L, Real))(
-    implicit lh: ToLikelihood[L, T],
-    gen: ToGenerator[L, T]) {
+final case class SBC[T](priors: Seq[Continuous],
+                        fn: Seq[Real] => (Distribution[T], Real)) {
 
   import SBC._
 
   val priorGenerator: Generator[Seq[Double]] =
     Generator.traverse(priors.map(_.generator))
 
-  def posteriorSamples(nSamples: Int): List[Double] = {
-    implicit val rng: RNG = ScalaRNG(1528666602081L)
-    val values = synthesize(1000)._1
-    fit(values).sample(nSamples)
-  }
-
-  def animate(sampler: Sampler,
-              warmupIterations: Int,
-              syntheticSamples: Int,
-              logBins: Int = 3)(implicit rng: RNG): Unit = {
+  def animate(syntheticSamples: Int, logBins: Int = 3)(
+      samplerFn: Int => Sampler)(implicit rng: RNG): Unit = {
     val t0 = System.currentTimeMillis
-    val stream = simulate(sampler, warmupIterations, syntheticSamples, logBins)
+    val stream = simulate(syntheticSamples, logBins)(samplerFn)
     val bins = 1 << logBins
     val reps = bins * RepsPerBin
 
@@ -49,45 +40,35 @@ final case class SBC[T, L](priors: Seq[Continuous], fn: Seq[Real] => (L, Real))(
     }
   }
 
-  def simulate(sampler: Sampler,
-               warmupIterations: Int,
-               syntheticSamples: Int,
-               logBins: Int = 3)(implicit rng: RNG): Stream[Rep] = {
+  def simulate(syntheticSamples: Int, logBins: Int = 3)(
+      samplerFn: Int => Sampler)(implicit rng: RNG): Stream[Rep] = {
     require(logBins > 0)
     val bins = 1 << logBins
     require(bins <= Samples)
 
     val reps = bins * RepsPerBin
-    repStream(sampler, warmupIterations, syntheticSamples, bins, reps)
+    repStream(samplerFn, syntheticSamples, bins, reps)
   }
 
   def synthesize(samples: Int)(implicit rng: RNG): (Seq[T], Double) =
     priorGenerator
       .flatMap { priorParams =>
         val (d, r) = fn(Real.seq(priorParams))
-        Generator(d)
+        d.generator
           .repeat(samples)
           .zip(Generator.real(r))
       }
       .get(rng, emptyEvaluator)
 
-  def fit(values: Seq[T]): RandomVariable[Real] =
-    RandomVariable
-      .traverse(priors.map(_.param))
-      .flatMap { priorParams =>
-        val (d, r) = fn(priorParams)
-        lh(d)
-          .fit(values)
-          .map { _ =>
-            r
-          }
-      }
+  def fit(values: Seq[T]): (Model, Real) = {
+    val (d, r) = fn(priors.map(_.param))
+    (Model.observe(values, d), r)
+  }
 
-  def model(syntheticSamples: Int)(implicit rng: RNG): RandomVariable[Real] =
+  def model(syntheticSamples: Int)(implicit rng: RNG): (Model, Real) =
     fit(synthesize(syntheticSamples)._1)
 
-  private def repStream(sampler: Sampler,
-                        warmupIterations: Int,
+  private def repStream(samplerFn: Int => Sampler,
                         syntheticSamples: Int,
                         bins: Int,
                         remaining: Int)(implicit rng: RNG): Stream[Rep] =
@@ -95,23 +76,18 @@ final case class SBC[T, L](priors: Seq[Continuous], fn: Seq[Real] => (L, Real))(
       Stream.empty
     else {
       val rep =
-        repetition(sampler, warmupIterations, syntheticSamples, bins, Trials, 1)
-      rep #:: repStream(sampler,
-                        warmupIterations,
-                        syntheticSamples,
-                        bins,
-                        remaining - 1)
+        repetition(samplerFn, syntheticSamples, bins, Trials, 1)
+      rep #:: repStream(samplerFn, syntheticSamples, bins, remaining - 1)
     }
 
-  private def repetition(sampler: Sampler,
-                         warmupIterations: Int,
+  private def repetition(samplerFn: Int => Sampler,
                          syntheticSamples: Int,
                          bins: Int,
                          trials: Int,
                          thin: Int)(implicit rng: RNG): Rep = {
     val t0 = System.currentTimeMillis
     val (rawRank, rHat, effectiveSampleSize) =
-      sample(sampler, warmupIterations, syntheticSamples, thin)
+      sample(samplerFn, syntheticSamples, thin)
     val ms = System.currentTimeMillis - t0
 
     if (trials > 1 && effectiveSampleSize < Samples) {
@@ -119,36 +95,27 @@ final case class SBC[T, L](priors: Seq[Continuous], fn: Seq[Real] => (L, Real))(
         Math
           .ceil(Samples.toDouble / effectiveSampleSize)
           .toInt
-      repetition(sampler,
-                 warmupIterations,
-                 syntheticSamples,
-                 bins,
-                 trials - 1,
-                 newThin)
+      repetition(samplerFn, syntheticSamples, bins, trials - 1, newThin)
     } else {
       val rank = (rawRank * bins) / Samples
       Rep(rank, rHat, thin, effectiveSampleSize, ms)
     }
   }
 
-  private def sample(sampler: Sampler,
-                     warmupIterations: Int,
+  private def sample(samplerFn: Int => Sampler,
                      syntheticSamples: Int,
                      thin: Int)(implicit rng: RNG): (Int, Double, Double) = {
     val (syntheticValues, trueOutput) = synthesize(syntheticSamples)
-    val model = fit(syntheticValues)
+    val (model, real) = fit(syntheticValues)
 
-    val (samples, diag) =
-      model.sampleWithDiagnostics(sampler,
-                                  Chains,
-                                  warmupIterations,
-                                  (Samples / Chains) * thin,
-                                  true,
-                                  thin)
-
+    val sample =
+      model.sample(samplerFn(Samples * thin / Chains), Chains).thin(thin)
+    val diag = sample.diagnostics
     val maxRHat = diag.map(_.rHat).max
     val minEffectiveSampleSize = diag.map(_.effectiveSampleSize).min
-    val rawRank = samples.tail.count { n =>
+
+    val predictions = sample.predict(real)
+    val rawRank = predictions.tail.count { n =>
       n < trueOutput
     }
     (rawRank, maxRHat, minEffectiveSampleSize)
@@ -220,9 +187,7 @@ final case class SBC[T, L](priors: Seq[Continuous], fn: Seq[Real] => (L, Real))(
 object SBC {
   val emptyEvaluator: Evaluator = new Evaluator(Map.empty)
 
-  def apply[T, L](prior: Continuous)(fn: Real => L)(
-      implicit lh: ToLikelihood[L, T],
-      gen: ToGenerator[L, T]): SBC[T, L] =
+  def apply[T](prior: Continuous)(fn: Real => Distribution[T]): SBC[T] =
     apply(List(prior), { l =>
       (fn(l.head), l.head)
     })
