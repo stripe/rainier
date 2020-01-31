@@ -3,14 +3,14 @@ id: priors
 title: Priors and Random Variables
 ---
 
-```scala mdoc:invisible
+Let's start by importing these two packages, which  contain all of the types we will use:
+```scala mdoc
 import com.stripe.rainier.core._
 import com.stripe.rainier.compute._
 ```
+## Constructing Random Variables
 
 The most fundamental data type in Rainier is the `Real`, which represents a real-valued scalar random variable. A real-valued scalar is simple enough: that sounds like a `Double`, and indeed you can treat a `Real` just like a `Double` in a lot of ways. But since it's a [random variable](https://en.wikipedia.org/wiki/Random_variable), it represents a set of possible values rather than one specific known value.
-
-## Constructing Random Variables
 
 To construct a `Real`, we very often start with a `Distribution` object. For example, here we first construct a `Uniform(0,1)` distribution, and then use `param` to create a new random variable, `a`, with that distribution as its prior.
 
@@ -45,19 +45,13 @@ Rainier comes with plotting support, based on [EvilPlot](https://cibotech.github
 
 _NOTE: this currently is only supported for Scala 2.12._
 
-If you were in [Jupyter](jupyter.md), for example, you should do this as well as importing `rainier-core`:
-
-```scala
-import $ivy.`com.stripe::rainier-notebook:@VERSION@`
-```
-
-Followed by importing the package, which exposes all of the plotting methods:
+Importing the package exposes all of the plotting methods:
 
 ```scala mdoc
 import com.stripe.rainier.notebook._
 ```
 
-Finally, we can create and render a basic scatter plot of our `(a,c)` tuples.
+Now we can create and render a basic scatter plot of our `(a,c)` tuples.
 
 ```scala
 val ac = Model.sample((a,c)))

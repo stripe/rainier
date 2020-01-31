@@ -8,15 +8,9 @@ import com.stripe.rainier.core._
 import com.stripe.rainier.compute._
 ```
 
-For this section, we'll need an additional import, of the `compute` module, so that we can work directly with the types `Real`, `Vec`, and `Fn`.
-
-```scala
-import com.stripe.rainier.compute._
-```
+Our imaginary chicken farmer from the [previous section](likelihoods.md) has gotten more sophisticated: she's testing three different types of feed to see which one produces more eggs.
 
 ## Counting More Chickens
-
-Our imaginary chicken farmer from the [previous section](likelihoods.md) has gotten more sophisticated: she's testing three different types of feed to see which one produces more eggs.
 
 The egg dataset now includes a `0`, `1`, or `2` for each day that indicates which type of feed they got.
 

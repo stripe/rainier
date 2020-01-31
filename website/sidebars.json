@@ -1,7 +1,8 @@
 {
   "docs": {
-    "Overview": ["intro", "priors", "likelihoods", "vectors", "posteriors", "jupyter"],
-    "Reference": ["distributions", "model", "real", "samplers", "trace", "modules"],
+    "Overview": ["intro", "priors", "likelihoods", "vectors", "posteriors"],
+    "Installation": ["install", "jupyter", "modules"],
+    "API Reference": ["distributions", "model", "real", "samplers", "trace"],
     "Implementation": ["probprog"] 
   }
 }
