@@ -56,7 +56,8 @@
     },
     "categories": {
       "Overview": "Overview",
-      "Reference": "Reference",
+      "Installation": "Installation",
+      "API Reference": "API Reference",
       "Implementation": "Implementation"
     }
   },

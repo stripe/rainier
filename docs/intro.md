@@ -31,26 +31,6 @@ val model = Model.observe(xs, ys){case (u, v, w) =>
 }
 ```
 
-## Getting Rainier
-
-To add Rainier to your project include the following in your `build.sbt`:
-
-```scala
-libraryDependencies += "com.stripe" % "rainier-core" % "@VERSION@"
-```
-
-Or, in Ammonite or Jupyter, import it like this:
-
-```scala
-import $ivy.`com.stripe:rainier-core:@VERSION@`
-```
-
-Then import `com.stripe.rainier.core` to get started.
-
-```scala
-import com.stripe.rainier.core._
-```
-
 ## This Overview
 
 The rest of this overview is split into four sections. We recommend that you read through each of them before you start working with Rainier. They are:
