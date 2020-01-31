@@ -60,6 +60,33 @@ trait Fn[-A, +Y] { self =>
       def xy(x: X) = self.xy(x)
     }
 
+  def list(k: Int): Fn[Seq[A], List[Y]] =
+    new Fn[Seq[A], List[Y]] {
+      type X = List[self.X]
+      def wrap(a: Seq[A]) = a.map(self.wrap).toList
+      def create(columns: List[Array[Double]]) = {
+        val (list, cols2) =
+          0.until(k).toList.foldLeft((List.empty[self.X], columns)) {
+            case ((acc, cols), _) =>
+              val (x, cols1) = self.create(cols)
+              (x :: acc, cols1)
+          }
+        (list, cols2)
+      }
+      def extract(a: Seq[A], acc: List[Double]) =
+        a.foldLeft(acc) {
+          case (acc2, x) =>
+            self.extract(x, acc2)
+        }
+
+      def xy(x: X) = x.map(self.xy)
+    }
+
+  def vec(k: Int)(implicit ev: Y <:< Real): Fn[Seq[A], Vec[Real]] =
+    list(k).map { list =>
+      Vec(list.map(ev): _*)
+    }
+
   def keys[K](seq: Seq[K]): Fn[Map[K, A], Map[K, Y]] =
     new Fn[Map[K, A], Map[K, Y]] {
       type X = Map[K, self.X]

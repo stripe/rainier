@@ -167,11 +167,33 @@ object ToGenerator {
       def apply(t: String) = Generator.constant(t)
     }
 
-  implicit def zip[A, B, X, Y](
-      implicit ab: ToGenerator[A, B],
-      xy: ToGenerator[X, Y]): ToGenerator[(A, X), (B, Y)] =
-    new ToGenerator[(A, X), (B, Y)] {
-      def apply(t: (A, X)) = ab(t._1).zip(xy(t._2))
+  implicit def zip[A, B, Z, Y](
+      implicit az: ToGenerator[A, Z],
+      by: ToGenerator[B, Y]): ToGenerator[(A, B), (Z, Y)] =
+    new ToGenerator[(A, B), (Z, Y)] {
+      def apply(t: (A, B)) = az(t._1).zip(by(t._2))
+    }
+
+  implicit def zip3[A, B, C, Z, Y, X](
+      implicit az: ToGenerator[A, Z],
+      by: ToGenerator[B, Y],
+      cx: ToGenerator[C, X]): ToGenerator[(A, B, C), (Z, Y, X)] =
+    new ToGenerator[(A, B, C), (Z, Y, X)] {
+      def apply(t: (A, B, C)) = az(t._1).zip(by(t._2)).zip(cx(t._3)).map {
+        case ((z, y), x) => (z, y, x)
+      }
+    }
+
+  implicit def zip4[A, B, C, D, Z, Y, X, W](
+      implicit az: ToGenerator[A, Z],
+      by: ToGenerator[B, Y],
+      cx: ToGenerator[C, X],
+      dw: ToGenerator[D, W]): ToGenerator[(A, B, C, D), (Z, Y, X, W)] =
+    new ToGenerator[(A, B, C, D), (Z, Y, X, W)] {
+      def apply(t: (A, B, C, D)) =
+        az(t._1).zip(by(t._2)).zip(cx(t._3)).zip(dw(t._4)).map {
+          case (((z, y), x), w) => (z, y, x, w)
+        }
     }
 
   implicit def seq[T, U](
@@ -195,5 +217,14 @@ object ToGenerator {
               }
           })
           .map(_.toMap)
+    }
+
+  implicit def vec[T, U](
+      implicit tu: ToGenerator[T, U]): ToGenerator[Vec[T], Seq[U]] =
+    new ToGenerator[Vec[T], Seq[U]] {
+      def apply(t: Vec[T]) =
+        Generator.traverse(t.toList.map { x =>
+          tu(x)
+        })
     }
 }
