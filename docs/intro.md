@@ -13,6 +13,24 @@ This documentation assumes you have at least some basic familiarity with Bayesia
 
 We also assume you are at least somewhat familiar with Scala. Perhaps this goes without saying, but: Rainier is a Scala library, and letting you build models in Scala, and run them on the JVM, is one of Rainier's distinguishing features.
 
+## Example
+
+If you just want to get a sense of what building a model in Rainier looks like, here's a simple linear regression:
+
+```scala
+val xs: List[(Double, Double, Double)] = ???
+val ys: List[Double] = ???
+
+val sigma = Exponential(1).param
+val alpha = Normal(0,1).param
+val betas = Normal(0,1).paramVector(3)
+
+val model = Model.observe(xs, ys){case (u, v, w) => 
+     val mu = alpha + Vec(u,v,w).dot(betas)
+     Normal(mu, sigma)
+}
+```
+
 ## Getting Rainier
 
 To add Rainier to your project include the following in your `build.sbt`:
@@ -32,6 +50,14 @@ Then import `com.stripe.rainier.core` to get started.
 ```scala
 import com.stripe.rainier.core._
 ```
+
+## A Note on Performance and Scale
+
+Rainier requires that all of the observations or training data for a given model fit comfortably into RAM on a single machine. It does not make use of GPUs or of SIMD instructions.
+
+Within those constraints, however, it is extremely fast. Rainier takes advantage of knowing all of your data ahead of time by aggressively precomputing as much as it can, which can be a significant practical benefit relative to systems that compile a data-agnostic model. It produces optimized, unboxed, JIT-friendly JVM bytecode for all numerical calculations. This compilation happens in-process and is fast enough for interactive use at a REPL.
+
+Our benchmarking shows that you should expect gradient evaluation to be roughly on par with [Stan](https://mc-stan.org/) (some models will be faster, some will be slower). However, please note that Stan has a more sophisticated dynamic HMC implementation that may well produce more effective samples per second (at least if you ignore the lengthy C++ compilation times).
 
 ## This Overview
 
