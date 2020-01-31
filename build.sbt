@@ -2,7 +2,7 @@ import wartremover.Wart
 
 lazy val root = project.
   in(file(".")).
-  aggregate(rainierCompute, rainierSampler, rainierCore, rainierNotebook).
+  aggregate(rainierBase, rainierCompute, rainierSampler, rainierCore, rainierNotebook).
   aggregate(rainierBenchmark, rainierTest).
   aggregate(shadedAsm).
   settings(commonSettings).

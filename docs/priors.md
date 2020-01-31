@@ -37,7 +37,7 @@ We'll see a more thorough treatment of sampling later on, but for now, we can us
 Model.sample((a,c)).take(10)
 ```
 
-You can see a few things here: the sampling process has converted our `(a, c)` tuple into a list of concrete `(Double, Double)` tuples. Each of those tuples is an independent, but internally consistent, sample of the `(Real, Real)` 2-dimensional random variable. We can verify that the values for `a` are all in that `(0,1)` range we expected, and that the values for `c` are a little more widely spread. But to get a better understanding, we should look at a plot.
+You can see a few things here: the sampling process has converted our `(a, c)` tuple into a list of concrete `(Double, Double)` tuples. Each of those tuples is an independent joint sample of the `(Real, Real)` 2-dimensional random variable. We can verify that the values for `a` are all in that `(0,1)` range we expected, and that the values for `c` are a little more widely spread. But to get a better understanding, we should look at a plot.
 
 ## Visualizing Samples
 

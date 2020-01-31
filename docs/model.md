@@ -23,7 +23,7 @@ Run inference using the provided sampler.
 
 * `optimize[T, U](value: T): U`
 
-Run L-BFGS. `value: T` must be something that can be converted to a `Generator[U]`. See the [Trace and Generator](trace.md) documentation for more.
+Run L-BFGS. `value: T` must be something that can be converted to a `Generator[U]`. See the [Trace and Generator](trace.md) documentation for more on this. 
 
 ### Object Methods
 

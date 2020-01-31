@@ -85,7 +85,7 @@ The first thing we need to do is configure a sampler. For that, we'll need to im
 import com.stripe.rainier.sampler._
 ```
 
-What we're creating here is an `EHMC`, or _empirical Hamiltonian Monte Carlo_ sampler. The `warmupIterations` are used to tune the sampler and find the right region to sample from; the `iterations` will produce actual samples we'll use. There are other tuning parameters but we'll keep the defaults.
+What we're creating here is an `EHMC`, or [_empirical Hamiltonian Monte Carlo_](https://arxiv.org/pdf/1810.04449.pdf) sampler. The `warmupIterations` are used to tune the sampler and find the right region to sample from; the `iterations` will produce actual samples we'll use. There are other tuning parameters but we'll keep the defaults.
 
 ```scala mdoc:to-string
 val sampler = EHMC(warmupIterations = 5000, iterations = 500)
@@ -97,7 +97,7 @@ Next, we'll run the sampler on our model. What we get back is a `Trace`: a recor
 val eggTrace = eggModel.sample(sampler)
 ```
 
-By default, we run 4 chains, giving us 2000 samples in total. The `Trace[4][500][1]` shows us that, as well as reminding us that our model only has one parameter.
+By default, we run the sampler independently 4 times (4 "chains"), giving us 2000 samples in total. The `Trace[4][500][1]` shows us that, as well as reminding us that our model only has one parameter.
 
 Before we keep going, we should check to make sure our sample converged. Because we ran multiple chains, we can make use of `diagnostics` on the trace to get back a `Diagnostics(rHat, effectiveSampleSize)` object for each parameter.
 
@@ -105,7 +105,9 @@ Before we keep going, we should check to make sure our sample converged. Because
 eggTrace.diagnostics
 ```
 
-In this case, we've got an rHat close to 1, and a healthy effective sample size, so we're looking good. If our diagnostics looked worse, one thing we might want to do is thin out the trace, say by only keeping every other sample.
+You can read more about [rHat](https://mc-stan.org/docs/2_21/reference-manual/notation-for-samples-chains-and-draws.html), the "potential scale reduction statistic", as well as [effective sample size](https://mc-stan.org/docs/2_21/reference-manual/effective-sample-size-section.html), in the Stan manual.
+
+In this case, we've got an rHat close to the ideal value of 1, and an effective sample size that's not too far off our actual number of samples so we're looking good. If our diagnostics looked worse, we could tweak the sampler (for example giving it more warmup iterations), or we could thin out the trace, say by only keeping every other sample:
 
 ```scala mdoc:to-string
 val thinTrace = eggTrace.thin(2)

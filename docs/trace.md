@@ -7,8 +7,14 @@ title: Trace and Generator
 
 ## Trace
 
-TODO 
+* `diagnostics: List[Trace.Diagnostics]`
 
-## Generator
+Produce a list of `Diagnostics(rHat: Double, effectiveSampleSize: Double)`, one for each parameter. Requires chains > 1.
+
+* `thin(n: Int): Trace`
+
+Keep every n'th sample in each chain.
+
+* `predict[T,U](value: T): List[U]`
 
 TODO
