@@ -4,7 +4,8 @@ import com.stripe.rainier.compute._
 import com.stripe.rainier.sampler.RNG
 
 trait Discrete extends Distribution[Long] { self: Discrete =>
-  val likelihoodFn = Fn.long.map(logDensity)
+  def logDensity(seq: Seq[Long]) =
+    Vec.from(seq.map(_.toDouble)).map(logDensity).toColumn
   def logDensity(x: Real): Real
 
   def zeroInflated(psi: Real): DiscreteMixture =

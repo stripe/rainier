@@ -11,6 +11,8 @@ import com.stripe.rainier.compute._
 final case class Categorical[T](pmf: Map[T, Real]) extends Distribution[T] {
   self =>
 
+  def logDensity(seq: Seq[T]) = ???
+  /*
   val likelihoodFn = Fn.enum(pmf.keys.toList).map { value =>
     Real
       .sum(value.map {
@@ -19,6 +21,7 @@ final case class Categorical[T](pmf: Map[T, Real]) extends Distribution[T] {
       })
       .log
   }
+   */
 
   def map[U](fn: T => U): Categorical[U] =
     Categorical(
@@ -106,11 +109,13 @@ object Categorical {
 final case class Multinomial[T](pmf: Map[T, Real], k: Real)
     extends Distribution[Map[T, Long]] { self =>
 
+  def logDensity(seq: Seq[Map[T, Long]]) = ???
+  /*
   val likelihoodFn =
     Fn.long
       .keys(pmf.keys.toList)
       .map(logDensity)
-
+   */
   def logDensity(v: Map[T, Real]): Real =
     Combinatorics.factorial(k) + Real.sum(v.map {
       case (t, i) =>
