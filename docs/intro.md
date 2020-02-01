@@ -21,9 +21,9 @@ If you just want to get a sense of what building a model in Rainier looks like, 
 val xs: List[(Double, Double, Double)] = ???
 val ys: List[Double] = ???
 
-val sigma = Exponential(1).param
-val alpha = Normal(0,1).param
-val betas = Normal(0,1).paramVector(3)
+val sigma = Real(Exponential(1))
+val alpha = Real(Normal(0,1))
+val betas = Vec.fill(3)(Normal(0,1))
 
 val model = Model.observe(xs, ys){case (u, v, w) => 
      val mu = alpha + Vec(u,v,w).dot(betas)

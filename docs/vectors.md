@@ -21,13 +21,13 @@ val eggs = List[(Int, Long)]((0,31), (2,47), (0,35), (2,40), (0,33), (2,44), (0,
 As before, we'll create a `lambda` that captures the baseline egg-laying rate for the flock.
 
 ```scala mdoc:to-string
-val lambda = Gamma(0.5, 100).param
+val lambda = Real(Gamma(0.5, 100))
 ```
 
 This time, however, we'll also create a vector of 3 random variables that represent the egg-laying rate for each of the 3 different feeds. We want these to be able to scale the baseline rate up or down a small amount. There are a lot of different modeling choices we could make here, but in this case we'll start by defining random variables that represent the _log_ of those rates, normally distributed around the log of the baseline, with a small standard deviation.
 
 ```scala mdoc:to-string
-val logFeeds = Normal(lambda.log, 0.1).paramVector(3)
+val logFeeds = Vec.fill(3)(Normal(lambda.log, 0.1))
 ```
 
 This gives us back a `Vec[Real]`, which is a type defined by Rainier. It's similar to a Scala `Vector[Real]`, but adapted to work better with random variables.

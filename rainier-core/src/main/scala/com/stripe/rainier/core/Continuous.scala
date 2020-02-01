@@ -18,10 +18,13 @@ trait Continuous extends Distribution[Double] {
   def exp: Continuous = Exp.transform(this)
 
   def param: Real
-  def paramVector(k: Int) = Vec(List.fill(k)(this.param): _*)
 }
 
 object Continuous {
+  implicit val toReal: ToReal[Continuous] = new ToReal[Continuous] {
+    def apply(a: Continuous) = a.param
+  }
+
   implicit def gen[C <: Continuous]: ToGenerator[C, Double] =
     Distribution.gen[C, Double]
 }

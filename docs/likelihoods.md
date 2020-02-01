@@ -23,7 +23,7 @@ val eggs = List[Long](45, 52, 45, 47, 41, 42, 44, 42, 46, 38, 36, 35, 41, 48, 42
 A simple model for this is to assume that the number of eggs per day is Poisson-distributed, with some mean `lambda` that we don't know. Since we don't know it, we should create a random variable for it. It's traditional to use a `Gamma` prior here.
 
 ```scala mdoc:to-string
-val lambda = Gamma(0.5, 100).param
+val lambda = Real(Gamma(0.5, 100))
 ```
 
 Sanity check: we can see that `lambda` is between (0, ∞), which is good, because it doesn't make sense to lay a negative number of eggs.

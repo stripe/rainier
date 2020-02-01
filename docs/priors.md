@@ -8,23 +8,24 @@ Let's start by importing these two packages, which  contain all of the types we 
 import com.stripe.rainier.core._
 import com.stripe.rainier.compute._
 ```
+
 ## Constructing Random Variables
 
 The most fundamental data type in Rainier is the `Real`, which represents a real-valued scalar random variable. A real-valued scalar is simple enough: that sounds like a `Double`, and indeed you can treat a `Real` just like a `Double` in a lot of ways. But since it's a [random variable](https://en.wikipedia.org/wiki/Random_variable), it represents a set of possible values rather than one specific known value.
 
-To construct a `Real`, we very often start with a `Distribution` object. For example, here we first construct a `Uniform(0,1)` distribution, and then use `param` to create a new random variable, `a`, with that distribution as its prior.
+To construct a `Real`, we very often start with a `Distribution` object. For example, here we construct a random variable, `a`, with the distribution `Uniform(0,1)` as its prior.
 
 ```scala mdoc:to-string
-val a = Uniform(0,1).param
+val a = Real(Uniform(0,1))
 val b = a + 1
 ```
 
 Although we don't know the exact value, you can see in the output that Rainier is tracking the bounds of each `Real`, as best it can: we know that `a` must be in the range `(0,1)`, which means `b` must be within `(1,2)`. Seeing these bounds can be a good basic sanity check as you're building a model.
 
-You can combine `Real`s using normal arithmetic operations, and they support a wide range of unary operators like `abs`, `exp`, `log`, and `logit`. You can also use a `Real` for any parameter of a `Distribution`. So, for example, we can use our `b` and `a` as the mean and standard deviation of a new `Normal` random variable.
+You can combine `Real` values using normal arithmetic operations, and they support a wide range of unary operators like `abs`, `exp`, `log`, and `logit`. You can also use a `Real` for any parameter of a `Distribution`. So, for example, we can use our `b` and `a` as the mean and standard deviation of a new `Normal` random variable.
 
 ```scala mdoc:to-string
-val c = Normal(b, a).param
+val c = Real(Normal(b, a))
 ```
 
 ## Sampling from the Prior

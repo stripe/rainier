@@ -36,6 +36,8 @@ sealed trait Vec[T] {
 object Vec {
   def apply[T](seq: T*)(implicit toReal: ToReal[T]): Vec[Real] =
     RealVec(seq.map(toReal(_)).toVector)
+  def fill[T](k: Int)(t: T)(implicit toReal: ToReal[T]) =
+    toReal.fill(t, k)
 }
 
 private case class RealVec(reals: Vector[Real]) extends Vec[Real] {
