@@ -12,8 +12,6 @@ sealed trait Vec[T] {
   def toList: List[T] =
     0.until(size).toList.map(apply)
 
-  def ++(other: Vec[Real])(implicit ev: T <:< Real): Vec[Real] =
-    ConcatVec(this.map(ev), other)
   def dot(other: Vec[Real])(implicit ev: T <:< Real): Real =
     Real.sum(0.until(size).map { i =>
       apply(i) * other(i)
@@ -34,8 +32,11 @@ sealed trait Vec[T] {
 }
 
 object Vec {
-  def apply[T](seq: T*)(implicit toReal: ToReal[T]): Vec[Real] =
-    RealVec(seq.map(toReal(_)).toVector)
+  def apply[T,U](seq: T*)(implicit toVec: ToVec[T,U]): Vec[U] =
+    from(seq)
+
+  def from[T,U](seq: Seq[T])(implicit toVec: ToVec[T,U]): Vec[U] =
+    toVec(seq)
 }
 
 private case class RealVec(reals: Vector[Real]) extends Vec[Real] {
@@ -57,13 +58,13 @@ private case class ZipVec[T, U](left: Vec[T], right: Vec[U])
   def apply(index: Real) = (left(index), right(index))
 }
 
-private case class ConcatVec(left: Vec[Real], right: Vec[Real])
-    extends Vec[Real] {
-  def size = left.size + right.size
-  def apply(index: Int) =
-    if (index >= left.size)
-      right(index - left.size)
-    else left(index)
-  def apply(index: Real) =
-    Real.gte(index, left.size, right(index - left.size), left(index))
+trait ToVec[T,U] {
+  def apply(seq: Seq[T]): Vec[U]
+}
+
+object ToVec {
+  implicit def toReal[T](implicit toReal: ToReal[T]): ToVec[T,Real] =
+    new ToVec[T,Real] {
+      def apply(seq: Seq[T]) = RealVec(seq.map(toReal(_)).toVector)
+    }
 }
