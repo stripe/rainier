@@ -22,15 +22,15 @@ class GLMMPoisson2 extends ModelBenchmark {
   var nYears: String = _
 
   def model = {
-    val mu = Normal(0, 10).param
-    val sdAlpha = Uniform(0, 2).param
-    val alphas = Normal(mu, sdAlpha).paramVector(nSites.toInt)
+    val mu = Normal(0, 10).real
+    val sdAlpha = Uniform(0, 2).real
+    val alphas = Normal(mu, sdAlpha).vec(nSites.toInt)
 
-    val sdYear = Uniform(0, 1).param
-    val betas = Normal(0, 10).paramVector(3)
-    val eps = Normal(0, sdYear).paramVector(nYears.toInt)
+    val sdYear = Uniform(0, 1).real
+    val betas = Normal(0, 10).vec(3)
+    val eps = Normal(0, sdYear).vec(nYears.toInt)
 
-    val yearBetas = Vec(year.take(nYears.toInt): _*).zip(eps).map {
+    val yearBetas = Vec.from(year.take(nYears.toInt)).zip(eps).map {
       case (y, ep) =>
         y * betas(0) +
           y * y * betas(1) +
@@ -43,20 +43,13 @@ class GLMMPoisson2 extends ModelBenchmark {
 
   def observe(yearBetas: Vec[Real], alphas: Vec[Real]): Model = {
     if (observeUsing == "direct")
-      Model.observe(yearSite, C) {
+      ???
+    else
+      Model.observe(C, Vec.from(yearSite).map {
         case (year, site) =>
           val logLambda = yearBetas(year) + alphas(site)
           Poisson(logLambda.exp)
-      } else
-      Model.observe(
-        yearSite,
-        C,
-        Fn.int.zip(Fn.int).map {
-          case (year, site) =>
-            val logLambda = yearBetas(year) + alphas(site)
-            Poisson(logLambda.exp)
-        }
-      )
+      })
   }
 
   def year =

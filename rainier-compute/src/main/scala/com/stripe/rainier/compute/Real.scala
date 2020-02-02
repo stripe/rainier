@@ -284,7 +284,17 @@ object Lookup {
       case c: Column =>
         c.maybeScalar match {
           case Some(v) => lookup(v, table, low)
-          case None    => new Lookup(index, table.toArray, low)
+          case None =>
+            val scalars = table.collect { case Scalar(v) => v }.toVector
+            if (scalars.size == table.size)
+              c.map { d =>
+                if (d.isWhole)
+                  scalars(d.toInt - low)
+                else
+                  throw new ArithmeticException(
+                    "Cannot lookup a non-integral number")
+              } else
+              new Lookup(index, table.toArray, low)
         }
       case _ =>
         new Lookup(index, table.toArray, low)

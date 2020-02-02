@@ -63,52 +63,67 @@ object Model {
   def likelihood(real: Real) = Model(List(real), Set.empty[Real])
   def likelihoods(reals: List[Real]) = Model(reals, Set.empty[Real])
 
-  def observe[Y](y: Y, dist: Distribution[Y]): Model =
-    Model.likelihood(dist.likelihoodFn(y))
+  def observe[Y](y: Y, lh: Distribution[Y]): Model =
+    observe(List(y), lh)
 
-  val NumSplits = 8
-  def observe[Y](ys: Seq[Y], dist: Distribution[Y]): Model = {
-    val f = dist.likelihoodFn
-    if (ys.size > NumSplits) {
-      val (init, splits) = split(ys, NumSplits)
-      val initReal = f.encode(init)
-      Model.likelihoods(List(initReal, Real.sum(splits.map { s =>
-        f.encode(s)
-      })))
-    } else
-      Model.likelihood(f.encode(ys))
+  def observe[Y](ys: Seq[Y], lh: Distribution[Y]): Model = {
+    val (init, splits) = split(ys)
+    val initReal = lh.logDensity(init)
+    if (splits.isEmpty)
+      Model.likelihood(initReal)
+    else
+      Model.likelihoods(List(initReal, Real.sum(splits.map(lh.logDensity))))
   }
 
-  def observe[X, Y](xs: Seq[X],
-                    ys: Seq[Y],
-                    fn: Fn[X, Distribution[Y]]): Model = {
-    if (ys.size > NumSplits) {
-      val (initX, splitsX) = split(xs, NumSplits)
-      val (initY, splitsY) = split(ys, NumSplits)
-
+  def observe[X, Y, D <: Distribution[Y]](ys: Seq[Y], lhs: Vec[D]): Model = {
+    val (initX, splitsX) = split(lhs)
+    if (splitsX.isEmpty) {
+      Model.likelihood(initX.toColumn.logDensity(ys))
+    } else {
+      val (initY, splitsY) = split(ys)
       Model.likelihoods(
-        List(fn.encode(initX).likelihoodFn.encode(initY),
+        List(initX.toColumn.logDensity(initY),
              Real.sum(splitsX.zip(splitsY).map {
                case (sx, sy) =>
-                 fn.encode(sx).likelihoodFn.encode(sy)
+                 sx.toColumn.logDensity(sy)
              })))
-    } else
-      Model.likelihood(fn.encode(xs).likelihoodFn.encode(ys))
-  }
-
-  def observe[X, Y](xs: Seq[X], ys: Seq[Y])(fn: X => Distribution[Y]): Model = {
-    val likelihoods = (xs.zip(ys)).map {
-      case (x, y) => fn(x).likelihoodFn(y)
     }
-
-    Model.likelihood(Real.sum(likelihoods))
   }
 
-  private def split[T](ts: Seq[T], n: Int): (List[T], List[List[T]]) = {
-    val splitSize = (ts.size - 1) / n
-    val initSize = ts.size - (splitSize * n)
+  val NumSplits = 8
+  def split[T](ts: Vec[T]): (Vec[T], List[Vec[T]]) = {
+    val splitSize = (ts.size - 1) / NumSplits
+    val initSize = ts.size - (splitSize * NumSplits)
+    val init = ts.take(initSize)
+    if (splitSize == 0)
+      (init, Nil)
+    else {
+      val splits = 1
+        .until(NumSplits)
+        .scanLeft(ts.drop(initSize)) {
+          case (vec, _) => vec.drop(splitSize)
+        }
+        .map(_.take(splitSize))
+        .toList
+      (init, splits)
+    }
+  }
+
+  def split[T](ts: Seq[T]): (List[T], List[List[T]]) = {
+    val splitSize = (ts.size - 1) / NumSplits
+    val initSize = ts.size - (splitSize * NumSplits)
     val init = ts.take(initSize).toList
-    val splits = ts.drop(initSize).grouped(splitSize).toList.map(_.toList)
-    (init, splits)
+    if (splitSize == 0)
+      (init, Nil)
+    else {
+      val splits = 1
+        .until(NumSplits)
+        .scanLeft(ts.drop(initSize)) {
+          case (vec, _) => vec.drop(splitSize)
+        }
+        .map(_.take(splitSize).toList)
+        .toList
+      (init, splits)
+    }
   }
 }

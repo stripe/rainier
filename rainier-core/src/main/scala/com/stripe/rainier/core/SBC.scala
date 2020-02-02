@@ -61,7 +61,7 @@ final case class SBC[T](priors: Seq[Continuous],
       .get(rng, emptyEvaluator)
 
   def fit(values: Seq[T]): (Model, Real) = {
-    val (d, r) = fn(priors.map(_.param))
+    val (d, r) = fn(priors.map(_.real))
     (Model.observe(values, d), r)
   }
 

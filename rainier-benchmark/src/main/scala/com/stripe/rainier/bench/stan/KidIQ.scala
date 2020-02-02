@@ -3,6 +3,7 @@ package com.stripe.rainier.bench.stan
 import org.openjdk.jmh.annotations._
 
 import com.stripe.rainier.core._
+import com.stripe.rainier.compute._
 
 //https://github.com/stan-dev/example-models/tree/master/ARM/Ch.3
 //Stan: Gradient evaluation took 0.000104 seconds (104 us)
@@ -13,16 +14,16 @@ class KidIQ extends ModelBenchmark {
   protected var n: String = _
 
   def model = {
-    val sigma = Cauchy(0, 2.5).param
-    val betas = Normal(0, 10).paramVector(3)
+    val sigma = Cauchy(0, 2.5).real
+    val betas = Normal(0, 10).vec(3)
     val nI = n.toInt
     val xs = momIQ.zip(momHS).take(nI)
     val ys = kidScore.take(nI)
-    Model.observe(xs, ys) {
+    Model.observe(ys, Vec.from(xs).map {
       case (iq, hs) =>
         val mu = betas(0) + betas(1) * iq + betas(2) * hs
         Normal(mu, sigma)
-    }
+    })
   }
 
   val kidScore =

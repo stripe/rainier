@@ -5,20 +5,20 @@ import com.stripe.rainier.sampler.RNG
 import scala.annotation.tailrec
 
 /**
-  * A Continuous Distribution, with method `param` allowing conversion to a RandomVariable.
+  * A Continuous Distribution, with method `real` allowing conversion to a random variable.
   */
 trait Continuous extends Distribution[Double] {
   private[rainier] val support: Support
 
-  val likelihoodFn = Fn.double.map(logDensity)
+  def logDensity(seq: Seq[Double]) = Vec.from(seq).map(logDensity).toColumn
   def logDensity(x: Real): Real
 
   def scale(a: Real): Continuous = Scale(a).transform(this)
   def translate(b: Real): Continuous = Translate(b).transform(this)
   def exp: Continuous = Exp.transform(this)
 
-  def param: Real
-  def paramVector(k: Int) = Vec(List.fill(k)(this.param): _*)
+  def real: Real
+  def vec(k: Int) = Vec.from(List.fill(k)(real))
 }
 
 object Continuous {
@@ -30,7 +30,7 @@ object Continuous {
   * A Continuous Distribution that inherits its transforms from a Support object.
   */
 private[rainier] trait StandardContinuous extends Continuous {
-  def param: Real = {
+  def real: Real = {
     val x = Real.parameter { x =>
       support.logJacobian(x) + logDensity(support.transform(x))
     }
@@ -244,7 +244,7 @@ case class Mixture(components: Map[Continuous, Real]) extends Continuous {
         }
       })
 
-  def param: Real = {
+  def real: Real = {
     val x = Real.parameter { x =>
       support.logJacobian(x) + logDensity(support.transform(x))
     }

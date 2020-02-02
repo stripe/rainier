@@ -21,7 +21,7 @@
         "title": "Likelihoods and Observations"
       },
       "model": {
-        "title": "Model and Fn"
+        "title": "Model"
       },
       "modules": {
         "title": "Rainier's Modules",
@@ -38,13 +38,16 @@
         "sidebar_label": "Bryant (2020)"
       },
       "real": {
-        "title": "Real and Vec"
+        "title": "Real"
       },
       "samplers": {
         "title": "Samplers"
       },
       "trace": {
         "title": "Trace and Generator"
+      },
+      "vec": {
+        "title": "Vec"
       },
       "vectors": {
         "title": "Vectors and Variables"

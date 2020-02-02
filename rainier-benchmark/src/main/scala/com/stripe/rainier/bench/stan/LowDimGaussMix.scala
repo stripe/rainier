@@ -10,7 +10,7 @@ class LowDimGaussMix extends ModelBenchmark {
   def model = {
     val (mu1, sigma1) = muSigma()
     val (mu2, sigma2) = muSigma()
-    val theta = Beta(5, 5).param
+    val theta = Beta(5, 5).real
     val mix = Mixture(
       Map(
         Normal(mu1, sigma1) -> theta,
@@ -21,7 +21,7 @@ class LowDimGaussMix extends ModelBenchmark {
   }
 
   def muSigma() =
-    (Normal(0, 2).param, Normal(0, 2).param.abs)
+    (Normal(0, 2).real, Normal(0, 2).real.abs)
 
   val ys: List[Double] = List(-3.58542974746427, 3.11625192303286,
     3.55429942030185, 1.56615829337835, -3.60996888894118, -2.56700828735808,
