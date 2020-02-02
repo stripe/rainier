@@ -1,11 +1,13 @@
 ---
 id: model
-title: Model
+title: Model and Trace
 ---
 
-`Model` is found in `com.stripe.rainier.core`.
+`Model` and `Trace` are both found in `com.stripe.rainier.core`.
 
-## Instance Methods
+## Model
+
+### Instance Methods
 
 * `prior: Model`
 
@@ -19,11 +21,25 @@ Combines two models.
 
 Run inference using the provided sampler.
 
-* `optimize[T](generator: Generator[T]): T`
+* `optimize[T](value: Generator[T]): T`
 
-Run L-BFGS. Note that this method also accepts values that can be automatically converted via [ToGenerator](trace.md).
+Run L-BFGS. Note that this method will accept non-`Generator` values, and automatically wrap them with `Generator()`, if possible.
 
-## Object Methods
+### Object Methods
 
 * `observe[Y](ys: Seq[Y], likelihood: Distribution[Y]): Model`
 * `observe[Y](ys: Seq[Y], likelihoods: Vec[Distribution[Y]): Model`
+
+## Trace
+
+* `diagnostics: List[Trace.Diagnostics]`
+
+Produce a list of `Diagnostics(rHat: Double, effectiveSampleSize: Double)`, one for each parameter. Requires chains > 1.
+
+* `thin(n: Int): Trace`
+
+Keep every n'th sample in each chain.
+
+* `predict[T](value: Generator[T]): List[T]`
+
+Generate one value from `generator` from each sample in the trace. Like `optimize`, this will automatically convert values into `Generator` where possible.

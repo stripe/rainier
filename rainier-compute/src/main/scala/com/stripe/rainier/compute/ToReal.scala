@@ -1,16 +1,7 @@
 package com.stripe.rainier.compute
 
-/**
-  * We use this typeclass to avoid totally general
-  * implicit conversions to real which we might
-  * otherwise reach for in RandomVariable
-  */
 sealed abstract class ToReal[A] { self =>
   def apply(a: A): Real
-
-  def contramap[B](f: B => A): ToReal[B] = new ToReal[B] {
-    def apply(b: B): Real = self.apply(f(b))
-  }
 }
 
 trait LowPriToReal {

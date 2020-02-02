@@ -17,7 +17,7 @@ Trigonometry: `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `sinh`, `cosh`, `tanh
 
 ## Object methods
 
-Construct with `Real(a)` for any numeric value `a`
+Construct with `Real(a)` for any numeric value `a`.
 
 Constants: `zero`, `one`, `two`, `negOne`, `Pi`, `infinity`, `negInfinity`
 
