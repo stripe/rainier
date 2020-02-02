@@ -112,19 +112,3 @@ eggs
 Unfortunately, that also highlights a problem with this approach: by creating so many individual tiny models, you open yourself up to performance problems. It's not an issue with small scale data like we're working with here, but if you had tens or hundreds of thousands of observations, you would definitely notice it. Luckily, with a little bit more work, there's a way around that.
 
 ## Encoding Variables
-
-To get ahead of this potential performance problem, we need to introduce a new type, the `Fn`. Just like `Vec` is a specialized `Vector`, `Fn` is a specialized Scala function.
-
-Let's use it first, and explain afterwards:
-
-```scala mdoc:to-string
-val encoder = Fn.int
-val noise = encoder.map{feed: Real => Poisson(feeds(feed))}
-val encodedModel = Model.observe(eggFeeds, eggCounts, noise)
-```
-
-You can see that this ends up not especially different from the `mappedModel` code above. However, it will perform much better, especially with larger amounts of data.
-
-So what's going on?
-
-TODO

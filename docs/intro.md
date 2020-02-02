@@ -46,7 +46,7 @@ This introduces the `Model` and `Trace` types, shows how to condition a model on
 
 * [Vectors and Variables](vectors.md)
 
-This introduces the `Vec` and `Fn` types, and shows how to manage larger numbers of parameters and observations.
+This introduces the `Vec` type, and shows how to manage larger numbers of parameters and observations.
 
 * [Posteriors and Predictions](posteriors.md)
 

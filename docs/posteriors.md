@@ -20,9 +20,6 @@ val feeds = logFeeds.map(_.exp)
 val eggFeeds = eggs.map(_._1)
 val eggCounts = eggs.map(_._2)
 
-val encoder = Fn.int
-val noise = encoder.map{feed: Real => Poisson(feeds(feed))}
-val eggModel = Model.observe(eggFeeds, eggCounts, noise)
 ```
 
 Now, it's decision time. Which feed should the farmer go with?
