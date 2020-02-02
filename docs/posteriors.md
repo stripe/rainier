@@ -20,6 +20,9 @@ val feeds = logFeeds.map(_.exp)
 val eggFeeds = eggs.map(_._1)
 val eggCounts = eggs.map(_._2)
 
+val feedsVec = Vec.from(eggFeeds)
+val poissonVec = feedsVec.map{i: Real => Poisson(feeds(i))}
+val vecModel = Model.observe(eggCounts, poissonVec)
 ```
 
 Now, it's decision time. Which feed should the farmer go with?
@@ -30,7 +33,7 @@ As we did [once before](likelihoods.md), we'd like to sample this model to get a
 
 ```scala mdoc:to-string
 val sampler = EHMC(warmupIterations = 5000, iterations = 500)
-val eggTrace = eggModel.sample(sampler)
+val eggTrace = vecModel.sample(sampler)
 ```
 
 ```scala mdoc

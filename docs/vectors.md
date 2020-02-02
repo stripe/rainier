@@ -42,11 +42,10 @@ Again, a sanity check on the bounds: everything in the `Vec` is now >= 0, so we 
 
 ## Multivariate Data
 
-We'd now like to construct a model that associates these three different (but related) `feed` rates with their corresponding observations. We'll do that in three different ways.
+We'd now like to construct a model that associates these three different (but related) `feed` rates with their corresponding observations. We'll do that in two different ways.
 
 * First, we'll split the data into three parts, and construct three separate models, which we'll then merge.
-* Next, we'll use a variation of `Model.observe` that lets us define a function between our independent variables (feed type), and the likelihood of our dependent variable (number of eggs).
-* Finally, we'll see how to construct that function in a special way that lets Rainier evaluate it much more efficiently.
+* Next, we'll use use a variation of `Model.observe` that accepts _vectors_ of likelihoods, one for each observation.
 
 It's worth noting that we can just keep reusing the same `feeds` random variables as we construct each of these models. That's because everything in Rainier is immutable - there's no global context that you're modifying when you create parameters or make observations. That makes things a lot easier to reason about, especially when messing around in a REPL or a notebook.
 
@@ -81,34 +80,38 @@ val mergedModel = models.reduce{(m1, m2) => m1.merge(m2)}
 
 This model has 4 parameters, as it should.
 
-There's nothing wrong with building the model this way in this situation, where you have a categorical independent variable. However, if you had a continuous covariate, this wouldn't work, so it's good to see an alternative way of solving the same problem.
+There's nothing wrong with building the model this way in this situation, where you have a categorical independent variable. However, if you had a continuous covariate, this wouldn't work (or rather, it would _work_, but it would require building a separate `Model` for each data point, which scales very badly), so it's good to see an alternative way of solving the same problem.
 
-## Mapping Variables
+## Vector Likelihoods
 
-So far we've used `Model.observe` with the following signature: `observe[Y](ys: Seq[Y], likelihood: Distribution[Y])`. That is: a single vector of observations, and a single distribution that provides its likelihood function.
+So far we've used `Model.observe` with the following signature: `observe[Y](ys: Seq[Y], likelihood: Distribution[Y])`. That is: a sequence of observations, and a single distribution that provides the likelihood function for all of them.
 
-Another option is `observe[X, Y](xs: Seq[X], ys: Seq[Y])(fn: X => Distribution[Y])`. In this case, we assume we can structure our data as `(X,Y)` pairs, and describe a function of `X` that will produce a new `Distribution[Y]` for each observation.
+Another option is `observe[Y](ys: Seq[Y], likelihoods: Vec[Distribution[Y])`. In this case, rather than assuming that each `Y` has an identical likelihood distribution, we pass in a whole `Vec` of `Distribution` objects, one for each value in `ys`.
 
-To make use of it, we first have to split our data into separate `xs` and `ys` vectors, for our independent variables and dependent variable, respectively.
+To make use of it, we first have to separate our data into our independent variables and dependent variable.
 
 ```scala mdoc:to-string
 val eggFeeds = eggs.map(_._1)
 val eggCounts = eggs.map(_._2)
-
-val mappedModel =
-    Model.observe(eggFeeds, eggCounts){feed: Int =>
-        Poisson(feeds(feed))
-    }
 ```
 
-What we end up with is a `Model[4]` that is, mathematically, the same as the `mergedModel` we produced before. In fact, this approach is identical to first producing a separate model for each observation, and then merging all of them together. So we could, equivalently, have done something like this:
+Next, we want to create a `Vec` from our independent variables (that is, `eggFeeds`), and map over them to create a `Poisson` for each one. The code is quite straightforward.
 
-```scala
-eggs
-    .map{case (feed, count) => Model.observe(List(count), Poisson(feeds(feed)))}
-    .reduce((m1, m2) => m1.merge(m2))
+```scala mdoc:to-string
+val feedsVec = Vec.from(eggFeeds)
+val poissonVec = feedsVec.map{i: Real => Poisson(feeds(i))}
 ```
 
-Unfortunately, that also highlights a problem with this approach: by creating so many individual tiny models, you open yourself up to performance problems. It's not an issue with small scale data like we're working with here, but if you had tens or hundreds of thousands of observations, you would definitely notice it. Luckily, with a little bit more work, there's a way around that.
+What happens here, though, is a little bit strange: when we pass it to `Vec.from`, our regular integer data gets transformed into a `Vec[Real]`. In fact, _any_ combination of numbers, tuples, lists, and maps will get converted into its `Real`-based equivalent: so for example a `Seq[Map[String,Double]]` will become a `Vec[Map[String,Real]]`. Anything that can't be converted like this cannot be used to construct a `Vec`.
 
-## Encoding Variables
+For a clue as to why, check out the next line: the `i` that we're using to index `feeds` is, of course, a `Real`. It represents *some* row from `eggFeeds`, but we're not given any insight into *which* row it is, or any ability to act differently for some rows than others; and similarly, by indexing into `feeds` with a `Real`, we know we are receiving _some_ element of `feeds`, but not _which_ element. All of that helps with vectorizing the computation and helping things scale nicely.
+
+If you didn't entirely follow that last bit, that's ok. The short version is that as long as you can transform your data into primitive data structures like lists and maps of numbers, and then stuff them into a `Vec`, Rainier will be happy.
+
+Finally, we'll build the model itself.
+
+```scala mdoc:to-string
+val vecModel = Model.observe(eggCounts, poissonVec)
+```
+
+Hooray! We're back to a `Model[4]` that is, mathematically, the same as the `mergedModel` we produced before (but using a much more general technique).

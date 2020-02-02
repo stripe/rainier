@@ -29,7 +29,7 @@ Only for `Vec[Real]`:
 
 This will construct a new `Vec` that is the `Real`-space transformation of any simple data structure `T`. That is:
 * any numbers will be converted to `Real`
-* tuples, Maps, and List will recursively convert their elements
+* tuples, Maps, and Lists will recursively convert their elements
 
 Under the hood, this is done by an implicitly-constructed `ToVec[T,U]` typeclass.
 
