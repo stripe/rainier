@@ -97,6 +97,34 @@ object ToVec {
       }
     }
 
+  implicit def zip3[A, B, C, Z, Y, X](
+      implicit az: ToVec[A, Z],
+      by: ToVec[B, Y],
+      cx: ToVec[C, X]): ToVec[(A, B, C), (Z, Y, X)] =
+    new ToVec[(A, B, C), (Z, Y, X)] {
+      def apply(seq: Seq[(A, B, C)]) = {
+        val (a, b, c) = seq.unzip3
+        az(a).zip(by(b)).zip(cx(c)).map { case ((z, y), x) => (z, y, x) }
+      }
+    }
+
+  implicit def zip4[A, B, C, D, Z, Y, X, W](
+      implicit az: ToVec[A, Z],
+      by: ToVec[B, Y],
+      cx: ToVec[C, X],
+      dw: ToVec[D, W]): ToVec[(A, B, C, D), (Z, Y, X, W)] =
+    new ToVec[(A, B, C, D), (Z, Y, X, W)] {
+      def apply(seq: Seq[(A, B, C, D)]) = {
+        val a = seq.map(_._1)
+        val b = seq.map(_._2)
+        val c = seq.map(_._3)
+        val d = seq.map(_._4)
+        az(a).zip(by(b)).zip(cx(c)).zip(dw(d)).map {
+          case (((z, y), x), w) => (z, y, x, w)
+        }
+      }
+    }
+
   implicit def map[K, T, U](
       implicit tu: ToVec[T, U]): ToVec[Map[K, T], Map[K, U]] =
     new ToVec[Map[K, T], Map[K, U]] {
