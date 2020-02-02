@@ -4,9 +4,13 @@ sealed trait Vec[T] {
   def size: Int
   def apply(index: Int): T
   def apply(index: Real): T
-  
-  def take(k: Int): Vec[T] = mapLeaves{r => RealVec(r.reals.take(k))}
-  def drop(k: Int): Vec[T] = mapLeaves{r => RealVec(r.reals.drop(k))}
+
+  def take(k: Int): Vec[T] = mapLeaves { r =>
+    RealVec(r.reals.take(k))
+  }
+  def drop(k: Int): Vec[T] = mapLeaves { r =>
+    RealVec(r.reals.drop(k))
+  }
 
   private[compute] def mapLeaves(g: RealVec => RealVec): Vec[T]
 
@@ -27,18 +31,7 @@ sealed trait Vec[T] {
       apply(i) * other(i)
     })
 
-  override def toString = {
-    val base = s"Vec[$size]"
-    val allBounds = toList.map {
-      case r: Real => Some(r.bounds)
-      case _       => None
-    }
-    if (allBounds.forall(_.isDefined)) {
-      val bounds = Bounds.or(allBounds.map(_.get))
-      base + f"(${bounds.lower}%.3g, ${bounds.upper}%.3g)"
-    } else
-      base
-  }
+  override def toString = "Vec" + toList.toString.drop(4)
 }
 
 object Vec {
@@ -80,7 +73,9 @@ private case class TraverseVec[T](list: List[Vec[T]]) extends Vec[List[T]] {
   def apply(index: Int) = list.map(_.apply(index))
   def apply(index: Real) = list.map(_.apply(index))
   def mapLeaves(g: RealVec => RealVec) =
-    TraverseVec(list.map{v => v.mapLeaves(g)})
+    TraverseVec(list.map { v =>
+      v.mapLeaves(g)
+    })
 }
 
 trait ToVec[T, U] {

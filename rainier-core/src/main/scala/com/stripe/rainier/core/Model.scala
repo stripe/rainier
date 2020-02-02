@@ -66,12 +66,28 @@ object Model {
   def observe[Y](y: Y, lh: Distribution[Y]): Model =
     observe(List(y), lh)
 
-  def observe[Y](ys: Seq[Y], lh: Distribution[Y]): Model =
-    Model.likelihood(lh.logDensity(ys))
+  def observe[Y](ys: Seq[Y], lh: Distribution[Y]): Model = {
+    val (init, splits) = split(ys)
+    val initReal = lh.logDensity(init)
+    if (splits.isEmpty)
+      Model.likelihood(initReal)
+    else
+      Model.likelihoods(List(initReal, Real.sum(splits.map(lh.logDensity))))
+  }
 
   def observe[X, Y, D <: Distribution[Y]](ys: Seq[Y], lhs: Vec[D]): Model = {
-    val lh = lhs.toColumn
-    Model.likelihood(lh.logDensity(ys))
+    val (initX, splitsX) = split(lhs)
+    if (splitsX.isEmpty) {
+      Model.likelihood(initX.toColumn.logDensity(ys))
+    } else {
+      val (initY, splitsY) = split(ys)
+      Model.likelihoods(
+        List(initX.toColumn.logDensity(initY),
+             Real.sum(splitsX.zip(splitsY).map {
+               case (sx, sy) =>
+                 sx.toColumn.logDensity(sy)
+             })))
+    }
   }
 
   val NumSplits = 8
@@ -79,9 +95,35 @@ object Model {
     val splitSize = (ts.size - 1) / NumSplits
     val initSize = ts.size - (splitSize * NumSplits)
     val init = ts.take(initSize)
-    val splits = 1.until(NumSplits).scanLeft(ts.drop(initSize)){
-      case (vec, _) => vec.drop(splitSize)
-    }.map(_.take(splitSize)).toList
-    (init, splits)
+    if (splitSize == 0)
+      (init, Nil)
+    else {
+      val splits = 1
+        .until(NumSplits)
+        .scanLeft(ts.drop(initSize)) {
+          case (vec, _) => vec.drop(splitSize)
+        }
+        .map(_.take(splitSize))
+        .toList
+      (init, splits)
+    }
+  }
+
+  def split[T](ts: Seq[T]): (List[T], List[List[T]]) = {
+    val splitSize = (ts.size - 1) / NumSplits
+    val initSize = ts.size - (splitSize * NumSplits)
+    val init = ts.take(initSize).toList
+    if (splitSize == 0)
+      (init, Nil)
+    else {
+      val splits = 1
+        .until(NumSplits)
+        .scanLeft(ts.drop(initSize)) {
+          case (vec, _) => vec.drop(splitSize)
+        }
+        .map(_.take(splitSize).toList)
+        .toList
+      (init, splits)
+    }
   }
 }
