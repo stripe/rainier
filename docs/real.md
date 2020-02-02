@@ -1,13 +1,11 @@
 ---
 id: real
-title: Real and Vec
+title: Real
 ---
 
-Both `Real` and `Vec[T]` are found in `com.stripe.rainier.compute`.
+`Real` is found in `com.stripe.rainier.compute`.
 
-## Real
-
-### Instance methods
+## Instance methods
 
 Arithmetic: `+`, `-`, `*`, `/`, `pow(exponent: Real)`
 
@@ -17,7 +15,7 @@ Comparison: `min`, `max`
 
 Trigonometry: `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `sinh`, `cosh`, `tanh`
 
-### Object methods
+## Object methods
 
 Construct with `Real(a)` for any numeric value `a`
 
@@ -35,28 +33,3 @@ Summation:
 
 * `sum(seq: Iterable[Real]): Real`
 * `logSumExp(seq: Iterable[Real]): Real`
-
-## Vec[T]
-
-### Instance methods
-
-Indexing:
-
-* `apply(index: Int): T`
-* `apply(index: Real): T`
-
-Applicative:
-
-* `map[U](fn: T => U): Vec[U]`
-* `zip[U](other: Vec[U]): Vec[(T, U)]`
-
-Collections: `size`, `toList`
-
-Only for `Vec[Real]`:
-
-* `++(other: Vec[Real]): Vec[Real]`
-* `dot(other: Vec[Real]): Real`
-
-### Object methods
-
-Construct with `Vec(a, b, c, ...)`, where the values are either numeric or `Real`

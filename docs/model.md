@@ -1,13 +1,11 @@
 ---
 id: model
-title: Model and Fn
+title: Model
 ---
 
-`Model` is found in `com.stripe.rainier.core`, and `Fn` in `com.stripe.rainier.compute`.
+`Model` is found in `com.stripe.rainier.core`.
 
-## Model
-
-### Instance Methods
+## Instance Methods
 
 * `prior: Model`
 
@@ -25,39 +23,7 @@ Run inference using the provided sampler.
 
 Run L-BFGS. Note that this method also accepts values that can be automatically converted via [ToGenerator](trace.md).
 
-### Object Methods
+## Object Methods
 
 * `observe[Y](ys: Seq[Y], likelihood: Distribution[Y]): Model`
-* `observe[X, Y](xs: Seq[X], ys: Seq[Y])(fn: X => Distribution[Y]): Model`
-* `observe[X, Y](xs: Seq[X], ys: Seq[Y], fn: Fn[X, Distribution[Y]]): Model`
-
-## Fn
-
-Assuming `Fn[A,B]`
-
-### Instance Methods
-
-* `apply(a: A): B`
-
-Applicative:
-
-* `map[C](g: B => C): Fn[A, C]`
-* `zip[X,Y](fn: Fn[X,Y]): Fn[(A,X),(B,Y)]`
-* `contramap[T](g: T => A): Fn[T,B]`
-
-Repetition:
-
-* `list(k: Int): Fn[Seq[A], List[B]]`
-* `keys[K](seq: Seq[K]): Fn[Map[K,A], Map[K,B]]`
-
-Only for `Fn[A,Real]`:
-
-* `vec(k: Int): Fn[Seq[A], Vec[Real]]`
-
-### Object Methods
-
-* `double: Fn[Double, Real]`
-* `int: Fn[Int, Real]`
-* `long: Fn[Long, Real]`
-* `enum[T](choices: List[T]): Fn[T, List[(T, Real)]]`
-
+* `observe[Y](ys: Seq[Y], likelihoods: Vec[Distribution[Y]): Model`
