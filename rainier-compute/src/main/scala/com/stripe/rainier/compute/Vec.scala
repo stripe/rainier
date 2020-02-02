@@ -64,6 +64,16 @@ private case class ZipVec[T, U](left: Vec[T], right: Vec[U])
   def apply(index: Real) = (left(index), right(index))
 }
 
+private case class TraverseVec[T](list: List[Vec[T]])
+  extends Vec[List[T]] {
+    val size = list.head.size
+    require(list.forall(_.size == size))
+
+    def apply(index: Int) = list.map(_.apply(index))
+    def apply(index: Real) = list.map(_.apply(index))
+  }
+
+
 trait ToVec[T, U] {
   def apply(seq: Seq[T]): Vec[U]
 }
@@ -82,13 +92,23 @@ object ToVec {
         az(a).zip(by(b))
       }
     }
-  /*
+  
   implicit def map[K,T,U](implicit tu: ToVec[T,U]): ToVec[Map[K,T],Map[K,U]] =
     new ToVec[Map[K,T],Map[K,U]] {
       def apply(seq: Seq[Map[K,T]]) = {
-        val keys = seq.foldLeft(Set.empty[K]){case (acc, map) => acc ++ map.keys.toSet}.toList
-        ???
+        val keys = seq.head.keys.toList
+        val valueVecs = keys.map{k => tu(seq.map{m => m(k)})}
+        TraverseVec(valueVecs).map{us => keys.zip(us).toMap}
       }
     }
- */
+
+  implicit def seq[T,U](implicit tu: ToVec[T,U]): ToVec[Seq[T],Vec[U]] =
+    new ToVec[Seq[T],Vec[U]] {
+      def apply(seq: Seq[Seq[T]]) = {
+        val size = seq.head.size
+        val valueVecs = 1.to(size).toList.map{k => tu(seq.map{m => m(k)})}
+        TraverseVec(valueVecs).map{s => Vec.from(s)}
+      }
+
+    }
 }
