@@ -98,13 +98,12 @@ object Model {
     if (splitSize == 0)
       (init, Nil)
     else {
-      val splits = 1
+      val splits = 0
         .until(NumSplits)
-        .scanLeft(ts.drop(initSize)) {
-          case (vec, _) => vec.drop(splitSize)
-        }
-        .map(_.take(splitSize))
         .toList
+        .map { i =>
+          ts.slice(initSize + (i * splitSize), initSize + ((i + 1) * splitSize))
+        }
       (init, splits)
     }
   }
@@ -116,13 +115,13 @@ object Model {
     if (splitSize == 0)
       (init, Nil)
     else {
-      val splits = 1
+      val splits = 0
         .until(NumSplits)
-        .scanLeft(ts.drop(initSize)) {
-          case (vec, _) => vec.drop(splitSize)
-        }
-        .map(_.take(splitSize).toList)
         .toList
+        .map { i =>
+          ts.slice(initSize + (i * splitSize), initSize + ((i + 1) * splitSize))
+            .toList
+        }
       (init, splits)
     }
   }

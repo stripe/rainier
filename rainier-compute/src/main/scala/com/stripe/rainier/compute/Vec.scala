@@ -11,6 +11,9 @@ sealed trait Vec[T] {
   def drop(k: Int): Vec[T] = mapLeaves { r =>
     RealVec(r.reals.drop(k))
   }
+  def slice(from: Int, until: Int) = mapLeaves { r =>
+    RealVec(r.reals.slice(from, until))
+  }
 
   private[compute] def mapLeaves(g: RealVec => RealVec): Vec[T]
 
