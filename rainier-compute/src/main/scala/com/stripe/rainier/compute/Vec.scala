@@ -15,7 +15,7 @@ sealed trait Vec[T] {
   def toList: List[T] =
     0.until(size).toList.map(apply)
 
-  def toColumn: T = 
+  def toColumn: T =
     apply(new Column(0.until(size).map(_.toDouble).toArray))
 
   def dot(other: Vec[Real])(implicit ev: T <:< Real): Real =
@@ -64,15 +64,13 @@ private case class ZipVec[T, U](left: Vec[T], right: Vec[U])
   def apply(index: Real) = (left(index), right(index))
 }
 
-private case class TraverseVec[T](list: List[Vec[T]])
-  extends Vec[List[T]] {
-    val size = list.head.size
-    require(list.forall(_.size == size))
+private case class TraverseVec[T](list: List[Vec[T]]) extends Vec[List[T]] {
+  val size = list.head.size
+  require(list.forall(_.size == size))
 
-    def apply(index: Int) = list.map(_.apply(index))
-    def apply(index: Real) = list.map(_.apply(index))
-  }
-
+  def apply(index: Int) = list.map(_.apply(index))
+  def apply(index: Real) = list.map(_.apply(index))
+}
 
 trait ToVec[T, U] {
   def apply(seq: Seq[T]): Vec[U]
@@ -92,23 +90,36 @@ object ToVec {
         az(a).zip(by(b))
       }
     }
-  
-  implicit def map[K,T,U](implicit tu: ToVec[T,U]): ToVec[Map[K,T],Map[K,U]] =
-    new ToVec[Map[K,T],Map[K,U]] {
-      def apply(seq: Seq[Map[K,T]]) = {
+
+  implicit def map[K, T, U](
+      implicit tu: ToVec[T, U]): ToVec[Map[K, T], Map[K, U]] =
+    new ToVec[Map[K, T], Map[K, U]] {
+      def apply(seq: Seq[Map[K, T]]) = {
         val keys = seq.head.keys.toList
-        val valueVecs = keys.map{k => tu(seq.map{m => m(k)})}
-        TraverseVec(valueVecs).map{us => keys.zip(us).toMap}
+        val valueVecs = keys.map { k =>
+          tu(seq.map { m =>
+            m(k)
+          })
+        }
+        TraverseVec(valueVecs).map { us =>
+          keys.zip(us).toMap
+        }
       }
     }
 
-  implicit def seq[T,U](implicit tu: ToVec[T,U]): ToVec[Seq[T],Vec[U]] =
-    new ToVec[Seq[T],Vec[U]] {
-      def apply(seq: Seq[Seq[T]]) = {
+  implicit def list[T, U](implicit tu: ToVec[T, U],
+                         uu: ToVec[U, U]): ToVec[List[T], Vec[U]] =
+    new ToVec[List[T], Vec[U]] {
+      def apply(seq: Seq[List[T]]) = {
         val size = seq.head.size
-        val valueVecs = 1.to(size).toList.map{k => tu(seq.map{m => m(k)})}
-        TraverseVec(valueVecs).map{s => Vec.from(s)}
+        val valueVecs = 0.until(size).toList.map { k =>
+          tu(seq.map { m =>
+            m(k)
+          })
+        }
+        TraverseVec(valueVecs).map { s =>
+          Vec.from(s)
+        }
       }
-
     }
 }
