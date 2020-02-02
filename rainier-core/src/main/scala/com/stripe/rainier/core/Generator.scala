@@ -156,6 +156,11 @@ object ToGenerator {
       def apply(t: Generator[T]) = t
     }
 
+  implicit def distribution[T]: ToGenerator[Distribution[T], T] =
+    new ToGenerator[Distribution[T], T] {
+      def apply(t: Distribution[T]) = t.generator
+    }
+
   implicit val double: ToGenerator[Real, Double] =
     new ToGenerator[Real, Double] {
       def apply(t: Real) = Generator.require[Double](Set(t)) { (_, n) =>

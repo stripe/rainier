@@ -13,15 +13,22 @@ final case class Categorical[T](pmf: Map[T, Real]) extends Distribution[T] {
 
   def logDensity(seq: Seq[T]) = {
     val keys = pmf.keys
-    val enums = seq.map{t => keys.map{k => if(k == t) k -> 1.0 else k -> 0.0}.toMap}
-    Vec.from(enums).map{value =>
-      Real
-        .sum(value.map {
-          case (t, r) =>
-            (r * pmf.getOrElse(t, Real.zero))
-        })
-        .log    
-    }.toColumn
+    val enums = seq.map { t =>
+      keys.map { k =>
+        if (k == t) k -> 1.0 else k -> 0.0
+      }.toMap
+    }
+    Vec
+      .from(enums)
+      .map { value =>
+        Real
+          .sum(value.map {
+            case (t, r) =>
+              (r * pmf.getOrElse(t, Real.zero))
+          })
+          .log
+      }
+      .toColumn
   }
 
   def map[U](fn: T => U): Categorical[U] =
@@ -94,11 +101,6 @@ object Categorical {
       ts.foldLeft(Map.empty[T, Real])((m, t) => m.updated(t, p))
     )
   }
-
-  implicit def gen[T]: ToGenerator[Categorical[T], T] =
-    new ToGenerator[Categorical[T], T] {
-      def apply(c: Categorical[T]) = c.generator
-    }
 }
 
 /**
@@ -134,9 +136,4 @@ object Multinomial {
     val newPMF = pmf.map { case (t, p) => Option(t) -> p } + (None -> (Real.one - total))
     Multinomial(newPMF, k)
   }
-
-  implicit def gen[T]: ToGenerator[Multinomial[T], Map[T, Long]] =
-    new ToGenerator[Multinomial[T], Map[T, Long]] {
-      def apply(m: Multinomial[T]) = m.generator
-    }
 }

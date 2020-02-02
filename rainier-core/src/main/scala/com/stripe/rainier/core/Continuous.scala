@@ -21,11 +21,6 @@ trait Continuous extends Distribution[Double] {
   def vec(k: Int) = Vec.from(List.fill(k)(real))
 }
 
-object Continuous {
-  implicit def gen[C <: Continuous]: ToGenerator[C, Double] =
-    Distribution.gen[C, Double]
-}
-
 /**
   * A Continuous Distribution that inherits its transforms from a Support object.
   */

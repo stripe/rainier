@@ -7,10 +7,3 @@ trait Distribution[T] {
   def generator: Generator[T]
   override def toString = "Distribution()"
 }
-
-object Distribution {
-  def gen[D <: Distribution[T], T]: ToGenerator[D, T] =
-    new ToGenerator[D, T] {
-      def apply(d: D) = d.generator
-    }
-}
