@@ -108,7 +108,7 @@ object ToVec {
     }
 
   implicit def list[T, U](implicit tu: ToVec[T, U],
-                         uu: ToVec[U, U]): ToVec[List[T], Vec[U]] =
+                          uu: ToVec[U, U]): ToVec[List[T], Vec[U]] =
     new ToVec[List[T], Vec[U]] {
       def apply(seq: Seq[List[T]]) = {
         val size = seq.head.size
