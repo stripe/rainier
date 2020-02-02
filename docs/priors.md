@@ -12,10 +12,10 @@ import com.stripe.rainier.compute._
 
 The most fundamental data type in Rainier is the `Real`, which represents a real-valued scalar random variable. A real-valued scalar is simple enough: that sounds like a `Double`, and indeed you can treat a `Real` just like a `Double` in a lot of ways. But since it's a [random variable](https://en.wikipedia.org/wiki/Random_variable), it represents a set of possible values rather than one specific known value.
 
-To construct a `Real`, we very often start with a `Distribution` object. For example, here we first construct a `Uniform(0,1)` distribution, and then use `param` to create a new random variable, `a`, with that distribution as its prior.
+To construct a `Real`, we very often start with a `Distribution` object. For example, here we first construct a `Uniform(0,1)` distribution, and then use `real` to create a new random variable, `a`, with that distribution as its prior.
 
 ```scala mdoc:to-string
-val a = Uniform(0,1).param
+val a = Uniform(0,1).real
 val b = a + 1
 ```
 
@@ -24,7 +24,7 @@ Although we don't know the exact value, you can see in the output that Rainier i
 You can combine `Real`s using normal arithmetic operations, and they support a wide range of unary operators like `abs`, `exp`, `log`, and `logit`. You can also use a `Real` for any parameter of a `Distribution`. So, for example, we can use our `b` and `a` as the mean and standard deviation of a new `Normal` random variable.
 
 ```scala mdoc:to-string
-val c = Normal(b, a).param
+val c = Normal(b, a).real
 ```
 
 ## Sampling from the Prior

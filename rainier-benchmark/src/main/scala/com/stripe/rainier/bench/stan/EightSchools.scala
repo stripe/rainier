@@ -7,13 +7,11 @@ import com.stripe.rainier.core._
 //JMH: 1.048 ± 0.011  us/op
 class EightSchools extends ModelBenchmark {
   def model = {
-    val mu = Normal(0, 5).param
-    val tau = Cauchy(0, 5).param.abs
-    val thetas = 0.until(sigmas.size).map { _ =>
-      Normal(mu, tau).param
-    }
+    val mu = Normal(0, 5).real
+    val tau = Cauchy(0, 5).real.abs
+    val thetas = Normal(mu, tau).vec(sigmas.size)
 
-    thetas.zip(ys.zip(sigmas)).foldLeft(Model.empty) {
+    thetas.toList.zip(ys.zip(sigmas)).foldLeft(Model.empty) {
       case (m, (theta, (y, sigma))) =>
         Model
           .observe(y.toDouble, Normal(theta, sigma))

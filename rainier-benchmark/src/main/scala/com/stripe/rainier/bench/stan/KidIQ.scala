@@ -14,8 +14,8 @@ class KidIQ extends ModelBenchmark {
   protected var n: String = _
 
   def model = {
-    val sigma = Cauchy(0, 2.5).param
-    val betas = Normal(0, 10).paramVector(3)
+    val sigma = Cauchy(0, 2.5).real
+    val betas = Normal(0, 10).vec(3)
     val nI = n.toInt
     val xs = momIQ.zip(momHS).take(nI)
     val ys = kidScore.take(nI)

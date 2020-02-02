@@ -7,11 +7,9 @@ import com.stripe.rainier.core._
 //JMH: 3.564 ± 0.011  us/op
 class ARK extends ModelBenchmark {
   def model = {
-    val alpha = Normal(0, 10).param
-    val sigma = Cauchy(0, 2.5).param.abs
-    val betas = 0.until(5).map { _ =>
-      Normal(0, 10).param
-    }
+    val alpha = Normal(0, 10).real
+    val sigma = Cauchy(0, 2.5).real.abs
+    val betas = Normal(0, 10).vec(5)
 
     5.until(ys.size).foldLeft(Model.empty) { (m, t) =>
       val mu = 1.to(5).foldLeft(alpha) {
