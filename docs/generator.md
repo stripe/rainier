@@ -17,14 +17,14 @@ Monad interface:
 
 ### Object methods
 
-Construct generators by wrapping some other value using `Generator(t: T): Generator[U]`
+Construct generators by wrapping some `t: T` value using `Generator(t)`.
 
-This requires a valid `ToGenerator[T,U]` typeclass. In plain terms:
+This will produce a `Generator[U]` and requires a valid `ToGenerator[T,U]` typeclass. In plain terms:
 
-* wrapping `Real` will convert to `Generator[Double]`
-* `Distribution[T]` will convert to `Generator[T]`
-* `(Generator[A], Generator[B])` will convert to `Generator[(A,B)]`, and similarly for tuples of size 3 or 4
-* `Seq[Generator[T]` or `Vec[Generator[T]]` will convert to `Generator[Seq[T]]`
-* `Map[K,Generator[V]]` will convert to `Generator[Map[K,V]]`
+* `t: Real` will produce `Generator[Double]`
+* `t: Distribution[A]` will produce `Generator[A]`
+* `t: (Generator[A], Generator[B])` will produce `Generator[(A,B)]`, and similarly for tuples of size 3 or 4
+* `t: Seq[Generator[A]` or `t: Vec[Generator[A]]` will produce `Generator[Seq[A]]`
+* `t: Map[K,Generator[V]]` will produce `Generator[Map[K,V]]`
 
-And, most importantly, this all happens recursively. So, `Map[String,Real]` will, as needed, transform into `Generator[Map[String,Double]]`.
+And, most importantly, this all happens recursively. So, `t: Map[String,Real]` will, produce `Generator[Map[String,Double]]`.
