@@ -4,7 +4,11 @@ sealed trait Vec[T] {
   def size: Int
   def apply(index: Int): T
   def apply(index: Real): T
-  def take(k: Int): Vec[T]
+  
+  def take(k: Int): Vec[T] = mapLeaves{r => RealVec(r.reals.take(k))}
+  def drop(k: Int): Vec[T] = mapLeaves{r => RealVec(r.reals.drop(k))}
+
+  private[compute] def mapLeaves(g: RealVec => RealVec): Vec[T]
 
   def map[U](fn: T => U): Vec[U] = MapVec(this, fn)
   def zip[U](other: Vec[U]): Vec[(T, U)] = {
@@ -49,14 +53,15 @@ private case class RealVec(reals: Vector[Real]) extends Vec[Real] {
   val size = reals.size
   def apply(index: Int) = reals(index)
   def apply(index: Real) = Lookup(index, reals)
-  def take(k: Int) = RealVec(reals.take(k))
+  def mapLeaves(g: RealVec => RealVec) = g(this)
 }
 
 private case class MapVec[T, U](original: Vec[T], fn: T => U) extends Vec[U] {
   def size = original.size
   def apply(index: Int) = fn(original(index))
   def apply(index: Real) = fn(original(index))
-  def take(k: Int) = MapVec(original.take(k), fn)
+  def mapLeaves(g: RealVec => RealVec) =
+    MapVec(original.mapLeaves(g), fn)
 }
 
 private case class ZipVec[T, U](left: Vec[T], right: Vec[U])
@@ -64,7 +69,8 @@ private case class ZipVec[T, U](left: Vec[T], right: Vec[U])
   def size = left.size
   def apply(index: Int) = (left(index), right(index))
   def apply(index: Real) = (left(index), right(index))
-  def take(k: Int) = ZipVec(left.take(k), right.take(k))
+  def mapLeaves(g: RealVec => RealVec) =
+    ZipVec(left.mapLeaves(g), right.mapLeaves(g))
 }
 
 private case class TraverseVec[T](list: List[Vec[T]]) extends Vec[List[T]] {
@@ -73,7 +79,8 @@ private case class TraverseVec[T](list: List[Vec[T]]) extends Vec[List[T]] {
 
   def apply(index: Int) = list.map(_.apply(index))
   def apply(index: Real) = list.map(_.apply(index))
-  def take(k: Int) = TraverseVec(list.map(_.take(k)))
+  def mapLeaves(g: RealVec => RealVec) =
+    TraverseVec(list.map{v => v.mapLeaves(g)})
 }
 
 trait ToVec[T, U] {

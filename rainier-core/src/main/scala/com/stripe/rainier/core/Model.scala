@@ -74,14 +74,14 @@ object Model {
     Model.likelihood(lh.logDensity(ys))
   }
 
-  /*
   val NumSplits = 8
-  private def split[T](ts: Seq[T], n: Int): (List[T], List[List[T]]) = {
-    val splitSize = (ts.size - 1) / n
-    val initSize = ts.size - (splitSize * n)
-    val init = ts.take(initSize).toList
-    val splits = ts.drop(initSize).grouped(splitSize).toList.map(_.toList)
+  def split[T](ts: Vec[T]): (Vec[T], List[Vec[T]]) = {
+    val splitSize = (ts.size - 1) / NumSplits
+    val initSize = ts.size - (splitSize * NumSplits)
+    val init = ts.take(initSize)
+    val splits = 1.until(NumSplits).scanLeft(ts.drop(initSize)){
+      case (vec, _) => vec.drop(splitSize)
+    }.map(_.take(splitSize)).toList
     (init, splits)
   }
- */
 }
