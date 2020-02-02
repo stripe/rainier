@@ -23,7 +23,7 @@ sealed trait Vec[T] {
   def toList: List[T] =
     0.until(size).toList.map(apply)
 
-  def toColumn: T =
+  def columnize: T =
     apply(new Column(0.until(size).map(_.toDouble).toArray))
 
   def dot(other: Vec[Real])(implicit ev: T <:< Real): Real =
@@ -78,7 +78,7 @@ private case class TraverseVec[T](list: List[Vec[T]]) extends Vec[List[T]] {
     })
 }
 
-trait ToVec[T, U] {
+trait ToVec[-T, U] {
   def apply(seq: Seq[T]): Vec[U]
 }
 
@@ -141,10 +141,10 @@ object ToVec {
       }
     }
 
-  implicit def list[T, U](implicit tu: ToVec[T, U],
-                          uu: ToVec[U, U]): ToVec[List[T], Vec[U]] =
-    new ToVec[List[T], Vec[U]] {
-      def apply(seq: Seq[List[T]]) = {
+  implicit def seq[T, U](implicit tu: ToVec[T, U],
+                         uu: ToVec[U, U]): ToVec[Seq[T], Vec[U]] =
+    new ToVec[Seq[T], Vec[U]] {
+      def apply(seq: Seq[Seq[T]]) = {
         val size = seq.head.size
         val valueVecs = 0.until(size).toList.map { k =>
           tu(seq.map { m =>

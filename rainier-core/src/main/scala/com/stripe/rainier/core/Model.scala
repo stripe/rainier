@@ -78,14 +78,14 @@ object Model {
   def observe[X, Y, D <: Distribution[Y]](ys: Seq[Y], lhs: Vec[D]): Model = {
     val (initX, splitsX) = split(lhs)
     if (splitsX.isEmpty) {
-      Model.likelihood(initX.toColumn.logDensity(ys))
+      Model.likelihood(initX.columnize.logDensity(ys))
     } else {
       val (initY, splitsY) = split(ys)
       Model.likelihoods(
-        List(initX.toColumn.logDensity(initY),
+        List(initX.columnize.logDensity(initY),
              Real.sum(splitsX.zip(splitsY).map {
                case (sx, sy) =>
-                 sx.toColumn.logDensity(sy)
+                 sx.columnize.logDensity(sy)
              })))
     }
   }

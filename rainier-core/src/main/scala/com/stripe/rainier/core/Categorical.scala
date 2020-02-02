@@ -28,7 +28,7 @@ final case class Categorical[T](pmf: Map[T, Real]) extends Distribution[T] {
           })
           .log
       }
-      .toColumn
+      .columnize
   }
 
   def map[U](fn: T => U): Categorical[U] =
@@ -113,7 +113,7 @@ final case class Multinomial[T](pmf: Map[T, Real], k: Real)
     extends Distribution[Map[T, Long]] { self =>
 
   def logDensity(seq: Seq[Map[T, Long]]) =
-    Vec.from(seq).map(logDensity).toColumn
+    Vec.from(seq).map(logDensity).columnize
 
   def logDensity(v: Map[T, Real]): Real =
     Combinatorics.factorial(k) + Real.sum(v.map {
