@@ -47,3 +47,39 @@ As before, these don't look too bad. Seems like we've got a solid posterior samp
 We mentioned before that Rainier prefers not to focus on the raw parameter values, but instead to inspect distributions of random variables. That's not quite the whole story: calling `predict` with a random variable helps us capture our uncertainty about what the parameter values are (sometimes called "epistemic uncertainty", uncertainty from a lack of knowledge), but it does not capture our uncertainty about the inherent randomness of the world (sometimes called "aleatoric uncertainty", or just "noise"). More concretely: even if we knew very precisely to 10 decimal places what the "true" egg-laying rate was for our flock of chickens, we *still* wouldn't know exactly how many eggs, as an integer, we will get tomorrow.
 
 This kind of uncertainty is modeled in Rainier by the `Generator[T]` type. `Generator`s are only used once we already have a `Model`, to make posterior predictions from a sampled `Trace`.
+
+One way to construct a `Generator[T]` is from a `Distribution[T]`. For example, we can predict daily values from a single type of feed like this:
+
+```scala mdoc:to-string
+val gen0 = Generator(Poisson(feeds(0)))
+eggTrace.predict(gen0).take(5)
+```
+
+It might be more interesting to compare two different feeds. For example, here we are sampling the _difference_ between feed 0 and feed 2:
+
+```scala mdoc:to-string
+val pairGen = Generator((Poisson(feeds(0)), Poisson(feeds(2))))
+val diffGen = pairGen.map{
+    case (n0, n2) => n2 - n0
+}
+eggTrace.predict(diffGen).take(5)
+```
+
+There are a couple of things to notice here: first, we're using `Generator()` to wrap a tuple of two `Distribution[Long]` objects to produce a `Generator[(Long,Long)]`. `Generator()` will try to adapt simple compositions of distributions (tuples, sequences, maps) into their corresponding generators. It will do the same for simple compositions of `Real` values (which become `Generator[Double]`).
+
+Second, having produce `pairGen`, we can use `map` to do further transformation. We could also use `flatMap` and `zip` to combine generators. Generators are very flexible, more flexible than `Real`, but the trade-off is that they can only be used in this predictive phase rather than for inference.
+
+Anyway, let's plot these results:
+
+```scala
+show("feed 2 - feed 0", density(eggTrace.predict(diffGen)))
+```
+
+```scala mdoc:image:assets/diff.png
+show("feed 2 - feed 0", density(eggTrace.predict(diffGen)))
+```
+
+Even though we can see that feed 2 is very clearly better than feed 0, there's enough combined epistemic and aleatoric uncertainty here that there can still be days where a chicken on feed 0 would lay more eggs than one on feed 2.
+
+## Making Decisions
+

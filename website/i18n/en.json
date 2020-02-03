@@ -8,6 +8,9 @@
       "distributions": {
         "title": "Distributions"
       },
+      "generator": {
+        "title": "Generator"
+      },
       "install": {
         "title": "Getting Rainier"
       },
@@ -21,7 +24,7 @@
         "title": "Likelihoods and Observations"
       },
       "model": {
-        "title": "Model"
+        "title": "Model and Trace"
       },
       "modules": {
         "title": "Rainier's Modules",

@@ -43,3 +43,7 @@ Keep every n'th sample in each chain.
 * `predict[T](value: Generator[T]): List[T]`
 
 Generate one value from `generator` from each sample in the trace. Like `optimize`, this will automatically convert values into `Generator` where possible.
+
+* `mean[N:Numeric](value: Generator[N]): Double`
+
+For any numeric `Generator`, compute the posterior expectation.
