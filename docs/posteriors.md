@@ -32,7 +32,7 @@ Now, it's decision time. Which feed should the farmer go with?
 As we did [once before](likelihoods.md), we'd like to sample this model to get a `Trace` we can make predictions from, and then check the diagnostics on the trace.
 
 ```scala mdoc:to-string
-val sampler = EHMC(warmupIterations = 5000, iterations = 500)
+val sampler = EHMC(warmupIterations = 5000, iterations = 5000)
 val eggTrace = vecModel.sample(sampler)
 ```
 
@@ -62,12 +62,12 @@ val pairGen = Generator((Poisson(feeds(0)), Poisson(feeds(2))))
 val diffGen = pairGen.map{
     case (n0, n2) => n2 - n0
 }
-eggTrace.predict(diffGen).take(5)
+eggTrace.predict(diffGen).take(10)
 ```
 
 There are a couple of things to notice here: first, we're using `Generator()` to wrap a tuple of two `Distribution[Long]` objects to produce a `Generator[(Long,Long)]`. `Generator()` will try to adapt simple compositions of distributions (tuples, sequences, maps) into their corresponding generators. It will do the same for simple compositions of `Real` values (which become `Generator[Double]`).
 
-Second, having produce `pairGen`, we can use `map` to do further transformation. We could also use `flatMap` and `zip` to combine generators. Generators are very flexible, more flexible than `Real`, but the trade-off is that they can only be used in this predictive phase rather than for inference.
+Second, having produced `pairGen`, we can use `map` to do further transformation (in this case, finding the difference between the two longs produced by the distributions). We could also use `flatMap` and `zip` to combine generators. Generators are very flexible, more flexible than `Real`, but the trade-off is that they can only be used in this predictive phase rather than for inference.
 
 Anyway, let's plot these results:
 
@@ -79,7 +79,71 @@ show("feed 2 - feed 0", density(eggTrace.predict(diffGen)))
 show("feed 2 - feed 0", density(eggTrace.predict(diffGen)))
 ```
 
-Even though we can see that feed 2 is very clearly better than feed 0, there's enough combined epistemic and aleatoric uncertainty here that there can still be days where a chicken on feed 0 would lay more eggs than one on feed 2.
+Even though we can see that feed 2 is clearly better than feed 0, there's enough combined epistemic and aleatoric uncertainty here that there can still be days where a chicken on feed 0 would lay more eggs than one on feed 2.
 
 ## Making Decisions
 
+At the end of the day, the most valuable thing your model can usually do is to inform an actual decision. Staring at plots and trusting your gut is certainly one way to do that, but there's a better way that doesn't seem to get enough attention, which goes like this:
+
+* Choose a utility function `f(d,g)` that tells you how good decision `d` would be, if prediction `g` turned out to be true
+* For each possible decision `d`, find the expectation of `f(d,g)` over all posterior predictions `g`
+* Pick the decision with the highest expectated utility
+
+In this case, let's imagine that the 3 feeds cost $2.80, $3.30, and $4.00 per day, respectively, and that the eggs sell for $0.12 each. We can construct a utility function that just tries to compute the profit for a day's worth of eggs:
+
+```scala mdoc:silent
+val feedCost = List(2.8, 3.3, 4)
+val eggValue = 0.12
+
+def profit(eggCount: Long, feed: Int): Double =
+    (eggCount * eggValue) - feedCost(feed)
+```
+
+Then we can construct a generator that produces the daily profit for each decision:
+
+```scala mdoc:to-string
+val profitGen = Generator(feeds.map{rate => Poisson(rate)}).map{counts =>
+    counts.zipWithIndex.map{case (n, i) => profit(n, i)}
+}
+```
+
+Finally, we can sample from and then average over the posterior for that generator.
+
+```scala mdoc:to-string
+def average(predictions: Seq[Seq[Double]]): Seq[Double] =
+    predictions.reduce{(left, right) => 
+        left.zip(right).map{case (l,r) => l + r}
+    }.map{v => v / predictions.size}
+
+average(eggTrace.predict(profitGen))
+```
+
+According to this, the more expensive feeds are worth it: the extra eggs you get do, on average, cover the extra cost.
+
+However, that's a very simple utility function. (In fact, so simple that we could have just computed it with averages instead of by summing over the posterior.) What if we wanted something more sophisticated?
+
+For example, imagine that cashflow on the farm is very tight, and that if there's ever a day where the egg sales don't cover the feed, that can cause problems. You might decide to penalize that ever happening with a "cost" equivalent to $20:
+
+```scala mdoc:to-string
+def utility(eggCount: Long, feed: Int): Double = {
+    val net = profit(eggCount, feed)
+    if(net < 0)
+        net - 20
+    else
+        net
+}
+
+val utilityGen = Generator(feeds.map{rate => Poisson(rate)}).map{counts =>
+    counts.zipWithIndex.map{case (n, i) => utility(n, i)}
+}
+
+average(eggTrace.predict(utilityGen))
+```
+
+Modeled this way, the choice flips: it's better to take the lower-risk option of the cheap feeds than to try to squeeze out every last cent of profit but put cashflow at risk.
+
+Of course, now you're down to a different gut decision: which utility function do you go with? But at least making that meta-decision once will help you easily make many concrete decisions down the line.
+
+## Fin
+
+Thank you for making it all the way through this overview. We hope you enjoy trying out Rainier, and please send any [feedback](feedback.md) you have when you do!
