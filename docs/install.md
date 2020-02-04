@@ -6,7 +6,7 @@ title: Getting Rainier
 To add Rainier to your project include the following in your `build.sbt`:
 
 ```scala
-libraryDependencies += "com.stripe" % "rainier-core" % "@VERSION@"
+libraryDependencies += "com.stripe" %% "rainier-core" % "@VERSION@"
 ```
 
 Or, in [Ammonite](https://ammonite.io/), import it like this:
