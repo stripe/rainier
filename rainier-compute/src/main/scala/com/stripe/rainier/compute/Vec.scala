@@ -28,6 +28,8 @@ sealed trait Vec[T] {
   def toList: List[T] =
     0.until(size).toList.map(apply)
 
+  def toVector: Vector[T] = toList.toVector
+
   def columnize: T =
     apply(new Column(0.until(size).map(_.toDouble).toArray))
 
