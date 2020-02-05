@@ -15,6 +15,8 @@ sealed trait Vec[T] {
     RealVec(r.reals.slice(from, until))
   }
 
+  def reverse: Vec[T] = ReverseVec(this)
+
   private[compute] def mapLeaves(g: RealVec => RealVec): Vec[T]
 
   def map[U](fn: T => U): Vec[U] = MapVec(this, fn)
@@ -50,6 +52,13 @@ private case class RealVec(reals: Vector[Real]) extends Vec[Real] {
   def apply(index: Int) = reals(index)
   def apply(index: Real) = Lookup(index, reals)
   def mapLeaves(g: RealVec => RealVec) = g(this)
+}
+
+private case class ReverseVec[T](original: Vec[T]) extends Vec[T] {
+  val size = original.size
+  def apply(index: Int) = original(size - 1 - index)
+  def apply(index: Real) = original(Real(size - 1) - index)
+  def mapLeaves(g: RealVec => RealVec) = original.mapLeaves(g)
 }
 
 private case class MapVec[T, U](original: Vec[T], fn: T => U) extends Vec[U] {
