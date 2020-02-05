@@ -3,6 +3,8 @@ package com.stripe.rainier.core
 import com.stripe.rainier.compute._
 
 case class MVNormal(k: Int, cov: Covariance) extends Distribution[Seq[Double]] {
+ def translate(location: Vec[Real]): Distribution[Seq[Double]] = ???
+
  def logDensity(seq: Seq[Seq[Double]]) =
     Vec.from(seq).map(logDensity).columnize
 
@@ -19,6 +21,13 @@ case class MVNormal(k: Int, cov: Covariance) extends Distribution[Seq[Double]] {
   }    
 }
 
+object MVNormal {
+    def eta(k: Int, eta: Real): MVNormal = ???
+    def eta(k: Int, eta: Real, sigma: Continuous): MVNormal = ???
+    def rho(k: Int, rho: Map[(Int,Int),Real]): MVNormal = ???
+    def rho(k: Int, rho: Map[(Int,Int),Real], sigma: Continuous): MVNormal = ???
+}
+
 trait Covariance {
     //generates in packed lower-triangular representation
     def choleskyGenerator: Generator[Array[Double]]
@@ -27,7 +36,9 @@ trait Covariance {
     def inverseMultiply(x: Vec[Real]): Vec[Real]
 }
 
-case class LKJCholesky(rank: Int, eta: Real) extends Covariance {
+//case class RhoSigma(rho: Map[(Int,Int),Real], sigmas: Vec[Real]) extends Covariance
+
+case class LKJCholesky(eta: Real, sigmas: Vec[Real]) extends Covariance {
     val cholesky: Cholesky = ???
 
     val choleskyGenerator =
