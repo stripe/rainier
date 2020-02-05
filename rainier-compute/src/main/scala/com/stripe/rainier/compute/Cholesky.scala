@@ -6,15 +6,14 @@ by the  N(N+1)/2 packed lower-triangular elements
 of its Cholesky decomposition L
 (where A = LL*)
 */
-
-case class Cholesky(packed: Vec[Real]) {
-    val n: Int = Cholesky.size(packed)
+case class Cholesky(packed: Vector[Real]) {
+    val rank: Int = Cholesky.rank(packed.size)
     
     //log(det(A))
     def logDeterminant: Real = Real.sum(diagonals.map(_.log)) * 2
 
     //solve for x where Ax=y
-    def inverseMultiply(y: Vec[Real]): Vec[Real] = {
+    def inverseMultiply(y: Vector[Real]): Vector[Real] = {
         //L*Lx = y, let b=Lx 
         //solve L*b = y
         val b = Cholesky.upperTriangularSolve(packed, y)
@@ -23,8 +22,8 @@ case class Cholesky(packed: Vec[Real]) {
     }
 
     //diagonal elements of L
-    private def diagonals: List[Real] = 
-        0.until(n).toList.map{i =>
+    private def diagonals: Vector[Real] = 
+        0.until(rank).toVector.map{i =>
             packed(Cholesky.triangleNumber(i))
         }
 }
@@ -50,13 +49,21 @@ object Cholesky {
     }
     
     def triangleNumber(k: Int) = (k * (k+1)) / 2
-    def size(packed: Vec[Real]) = Math.sqrt(packed.size * 2.0).floor.toInt
+    def rank(packedSize: Int) = Math.sqrt(packedSize * 2.0).floor.toInt
 
     //solve Lx = y
-    def lowerTriangularSolve(packed: Vec[Real], y: Vec[Real]): Vec[Real] = ???
+    def lowerTriangularSolve(packed: Vector[Real], y: Vector[Real]): Vector[Real] =
+        //forward substitution
+        y.toList.zipWithIndex.foldLeft(Vector.empty[Real]){
+            case (xAcc, (yi, i)) => 
+                val row = packed.slice(triangleNumber(i), triangleNumber(i+1))
+                val dot = Real.sum(row.init.zip(xAcc).map{case (a,b) => a*b})
+                val xi = (yi - dot) / row.last
+                xAcc :+ xi
+        }
 
     //solve L*x = y
-    def upperTriangularSolve(packed: Vec[Real], y: Vec[Real]): Vec[Real] =
+    def upperTriangularSolve(packed: Vector[Real], y: Vector[Real]): Vector[Real] =
         //let z = y.reverse, and let w = x.reverse
         //"rotate" L to be a lower-triangular matrix R,
         //such that Rw = z implies that  L*x = y
@@ -68,13 +75,12 @@ object Cholesky {
         triangleNumber(n-i-1) -
         1
 
-    private def rotate(packed: Vec[Real]): Vec[Real] = {
-        val n = size(packed)
-        val result = 0.until(n).toList.flatMap{i => 
-            0.to(i).toList.map{j => 
+    private def rotate(packed: Vector[Real]): Vector[Real] = {
+        val n = rank(packed.size)
+        0.until(n).flatMap{i => 
+            0.to(i).map{j => 
                 packed(rotateIndex(i, j, n))
             }
-        }
-        Vec.from(result)
+        }.toVector
     }
 }
