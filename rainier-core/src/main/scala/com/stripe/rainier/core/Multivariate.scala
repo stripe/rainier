@@ -5,12 +5,12 @@ import com.stripe.rainier.compute._
 //multivariate continuous
 trait Multivariate extends Distribution[Seq[Double]] {
   def k: Int
-  def rv: Vec[Real]
+  def latent: Vec[Real]
 
-  def logDensity(seq: Seq[Seq[Double]]) =
+  def logDensity(seq: Seq[Seq[Double]]): Real =
     Vec.from(seq).map(logDensity).columnize
 
-  def logDensity(x: Vec[Real]): Real
+  protected def logDensity(x: Vec[Real]): Real
 }
 
 case class MVNormal(k: Int, locations: Vec[Real], cov: Covariance)
@@ -18,9 +18,9 @@ case class MVNormal(k: Int, locations: Vec[Real], cov: Covariance)
   require(cov.size == k)
   require(locations.size == k)
 
-  def rv: Vec[Real] = ???
+  def latent: Vec[Real] = ???
 
-  def logDensity(x: Vec[Real]) =
+  protected def logDensity(x: Vec[Real]): Real =
     ((Real.Pi * 2).log +
       cov.logDeterminant +
       x.dot(cov.inverseMultiply(x))) / -2
