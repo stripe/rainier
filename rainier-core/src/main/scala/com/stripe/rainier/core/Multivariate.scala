@@ -16,6 +16,7 @@ trait Multivariate extends Distribution[Seq[Double]] {
 case class MVNormal(k: Int, locations: Vec[Real], cov: Covariance)
     extends Multivariate {
   require(cov.size == k)
+  require(locations.size == k)
 
   def rv: Vec[Real] = ???
 
@@ -31,18 +32,24 @@ case class MVNormal(k: Int, locations: Vec[Real], cov: Covariance)
     }
   }
 }
-/*
+
 object MVNormal {
-  def eta(k: Int, eta: Real): MVNormal =
-    MVNormal(k, LKJCholesky(eta, Vec.from(List.fill(k)(1))))
-  def eta(k: Int, eta: Real, sigma: Continuous): MVNormal =
-    MVNormal(k, LKJCholesky(eta, sigma.vec(k)))
-  def rho(k: Int, rho: Map[(Int, Int), Real]): MVNormal =
-    MVNormal(k, RhoSigma(rho, Vec.from(List.fill(k)(1))))
-  def rho(k: Int, rho: Map[(Int, Int), Real], sigma: Continuous): MVNormal =
-    MVNormal(k, RhoSigma(rho, sigma.vec(k)))
+  case class Builder(k: Int, locations: Vec[Real], scales: Vec[Real]) {
+    def lkjCorrelation(eta: Real): MVNormal =
+      MVNormal(k, locations, LKJCholesky(eta, scales))
+    def correlations(rho: Map[(Int,Int), Real]): MVNormal =
+      MVNormal(k, locations, RhoSigma(rho, scales))
+  }
+
+  def standard(k: Int): Builder = apply(k, 0, 1)
+  def apply(k: Int, location: Real, scale: Real): Builder = 
+    apply(k, Vec.from(List.fill(k)(location)), Vec.from(List.fill(k)(scale)))
+  def apply(k: Int, locations: Continuous, scales: Continuous): Builder =
+    apply(k, locations.latentVec(k), scales.latentVec(k))
+  def apply(k: Int, locations: Vec[Real], scales: Vec[Real]): Builder =
+    Builder(k, locations, scales)
 }
- */
+
 trait Covariance {
   def size: Int
 
