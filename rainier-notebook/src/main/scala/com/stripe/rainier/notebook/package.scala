@@ -6,7 +6,9 @@ import com.cibo.evilplot.numeric._
 import com.cibo.evilplot.colors._
 import com.cibo.evilplot.plot.renderers._
 import com.cibo.evilplot.plot.aesthetics._
+import polynote.runtime._
 import almond.display.Image
+import java.util.Base64
 
 package object notebook {
   object PlotThemes {
