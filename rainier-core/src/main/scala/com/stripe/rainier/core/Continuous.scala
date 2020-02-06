@@ -17,15 +17,15 @@ trait Continuous extends Distribution[Double] {
   def translate(b: Real): Continuous = Translate(b).transform(this)
   def exp: Continuous = Exp.transform(this)
 
-  def real: Real
-  def vec(k: Int) = Vec.from(List.fill(k)(real))
+  def latent: Real
+  def latentVec(k: Int) = Vec.from(List.fill(k)(latent))
 }
 
 /**
   * A Continuous Distribution that inherits its transforms from a Support object.
   */
 private[rainier] trait StandardContinuous extends Continuous {
-  def real: Real = {
+  def latent: Real = {
     val x = Real.parameter { x =>
       support.logJacobian(x) + logDensity(support.transform(x))
     }
@@ -239,7 +239,7 @@ case class Mixture(components: Map[Continuous, Real]) extends Continuous {
         }
       })
 
-  def real: Real = {
+  def latent: Real = {
     val x = Real.parameter { x =>
       support.logJacobian(x) + logDensity(support.transform(x))
     }

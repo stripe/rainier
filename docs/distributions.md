@@ -13,8 +13,8 @@ These distributions all extend `Distribution[Double]`.
 
 They all implement:
 
-* `real: Real`
-* `vec(k: Int): Vec[Real]`
+* `latent: Real`
+* `latentVec(k: Int): Vec[Real]`
 * `generator: Generator[Double]`
 
 ### Normal

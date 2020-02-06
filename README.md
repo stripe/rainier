@@ -20,9 +20,9 @@ Here's what it looks like to fit a simple linear regression in Rainier:
 val xs: List[(Double, Double, Double)] = ???
 val ys: List[Double] = ???
 
-val sigma = Exponential(1).real
-val alpha = Normal(0,1).real
-val betas = Normal(0,1).vec(3)
+val sigma = Exponential(1).latent
+val alpha = Normal(0,1).latent
+val betas = Normal(0,1).latentVec(3)
 
 val model = Model.observe(ys, Vec.from(xs).map{
      case (u, v, w) => 
