@@ -2,11 +2,19 @@ package com.stripe.rainier.core
 
 import com.stripe.rainier.compute._
 
-case class MVNormal(k: Int, cov: Covariance) extends Distribution[Seq[Double]] {
- def translate(location: Vec[Real]): Distribution[Seq[Double]] = ???
+//multivariate continuous
+trait Multivariate extends Distribution[Seq[Double]] {
+    def k: Int
+    def rv: Vec[Real]
 
- def logDensity(seq: Seq[Seq[Double]]) =
-    Vec.from(seq).map(logDensity).columnize
+    def logDensity(seq: Seq[Seq[Double]]) =
+        Vec.from(seq).map(logDensity).columnize
+
+    def logDensity(x: Vec[Real]): Real
+}
+
+case class MVNormal(k: Int, locations: Vec[Real], cov: Covariance) extends Multivariate {
+ def rv: Vec[Real] = ???
 
   def logDensity(x: Vec[Real]) = 
     ((Real.Pi * 2).log + 
@@ -22,10 +30,14 @@ case class MVNormal(k: Int, cov: Covariance) extends Distribution[Seq[Double]] {
 }
 
 object MVNormal {
-    def eta(k: Int, eta: Real): MVNormal = ???
-    def eta(k: Int, eta: Real, sigma: Continuous): MVNormal = ???
-    def rho(k: Int, rho: Map[(Int,Int),Real]): MVNormal = ???
-    def rho(k: Int, rho: Map[(Int,Int),Real], sigma: Continuous): MVNormal = ???
+    def eta(k: Int, eta: Real): MVNormal = 
+        MVNormal(k, LKJCholesky(eta, Vec.from(List.fill(k)(1))))
+    def eta(k: Int, eta: Real, sigma: Continuous): MVNormal = 
+        MVNormal(k, LKJCholesky(eta, sigma.vec(k)))
+    def rho(k: Int, rho: Map[(Int,Int),Real]): MVNormal =
+        MVNormal(k, RhoSigma(rho, Vec.from(List.fill(k)(1))))
+    def rho(k: Int, rho: Map[(Int,Int),Real], sigma: Continuous): MVNormal =
+        MVNormal(k, RhoSigma(rho, sigma.vec(k)))
 }
 
 trait Covariance {
@@ -36,7 +48,12 @@ trait Covariance {
     def inverseMultiply(x: Vec[Real]): Vec[Real]
 }
 
-//case class RhoSigma(rho: Map[(Int,Int),Real], sigmas: Vec[Real]) extends Covariance
+case class RhoSigma(rho: Map[(Int,Int),Real], sigmas: Vec[Real]) extends Covariance {
+    def choleskyGenerator = ???
+
+    def logDeterminant = ???
+    def inverseMultiply(x: Vec[Real]) = ???
+}
 
 case class LKJCholesky(eta: Real, sigmas: Vec[Real]) extends Covariance {
     val cholesky: Cholesky = ???
