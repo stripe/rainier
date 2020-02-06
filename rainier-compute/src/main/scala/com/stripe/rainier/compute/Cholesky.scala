@@ -10,7 +10,7 @@ case class Cholesky(packed: Vector[Real]) {
   val rank: Int = Cholesky.rank(packed.size)
 
   //log(det(A))
-  def logDeterminant: Real = Real.sum(diagonals.map(_.log)) * 2
+  val logDeterminant: Real = Real.sum(diagonals.map(_.log)) * 2
 
   //solve for x where Ax=y
   def inverseMultiply(y: Vector[Real]): Vector[Real] = {

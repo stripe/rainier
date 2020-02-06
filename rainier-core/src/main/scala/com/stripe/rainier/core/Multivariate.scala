@@ -15,6 +15,8 @@ trait Multivariate extends Distribution[Seq[Double]] {
 
 case class MVNormal(k: Int, locations: Vec[Real], cov: Covariance)
     extends Multivariate {
+  require(cov.size == k)
+
   def rv: Vec[Real] = ???
 
   def logDensity(x: Vec[Real]) =
@@ -42,6 +44,8 @@ object MVNormal {
 }
  */
 trait Covariance {
+  def size: Int
+
   //generates in packed lower-triangular representation
   def choleskyGenerator: Generator[Array[Double]]
 
@@ -51,6 +55,8 @@ trait Covariance {
 
 case class RhoSigma(rho: Map[(Int, Int), Real], sigmas: Vec[Real])
     extends Covariance {
+  def size = sigmas.size
+
   def choleskyGenerator = ???
 
   def logDeterminant = ???
@@ -58,12 +64,14 @@ case class RhoSigma(rho: Map[(Int, Int), Real], sigmas: Vec[Real])
 }
 
 case class LKJCholesky(eta: Real, sigmas: Vec[Real]) extends Covariance {
+  def size = sigmas.size
+
   val cholesky: Cholesky = ???
 
   val choleskyGenerator =
     Generator(cholesky.packed).map(_.toArray)
 
-  val logDeterminant = cholesky.logDeterminant
+  def logDeterminant = cholesky.logDeterminant
   def inverseMultiply(x: Vec[Real]): Vec[Real] =
     Vec.from(cholesky.inverseMultiply(x.toVector))
 }

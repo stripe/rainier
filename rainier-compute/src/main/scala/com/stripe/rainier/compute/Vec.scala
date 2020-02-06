@@ -15,7 +15,11 @@ sealed trait Vec[T] {
     RealVec(r.reals.slice(from, until))
   }
 
-  def reverse: Vec[T] = ReverseVec(this)
+  def reverse: Vec[T] = 
+    this match {
+      case ReverseVec(v) => v
+      case notRev => ReverseVec(notRev)
+    }
 
   private[compute] def mapLeaves(g: RealVec => RealVec): Vec[T]
 
