@@ -22,13 +22,13 @@ class GLMMPoisson2 extends ModelBenchmark {
   var nYears: String = _
 
   def model = {
-    val mu = Normal(0, 10).real
-    val sdAlpha = Uniform(0, 2).real
-    val alphas = Normal(mu, sdAlpha).vec(nSites.toInt)
+    val mu = Normal(0, 10).latent
+    val sdAlpha = Uniform(0, 2).latent
+    val alphas = Normal(mu, sdAlpha).latentVec(nSites.toInt)
 
-    val sdYear = Uniform(0, 1).real
-    val betas = Normal(0, 10).vec(3)
-    val eps = Normal(0, sdYear).vec(nYears.toInt)
+    val sdYear = Uniform(0, 1).latent
+    val betas = Normal(0, 10).latentVec(3)
+    val eps = Normal(0, sdYear).latentVec(nYears.toInt)
 
     val yearBetas = Vec.from(year.take(nYears.toInt)).zip(eps).map {
       case (y, ep) =>
