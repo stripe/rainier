@@ -4,7 +4,7 @@ import com.stripe.rainier.compute._
 
 //multivariate continuous
 trait Multivariate extends Distribution[Seq[Double]] {
-  def k: Int
+  def size: Int
   def latent: Vec[Real]
 
   def logDensity(seq: Seq[Seq[Double]]): Real =
@@ -13,10 +13,10 @@ trait Multivariate extends Distribution[Seq[Double]] {
   protected def logDensity(x: Vec[Real]): Real
 }
 
-case class MVNormal(k: Int, locations: Vec[Real], cov: Covariance)
+class MVNormal private(val size: Int, locations: Vec[Real], cov: Covariance)
     extends Multivariate {
-  require(cov.size == k)
-  require(locations.size == k)
+  require(cov.size == size)
+  require(locations.size == size)
 
   def latent: Vec[Real] = ???
 
@@ -26,7 +26,7 @@ case class MVNormal(k: Int, locations: Vec[Real], cov: Covariance)
       x.dot(cov.inverseMultiply(x))) / -2
 
   def generator = {
-    val iidNormals = Normal.standard.generator.repeat(k).map(_.toArray)
+    val iidNormals = Normal.standard.generator.repeat(size).map(_.toArray)
     cov.choleskyGenerator.zip(iidNormals).map {
       case (a, z) => Cholesky.lowerTriangularMultiply(a, z)
     }
@@ -36,9 +36,9 @@ case class MVNormal(k: Int, locations: Vec[Real], cov: Covariance)
 object MVNormal {
   case class Builder(k: Int, locations: Vec[Real], scales: Vec[Real]) {
     def lkjCorrelation(eta: Real): MVNormal =
-      MVNormal(k, locations, LKJCholesky(eta, scales))
+      new MVNormal(k, locations, LKJCholesky(eta, scales))
     def correlations(rho: Map[(Int,Int), Real]): MVNormal =
-      MVNormal(k, locations, RhoSigma(rho, scales))
+      new MVNormal(k, locations, RhoSigma(rho, scales))
   }
 
   def standard(k: Int): Builder = apply(k, 0, 1)
@@ -50,7 +50,7 @@ object MVNormal {
     Builder(k, locations, scales)
 }
 
-trait Covariance {
+private sealed trait Covariance {
   def size: Int
 
   //generates in packed lower-triangular representation
@@ -60,7 +60,7 @@ trait Covariance {
   def inverseMultiply(x: Vec[Real]): Vec[Real]
 }
 
-case class RhoSigma(rho: Map[(Int, Int), Real], sigmas: Vec[Real])
+private case class RhoSigma(rho: Map[(Int, Int), Real], sigmas: Vec[Real])
     extends Covariance {
   def size = sigmas.size
 
@@ -70,13 +70,12 @@ case class RhoSigma(rho: Map[(Int, Int), Real], sigmas: Vec[Real])
   def inverseMultiply(x: Vec[Real]) = ???
 }
 
-case class LKJCholesky(eta: Real, sigmas: Vec[Real]) extends Covariance {
+private case class LKJCholesky(eta: Real, sigmas: Vec[Real]) extends Covariance {
   def size = sigmas.size
 
-  val cholesky: Cholesky = ???
+  def cholesky: Cholesky = ???
 
-  val choleskyGenerator =
-    Generator(cholesky.packed).map(_.toArray)
+  def choleskyGenerator = ???
 
   def logDeterminant = cholesky.logDeterminant
   def inverseMultiply(x: Vec[Real]): Vec[Real] =
