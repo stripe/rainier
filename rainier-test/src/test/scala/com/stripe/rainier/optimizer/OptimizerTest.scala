@@ -6,8 +6,8 @@ import org.scalatest.FunSuite
 class OptimizerTest extends FunSuite {
 
   test("fit normal") {
-    val mu = Normal(0, 10).real
-    val sigma = Uniform(0, 1).real
+    val mu = Normal(0, 10).latent
+    val sigma = Uniform(0, 1).latent
     val m = Model.observe(List(1.0, 2.0, 3.0), Normal(mu, sigma))
     testLBFGS(m)
   }

@@ -35,7 +35,7 @@ private[rainier] trait Injection { self =>
         fastForwards(dist.generator.get(r, n), n)
       }
 
-    def real: Real = forwards(dist.real)
+    def latent: Real = forwards(dist.latent)
   }
 }
 
