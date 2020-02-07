@@ -13,6 +13,10 @@ trait Multivariate extends Distribution[Seq[Double]] {
   protected def logDensity(x: Vec[Real]): Real
 }
 
+object Multivariate {
+  def lkjCorrelation(sigmas: Vec[Real], eta: Real): Cholesky = ???
+}
+
 case class MVNormal(locations: Vec[Real], chol: Cholesky)
     extends Multivariate {
   require(chol.rank == locations.size)
@@ -38,6 +42,3 @@ object MVNormal {
   def apply(chol: Cholesky): MVNormal = MVNormal(Vec.from(List.fill(chol.rank)(Real.zero)), chol)
 }
 
-object Covariance {
-  def lkjCorrelation(sigmas: Vec[Real], eta: Real): Cholesky = ???
-}
