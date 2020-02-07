@@ -1,6 +1,6 @@
 package com.stripe.rainier.compute
 
-sealed trait Vec[T] {
+sealed trait Vec[+T] {
   def size: Int
   def apply(index: Int): T
   def apply(index: Real): T

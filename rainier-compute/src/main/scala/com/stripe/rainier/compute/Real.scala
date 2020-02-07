@@ -72,6 +72,8 @@ object Real {
     x
   }
 
+  def parameters(size: Int)(fn: Vec[Parameter] => Real): Vec[Parameter] = ???
+
   def doubles(seq: Seq[Double]): Real = new Column(seq.toArray)
   def longs(seq: Seq[Long]): Real = doubles(seq.map(_.toDouble))
 

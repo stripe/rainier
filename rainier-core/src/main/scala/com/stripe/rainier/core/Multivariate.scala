@@ -5,7 +5,7 @@ import com.stripe.rainier.compute._
 //multivariate continuous
 trait Multivariate extends Distribution[Seq[Double]] {
   def size: Int
-  def latent: Vec[Real]
+  def latent: Vec[Real] = Real.parameters(size)(logDensity(_))
 
   def logDensity(seq: Seq[Seq[Double]]): Real =
     Vec.from(seq).map(logDensity).columnize
@@ -22,7 +22,6 @@ case class MVNormal(locations: Vec[Real], chol: Cholesky)
   require(chol.rank == locations.size)
 
   def size = locations.size
-  def latent: Vec[Real] = ???
 
   protected def logDensity(x: Vec[Real]): Real = {
     val xn = x.zip(locations).map{case (a,b) => a-b}
