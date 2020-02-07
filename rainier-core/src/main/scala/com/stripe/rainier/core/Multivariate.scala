@@ -24,16 +24,22 @@ case class MVNormal(locations: Vec[Real], chol: Cholesky)
   def size = locations.size
   def latent: Vec[Real] = ???
 
-  protected def logDensity(x: Vec[Real]): Real =
+  protected def logDensity(x: Vec[Real]): Real = {
+    val xn = x.zip(locations).map{case (a,b) => a-b}
     ((Real.Pi * 2).log +
       chol.logDeterminant +
-      x.dot(Vec.from(chol.inverseMultiply(x.toVector)))) / -2
-
+      xn.dot(Vec.from(chol.inverseMultiply(xn.toVector)))) / -2
+  }
+  
   def generator = {
+    val packedGen = Generator(chol.packed)
     val iidNormals = Normal.standard.generator.repeat(size).map(_.toArray)
-    val packed = Generator(chol.packed)
-    packed.zip(iidNormals).map {
-      case (a, z) => Cholesky.lowerTriangularMultiply(a.toArray, z)
+    val locGen = Generator(locations)
+    Generator((packedGen, iidNormals, locGen)).map{
+      case (a, z, mu) =>
+        Cholesky.lowerTriangularMultiply(a.toArray, z).zip(mu).map{
+          case (l,r) => l+r
+        }
     }
   }
 }
