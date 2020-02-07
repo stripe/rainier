@@ -223,7 +223,7 @@ case class Mixture(components: Map[Continuous, Real]) extends Continuous {
   }
 
   def generator: Generator[Double] =
-    Categorical(components).generator.flatMap { d =>
+    Generator.categorical(components).flatMap { d =>
       d.generator
     }
 

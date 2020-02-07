@@ -268,7 +268,7 @@ final case class DiscreteMixture(components: Map[Discrete, Real])
   }
 
   val generator: Generator[Long] =
-    Categorical(components).generator.flatMap { d =>
+    Generator.categorical(components).flatMap { d =>
       d.generator
     }
 

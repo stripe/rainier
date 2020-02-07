@@ -23,5 +23,4 @@ jobs:
         - NAME="TESTS"
         - SCALAC_FATAL_WARNINGS=true
       script:
-        - pip install --user codecov
-        - sbt coverage +test coverageReport && codecov
+        - sbt +test
