@@ -100,21 +100,8 @@ They all implement:
 
 * `DiscreteMixture(components: Map[Discrete, Real])`
 
-## Categorical
+## Multinomial
 
-A `Categorical[T]` extends `Distribution[T]`.
+extends `Distribution[T,Long]`
 
-Like all distributions, it provides `generator` which produces a `Generator[T]`.
-
-It also provides a monad interface:
-
-* `map[U](fn: T => U): Categorical[U]`
-* `flatMap[U](fn: T => Categorical[U]): Categorical[U]`
-* `zip[U](other: Categorical[U]): Categorical[(T, U)]`
-
-Construction methods:
-
-* `Categorical[T](pmf: Map[T, Real])`
-* `Categorical.boolean(p: Real)`
-* `Categorical.normalize[T](pmf: Map[T, Real])`
-* `Categorical.list[T](seq: Seq[T])`
+* `Multinomial[T](pmf: Map[T, Real], k: Real)`

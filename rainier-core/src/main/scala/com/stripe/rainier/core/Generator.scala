@@ -128,6 +128,20 @@ object Generator {
 
   def vector[T](v: Vector[T]) = from((r, _) => v(r.int(v.size)))
 
+  def categorical[T](pmf: Map[T, Real]): Generator[T] = {
+    val cdf =
+      pmf.toList
+        .scanLeft((Option.empty[T], Real.zero)) {
+          case ((_, acc), (t, p)) => ((Some(t)), p + acc)
+        }
+        .collect { case (Some(t), p) => (t, p) }
+
+    require(cdf.map(_._2).toSet) { (r, n) =>
+      val v = r.standardUniform
+      cdf.find { case (_, p) => n.toDouble(p) >= v }.getOrElse(cdf.last)._1
+    }
+  }
+
   def fromSet[T](items: Set[T]) = vector(items.toVector)
 
   def traverse[T, U](seq: Seq[T])(
