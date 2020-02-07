@@ -17,33 +17,32 @@ object Multivariate {
   def lkjCorrelation(sigmas: Vec[Real], eta: Real): Cholesky = ???
 }
 
-case class MVNormal(locations: Vec[Real], chol: Cholesky)
-    extends Multivariate {
+case class MVNormal(locations: Vec[Real], chol: Cholesky) extends Multivariate {
   require(chol.rank == locations.size)
 
   def size = locations.size
 
   protected def logDensity(x: Vec[Real]): Real = {
-    val xn = x.zip(locations).map{case (a,b) => a-b}
+    val xn = x.zip(locations).map { case (a, b) => a - b }
     ((Real.Pi * 2).log +
       chol.logDeterminant +
       xn.dot(Vec.from(chol.inverseMultiply(xn.toVector)))) / -2
   }
-  
+
   def generator = {
     val packedGen = Generator(chol.packed)
     val iidNormals = Normal.standard.generator.repeat(size).map(_.toArray)
     val locGen = Generator(locations)
-    Generator((packedGen, iidNormals, locGen)).map{
+    Generator((packedGen, iidNormals, locGen)).map {
       case (a, z, mu) =>
-        Cholesky.lowerTriangularMultiply(a.toArray, z).zip(mu).map{
-          case (l,r) => l+r
+        Cholesky.lowerTriangularMultiply(a.toArray, z).zip(mu).map {
+          case (l, r) => l + r
         }
     }
   }
 }
 
 object MVNormal {
-  def apply(chol: Cholesky): MVNormal = MVNormal(Vec.from(List.fill(chol.rank)(Real.zero)), chol)
+  def apply(chol: Cholesky): MVNormal =
+    MVNormal(Vec.from(List.fill(chol.rank)(Real.zero)), chol)
 }
-
