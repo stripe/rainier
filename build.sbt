@@ -1,5 +1,3 @@
-import wartremover.Wart
-
 lazy val root = project.
   in(file(".")).
   aggregate(rainierBase, rainierCompute, rainierSampler, rainierCore, rainierNotebook).
@@ -13,19 +11,6 @@ lazy val root = project.
   )
 
 scalafmtOnCompile in ThisBuild := true
-
-// see https://www.wartremover.org/doc/warts.html for the full list.
-wartremoverErrors in (Compile, compile) ++= Seq(
-  Wart.EitherProjectionPartial,
-  Wart.OptionPartial,
-  Wart.Product,
-  Wart.PublicInference,
-  Wart.Return,
-  Wart.Serializable,
-  Wart.StringPlusAny,
-  Wart.Throw,
-  Wart.TryPartial
-)
 
 def getPublishTo(snapshot: Boolean) = {
   val nexus = "https://oss.sonatype.org/"
@@ -134,8 +119,6 @@ lazy val rainierNotebook = project.
         "org.scalameta" %% "mdoc" % V.mdoc,
         "sh.almond" %% "jupyter-api" % V.almond)
   )
-
-// test modules
 
 lazy val rainierBenchmark = project.
   in(file("rainier-benchmark")).
