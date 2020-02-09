@@ -65,14 +65,22 @@ object Real {
     summed.log + max
   }
 
-  def parameter(): Parameter = new Parameter(Real.zero)
+  def parameter(): Parameter = new Parameter(new Prior(Real.zero))
   def parameter(fn: Parameter => Real): Parameter = {
     val x = parameter()
-    x.density = fn(x)
+    x.prior = new Prior(fn(x))
     x
   }
 
-  def parameters(size: Int)(fn: Vec[Parameter] => Real): Vec[Parameter] = ???
+  def parameters(size: Int)(
+      fn: Vector[Parameter] => Real): Vector[Parameter] = {
+    val vector = Vector.fill(size)(parameter())
+    val prior = new Prior(fn(vector))
+    vector.toList.foreach { x =>
+      x.prior = prior
+    }
+    vector
+  }
 
   def doubles(seq: Seq[Double]): Real = new Column(seq.toArray)
   def longs(seq: Seq[Long]): Real = doubles(seq.map(_.toDouble))
@@ -176,10 +184,12 @@ final private[rainier] class Column(val values: Array[Double])
 
 sealed trait NonConstant extends Real
 
-final private[rainier] class Parameter(var density: Real) extends NonConstant {
+final private[rainier] class Parameter(var prior: Prior) extends NonConstant {
   val param = new ir.Param
   val bounds = Bounds(Double.NegativeInfinity, Double.PositiveInfinity)
 }
+
+private[rainier] class Prior(val density: Real)
 
 final private case class Unary(original: NonConstant, op: ir.UnaryOp)
     extends NonConstant {
