@@ -77,10 +77,20 @@ case class LKJCorrelation(eta: Real, size: Int) {
 
   private def solve(params: Vec[Parameter]): Cholesky = {
     val transformed = params.toList.map{x => support.transform(x)}
-    ???
+    val (_, packed) = 0.until(size).toList.foldLeft((transformed, Vector.empty[Real])){
+      case ((in, out), i) =>
+      val row = in.take(i)
+      val diag = (Real.one - Real.sum(row.map(_.pow(2)))).pow(0.5)
+      (in.drop(i), out ++ row :+ diag)
+    }
+    Cholesky(packed)
   }
-  
-  private def logDensity(chol: Cholesky) = ???
+
+  private def logDensity(chol: Cholesky) =
+    Real.sum(chol.diagonals.zipWithIndex.tail.map{
+      case (d, i) => 
+        ((eta * 2) + size - i - 3) * d.log
+    })
 }
 
 private case class MVTransformed(original: Multivariate, injections: List[Injection])

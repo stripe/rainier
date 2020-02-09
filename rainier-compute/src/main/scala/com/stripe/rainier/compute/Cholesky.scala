@@ -25,7 +25,7 @@ case class Cholesky(packed: Vector[Real]) {
   def lowerTriangularMultiply(x: Vector[Real]): Vector[Real] = ???
   
   //diagonal elements of L
-  private def diagonals: Vector[Real] =
+  def diagonals: Vector[Real] =
     0.until(size).toVector.map { i =>
       packed(Cholesky.triangleNumber(i))
     }
