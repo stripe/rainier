@@ -3,7 +3,11 @@ id: jupyter
 title: Using Jupyter
 ---
 
-[Jupyter](https://jupyter.org/) is a great way to work with Rainier. The `install-kernel.sh` script will install a pre-configured [Almond](http://almond.sh) kernel suitable for Rainier. If you have Jupyter installed (eg with `brew install jupyter`), and run that script, you should then be able to use the `Rainier (Scala 2.12)` kernel for all your Bayesian Scala needs.
+[Jupyter](https://jupyter.org/) is a great way to work with Rainier. 
+
+## Using a customized kernel install
+
+The `install-kernel.sh` script will install a pre-configured [Almond](http://almond.sh) kernel suitable for Rainier. If you have Jupyter installed (eg with `brew install jupyter`), and run that script, you should then be able to use the `Rainier (Scala 2.12)` kernel for all your Bayesian Scala needs.
 
 Specifically, this script installs a kernel that:
 
@@ -25,4 +29,15 @@ Then in a separate cell, you can import the Rainier packages:
 import com.stripe.rainier.compute._
 import com.stripe.rainier.core._
 import com.stripe.rainier.notebook._
+```
+
+## Using a standard Almond kernel
+
+If you are not using the custom kernel installer, make sure to use the `Scala 2.12` kernel, and add the following to the top of your notebook in its own cell:
+
+```scala
+interp.repositories() ++= Seq(
+  coursierapi.MavenRepository.of("https://dl.bintray.com/cibotech/public"),
+  coursierapi.MavenRepository.of("https://jitpack.io/")
+)
 ```
