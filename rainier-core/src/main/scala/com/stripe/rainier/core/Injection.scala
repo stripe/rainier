@@ -30,10 +30,12 @@ private[rainier] trait Injection { self =>
                     dist.logDensity(backwards(real)) + logJacobian(real),
                     Real.negInfinity)
 
-    val generator: Generator[Double] =
-      Generator.require(self.requirements) { (r, n) =>
-        fastForwards(dist.generator.get(r, n), n)
+    val generator: Generator[Double] = {
+      val distGen = dist.generator
+      Generator.require(self.requirements ++ distGen.requirements) { (r, n) =>
+        fastForwards(distGen.get(r, n), n)
       }
+    }
 
     def latent: Real = forwards(dist.latent)
   }

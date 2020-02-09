@@ -7,7 +7,7 @@ of its Cholesky decomposition L
 (where A = LL*)
  */
 case class Cholesky(packed: Vector[Real]) {
-  val rank: Int = Cholesky.rank(packed.size)
+  val size: Int = Cholesky.dimension(packed.size)
 
   //log(det(A))
   val logDeterminant: Real = Real.sum(diagonals.map(_.log)) * 2
@@ -21,9 +21,12 @@ case class Cholesky(packed: Vector[Real]) {
     Cholesky.lowerTriangularSolve(packed, b)
   }
 
+  //Lx
+  def lowerTriangularMultiply(x: Vector[Real]): Vector[Real] = ???
+  
   //diagonal elements of L
   private def diagonals: Vector[Real] =
-    0.until(rank).toVector.map { i =>
+    0.until(size).toVector.map { i =>
       packed(Cholesky.triangleNumber(i))
     }
 }
@@ -55,7 +58,7 @@ object Cholesky {
   private def packedIndex(i: Int, j: Int): Int =
     triangleNumber(i) + j
 
-  def rank(packedSize: Int) = Math.sqrt(packedSize * 2.0).floor.toInt
+  def dimension(packedSize: Int) = Math.sqrt(packedSize * 2.0).floor.toInt
 
   //solve Lx = y
   def lowerTriangularSolve(packed: Vector[Real],
@@ -79,7 +82,7 @@ object Cholesky {
 
   //the reflection of m[i,j] is m[n-j-1,n-i-1]
   private def reflect(packed: Vector[Real]): Vector[Real] = {
-    val n = rank(packed.size)
+    val n = dimension(packed.size)
     0.until(n)
       .flatMap { i =>
         0.to(i).map { j =>
