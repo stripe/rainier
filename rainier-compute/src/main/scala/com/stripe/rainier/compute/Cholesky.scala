@@ -33,7 +33,7 @@ case class Cholesky(packed: Vector[Real]) {
   //diagonal elements of L
   def diagonals: Vector[Real] =
     0.until(size).toVector.map { i =>
-      packed(Cholesky.triangleNumber(i))
+      packed(Cholesky.triangleNumber(i + 1) - 1)
     }
 }
 
