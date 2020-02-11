@@ -29,6 +29,22 @@ trait Multivariate extends Distribution[Seq[Double]] {
     MVTransformed(this, injections)
 }
 
+case class Bivariate private (mv: Multivariate)
+    extends Distribution[(Double, Double)] {
+  def latent: (Real, Real) = {
+    val vec2 = mv.latent
+    (vec2(0), vec2(1))
+  }
+
+  def logDensity(seq: Seq[(Double, Double)]): Real =
+    mv.logDensity(seq.map { case (a, b) => List(a, b) })
+
+  def generator: Generator[(Double, Double)] =
+    mv.generator.map { seq =>
+      (seq(0), seq(1))
+    }
+}
+
 case class MVNormal private (chol: Cholesky) extends Multivariate {
   def size = chol.size
   def latent = {
@@ -66,6 +82,20 @@ object MVNormal {
     MVNormal(chol)
       .scale(scales)
       .translate(locations)
+}
+
+object BivariateNormal {
+  def standard(corr: Real): Bivariate = apply((0, 0), (1, 1), corr)
+  def apply(locations: (Real, Real),
+            scales: (Real, Real),
+            corr: Real): Bivariate = {
+    val diag = (Real.one - corr * corr).pow(0.5)
+    val chol = Cholesky(Vector(Real.one, corr, diag))
+    Bivariate(
+      MVNormal(Vec(locations._1, locations._2),
+               Vec(scales._1, scales._2),
+               chol))
+  }
 }
 
 case class LKJCorrelation(eta: Real, size: Int) {
