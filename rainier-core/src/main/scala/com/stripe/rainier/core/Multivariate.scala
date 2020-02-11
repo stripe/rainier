@@ -38,7 +38,7 @@ case class MVNormal private (chol: Cholesky) extends Multivariate {
   }
 
   def logDensity(x: Vec[Real]): Real =
-    ((Real.Pi * 2).log +
+    (size * ((Real.Pi * 2).log) +
       chol.logDeterminant +
       x.dot(Vec.from(chol.inverseMultiply(x.toVector)))) / -2
 

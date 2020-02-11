@@ -14,11 +14,11 @@ case class Cholesky(packed: Vector[Real]) {
 
   //solve for x where Ax=y
   def inverseMultiply(y: Vector[Real]): Vector[Real] = {
-    //L*Lx = y, let b=Lx
-    //solve L*b = y
-    val b = Cholesky.upperTriangularSolve(packed, y)
-    //solve Lx = b
-    Cholesky.lowerTriangularSolve(packed, b)
+    //LL*x = y, let b=Lx
+    //solve Lb = y
+    val b = Cholesky.lowerTriangularSolve(packed, y)
+    //solve L*x = b
+    Cholesky.upperTriangularSolve(packed, b)
   }
 
   //Lx

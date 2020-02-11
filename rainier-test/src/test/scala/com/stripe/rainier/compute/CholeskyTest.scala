@@ -18,9 +18,30 @@ class CholeskyTest extends ComputeTest {
     }
   }
 
+  def testRandom2x2Inverse(): Unit = {
+    val y = Vector.fill(2) { rng.standardNormal }
+    val corr = rng.standardUniform
+    val diag = Math.sqrt(1.0 - (corr * corr))
+    val packed = Vector(1.0, corr, diag)
+    val realPacked = packed.map(Real(_))
+    val realY = y.map(Real(_))
+    val chol = Cholesky(realPacked)
+    val realX = chol.inverseMultiply(realY)
+    val x = realX.collect { case Scalar(d) => d }
+    val newY = Vector(x(0) + corr * x(1), x(0) * corr + x(1))
+    assertWithinEpsilon(y(0), newY(0), "y1")
+    assertWithinEpsilon(y(1), newY(1), "y2")
+  }
+
   test("lower triangular solve") {
     0.to(10).foreach { _ =>
       testRandomSolve()
+    }
+  }
+
+  test("2x2 invert multiply") {
+    0.to(10).foreach { _ =>
+      testRandom2x2Inverse()
     }
   }
 
