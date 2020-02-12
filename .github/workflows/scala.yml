@@ -6,7 +6,7 @@ jobs:
     name: ${{ matrix.version }}
     runs-on: ubuntu-latest
     env:
-      - SCALAC_FATAL_WARNINGS: true
+      SCALAC_FATAL_WARNINGS: true
     steps:
       - uses: actions/checkout@v1
       - uses: olafurpg/setup-scala@v7
