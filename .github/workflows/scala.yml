@@ -3,19 +3,18 @@ on:
   pull_request:
 jobs:
   test:
-    name: ${{ matrix.command }} ${{ matrix.java }}
+    name: ${{ matrix.version }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        java: [adopt@1.8, adopt@1.11]
-        command:
-          - "'++2.11.12 test'"
-          - "'++2.12.10 test' scripted"
-          - "'++2.13.1 test'"
+        version:
+          - "2.11.12"
+          - "2.12.10"
+          - "2.13.1"
     steps:
       - uses: actions/checkout@v1
       - uses: olafurpg/setup-scala@v7
         with:
-          java-version: ${{ matrix.java }}
-      - run: sbt ${{ matrix.command }}
+          java-version: adopt@1.8
+      - run: sbt '++ ${{ matrix.version }} test'
