@@ -146,4 +146,4 @@ Of course, now you're down to a different gut decision: which utility function d
 
 ## Fin
 
-Thank you for making it all the way through this overview. We hope you enjoy trying out Rainier, and please send any [feedback](feedback.md) you have when you do!
+Thank you for making it all the way through this overview. We hope you enjoy trying out Rainier!
