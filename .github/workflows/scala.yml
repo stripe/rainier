@@ -3,7 +3,7 @@ on:
   pull_request:
 jobs:
   test:
-    name: ${{ matrix.version }}
+    name: test
     runs-on: ubuntu-latest
     env:
       SCALAC_FATAL_WARNINGS: true
