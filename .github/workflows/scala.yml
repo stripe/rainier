@@ -3,7 +3,8 @@ on:
   pull_request:
 env:
   SCALAC_FATAL_WARNINGS: true
-  PACKAGE_TOKEN: ${{ secrets.avibryant }}
+  BINTRAY_USER: ${{ secrets.bintrayuser }}
+  BINTRAY_PASS: ${{ secrets.bintraypass }}
 jobs:
   build:
     name: Build
@@ -11,7 +12,6 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - uses: olafurpg/setup-scala@v7
-      - run: git config --global github.actor avibryant
       - name: scalafmt
         run: sbt scalafmtCheck
       - name: test

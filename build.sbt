@@ -8,7 +8,7 @@ lazy val root = project.
   settings(
     // crossScalaVersions must be set to Nil on the aggregating project
     crossScalaVersions := Nil
-  ).enablePlugins(GitVersioning)
+  )
 
 scalafmtOnCompile in ThisBuild := true
 
@@ -17,7 +17,7 @@ lazy val commonSettings = Seq(
   scalaVersion := "2.12.10",
   releasePublishArtifactsAction := PgpKeys.publishSigned.value,
   homepage := Some(url("https://github.com/stripe/rainier")),
-  licenses := Seq("Apache 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
+  licenses := Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
   publishMavenStyle := true,
   publishArtifact in Test := false,
   pomIncludeRepository := { _ => false },
@@ -32,9 +32,7 @@ lazy val commonSettings = Seq(
   developers := List(
     Developer("avibryant", "Avi Bryant", "", url("https://twitter.com/avibryant"))
   ),
-  githubOwner := "avibryant",
-  githubRepository := "rainier",
-  githubTokenSource := TokenSource.Environment("PACKAGE_TOKEN")
+  bintrayOrganization := Some("rainier")
 )
 
 lazy val crossBuildSettings = Seq(
@@ -42,7 +40,11 @@ lazy val crossBuildSettings = Seq(
   releaseCrossBuild := true
 )
 
-lazy val unpublished = Seq(publish := {}, publishLocal := {}, publishArtifact := false)
+lazy val unpublished = Seq(
+  publish := {},
+  publishLocal := {},
+  publishArtifact := false,
+  skip in publish := true)
 
 /* dependency versions */
 lazy val V = new {
