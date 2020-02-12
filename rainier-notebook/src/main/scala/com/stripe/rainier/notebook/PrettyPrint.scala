@@ -38,6 +38,7 @@ object PrettyPrint {
     case m: Model =>
       Tree.Literal(s"Model[${m.parameters.size}]")
     case t: Trace =>
-      Tree.Literal(s"Trace[${t.chains.size}][${t.chains.head.size}][${t.chains.head.head.size}]")
+      Tree.Literal(
+        s"Trace[${t.chains.size}][${t.chains.head.size}][${t.chains.head.head.size}]")
   }
 }
