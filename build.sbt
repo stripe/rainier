@@ -98,6 +98,7 @@ lazy val rainierCore = project.
 
 lazy val rainierNotebook = project.
   in(file("rainier-notebook")).
+  dependsOn(rainierCompute, rainierCore).
   settings(name := "rainier-notebook").
   settings(commonSettings).
   settings(
