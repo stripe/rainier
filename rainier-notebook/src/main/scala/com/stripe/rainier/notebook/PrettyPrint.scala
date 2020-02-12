@@ -1,7 +1,7 @@
 package com.stripe.rainier.notebook
 
 import com.stripe.rainier.compute._
-//import com.stripe.rainier.core._
+import com.stripe.rainier.core._
 import pprint.Tree
 import ammonite.repl.FullReplAPI
 
@@ -14,7 +14,7 @@ object PrettyPrint {
 
     repl.pprinter.bind(
       p.copy(
-        additionalHandlers = p.additionalHandlers.orElse(handlers(treeify)) 
+        additionalHandlers = p.additionalHandlers.orElse(handlers(treeify))
       ))
     ()
   }
@@ -26,10 +26,18 @@ object PrettyPrint {
       f"${b.lower}%.3g, ${b.upper}%.3g"
 
   def handlers(treeify: Any => Tree): PartialFunction[Any, Tree] = {
-    case r: Real            => Tree.Literal("Real(" + bounds(r.bounds) + ")")
+    case r: Real => Tree.Literal("Real(" + bounds(r.bounds) + ")")
+    case _: Distribution[_] =>
+      Tree.Literal("Distribution()")
+    case _: Generator[_] =>
+      Tree.Literal("Generator()")
     case v: Vec[_] =>
       Tree.Apply("Vec", v.toList.iterator.map { el =>
         treeify(el)
       })
+    case m: Model =>
+      Tree.Literal(s"Model[${m.parameters.size}]")
+    case t: Trace =>
+      Tree.Literal(s"Trace[${t.chains.size}][${t.chains.head.size}][${t.chains.head.head.size}]")
   }
 }
