@@ -70,12 +70,13 @@ object TargetGroup {
         .toList
         .sortBy(_.param.sym.id)
 
-    val priors =
-      Target("prior", Real.sum(parameters.map(_.density)), parameters)
+    val priors = parameters.map(_.prior).toSet
+    val priorTarget =
+      Target("prior", Real.sum(priors.map(_.density)), parameters)
     val others = reals.zipWithIndex.map {
       case (r, i) => Target(s"t_$i", r, parameters)
     }
-    new TargetGroup(priors :: others, parameters)
+    new TargetGroup(priorTarget :: others, parameters)
   }
 
   def findParameters(real: Real): Set[Parameter] =
@@ -95,7 +96,7 @@ object TargetGroup {
             leaves = Right(v) :: leaves
           case v: Parameter =>
             leaves = Left(v) :: leaves
-            loop(v.density)
+            loop(v.prior.density)
           case u: Unary => loop(u.original)
           case l: Line =>
             l.ax.toList.foreach {
