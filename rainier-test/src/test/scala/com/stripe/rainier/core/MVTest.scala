@@ -31,7 +31,7 @@ class MVTest extends FunSuite {
   }
 
   def assertMeanZero(seq: Seq[Double], clue: String): Unit = {
-    assert(Math.abs(seq.sum / seq.size) < 0.1, clue)
+    assert(Math.abs(seq.sum / seq.size) < 0.15, clue)
     ()
   }
 }
