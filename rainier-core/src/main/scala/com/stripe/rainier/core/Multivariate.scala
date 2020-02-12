@@ -84,6 +84,18 @@ object MVNormal {
       .translate(locations)
 }
 
+object MVLogNormal {
+  def standard(chol: Cholesky): Multivariate = MVNormal(chol).exp
+
+  def apply(location: Real, scale: Real, chol: Cholesky): Multivariate =
+    MVNormal(location, scale, chol).exp
+
+  def apply(locations: Vec[Real],
+            scales: Vec[Real],
+            chol: Cholesky): Multivariate =
+    MVNormal(locations, scales, chol).exp
+}
+
 object BivariateNormal {
   def standard(corr: Real): Bivariate = apply((0, 0), (1, 1), corr)
   def apply(locations: (Real, Real),
