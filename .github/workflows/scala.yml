@@ -2,6 +2,17 @@ name: CI
 on:
   pull_request:
 jobs:
+  scalafmt:
+    name: scalafmt
+    runs-on: ubuntu-latest
+    env:
+      SCALAC_FATAL_WARNINGS: true
+    steps:
+      - uses: actions/checkout@v1
+      - uses: olafurpg/setup-scala@v7
+        with:
+          java-version: adopt@1.8
+      - run: sbt scalafmtCheck
   test:
     name: test
     runs-on: ubuntu-latest
