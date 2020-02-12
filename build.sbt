@@ -1,3 +1,7 @@
+githubOwner := "avibryant"
+githubRepository := "rainier"
+githubTokenSource := TokenSource.Environment("PACKAGE_TOKEN")
+
 lazy val root = project.
   in(file(".")).
   aggregate(rainierBase, rainierCompute, rainierSampler, rainierCore, rainierNotebook).
@@ -12,17 +16,6 @@ lazy val root = project.
 
 scalafmtOnCompile in ThisBuild := true
 
-def getPublishTo(snapshot: Boolean) = {
-  val nexus = "https://oss.sonatype.org/"
-  if (snapshot) {
-    val url = sys.props.get("publish.snapshots.url").getOrElse(nexus + "content/repositories/snapshots")
-    Some("snapshots" at url)
-  } else {
-    val url = sys.props.get("publish.releases.url").getOrElse(nexus + "service/local/staging/deploy/maven2")
-    Some("releases" at url)
-  }
-}
-
 lazy val commonSettings = Seq(
   organization:= "com.stripe",
   scalaVersion := "2.12.10",
@@ -32,7 +25,6 @@ lazy val commonSettings = Seq(
   publishMavenStyle := true,
   publishArtifact in Test := false,
   pomIncludeRepository := { _ => false },
-  publishTo := getPublishTo(isSnapshot.value),
   autoAPIMappings := true,
   apiURL := Some(url("https://stripe.github.io/rainier/api/")),
   scmInfo := Some(

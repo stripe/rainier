@@ -24,3 +24,14 @@ jobs:
         with:
           java-version: adopt@1.8
       - run: sbt '+test'
+  package:
+    name: package
+    runs-on: ubuntu-latest
+    env:
+      PACKAGE_TOKEN: ${{ secrets.avibryant }}
+    steps:
+      - uses: actions/checkout@v1
+      - uses: olafurpg/setup-scala@v7
+        with:
+          java-version: adopt@1.8
+      - run: sbt publish
