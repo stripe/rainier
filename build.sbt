@@ -1,4 +1,5 @@
 githubOwner := "avibryant"
+githubActor := "avibryant"
 githubRepository := "rainier"
 githubTokenSource := TokenSource.Environment("PACKAGE_TOKEN")
 
