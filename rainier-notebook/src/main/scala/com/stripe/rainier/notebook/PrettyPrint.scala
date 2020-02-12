@@ -1,23 +1,22 @@
 package com.stripe.rainier.notebook
 
 import com.stripe.rainier.compute._
-import com.stripe.rainier.core._
+//import com.stripe.rainier.core._
 import pprint.Tree
 import ammonite.repl.FullReplAPI
 
 object PrettyPrint {
-  def register(repl: FullReplAPI): Unit {
-      val p = repl.pprinter()
-      
-      p = p.copy(
-        additionalHandlers = p.additionalHandlers.orElse(handlers(p.treeify(_)) {
-        case f: Foo =>
-            pprint.Tree.Lazy(_ => Iterator(fansi.Color.Yellow(s"foo: ${f.x}").render))
-        }
-    )
-    repl.pprinter() = {
-    
-}
+  def register(repl: FullReplAPI): Unit = {
+    val p = repl.pprinter()
+
+    def treeify(x: Any): Tree =
+      handlers(treeify).lift(x).getOrElse(p.treeify(x))
+
+    repl.pprinter.bind(
+      p.copy(
+        additionalHandlers = p.additionalHandlers.orElse(handlers(treeify)) 
+      ))
+    ()
   }
 
   def bounds(b: Bounds): String =
@@ -26,10 +25,11 @@ object PrettyPrint {
     else
       f"${b.lower}%.3g, ${b.upper}%.3g"
 
-  def handlers(treeify: Any => Tree): PartialFunction[Any,Tree] = {
-    case r: Real         => ???
-    case m: Model        => ???
-    case d: Distribution[_] => ???
-    case v: Vec[_] => Tree.Apply("Vec", v.toList.iterator.map{el => treeify(el)})
+  def handlers(treeify: Any => Tree): PartialFunction[Any, Tree] = {
+    case r: Real            => Tree.Literal("Real(" + bounds(r.bounds) + ")")
+    case v: Vec[_] =>
+      Tree.Apply("Vec", v.toList.iterator.map { el =>
+        treeify(el)
+      })
   }
 }

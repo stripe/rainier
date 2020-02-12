@@ -56,6 +56,7 @@ lazy val V = new {
   val shadedAsm = "0.2.1"
   val scalameta = "4.2.3"
   val mdoc = "2.1.1"
+  val amm = "2.0.4"
 }
 
 // primary modules
@@ -111,8 +112,10 @@ lazy val rainierNotebook = project.
         "com.cibo" %% "evilplot" % V.evilplot,
         "org.scalameta" %% "scalameta" % V.scalameta,
         "org.scalameta" %% "mdoc" % V.mdoc,
+        "com.lihaoyi" % "ammonite-repl_2.12.10" % V.amm,
         "sh.almond" %% "jupyter-api" % V.almond)
   )
+
 
 lazy val rainierBenchmark = project.
   in(file("rainier-benchmark")).
