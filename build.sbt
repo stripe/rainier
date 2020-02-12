@@ -8,7 +8,7 @@ lazy val root = project.
   settings(
     // crossScalaVersions must be set to Nil on the aggregating project
     crossScalaVersions := Nil
-  )
+  ).enablePlugins(GitVersioning)
 
 scalafmtOnCompile in ThisBuild := true
 
