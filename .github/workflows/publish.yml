@@ -1,8 +1,8 @@
 name: Publish
 on:
   push:
-    branches:
-      - "develop"
+    tags:
+      - v*
 env:
   SCALAC_FATAL_WARNINGS: true
   BINTRAY_USER: ${{ secrets.bintrayuser }}
