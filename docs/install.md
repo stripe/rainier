@@ -24,5 +24,5 @@ Tagged commits will result in non-release artifacts pushed to `https://dl.bintra
 You can include these in your projects using 
 
 ```scala
-resolvers += Resolver.bintrayRepo("otherUser", "maven")
+resolvers += Resolver.bintrayRepo("rainier", "maven")
 ```
