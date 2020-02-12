@@ -1,6 +1,6 @@
 package com.stripe.rainier.compute
 
-sealed trait Vec[T] {
+sealed trait Vec[+T] {
   def size: Int
   def apply(index: Int): T
   def apply(index: Real): T
@@ -15,6 +15,12 @@ sealed trait Vec[T] {
     RealVec(r.reals.slice(from, until))
   }
 
+  def reverse: Vec[T] =
+    this match {
+      case ReverseVec(v) => v
+      case notRev        => ReverseVec(notRev)
+    }
+
   private[compute] def mapLeaves(g: RealVec => RealVec): Vec[T]
 
   def map[U](fn: T => U): Vec[U] = MapVec(this, fn)
@@ -25,6 +31,8 @@ sealed trait Vec[T] {
 
   def toList: List[T] =
     0.until(size).toList.map(apply)
+
+  def toVector: Vector[T] = toList.toVector
 
   def columnize: T =
     apply(new Column(0.until(size).map(_.toDouble).toArray))
@@ -50,6 +58,13 @@ private case class RealVec(reals: Vector[Real]) extends Vec[Real] {
   def apply(index: Int) = reals(index)
   def apply(index: Real) = Lookup(index, reals)
   def mapLeaves(g: RealVec => RealVec) = g(this)
+}
+
+private case class ReverseVec[T](original: Vec[T]) extends Vec[T] {
+  val size = original.size
+  def apply(index: Int) = original(size - 1 - index)
+  def apply(index: Real) = original(Real(size - 1) - index)
+  def mapLeaves(g: RealVec => RealVec) = original.mapLeaves(g)
 }
 
 private case class MapVec[T, U](original: Vec[T], fn: T => U) extends Vec[U] {
