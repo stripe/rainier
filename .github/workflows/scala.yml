@@ -34,4 +34,5 @@ jobs:
       - uses: olafurpg/setup-scala@v7
         with:
           java-version: adopt@1.8
+      - run: git config --global github.actor avibryant
       - run: sbt publish
