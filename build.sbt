@@ -12,27 +12,15 @@ lazy val root = project.
 
 scalafmtOnCompile in ThisBuild := true
 
-def getPublishTo(snapshot: Boolean) = {
-  val nexus = "https://oss.sonatype.org/"
-  if (snapshot) {
-    val url = sys.props.get("publish.snapshots.url").getOrElse(nexus + "content/repositories/snapshots")
-    Some("snapshots" at url)
-  } else {
-    val url = sys.props.get("publish.releases.url").getOrElse(nexus + "service/local/staging/deploy/maven2")
-    Some("releases" at url)
-  }
-}
-
 lazy val commonSettings = Seq(
   organization:= "com.stripe",
   scalaVersion := "2.12.10",
   releasePublishArtifactsAction := PgpKeys.publishSigned.value,
   homepage := Some(url("https://github.com/stripe/rainier")),
-  licenses := Seq("Apache 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
+  licenses := Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
   publishMavenStyle := true,
   publishArtifact in Test := false,
   pomIncludeRepository := { _ => false },
-  publishTo := getPublishTo(isSnapshot.value),
   autoAPIMappings := true,
   apiURL := Some(url("https://stripe.github.io/rainier/api/")),
   scmInfo := Some(
@@ -44,6 +32,7 @@ lazy val commonSettings = Seq(
   developers := List(
     Developer("avibryant", "Avi Bryant", "", url("https://twitter.com/avibryant"))
   ),
+  bintrayOrganization := Some("rainier")
 )
 
 lazy val crossBuildSettings = Seq(
@@ -51,7 +40,11 @@ lazy val crossBuildSettings = Seq(
   releaseCrossBuild := true
 )
 
-lazy val unpublished = Seq(publish := {}, publishLocal := {}, publishArtifact := false)
+lazy val unpublished = Seq(
+  publish := {},
+  publishLocal := {},
+  publishArtifact := false,
+  skip in publish := true)
 
 /* dependency versions */
 lazy val V = new {
