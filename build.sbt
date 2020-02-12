@@ -1,8 +1,3 @@
-githubOwner := "avibryant"
-githubActor := "avibryant"
-githubRepository := "rainier"
-githubTokenSource := TokenSource.Environment("PACKAGE_TOKEN")
-
 lazy val root = project.
   in(file(".")).
   aggregate(rainierBase, rainierCompute, rainierSampler, rainierCore, rainierNotebook).
@@ -37,6 +32,9 @@ lazy val commonSettings = Seq(
   developers := List(
     Developer("avibryant", "Avi Bryant", "", url("https://twitter.com/avibryant"))
   ),
+  githubOwner := "avibryant",
+  githubRepository := "rainier",
+  githubTokenSource := TokenSource.Environment("PACKAGE_TOKEN")
 )
 
 lazy val crossBuildSettings = Seq(
