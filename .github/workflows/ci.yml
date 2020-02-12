@@ -3,8 +3,6 @@ on:
   pull_request:
 env:
   SCALAC_FATAL_WARNINGS: true
-  BINTRAY_USER: ${{ secrets.bintrayuser }}
-  BINTRAY_PASS: ${{ secrets.bintraypass }}
 jobs:
   build:
     name: Build
@@ -16,5 +14,5 @@ jobs:
         run: sbt scalafmtCheck
       - name: test
         run: sbt '+test'
-      - name: package
-        run: sbt publish
+      - name: docs
+        run: sbt 'docs/mdoc'

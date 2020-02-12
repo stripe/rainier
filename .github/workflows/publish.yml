@@ -1,0 +1,17 @@
+name: Publish
+on:
+  push:
+    branches:
+      - "develop"
+env:
+  SCALAC_FATAL_WARNINGS: true
+  BINTRAY_USER: ${{ secrets.bintrayuser }}
+  BINTRAY_PASS: ${{ secrets.bintraypass }}
+jobs:
+  publish:
+    name: Publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: olafurpg/setup-scala@v7
+        run: sbt publish
