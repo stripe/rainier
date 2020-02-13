@@ -44,8 +44,6 @@ case class Model(private[rainier] val likelihoods: List[Real],
       def density = outputs(0)
       def gradient(index: Int) = outputs(index + 1)
     }
-
-  override def toString = s"Model[${parameters.size}]"
 }
 
 object Model {

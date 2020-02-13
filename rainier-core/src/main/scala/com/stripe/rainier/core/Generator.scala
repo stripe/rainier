@@ -92,8 +92,6 @@ sealed trait Generator[+T] { self =>
         }
     }
   }
-
-  override def toString = "Generator()"
 }
 
 /**

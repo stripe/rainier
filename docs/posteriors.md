@@ -31,12 +31,12 @@ Now, it's decision time. Which feed should the farmer go with?
 
 As we did [once before](likelihoods.md), we'd like to sample this model to get a `Trace` we can make predictions from, and then check the diagnostics on the trace.
 
-```scala mdoc:to-string
+```scala mdoc:pprint
 val sampler = EHMC(warmupIterations = 5000, iterations = 5000)
 val eggTrace = vecModel.sample(sampler)
 ```
 
-```scala mdoc
+```scala mdoc:pprint
 eggTrace.diagnostics
 ```
 
@@ -50,14 +50,14 @@ This kind of uncertainty is modeled in Rainier by the `Generator[T]` type. `Gene
 
 One way to construct a `Generator[T]` is from a `Distribution[T]`. For example, we can predict daily values from a single type of feed like this:
 
-```scala mdoc:to-string
+```scala mdoc:pprint
 val gen0 = Generator(Poisson(feeds(0)))
 eggTrace.predict(gen0).take(5)
 ```
 
 It might be more interesting to compare two different feeds. For example, here we are sampling the _difference_ between feed 0 and feed 2:
 
-```scala mdoc:to-string
+```scala mdoc:pprint
 val pairGen = Generator((Poisson(feeds(0)), Poisson(feeds(2))))
 val diffGen = pairGen.map{
     case (n0, n2) => n2 - n0
@@ -101,7 +101,7 @@ def profit(eggCount: Long, feed: Int): Double =
 
 Then we can construct a generator that produces the daily profit for each decision:
 
-```scala mdoc:to-string
+```scala mdoc:pprint
 val profitGen = Generator(feeds.map{rate => Poisson(rate)}).map{counts =>
     counts.zipWithIndex.map{case (n, i) => profit(n, i)}
 }
@@ -109,7 +109,7 @@ val profitGen = Generator(feeds.map{rate => Poisson(rate)}).map{counts =>
 
 Finally, we can sample from and then average over the posterior for that generator.
 
-```scala mdoc:to-string
+```scala mdoc:pprint
 def average(predictions: Seq[Seq[Double]]): Seq[Double] =
     predictions.reduce{(left, right) => 
         left.zip(right).map{case (l,r) => l + r}
@@ -124,7 +124,7 @@ However, that's a very simple utility function. (In fact, so simple that we coul
 
 For example, imagine that cashflow on the farm is very tight, and that if there's ever a day where the egg sales don't cover the feed, that can cause problems. You might decide to penalize that ever happening with a "cost" equivalent to $20:
 
-```scala mdoc:to-string
+```scala mdoc:pprint
 def utility(eggCount: Long, feed: Int): Double = {
     val net = profit(eggCount, feed)
     if(net < 0)

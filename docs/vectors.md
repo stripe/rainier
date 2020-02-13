@@ -14,19 +14,19 @@ Our imaginary chicken farmer from the [previous section](likelihoods.md) has got
 
 The egg dataset now includes a `0`, `1`, or `2` for each day that indicates which type of feed they got.
 
-```scala mdoc:silent
+```scala mdoc:pprint
 val eggs = List[(Int, Long)]((0,31), (2,47), (0,35), (2,40), (0,33), (2,44), (0,30), (2,46), (0,33), (0,30), (2,36), (2,54), (1,45), (1,39), (2,62), (2,54), (1,30), (2,40), (2,48), (1,33), (0,40), (2,38), (0,31), (2,46), (1,41), (1,42), (0,39), (1,29), (0,28), (1,36), (2,46), (2,33), (2,41), (2,48), (1,32), (0,24), (1,34), (2,48), (1,52), (1,37), (0,28), (0,37), (2,51), (2,44), (1,40), (0,41), (0,36), (1,44), (0,32), (0,31), (0,31), (0,32), (0,33), (1,27), (0,40), (2,45), (2,40), (1,46), (0,35), (2,46), (0,34), (1,41), (0,38), (0,34), (2,46), (1,44), (2,49), (2,39), (1,41), (2,37), (1,29), (0,29), (2,41), (2,46), (1,42), (1,34), (1,32), (1,35), (0,32), (1,40), (1,37), (1,38), (1,42), (1,38), (1,36), (0,38), (0,41), (1,51), (1,40))
 ```
 
 As before, we'll create a `lambda` that captures the baseline egg-laying rate for the flock.
 
-```scala mdoc:to-string
+```scala mdoc:pprint
 val lambda = Gamma(0.5, 100).latent
 ```
 
 This time, however, we'll also create a vector of 3 random variables that represent the egg-laying rate for each of the 3 different feeds. We want these to be able to scale the baseline rate up or down a small amount. There are a lot of different modeling choices we could make here, but in this case we'll start by defining random variables that represent the _log_ of those rates, normally distributed around the log of the baseline, with a small standard deviation.
 
-```scala mdoc:to-string
+```scala mdoc:pprint
 val logFeeds = Normal(lambda.log, 0.1).latentVec(3)
 ```
 
@@ -34,7 +34,7 @@ This gives us back a `Vec[Real]`, which is a type defined by Rainier. It's simil
 
 Like a regular `Vector`, we can transform it using `map`. Here, we want to bring these random variables back out of log-space:
 
-```scala mdoc:to-string
+```scala mdoc:pprint
 val feeds = logFeeds.map(_.exp)
 ```
 
@@ -53,7 +53,7 @@ It's worth noting that we can just keep reusing the same `feeds` random variable
 
 For any single type of feed, creating a model looks exactly as it did in the [previous section](likelihoods.md). For example, we could filter to just type 0:
 
-```scala mdoc:to-string
+```scala mdoc:pprint
 val eggs0 = eggs.filter{case (f, _) => f == 0}.map{case (_, c) => c}
 val model0 = Model.observe(eggs0, Poisson(feeds(0)))
 ```
@@ -62,7 +62,7 @@ You'll notice that this is a `Model[2]`, because it has two parameters: the base
 
 Similarly, we can do this for all the feed types at once by first grouping the data by feed type, and then mapping over the groups:
 
-```scala mdoc:to-string
+```scala mdoc:pprint
 val models = eggs.groupBy(_._1).toList.map{
     case (i, data) =>
         val counts = data.map(_._2)
@@ -74,7 +74,7 @@ Now we have three different `Model[2]` objects, each of them referencing the sam
 
 Finally, we can use `Model`'s `merge` method to _combine_ all three models into a single joint model for all three feed types.
 
-```scala mdoc:to-string
+```scala mdoc:pprint
 val mergedModel = models.reduce{(m1, m2) => m1.merge(m2)}
 ```
 
@@ -90,14 +90,14 @@ Another option is `observe[Y](ys: Seq[Y], likelihoods: Vec[Distribution[Y])`. In
 
 To make use of it, we first have to separate our data into our independent variables and dependent variable.
 
-```scala mdoc:to-string
+```scala mdoc:pprint
 val eggFeeds = eggs.map(_._1)
 val eggCounts = eggs.map(_._2)
 ```
 
 Next, we want to create a `Vec` from our independent variables (that is, `eggFeeds`), and map over them to create a `Poisson` for each one. The code is quite straightforward.
 
-```scala mdoc:to-string
+```scala mdoc:pprint
 val feedsVec = Vec.from(eggFeeds)
 val poissonVec = feedsVec.map{i: Real => Poisson(feeds(i))}
 ```
@@ -110,7 +110,7 @@ If you didn't entirely follow that last bit, that's ok. The short version is tha
 
 Finally, we'll build the model itself.
 
-```scala mdoc:to-string
+```scala mdoc:pprint
 val vecModel = Model.observe(eggCounts, poissonVec)
 ```
 
