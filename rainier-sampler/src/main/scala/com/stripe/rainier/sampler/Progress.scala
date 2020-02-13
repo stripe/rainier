@@ -28,6 +28,7 @@ case class ProgressState(outputEverySeconds: Double,
 
   def start(): Unit = {
     startTime = System.nanoTime()
+    lastOutputTime = System.nanoTime()
   }
 
   def finish(): Unit = {
