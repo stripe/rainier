@@ -26,11 +26,15 @@ case class ProgressState(outputEverySeconds: Double,
   var stepSize = 0.0
   var lastOutputTime = 0L
 
-  def start() = {
+  def start(): Unit = {
     startTime = System.nanoTime()
   }
 
-  def startPhase(phase: String, iterations: Int) = {
+  def finish(): Unit = {
+    fn(this)
+  }
+
+  def startPhase(phase: String, iterations: Int): Unit = {
     currentPhase = phase
     phaseStartTime = System.nanoTime()
     phaseAcceptance = 0.0

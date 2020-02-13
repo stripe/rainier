@@ -11,7 +11,8 @@ case class Model(private[rainier] val likelihoods: List[Real],
     Model(likelihoods ++ other.likelihoods, track ++ other.track)
 
   def sample(sampler: Sampler, nChains: Int = 4)(implicit rng: RNG,
-                                                 progress: Progress = SilentProgress): Trace = {
+                                                 progress: Progress =
+                                                   SilentProgress): Trace = {
     val states = progress.init(nChains)
     val chains = states.map { s =>
       sampler.sample(density(), s)

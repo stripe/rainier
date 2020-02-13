@@ -29,6 +29,7 @@ final case class HMC(warmupIterations: Int, iterations: Int, nSteps: Int)
 
     if (stepSize == 0.0) {
       WARNING.log("Found step size of 0.0, aborting!")
+      progress.finish()
       List(lf.variables(params))
     } else {
       val buf = new ListBuffer[Array[Double]]
@@ -41,6 +42,7 @@ final case class HMC(warmupIterations: Int, iterations: Int, nSteps: Int)
         i += 1
       }
 
+      progress.finish()
       buf.toList
     }
   }
