@@ -1,8 +1,6 @@
 package com.stripe.rainier.sampler
 
 import scala.collection.mutable.ListBuffer
-import Log._
-import java.util.concurrent.TimeUnit._
 
 /**
   * Empirical HMC - automated tuning of step size and number of leapfrog steps
@@ -41,13 +39,11 @@ final case class EHMC(warmupIterations: Int,
     val empiricalL = Vector.fill(k) {
       lf.longestBatchStep(params, l0, stepSize)._2
     }
-    val sorted = empiricalL.toList.sorted
 
     if (stepSize == 0.0) {
       progress.finish()
       List(lf.variables(params))
-    }
-    else {
+    } else {
       val buf = new ListBuffer[Array[Double]]
       var i = 0
 
@@ -55,8 +51,7 @@ final case class EHMC(warmupIterations: Int,
       while (i < iterations) {
         val j = rng.int(k)
         val nSteps = empiricalL(j)
-        val logAccept = lf.step(params, nSteps, stepSize)
-        acceptSum += Math.exp(logAccept)
+        lf.step(params, nSteps, stepSize)
         buf += lf.variables(params)
         i += 1
       }
