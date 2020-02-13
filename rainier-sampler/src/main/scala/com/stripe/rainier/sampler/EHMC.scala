@@ -1,8 +1,6 @@
 package com.stripe.rainier.sampler
 
 import scala.collection.mutable.ListBuffer
-import Log._
-import java.util.concurrent.TimeUnit._
 
 /**
   * Empirical HMC - automated tuning of step size and number of leapfrog steps
@@ -15,59 +13,49 @@ final case class EHMC(warmupIterations: Int,
                       l0: Int = 10,
                       k: Int = 1000)
     extends Sampler {
-  def sample(density: DensityFunction)(
+  def sample(density: DensityFunction, progress: ProgressState)(
       implicit rng: RNG): List[Array[Double]] = {
     if (density.nVars == 0)
       return List.fill(iterations)(Array.empty[Double])
 
-    val lf = LeapFrog(density)
+    val lf = LeapFrog(density, progress)
     val params = lf.initialize
 
-    FINE.log("Finding reasonable initial step size")
+    progress.start()
+    progress.startPhase("Finding reasonable initial step size", 0)
     val stepSize0 = DualAvg.findReasonableStepSize(lf, params)
-    FINE.log("Found initial step size of %f", stepSize0)
+    progress.updateStepSize(stepSize0)
 
-    FINE.log("Warming up for %d iterations", warmupIterations)
+    progress.startPhase("Finding step size using dual averaging",
+                        warmupIterations)
     val stepSize =
       DualAvg.findStepSize(0.65, stepSize0, warmupIterations) { ss =>
+        progress.updateStepSize(ss)
         lf.step(params, 1, ss)
       }
-    FINE.log("Found step size of %f", stepSize)
+    progress.updateStepSize(stepSize)
 
-    FINE.log("Sampling %d path lengths", k)
+    progress.startPhase("Sampling path lengths", k)
     val empiricalL = Vector.fill(k) {
       lf.longestBatchStep(params, l0, stepSize)._2
     }
-    val sorted = empiricalL.toList.sorted
-    FINE.log("Using a range of %d to %d steps", sorted.head, sorted.last)
 
-    if (stepSize == 0.0)
+    if (stepSize == 0.0) {
+      progress.finish()
       List(lf.variables(params))
-    else {
+    } else {
       val buf = new ListBuffer[Array[Double]]
       var i = 0
 
-      FINE.log("Sampling for %d iterations", iterations)
-
-      var acceptSum = 0.0
+      progress.startPhase("Sampling", iterations)
       while (i < iterations) {
         val j = rng.int(k)
         val nSteps = empiricalL(j)
-
-        FINER
-          .atMostEvery(1, SECONDS)
-          .log("Sampling iteration %d of %d for %d steps, acceptance rate %f",
-               i,
-               iterations,
-               nSteps,
-               (acceptSum / i))
-
-        val logAccept = lf.step(params, nSteps, stepSize)
-        acceptSum += Math.exp(logAccept)
+        lf.step(params, nSteps, stepSize)
         buf += lf.variables(params)
         i += 1
       }
-      FINE.log("Finished sampling, acceptance rate %f", (acceptSum / i))
+      progress.finish()
       buf.toList
     }
   }
