@@ -10,7 +10,7 @@ case class HTMLProgress(kernel: JupyterApi, delay: Double) extends Progress {
       val idN = id + "-" + i
       val chain = s"<b>Chain $i/$n</b>"
       kernel.publish.html(chain, idN)
-      ProgressState(0.01, { p =>
+      ProgressState(0.1, { p =>
         kernel.publish.updateHtml(chain + ": " + render(p), idN)
       })
     }
@@ -57,6 +57,14 @@ case class HTMLProgress(kernel: JupyterApi, delay: Double) extends Progress {
       else ""
     val gradient =
       f"Total gradient evaluations: ${p.gradientEvaluations.toDouble}%.1g $gradientTime"
-    s"${p.currentPhase} ($phaseTime) <div>$iteration</div> <div>$stepSize</div> <div>$gradient</div> <div>$totalTime</div>"
+    val acceptance =
+      if (p.phaseIterations > 0)
+        f"Acceptance rate: ${p.phaseAcceptance / p.currentIteration}%.2f"
+      else ""
+    val pathLength =
+      if (p.phaseIterations > 0)
+        f"Mean path length: ${p.phasePathLength.toDouble / p.currentIteration}%.1f"
+      else ""
+    s"${p.currentPhase} ($phaseTime) <div>$iteration</div> <div>$acceptance</div> <div>$pathLength</div> <div>$stepSize</div> <div>$gradient</div> <div>$totalTime</div>"
   }
 }
