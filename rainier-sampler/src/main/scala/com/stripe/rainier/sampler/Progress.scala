@@ -41,6 +41,7 @@ case class ProgressState(outputEverySeconds: Double,
     phaseAcceptance = 0.0
     phasePathLength = 0L
     phaseIterations = iterations
+    currentIteration = 0
     checkOutput()
   }
 

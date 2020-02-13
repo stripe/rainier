@@ -175,6 +175,7 @@ private[sampler] case class LeapFrog(density: DensityFunction,
     finalHalfStep(stepSize)
     val p = logAcceptanceProb(params, pqBuf)
     progress.trackIteration(Math.exp(p), 1)
+    p
   }
 
   //attempt to take N steps
