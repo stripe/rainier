@@ -63,7 +63,7 @@ case class ProgressState(outputEverySeconds: Double,
 
   def checkOutput() = {
     val t = System.nanoTime()
-    if (t - lastOutputTime > 5e8) { //0.5s
+    if (t - lastOutputTime > outputEverySeconds) {
       fn(this)
       lastOutputTime = t
     }
