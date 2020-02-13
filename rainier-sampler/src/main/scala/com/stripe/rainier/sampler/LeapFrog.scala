@@ -3,7 +3,8 @@ package com.stripe.rainier.sampler
 import Log._
 import java.util.concurrent.TimeUnit._
 
-private[sampler] case class LeapFrog(density: DensityFunction) {
+private[sampler] case class LeapFrog(density: DensityFunction,
+                                     progress: ProgressState) {
   /*
   Params layout:
   array(0..(n-1)) == ps

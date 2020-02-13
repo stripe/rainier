@@ -15,12 +15,12 @@ final case class EHMC(warmupIterations: Int,
                       l0: Int = 10,
                       k: Int = 1000)
     extends Sampler {
-  def sample(density: DensityFunction)(
+  def sample(density: DensityFunction, progress: ProgressState)(
       implicit rng: RNG): List[Array[Double]] = {
     if (density.nVars == 0)
       return List.fill(iterations)(Array.empty[Double])
 
-    val lf = LeapFrog(density)
+    val lf = LeapFrog(density, progress)
     val params = lf.initialize
 
     FINE.log("Finding reasonable initial step size")

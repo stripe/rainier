@@ -1,7 +1,8 @@
 package com.stripe.rainier.sampler
 
 trait Sampler {
-  def sample(density: DensityFunction)(implicit rng: RNG): List[Array[Double]]
+  def sample(density: DensityFunction, progress: ProgressState)(
+      implicit rng: RNG): List[Array[Double]]
 }
 
 object Sampler {
