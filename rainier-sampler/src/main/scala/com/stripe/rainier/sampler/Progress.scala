@@ -28,7 +28,7 @@ case class ProgressState(outputEverySeconds: Double,
 
   def start(): Unit = {
     startTime = System.nanoTime()
-    lastOutputTime = System.nanoTime()
+    lastOutputTime = System.nanoTime
   }
 
   def finish(): Unit = {
@@ -41,32 +41,37 @@ case class ProgressState(outputEverySeconds: Double,
     phaseAcceptance = 0.0
     phasePathLength = 0L
     phaseIterations = iterations
+    checkOutput()
   }
 
   def startGradient(): Unit = {
     lastGradientTime = System.nanoTime()
+    checkOutput()
   }
 
   def endGradient(): Unit = {
     gradientTime += (System.nanoTime() - lastGradientTime)
     gradientEvaluations += 1
+    checkOutput()
   }
 
   def trackIteration(accept: Double, pathLength: Int): Unit = {
     phaseAcceptance += accept
     phasePathLength += pathLength
     currentIteration += 1
+    checkOutput()
   }
 
   def updateStepSize(n: Double): Unit = {
     stepSize = n
+    checkOutput()
   }
 
-  def checkOutput() = {
+  def checkOutput(): Unit = {
     val t = System.nanoTime()
-    //if ((t - lastOutputTime).toDouble / 1e9 > outputEverySeconds) {
+    if ((t - lastOutputTime).toDouble / 1e9 > outputEverySeconds) {
       fn(this)
       lastOutputTime = t
-    //}
+    }
   }
 }
