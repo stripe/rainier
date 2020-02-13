@@ -2,10 +2,17 @@ package com.stripe.rainier.notebook
 
 import com.stripe.rainier.compute._
 import com.stripe.rainier.core._
-import pprint.Tree
+import pprint._
 import ammonite.repl.FullReplAPI
 
 object PrettyPrint {
+  def pprint(): PPrinter = {
+    val p = PPrinter.BlackWhite
+    def treeify(x: Any): Tree =
+      handlers(treeify).lift(x).getOrElse(p.treeify(x))
+    p.copy(additionalHandlers = handlers(treeify))
+  }
+
   def register(repl: FullReplAPI): Unit = {
     val p = repl.pprinter()
 

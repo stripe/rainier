@@ -22,7 +22,7 @@ val eggs = List[Long](45, 52, 45, 47, 41, 42, 44, 42, 46, 38, 36, 35, 41, 48, 42
 
 A simple model for this is to assume that the number of eggs per day is Poisson-distributed, with some mean `lambda` that we don't know. Since we don't know it, we should create a random variable for it. It's traditional to use a `Gamma` prior here.
 
-```scala mdoc:to-string
+```scala mdoc:pprint
 val lambda = Gamma(0.5, 100).latent
 ```
 
@@ -49,7 +49,7 @@ The way to connect our prior with our observations is through `Model.observe`. I
 
 Crucially, that likelihood distribution should be parameterized by a random variable. Like this:
 
-```scala mdoc:to-string
+```scala mdoc:pprint
 val eggModel = Model.observe(eggs, Poisson(lambda))
 ```
 
@@ -61,7 +61,7 @@ But what can we do with a `Model`?
 
 One thing we can do with very little ceremony is to get a single point estimate — the maximum a posteriori, or MAP — using the L-BFGS optimizer. That just looks like this:
 
-```scala mdoc
+```scala mdoc:pprint
 eggModel.optimize(lambda)
 ```
 
@@ -69,7 +69,7 @@ There we have, it folks: the answer to... well, our egg question, anyway.
 
 It might seem a little bit strange that we have to pass in `lambda` here. After all, that's the only parameter our model has. What else could we want to find the MAP for? But Rainier tries to discourage thinking too much about the raw parameterization of a model, and instead to examine whichever random variable represents the quantites you're actually interested in. In this case, that was pretty much the same thing, but it would have been equally valid, for example, to ask for some other MAP instead:
 
-```scala mdoc
+```scala mdoc:pprint
 val dozens = eggModel.optimize(lambda / 12)
 ```
 
@@ -87,13 +87,13 @@ import com.stripe.rainier.sampler._
 
 What we're creating here is an `EHMC`, or [_empirical Hamiltonian Monte Carlo_](https://arxiv.org/pdf/1810.04449.pdf) sampler. The `warmupIterations` are used to tune the sampler and find the right region to sample from; the `iterations` will produce actual samples we'll use. There are other tuning parameters but we'll keep the defaults.
 
-```scala mdoc:to-string
+```scala mdoc:pprint
 val sampler = EHMC(warmupIterations = 5000, iterations = 500)
 ```
 
 Next, we'll run the sampler on our model. What we get back is a `Trace`: a record of the raw parameter values produced by the sampler.
 
-```scala mdoc:to-string
+```scala mdoc:pprint
 val eggTrace = eggModel.sample(sampler)
 ```
 
@@ -101,7 +101,7 @@ By default, we run the sampler independently 4 times (4 "chains"), giving us 200
 
 Before we keep going, we should check to make sure our sample converged. Because we ran multiple chains, we can make use of `diagnostics` on the trace to get back a `Diagnostics(rHat, effectiveSampleSize)` object for each parameter.
 
-```scala mdoc
+```scala mdoc:pprint
 eggTrace.diagnostics
 ```
 
@@ -109,7 +109,7 @@ You can read more about [rHat](https://mc-stan.org/docs/2_21/reference-manual/no
 
 In this case, we've got an rHat close to the ideal value of 1, and an effective sample size that's not too far off our actual number of samples so we're looking good. If our diagnostics looked worse, we could tweak the sampler (for example giving it more warmup iterations), or we could thin out the trace, say by only keeping every other sample:
 
-```scala mdoc:to-string
+```scala mdoc:pprint
 val thinTrace = eggTrace.thin(2)
 thinTrace.diagnostics
 ```

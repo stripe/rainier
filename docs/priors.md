@@ -4,7 +4,7 @@ title: Priors and Random Variables
 ---
 
 Let's start by importing these two packages, which  contain all of the types we will use:
-```scala mdoc
+```scala mdoc:silent
 import com.stripe.rainier.core._
 import com.stripe.rainier.compute._
 ```
@@ -14,7 +14,7 @@ The most fundamental data type in Rainier is the `Real`, which represents a real
 
 To construct a `Real`, we very often start with a `Distribution` object. For example, here we first construct a `Uniform(0,1)` distribution, and then use `latent` to create a new latent random variable, `a`, with that distribution as its prior.
 
-```scala mdoc:to-string
+```scala mdoc:pprint
 val a = Uniform(0,1).latent
 val b = a + 1
 ```
@@ -23,7 +23,7 @@ Although we don't know the exact value, you can see in the output that Rainier i
 
 You can combine `Real`s using normal arithmetic operations, and they support a wide range of unary operators like `abs`, `exp`, `log`, and `logit`. You can also use a `Real` for any parameter of a `Distribution`. So, for example, we can use our `b` and `a` as the mean and standard deviation of a new `Normal` latent variable.
 
-```scala mdoc:to-string
+```scala mdoc:pprint
 val c = Normal(b, a).latent
 ```
 
@@ -33,7 +33,7 @@ The bounds for `c` are not that helpful: *in theory*, it can take on any real va
 
 We'll see a more thorough treatment of sampling later on, but for now, we can use a simple convenience method that's perfect for this kind of exploratory work.
 
-```scala mdoc
+```scala mdoc:pprint
 Model.sample((a,c)).take(10)
 ```
 
@@ -47,7 +47,7 @@ _NOTE: this currently is only supported for Scala 2.12._
 
 Importing the package exposes all of the plotting methods:
 
-```scala mdoc
+```scala mdoc:silent
 import com.stripe.rainier.notebook._
 ```
 
