@@ -10,10 +10,12 @@ case class Model(private[rainier] val likelihoods: List[Real],
   def merge(other: Model) =
     Model(likelihoods ++ other.likelihoods, track ++ other.track)
 
-  def sample(sampler: Sampler, nChains: Int = 4)(implicit rng: RNG): Trace = {
-    val range = 1.to(nChains)
-    val chains = range.map { _ =>
-      sampler.sample(density())
+  def sample(sampler: Sampler, nChains: Int = 4)(implicit rng: RNG,
+                                                 progress: Progress =
+                                                   SilentProgress): Trace = {
+    val states = progress.init(nChains)
+    val chains = states.map { s =>
+      sampler.sample(density(), s)
     }.toList
     Trace(chains, this)
   }
@@ -51,7 +53,8 @@ object Model {
 
   def sample[T, U](t: T, sampler: Sampler = Sampler.default)(
       implicit toGen: ToGenerator[T, U],
-      rng: RNG): List[U] = {
+      rng: RNG,
+      progress: Progress = SilentProgress): List[U] = {
     val gen = toGen(t)
     val model = Model.track(gen.requirements)
     val trace = model.sample(sampler, 1)

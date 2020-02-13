@@ -3,7 +3,8 @@ package com.stripe.rainier.sampler
 import Log._
 import java.util.concurrent.TimeUnit._
 
-private[sampler] case class LeapFrog(density: DensityFunction) {
+private[sampler] case class LeapFrog(density: DensityFunction,
+                                     progress: ProgressState) {
   /*
   Params layout:
   array(0..(n-1)) == ps
@@ -116,8 +117,10 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
     }
     if (l < l0) {
       steps(l0 - l, stepSize)
+      progress.trackIteration(0.0, l0)
     } else {
       copy(isUturnBuf, pqBuf)
+      progress.trackIteration(0.0, l)
     }
 
     FINER
@@ -151,7 +154,9 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
 
   private def copyQsAndUpdateDensity(): Unit = {
     System.arraycopy(pqBuf, nVars, qBuf, 0, nVars)
+    progress.startGradient()
     density.update(qBuf)
+    progress.endGradient()
     if (FINEST.isEnabled) {
       FINEST.log("Log density: %f", density.density)
       var i = 0
@@ -168,7 +173,9 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
     copy(params, pqBuf)
     initialHalfThenFullStep(stepSize)
     finalHalfStep(stepSize)
-    logAcceptanceProb(params, pqBuf)
+    val p = logAcceptanceProb(params, pqBuf)
+    progress.trackIteration(Math.exp(p), 1)
+    p
   }
 
   //attempt to take N steps
@@ -186,6 +193,7 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
     } else {
       FINEST.log("REJECTING proposal")
     }
+    progress.trackIteration(Math.exp(p), n)
     p
   }
 

@@ -7,8 +7,11 @@ import com.cibo.evilplot.colors._
 import com.cibo.evilplot.plot.renderers._
 import com.cibo.evilplot.plot.aesthetics._
 import almond.display.Image
+import com.stripe.rainier.sampler._
 
 package object notebook {
+
+  import almond.api.JupyterApi
   object PlotThemes {
     private val blueColor = HSLA(211, 38, 48, 0.5)
     private val grayColor = HSLA(210, 100, 0, 0.2)
@@ -465,4 +468,7 @@ package object notebook {
 
   private def leftPad(s: String, len: Int, elem: Char): String =
     s.reverse.padTo(len, elem).reverse
+
+  implicit def progress(implicit kernel: JupyterApi): Progress =
+    HTMLProgress(kernel, 0.5)
 }
