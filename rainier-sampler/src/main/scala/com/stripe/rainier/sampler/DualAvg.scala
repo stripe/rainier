@@ -1,7 +1,19 @@
 package com.stripe.rainier.sampler
 
-import Log._
-import java.util.concurrent.TimeUnit._
+case class DualAvgStepSize(iterations: Int, delta: Double) extends Warmup {
+  def update(state: SamplerState)(implicit rng: RNG): Unit = {
+    val dualAvg = DualAvg(delta, state.stepSize)
+    var i = 0
+    state.startPhase("Finding step size with dual averaging", iterations)
+    while (i < iterations) {
+      state.updateStepSize(dualAvg.stepSize)
+      val logAcceptanceProb = state.step()
+      dualAvg.update(logAcceptanceProb)
+      i += 1
+    }
+    state.updateStepSize(dualAvg.finalStepSize)
+  }
+}
 
 final private class DualAvg(
     delta: Double,
@@ -49,58 +61,4 @@ private object DualAvg {
       iteration = 0,
       shrinkageTarget = Math.log(10 * stepSize)
     )
-
-  def findStepSize(delta: Double, stepSize0: Double, iterations: Int)(
-      fn: Double => Double): Double = {
-    if (stepSize0 == 0.0)
-      0.0
-    else {
-      val dualAvg = DualAvg(delta, stepSize0)
-      var i = 0
-      while (i < iterations) {
-        val logAcceptanceProb = fn(dualAvg.stepSize)
-        dualAvg.update(logAcceptanceProb)
-        i += 1
-
-        FINER
-          .atMostEvery(1, SECONDS)
-          .log(
-            "iteration %d of %d, stepSize %f, acceptance %f, error %f",
-            i,
-            iterations,
-            dualAvg.stepSize,
-            Math.exp(logAcceptanceProb),
-            dualAvg.avgError
-          )
-
-      }
-      dualAvg.finalStepSize
-    }
-  }
-
-  private def computeExponent(logAcceptanceProb: Double): Double =
-    if (logAcceptanceProb > Math.log(0.5)) { 1.0 } else { -1.0 }
-
-  private def continueTuningStepSize(stepSize: Double,
-                                     logAcceptanceProb: Double,
-                                     exponent: Double): Boolean =
-    stepSize != 0.0 && (exponent * logAcceptanceProb > -exponent * Math.log(2))
-
-  def findReasonableStepSize(lf: LeapFrog, params: Array[Double]): Double = {
-    var stepSize = 1.0
-    var logAcceptanceProb = lf.tryStepping(params, stepSize)
-    val exponent = computeExponent(logAcceptanceProb)
-    val doubleOrHalf = Math.pow(2, exponent)
-    while (continueTuningStepSize(stepSize, logAcceptanceProb, exponent)) {
-      stepSize *= doubleOrHalf
-      logAcceptanceProb = lf.tryStepping(params, stepSize)
-
-      FINER
-        .atMostEvery(1, SECONDS)
-        .log("stepSize %f, acceptance prob %f",
-             stepSize,
-             Math.exp(logAcceptanceProb))
-    }
-    stepSize
-  }
 }
