@@ -25,6 +25,7 @@ case class Sampler(iterations: Int, warmups: List[Warmup] = Nil) {
     warmups.foreach { w =>
       if (state.isValid)
         w.update(state)
+      println(state.stepSize)
     }
 
     val samples =
@@ -65,17 +66,15 @@ trait Warmup {
 //backwards compatibility
 object HMC {
   def apply(warmupIterations: Int, iterations: Int, nSteps: Int): Sampler =
-    Sampler(iterations)
-      .fixedPathLength(nSteps)
-      .findInitialStepSize
+    Sampler(iterations).findInitialStepSize
       .dualAverageStepSize(warmupIterations)
+      .fixedPathLength(nSteps)
 }
 
 object EHMC {
   def apply(warmupIterations: Int, iterations: Int, l0: Int, k: Int): Sampler =
-    Sampler(iterations)
-      .fixedPathLength(l0)
-      .findInitialStepSize
+    Sampler(iterations).findInitialStepSize
       .dualAverageStepSize(warmupIterations)
+      .fixedPathLength(l0)
       .empiricalPathLengths(k)
 }
