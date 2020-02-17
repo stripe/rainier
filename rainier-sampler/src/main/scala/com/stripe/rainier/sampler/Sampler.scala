@@ -25,7 +25,6 @@ case class Sampler(iterations: Int, warmups: List[Warmup] = Nil) {
     warmups.foreach { w =>
       if (state.isValid)
         w.update(state)
-      println(state.stepSize)
     }
 
     val samples =

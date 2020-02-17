@@ -1,6 +1,7 @@
 package com.stripe.rainier.sampler
 
-class SamplerState(density: DensityFunction, progress: ProgressState) {
+class SamplerState(density: DensityFunction, progress: ProgressState)(
+    implicit val rng: RNG) {
   progress.start()
 
   private val lf = LeapFrog(density, progress)

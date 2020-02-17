@@ -11,7 +11,7 @@ trait RNG {
 }
 
 object RNG {
-  implicit lazy val default: RNG = {
+  val default: RNG = {
     val seed = System.currentTimeMillis
     ScalaRNG(seed)
   }

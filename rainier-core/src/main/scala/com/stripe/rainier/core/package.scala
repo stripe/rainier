@@ -1,8 +1,7 @@
 package com.stripe.rainier
 
+import com.stripe.rainier.sampler.RNG
+
 package object core {
-  def updateMap[K, V](m: Map[K, V], k: K, vDelta: V)(
-      default: => V
-  )(plus: (V, V) => V): Map[K, V] =
-    m.updated(k, plus(m.getOrElse(k, default), vDelta))
+  implicit val rng = RNG.default
 }

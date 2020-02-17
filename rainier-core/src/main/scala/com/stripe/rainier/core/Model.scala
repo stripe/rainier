@@ -20,7 +20,7 @@ case class Model(private[rainier] val likelihoods: List[Real],
     Trace(chains, this)
   }
 
-  def optimize[T, U](t: T)(implicit toGen: ToGenerator[T, U]): U = {
+  def optimize[T, U](t: T)(implicit toGen: ToGenerator[T, U], rng: RNG): U = {
     val fn = toGen(t).prepare(parameters)
     fn(Optimizer.lbfgs(density()))
   }
