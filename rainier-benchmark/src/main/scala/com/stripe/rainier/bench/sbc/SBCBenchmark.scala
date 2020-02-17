@@ -5,7 +5,7 @@ import java.util.concurrent.TimeUnit
 
 import com.stripe.rainier.compute._
 import com.stripe.rainier.core._
-import com.stripe.rainier.sampler._
+import com.stripe.rainier.sampler.{RNG, DensityFunction}
 
 @BenchmarkMode(Array(Mode.SampleTime))
 @OutputTimeUnit(TimeUnit.MICROSECONDS)

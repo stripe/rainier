@@ -19,9 +19,9 @@ case class Sampler(iterations: Int, warmups: List[Warmup] = Nil) {
   def warmup(w: Warmup): Sampler =
     Sampler(iterations, warmups :+ w)
 
-  def sample(density: DensityFunction, progress: ProgressState)(
+  def sample(chain: Int, density: DensityFunction, progress: Progress)(
       implicit rng: RNG) = {
-    val state = new SamplerState(density, progress)
+    val state = new SamplerState(chain, density, progress)
     warmups.foreach { w =>
       if (state.isValid)
         w.update(state)

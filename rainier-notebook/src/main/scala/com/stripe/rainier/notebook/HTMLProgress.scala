@@ -4,19 +4,29 @@ import com.stripe.rainier.sampler._
 import almond.api.JupyterApi
 
 case class HTMLProgress(kernel: JupyterApi, delay: Double) extends Progress {
-  def init(n: Int) = {
-    val id = java.util.UUID.randomUUID().toString
-    1.to(n).toList.map { i =>
-      val idN = id + "-" + i
-      val chain = s"<b>Chain $i/$n</b>"
-      kernel.publish.html(chain, idN)
-      ProgressState(0.1, { p =>
-        kernel.publish.updateHtml(chain + ": " + render(p), idN)
-      })
-    }
+  val id = java.util.UUID.randomUUID().toString
+
+  val outputEverySeconds = 0.1
+
+  def start(state: SamplerState) = {
+    val idN = id + "-" + state.chain
+    val chain = s"<b>Chain ${state.chain}</b>"
+    kernel.publish.html(chain, idN)
   }
 
-  def renderTime(nanos: Long): String =
+  def refresh(state: SamplerState) = {
+    val idN = id + "-" + state.chain
+    val chain = s"<b>Chain ${state.chain}</b>"
+    kernel.publish.updateHtml(chain + ": " + render(state), idN)
+  }
+
+  def finish(state: SamplerState) = {
+    val idN = id + "-" + state.chain
+    val chain = s"<b>Chain ${state.chain} complete</b>"
+    kernel.publish.updateHtml(chain + ": " + render(state), idN)
+  }
+
+  private def renderTime(nanos: Long): String =
     if (nanos < 1000)
       s"${nanos}ns"
     else if (nanos < 1e6)
@@ -36,7 +46,7 @@ case class HTMLProgress(kernel: JupyterApi, delay: Double) extends Progress {
       }
     }
 
-  def render(p: ProgressState): String = {
+  private def render(p: SamplerState): String = {
     val t = System.nanoTime()
     val iteration =
       if (p.phaseIterations > 0) {

@@ -4,6 +4,7 @@ import org.scalatest.FunSuite
 import com.stripe.rainier.sampler._
 
 class MVTest extends FunSuite {
+  implicit val rng = RNG.default
 //per https://github.com/stan-dev/stat_comp_benchmarks/blob/master/benchmarks/low_dim_corr_gauss/low_dim_corr_gauss.stan
   test("bivariate normal") {
     val mu1 = 0
