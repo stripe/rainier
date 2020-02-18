@@ -4,7 +4,7 @@ import mdoc._
 
 class PrettyPrintModifier extends PostModifier {
   val name = "pprint"
-  val pprint = PrettyPrint.pprint()
+  val pprint = PPrint.pprint()
   def process(ctx: PostModifierContext): String = {
     val variables = ctx.variables
       .map { v =>

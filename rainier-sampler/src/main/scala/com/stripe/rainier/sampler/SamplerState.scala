@@ -1,13 +1,27 @@
 package com.stripe.rainier.sampler
 
-class SamplerState(val chain: Int, density: DensityFunction, progress: Progress)(
+class SamplerState(val chain: Int, densityFn: DensityFunction, progress: Progress)(
     implicit val rng: RNG) {
-  private val lf = LeapFrog(density)
+
+  private val densityWrapper = new DensityFunction {
+    val nVars = densityFn.nVars
+    def density = densityFn.density
+    def gradient(index: Int) = densityFn.gradient(index)
+    def update(vars: Array[Double]): Unit = {
+      startGradient()
+      densityFn.update(vars)
+      endGradient()
+    }
+  }
+
+  private val lf = LeapFrog(densityWrapper)
   private val params = lf.initialize
   private var currentStepSize = 1.0
   private var pathLength = Iterator.continually(1)
 
   def startPhase(phase: String, iterations: Int): Unit = {
+    progress.refresh(this)
+
     currentPhase = phase
     phaseStartTime = System.nanoTime()
     phaseAcceptance = 0.0
@@ -55,12 +69,12 @@ class SamplerState(val chain: Int, density: DensityFunction, progress: Progress)
 
   def isValid: Boolean = stepSize > 0.0
 
-  def startGradient(): Unit = {
+  private def startGradient(): Unit = {
     lastGradientTime = System.nanoTime()
     checkOutput()
   }
 
-  def endGradient(): Unit = {
+  private def endGradient(): Unit = {
     gradientTime += (System.nanoTime() - lastGradientTime)
     gradientEvaluations += 1
     checkOutput()
