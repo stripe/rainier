@@ -12,26 +12,28 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
   private val inputOutputSize = potentialIndex + 1
   private val pqBuf = new Array[Double](inputOutputSize)
   private val qBuf = new Array[Double](nVars)
+  private val vBuf = new Array[Double](nVars)
+  private val vBuf2 = new Array[Double](nVars)
 
   // instance of parameters used in longestStepUntilUTurn
   private val isUturnBuf = new Array[Double](inputOutputSize)
 
-  def newQs(stepSize: Double): Unit = {
-    var i = nVars
-    val j = nVars * 2
-    while (i < j) {
-      pqBuf(i) += (stepSize * pqBuf(i - nVars))
+  def newQs(stepSize: Double, metric: Metric): Unit = {
+    Metric.velocity(pqBuf, vBuf, metric)
+    var i = 0
+    while (i < nVars) {
+      pqBuf(i + nVars) += (stepSize * vBuf(i))
       i += 1
     }
   }
 
-  def halfPsNewQs(stepSize: Double): Unit = {
+  def halfPsNewQs(stepSize: Double, metric: Metric): Unit = {
     fullPs(stepSize / 2.0)
-    newQs(stepSize)
+    newQs(stepSize, metric)
   }
 
-  def initialHalfThenFullStep(stepSize: Double): Unit = {
-    halfPsNewQs(stepSize)
+  def initialHalfThenFullStep(stepSize: Double, metric: Metric): Unit = {
+    halfPsNewQs(stepSize, metric)
     copyQsAndUpdateDensity()
     pqBuf(potentialIndex) = density.density * -1
   }
@@ -46,13 +48,13 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
     }
   }
 
-  def fullPsNewQs(stepSize: Double): Unit = {
+  def fullPsNewQs(stepSize: Double, metric: Metric): Unit = {
     fullPs(stepSize)
-    newQs(stepSize)
+    newQs(stepSize, metric)
   }
 
-  def twoFullSteps(stepSize: Double): Unit = {
-    fullPsNewQs(stepSize: Double)
+  def twoFullSteps(stepSize: Double, metric: Metric): Unit = {
+    fullPsNewQs(stepSize: Double, metric)
     copyQsAndUpdateDensity()
     pqBuf(potentialIndex) = density.density * -1
   }
@@ -68,11 +70,11 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
     * @param l the total number of leapfrog steps to perform
     * @param stepSize the current step size
     */
-  private def steps(l: Int, stepSize: Double): Unit = {
-    initialHalfThenFullStep(stepSize)
+  private def steps(l: Int, stepSize: Double, metric: Metric): Unit = {
+    initialHalfThenFullStep(stepSize, metric)
     var i = 1
     while (i < l) {
-      twoFullSteps(stepSize)
+      twoFullSteps(stepSize, metric)
       i += 1
     }
     finalHalfStep(stepSize)
@@ -103,16 +105,17 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
     */
   private def longestStepUntilUTurn(params: Array[Double],
                                     l0: Int,
-                                    stepSize: Double): Int = {
+                                    stepSize: Double,
+                                    metric: Metric): Int = {
     var l = 0
     while (!isUTurn(params)) {
       l += 1
-      steps(1, stepSize)
+      steps(1, stepSize, metric)
       if (l == l0)
         copy(pqBuf, isUturnBuf)
     }
     if (l < l0) {
-      steps(l0 - l, stepSize)
+      steps(l0 - l, stepSize, metric)
     } else {
       copy(isUturnBuf, pqBuf)
     }
@@ -127,9 +130,9 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
 
     initializePs(params)
     copy(params, pqBuf)
-    val l = longestStepUntilUTurn(params, l0, stepSize)
+    val l = longestStepUntilUTurn(params, l0, stepSize, metric)
     val u = rng.standardUniform
-    val a = logAcceptanceProb(params, pqBuf, metric)
+    val a = logAcceptanceProb(params, metric)
     if (math.log(u) < a)
       copy(pqBuf, params)
     (a, l)
@@ -149,9 +152,9 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
                   stepSize: Double,
                   metric: Metric): Double = {
     copy(params, pqBuf)
-    initialHalfThenFullStep(stepSize)
+    initialHalfThenFullStep(stepSize, metric)
     finalHalfStep(stepSize)
-    val p = logAcceptanceProb(params, pqBuf, metric)
+    val p = logAcceptanceProb(params, metric)
     p
   }
 
@@ -162,8 +165,8 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
       implicit rng: RNG): Double = {
     initializePs(params)
     copy(params, pqBuf)
-    steps(n, stepSize)
-    val p = logAcceptanceProb(params, pqBuf, metric)
+    steps(n, stepSize, metric)
+    val p = logAcceptanceProb(params, metric)
     if (p > Math.log(rng.standardUniform)) {
       copy(pqBuf, params)
     }
@@ -200,15 +203,15 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
     array
   }
 
-  private def kinetic(array: Array[Double], metric: Metric): Double =
-    Metric.xMx(array, metric, nVars) / 2.0
+  private def logAcceptanceProb(from: Array[Double], metric: Metric): Double = {
+    val toPotential = pqBuf(potentialIndex)
+    val toKinetic = Metric.energy(vBuf, metric) / 2
 
-  private def logAcceptanceProb(from: Array[Double],
-                                to: Array[Double],
-                                metric: Metric): Double = {
-    val deltaH = kinetic(to, metric) + to(potentialIndex) - kinetic(
-      from,
-      metric) - from(potentialIndex)
+    val fromPotential = from(potentialIndex)
+    Metric.velocity(from, vBuf2, metric)
+    val fromKinetic = Metric.energy(vBuf2, metric) / 2
+
+    val deltaH = toKinetic + toPotential - fromKinetic - fromPotential
     if (deltaH.isNaN) {
       Math.log(0.0)
     } else {

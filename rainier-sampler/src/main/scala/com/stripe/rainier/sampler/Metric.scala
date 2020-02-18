@@ -3,23 +3,30 @@ package com.stripe.rainier.sampler
 sealed trait Metric
 
 object Metric {
-  //evaluate x*Mx for input vector x of length n, and metric M
-  def xMx(x: Array[Double], m: Metric, n: Int): Double = {
+  def velocity(in: Array[Double], out: Array[Double], m: Metric): Unit =
+    m match {
+      case StandardMetric =>
+        System.arraycopy(in, 0, out, 0, out.size)
+      case EuclideanMetric(elements) =>
+        ???
+    }
+
+  def energy(v: Array[Double], m: Metric): Double = {
+    val n = v.size
     var k = 0.0
     m match {
-      case IdentityMetric =>
+      case StandardMetric =>
         var i = 0
         while (i < n) {
-          val p = x(i)
-          k += (p * p)
+          val x = v(i)
+          k += (x * x)
           i += 1
         }
-      case _ => ()
+      case EuclideanMetric(elements) => ???
     }
     k
   }
 }
 
-object IdentityMetric extends Metric
-case class DiagonalMetric(elements: Array[Double]) extends Metric
-case class DenseMetric(elements: Array[Double]) extends Metric
+object StandardMetric extends Metric
+case class EuclideanMetric(elements: Array[Double]) extends Metric

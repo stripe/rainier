@@ -102,7 +102,7 @@ class SamplerState(val chain: Int,
 
   private var currentStepSize = 1.0
   private var pathLength = Iterator.continually(1)
-  private var currentMetric: Metric = IdentityMetric
+  private var currentMetric: Metric = StandardMetric
 
   private val densityWrapper = new DensityFunction {
     val nVars = densityFn.nVars
