@@ -1,23 +1,8 @@
 package com.stripe.rainier.sampler
 
-class SamplerState(val chain: Int, densityFn: DensityFunction, progress: Progress)(
-    implicit val rng: RNG) {
-
-  private val densityWrapper = new DensityFunction {
-    val nVars = densityFn.nVars
-    def density = densityFn.density
-    def gradient(index: Int) = densityFn.gradient(index)
-    def update(vars: Array[Double]): Unit = {
-      startGradient()
-      densityFn.update(vars)
-      endGradient()
-    }
-  }
-
-  private val lf = LeapFrog(densityWrapper)
-  private val params = lf.initialize
-  private var currentStepSize = 1.0
-  private var pathLength = Iterator.continually(1)
+class SamplerState(val chain: Int,
+                   densityFn: DensityFunction,
+                   progress: Progress)(implicit val rng: RNG) {
 
   def startPhase(phase: String, iterations: Int): Unit = {
     progress.refresh(this)
@@ -107,4 +92,21 @@ class SamplerState(val chain: Int, densityFn: DensityFunction, progress: Progres
   var lastOutputTime = 0L
   var phaseAcceptance = 0.0
   var phasePathLength = 0L
+
+  private var currentStepSize = 1.0
+  private var pathLength = Iterator.continually(1)
+
+  private val densityWrapper = new DensityFunction {
+    val nVars = densityFn.nVars
+    def density = densityFn.density
+    def gradient(index: Int) = densityFn.gradient(index)
+    def update(vars: Array[Double]): Unit = {
+      startGradient()
+      densityFn.update(vars)
+      endGradient()
+    }
+  }
+
+  private val lf = LeapFrog(densityWrapper)
+  private val params = lf.initialize
 }
