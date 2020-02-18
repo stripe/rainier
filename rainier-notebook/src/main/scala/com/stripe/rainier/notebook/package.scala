@@ -11,6 +11,8 @@ import com.stripe.rainier.sampler._
 
 package object notebook {
 
+  implicit val rng = RNG.default
+
   import almond.api.JupyterApi
   object PlotThemes {
     private val blueColor = HSLA(211, 38, 48, 0.5)

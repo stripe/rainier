@@ -1,10 +1,6 @@
 package com.stripe.rainier.sampler
 
-import Log._
-import java.util.concurrent.TimeUnit._
-
-private[sampler] case class LeapFrog(density: DensityFunction,
-                                     progress: ProgressState) {
+private[sampler] case class LeapFrog(density: DensityFunction) {
   /*
   Params layout:
   array(0..(n-1)) == ps
@@ -117,15 +113,10 @@ private[sampler] case class LeapFrog(density: DensityFunction,
     }
     if (l < l0) {
       steps(l0 - l, stepSize)
-      progress.trackIteration(0.0, l0)
     } else {
       copy(isUturnBuf, pqBuf)
-      progress.trackIteration(0.0, l)
     }
 
-    FINER
-      .atMostEvery(1, SECONDS)
-      .log("%d steps until u-turn", l)
     l
   }
 
@@ -154,18 +145,7 @@ private[sampler] case class LeapFrog(density: DensityFunction,
 
   private def copyQsAndUpdateDensity(): Unit = {
     System.arraycopy(pqBuf, nVars, qBuf, 0, nVars)
-    progress.startGradient()
     density.update(qBuf)
-    progress.endGradient()
-    if (FINEST.isEnabled) {
-      FINEST.log("Log density: %f", density.density)
-      var i = 0
-      val j = nVars
-      while (i < j) {
-        FINEST.log("Gradient for parameter %d: %f", i, density.gradient(i))
-        i += 1
-      }
-    }
   }
   //Compute the acceptance probability for a single step at this stepSize without
   //re-initializing the ps, or modifying params
@@ -174,7 +154,6 @@ private[sampler] case class LeapFrog(density: DensityFunction,
     initialHalfThenFullStep(stepSize)
     finalHalfStep(stepSize)
     val p = logAcceptanceProb(params, pqBuf)
-    progress.trackIteration(Math.exp(p), 1)
     p
   }
 
@@ -188,12 +167,8 @@ private[sampler] case class LeapFrog(density: DensityFunction,
     steps(n, stepSize)
     val p = logAcceptanceProb(params, pqBuf)
     if (p > Math.log(rng.standardUniform)) {
-      FINEST.log("Accepting proposal")
       copy(pqBuf, params)
-    } else {
-      FINEST.log("REJECTING proposal")
     }
-    progress.trackIteration(Math.exp(p), n)
     p
   }
 
@@ -250,11 +225,9 @@ private[sampler] case class LeapFrog(density: DensityFunction,
     val deltaH = kinetic(to) + to(potentialIndex) - kinetic(from) - from(
       potentialIndex)
     if (deltaH.isNaN) {
-      FINEST.log("deltaH = NaN, setting acceptance prob to 0.0")
       Math.log(0.0)
     } else {
       val lap = (-deltaH).min(0.0)
-      FINEST.log("logAcceptanceProb %f", lap)
       lap
     }
   }

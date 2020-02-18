@@ -33,5 +33,4 @@ class SBCTest extends FunSuite {
   //check(SBCGeometricZeroInflated)
   check(SBCNegativeBinomial) // Couldn't prove σ >= 0 for bounds (-Infinity,Infinity)
   check(SBCLargePoisson)
-
 }

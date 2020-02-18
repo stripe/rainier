@@ -6,6 +6,9 @@ title: Vectors and Variables
 ```scala mdoc:invisible
 import com.stripe.rainier.core._
 import com.stripe.rainier.compute._
+import com.stripe.rainier.sampler._
+
+implicit val rng = RNG.default
 ```
 
 Our imaginary chicken farmer from the [previous section](likelihoods.md) has gotten more sophisticated: she's testing three different types of feed to see which one produces more eggs.

@@ -13,14 +13,17 @@ case class Model(private[rainier] val likelihoods: List[Real],
   def sample(sampler: Sampler, nChains: Int = 4)(implicit rng: RNG,
                                                  progress: Progress =
                                                    SilentProgress): Trace = {
-    val states = progress.init(nChains)
-    val chains = states.map { s =>
-      sampler.sample(density(), s)
-    }.toList
+    val chains = 1
+      .to(nChains)
+      .toList
+      .map { i =>
+        sampler.sample(i, density(), progress)
+      }
+      .toList
     Trace(chains, this)
   }
 
-  def optimize[T, U](t: T)(implicit toGen: ToGenerator[T, U]): U = {
+  def optimize[T, U](t: T)(implicit toGen: ToGenerator[T, U], rng: RNG): U = {
     val fn = toGen(t).prepare(parameters)
     fn(Optimizer.lbfgs(density()))
   }

@@ -5,7 +5,7 @@ import com.stripe.rainier.core._
 import pprint._
 import ammonite.repl.FullReplAPI
 
-object PrettyPrint {
+object PPrint {
   def pprint(): PPrinter = {
     val p = PPrinter.BlackWhite
     def treeify(x: Any): Tree =
