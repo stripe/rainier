@@ -73,7 +73,10 @@ object HMC {
 }
 
 object EHMC {
-  def apply(warmupIterations: Int, iterations: Int, l0: Int, k: Int): Sampler =
+  def apply(warmupIterations: Int,
+            iterations: Int,
+            l0: Int = 10,
+            k: Int = 1000): Sampler =
     Sampler(iterations).findInitialStepSize
       .dualAverageStepSize(warmupIterations)
       .fixedPathLength(l0)

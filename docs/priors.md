@@ -33,6 +33,11 @@ The bounds for `c` are not that helpful: *in theory*, it can take on any real va
 
 We'll see a more thorough treatment of sampling later on, but for now, we can use a simple convenience method that's perfect for this kind of exploratory work.
 
+```scala mdoc:invisible
+import com.stripe.rainier.sampler._
+implicit val rng = RNG.default
+```
+
 ```scala mdoc:pprint
 Model.sample((a,c)).take(10)
 ```
