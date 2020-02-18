@@ -120,20 +120,16 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
     l
   }
 
-  /**
-    * Perform a single step of the longest batch step algorithm
-    * @param params the current value of the parameters
-    * @param l0 the initial number of steps
-    * @param stepSize the current value of the leapfrog step size
-    */
-  def longestBatchStep(params: Array[Double], l0: Int, stepSize: Double)(
-      implicit rng: RNG): (Double, Int) = {
+  def longestBatchStep(params: Array[Double],
+                       l0: Int,
+                       stepSize: Double,
+                       metric: Metric)(implicit rng: RNG): (Double, Int) = {
 
     initializePs(params)
     copy(params, pqBuf)
     val l = longestStepUntilUTurn(params, l0, stepSize)
     val u = rng.standardUniform
-    val a = logAcceptanceProb(params, pqBuf)
+    val a = logAcceptanceProb(params, pqBuf, metric)
     if (math.log(u) < a)
       copy(pqBuf, params)
     (a, l)
@@ -149,23 +145,25 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
   }
   //Compute the acceptance probability for a single step at this stepSize without
   //re-initializing the ps, or modifying params
-  def tryStepping(params: Array[Double], stepSize: Double): Double = {
+  def tryStepping(params: Array[Double],
+                  stepSize: Double,
+                  metric: Metric): Double = {
     copy(params, pqBuf)
     initialHalfThenFullStep(stepSize)
     finalHalfStep(stepSize)
-    val p = logAcceptanceProb(params, pqBuf)
+    val p = logAcceptanceProb(params, pqBuf, metric)
     p
   }
 
   //attempt to take N steps
   //this will always clobber the stepSize and ps in params,
   //but will only update the qs if the move is accepted
-  def step(params: Array[Double], n: Int, stepSize: Double)(
+  def step(params: Array[Double], n: Int, stepSize: Double, metric: Metric)(
       implicit rng: RNG): Double = {
     initializePs(params)
     copy(params, pqBuf)
     steps(n, stepSize)
-    val p = logAcceptanceProb(params, pqBuf)
+    val p = logAcceptanceProb(params, pqBuf, metric)
     if (p > Math.log(rng.standardUniform)) {
       copy(pqBuf, params)
     }
@@ -202,28 +200,15 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
     array
   }
 
-  /**
-    * This is the dot product (ps^T ps).
-    * The fancier variations of HMC involve changing this kinetic term
-    * to either take the dot product with respect to a non-identity matrix (ps^T M ps)
-    * (a non-standard Euclidean metric) or a matrix that depends on the qs
-    * (ps^T M(qs) ps) (a Riemannian metric)
-    */
-  private def kinetic(array: Array[Double]): Double = {
-    var k = 0.0
-    var i = 0
-    while (i < nVars) {
-      val p = array(i)
-      k += (p * p)
-      i += 1
-    }
-    k / 2.0
-  }
+  private def kinetic(array: Array[Double], metric: Metric): Double =
+    Metric.xMx(array, metric, nVars) / 2.0
 
   private def logAcceptanceProb(from: Array[Double],
-                                to: Array[Double]): Double = {
-    val deltaH = kinetic(to) + to(potentialIndex) - kinetic(from) - from(
-      potentialIndex)
+                                to: Array[Double],
+                                metric: Metric): Double = {
+    val deltaH = kinetic(to, metric) + to(potentialIndex) - kinetic(
+      from,
+      metric) - from(potentialIndex)
     if (deltaH.isNaN) {
       Math.log(0.0)
     } else {

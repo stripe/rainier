@@ -23,25 +23,32 @@ class SamplerState(val chain: Int,
 
   def stepSize: Double = currentStepSize
 
+  def updateMetric(m: Metric): Unit = {
+    currentMetric = m
+    checkOutput()
+  }
+
+  def metric: Metric = currentMetric
+
   def updatePathLength(it: Iterator[Int]): Unit = {
     pathLength = it
   }
 
   def step(): Double = {
     val l = pathLength.next
-    val a = lf.step(params, l, stepSize)
+    val a = lf.step(params, l, stepSize, metric)
     trackIteration(a, l)
     a
   }
 
   def tryStepping(): Double = {
-    val a = lf.tryStepping(params, stepSize)
+    val a = lf.tryStepping(params, stepSize, metric)
     trackIteration(a, 1)
     a
   }
 
   def longestBatchStep(): Int = {
-    val (a, l) = lf.longestBatchStep(params, pathLength.next, stepSize)
+    val (a, l) = lf.longestBatchStep(params, pathLength.next, stepSize, metric)
     trackIteration(a, l)
     l
   }
@@ -95,6 +102,7 @@ class SamplerState(val chain: Int,
 
   private var currentStepSize = 1.0
   private var pathLength = Iterator.continually(1)
+  private var currentMetric: Metric = IdentityMetric
 
   private val densityWrapper = new DensityFunction {
     val nVars = densityFn.nVars
