@@ -75,6 +75,12 @@ case class HTMLProgress(kernel: JupyterApi, delay: Double) extends Progress {
       if (p.phaseIterations > 0)
         f"Mean path length: ${p.phasePathLength.toDouble / p.currentIteration}%.1f"
       else ""
-    s"${p.currentPhase} ($phaseTime) <div>$iteration</div> <div>$acceptance</div> <div>$pathLength</div> <div>$stepSize</div> <div>$gradient</div> <div>$totalTime</div>"
+    val massMatrix =
+      p.metric match {
+        case StandardMetric => ""
+        case EuclideanMetric(elements) =>
+          s"Mass matrix: ${elements.toList}"
+      }
+    s"${p.currentPhase} ($phaseTime) <div>$iteration</div> <div>$acceptance</div> <div>$pathLength</div> <div>$stepSize</div> <div>$massMatrix</div> <div>$gradient</div> <div>$totalTime</div>"
   }
 }
