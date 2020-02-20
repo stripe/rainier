@@ -38,26 +38,6 @@ case class Cholesky(packed: Vector[Real]) {
 }
 
 object Cholesky {
-  def lowerTriangularMultiply(packed: Array[Double],
-                              vector: Array[Double]): Array[Double] = {
-    val n = vector.size
-    val result = new Array[Double](n)
-    var i = 0
-    var base = 0
-    while (i < n) {
-      var j = 0
-      var acc = 0d
-      while (j <= i) {
-        acc += vector(j) * packed(base + j)
-        j += 1
-      }
-      result(i) = acc
-      i += 1
-      base += i
-    }
-    result
-  }
-
   //number of non-zero elements in the first k rows of a triangular matrix
   def triangleNumber(k: Int): Int = (k * (k + 1)) / 2
 

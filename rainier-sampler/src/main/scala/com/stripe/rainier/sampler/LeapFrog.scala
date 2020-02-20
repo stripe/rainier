@@ -1,5 +1,7 @@
 package com.stripe.rainier.sampler
 
+import com.stripe.rainier.Utils
+
 private[sampler] case class LeapFrog(density: DensityFunction) {
   /*
   Params layout:
@@ -19,7 +21,7 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
   private val isUturnBuf = new Array[Double](inputOutputSize)
 
   def newQs(stepSize: Double, metric: Metric): Unit = {
-    Metric.velocity(pqBuf, vBuf, metric)
+    velocity(pqBuf, vBuf, metric)
     var i = 0
     while (i < nVars) {
       pqBuf(i + nVars) += (stepSize * vBuf(i))
@@ -205,12 +207,12 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
 
   private def logAcceptanceProb(from: Array[Double], metric: Metric): Double = {
     val toPotential = pqBuf(potentialIndex)
-    Metric.velocity(pqBuf, vBuf, metric)
-    val toKinetic = Metric.halfEnergy(vBuf, metric)
+    velocity(pqBuf, vBuf, metric)
+    val toKinetic = dot(vBuf, pqBuf) / 2.0
 
     val fromPotential = from(potentialIndex)
-    Metric.velocity(from, vBuf2, metric)
-    val fromKinetic = Metric.halfEnergy(vBuf2, metric)
+    velocity(from, vBuf2, metric)
+    val fromKinetic = dot(vBuf2, from) / 2.0
 
     val deltaH = toKinetic + toPotential - fromKinetic - fromPotential
     if (deltaH.isNaN) {
@@ -219,6 +221,25 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
       val lap = (-deltaH).min(0.0)
       lap
     }
+  }
+
+  private def velocity(in: Array[Double], out: Array[Double], m: Metric): Unit =
+    m match {
+      case StandardMetric =>
+        System.arraycopy(in, 0, out, 0, out.size)
+      case EuclideanMetric(elements) =>
+        Utils.lowerTriangularMultiply(elements, in, out)
+    }
+
+  private def dot(x: Array[Double], y: Array[Double]): Double = {
+    var k = 0.0
+    var i = 0
+    val n = x.size
+    while (i < n) {
+      k += (x(i) * y(i))
+      i += 1
+    }
+    k
   }
 
   private def initializePs(array: Array[Double])(implicit rng: RNG): Unit = {
