@@ -41,6 +41,25 @@ object Cholesky {
   //number of non-zero elements in the first k rows of a triangular matrix
   def triangleNumber(k: Int): Int = (k * (k + 1)) / 2
 
+  def lowerTriangularMultiply(packed: Array[Double],
+                              vector: Array[Double],
+                              result: Array[Double]): Unit = {
+    val n = result.size
+    var i = 0
+    var base = 0
+    while (i < n) {
+      var j = 0
+      var acc = 0d
+      while (j <= i) {
+        acc += vector(j) * packed(base + j)
+        j += 1
+      }
+      result(i) = acc
+      i += 1
+      base += i
+    }
+  }
+
   private def packedIndex(i: Int, j: Int): Int =
     triangleNumber(i) + j
 

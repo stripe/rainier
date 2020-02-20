@@ -1,7 +1,6 @@
 package com.stripe.rainier.core
 
 import com.stripe.rainier.compute._
-import com.stripe.rainier.Utils
 
 //multivariate continuous
 trait Multivariate extends Distribution[Seq[Double]] {
@@ -65,7 +64,7 @@ case class MVNormal private (chol: Cholesky) extends Multivariate {
     Generator((packedGen, iidNormals)).map {
       case (a, z) =>
         val result = new Array[Double](z.size)
-        Utils.lowerTriangularMultiply(a.toArray, z, result)
+        Cholesky.lowerTriangularMultiply(a.toArray, z, result)
         result
     }
   }

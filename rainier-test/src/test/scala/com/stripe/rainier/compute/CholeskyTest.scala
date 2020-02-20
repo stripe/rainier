@@ -1,7 +1,6 @@
 package com.stripe.rainier.compute
 
 import com.stripe.rainier.sampler.RNG
-import com.stripe.rainier.Utils
 
 class CholeskyTest extends ComputeTest {
   val rng = RNG.default
@@ -14,7 +13,7 @@ class CholeskyTest extends ComputeTest {
     val realX = Cholesky.lowerTriangularSolve(realPacked, realY)
     val x = realX.collect { case Scalar(d) => d }
     val newY = new Array[Double](y.size)
-    Utils.lowerTriangularMultiply(packed.toArray, x.toArray, newY)
+    Cholesky.lowerTriangularMultiply(packed.toArray, x.toArray, newY)
     y.zip(newY).foreach {
       case (yi, newYi) => assertWithinEpsilon(yi, newYi, "")
     }

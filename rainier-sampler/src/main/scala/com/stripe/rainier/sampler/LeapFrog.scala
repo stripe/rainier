@@ -1,7 +1,5 @@
 package com.stripe.rainier.sampler
 
-import com.stripe.rainier.Utils
-
 private[sampler] case class LeapFrog(density: DensityFunction) {
   /*
   Params layout:
@@ -228,8 +226,25 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
       case StandardMetric =>
         System.arraycopy(in, 0, out, 0, out.size)
       case EuclideanMetric(elements) =>
-        Utils.lowerTriangularMultiply(elements, in, out)
+        squareMultiply(elements, in, out)
     }
+
+  private def squareMultiply(matrix: Array[Double],
+                             vector: Array[Double],
+                             out: Array[Double]): Unit = {
+    val n = out.size
+    var i = 0
+    while (i < n) {
+      var y = 0.0
+      var j = 0
+      while (j < n) {
+        y += vector(i) * matrix((i * n) + j)
+        j += 1
+      }
+      out(i) = y
+      i += 1
+    }
+  }
 
   private def dot(x: Array[Double], y: Array[Double]): Double = {
     var k = 0.0

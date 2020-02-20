@@ -7,6 +7,8 @@ case class EuclideanMetric(elements: Array[Double]) extends Metric
 object EuclideanMetric {
   def standard(n: Int): Metric =
     EuclideanMetric(0.until(n).toArray.flatMap { i =>
-      Array.fill(i)(0.0) :+ 1.0
+      val row = Array.fill(n)(0.0)
+      row(i) = 1.0
+      row
     })
 }
