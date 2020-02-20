@@ -35,15 +35,17 @@ case class AdaptiveMetric(iterations: Int) extends Warmup {
       }
       diff(newDiff)
 
-      //self.raw_cov[:] += new_diff[:, None] * old_diff[None, :]
-      /*
-      >>> x = np.array([1,2,3])
-      >>> y = np.array([4,5,6])
-      >>> x[:,None] * y[None,:]
-        array([[ 4,  5,  6],
-            [ 8, 10, 12],
-            [12, 15, 18]])
-       */
+      var j = 0
+      var l = 0
+      while (j < n) {
+        var k = 0
+        while (k < n) {
+          cov(l) += newDiff(j) * oldDiff(k)
+          k += 1
+          l += 1
+        }
+        j += 1
+      }
     }
 
     val nn = n * n
