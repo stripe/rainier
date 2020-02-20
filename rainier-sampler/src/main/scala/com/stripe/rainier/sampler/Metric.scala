@@ -11,20 +11,20 @@ object Metric {
         ???
     }
 
-  def energy(v: Array[Double], m: Metric): Double = {
+  def halfEnergy(v: Array[Double], m: Metric): Double = {
     val n = v.size
-    var k = 0.0
     m match {
       case StandardMetric =>
+        var k = 0.0
         var i = 0
         while (i < n) {
           val x = v(i)
           k += (x * x)
           i += 1
         }
+        k / 2.0
       case EuclideanMetric(elements) => ???
     }
-    k
   }
 }
 

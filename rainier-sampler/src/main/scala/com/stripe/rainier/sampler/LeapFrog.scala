@@ -205,11 +205,12 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
 
   private def logAcceptanceProb(from: Array[Double], metric: Metric): Double = {
     val toPotential = pqBuf(potentialIndex)
-    val toKinetic = Metric.energy(vBuf, metric) / 2
+    Metric.velocity(pqBuf, vBuf, metric)
+    val toKinetic = Metric.halfEnergy(vBuf, metric)
 
     val fromPotential = from(potentialIndex)
     Metric.velocity(from, vBuf2, metric)
-    val fromKinetic = Metric.energy(vBuf2, metric) / 2
+    val fromKinetic = Metric.halfEnergy(vBuf2, metric)
 
     val deltaH = toKinetic + toPotential - fromKinetic - fromPotential
     if (deltaH.isNaN) {
