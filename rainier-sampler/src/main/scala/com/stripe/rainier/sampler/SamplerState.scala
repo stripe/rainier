@@ -53,8 +53,9 @@ class SamplerState(val chain: Int,
     l
   }
 
-  def variables: Array[Double] =
-    lf.variables(params)
+  val nVars = densityFn.nVars
+  def variables(out: Array[Double]): Unit =
+    lf.variables(params, out)
 
   def finish(): Unit =
     progress.finish(this)
@@ -102,7 +103,7 @@ class SamplerState(val chain: Int,
 
   private var currentStepSize = 1.0
   private var pathLength = Iterator.continually(1)
-  private var currentMetric: Metric = EuclideanMetric.standard(densityFn.nVars)
+  private var currentMetric: Metric = StandardMetric
 
   private val densityWrapper = new DensityFunction {
     val nVars = densityFn.nVars

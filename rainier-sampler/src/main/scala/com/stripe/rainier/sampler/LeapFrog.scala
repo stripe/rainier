@@ -1,5 +1,9 @@
 package com.stripe.rainier.sampler
 
+sealed trait Metric
+object StandardMetric extends Metric
+case class EuclideanMetric(elements: Array[Double]) extends Metric
+
 private[sampler] case class LeapFrog(density: DensityFunction) {
   /*
   Params layout:
@@ -174,14 +178,12 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
   }
 
   // extract q
-  def variables(array: Array[Double]): Array[Double] = {
-    val newArray = new Array[Double](nVars)
+  def variables(array: Array[Double], out: Array[Double]): Unit = {
     var i = 0
     while (i < nVars) {
-      newArray(i) = array(i + nVars)
+      out(i) = array(i + nVars)
       i += 1
     }
-    newArray
   }
 
   //we want the invariant that a params array always has the potential which

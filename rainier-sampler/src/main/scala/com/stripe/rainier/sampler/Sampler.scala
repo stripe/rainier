@@ -34,7 +34,9 @@ case class Sampler(iterations: Int, warmups: List[Warmup] = Nil) {
         run(state)
       } else {
         WARNING.log("Warmup failed, aborting!")
-        List(state.variables)
+        val output = new Array[Double](state.nVars)
+        state.variables(output)
+        List(output)
       }
 
     state.finish()
@@ -48,7 +50,9 @@ case class Sampler(iterations: Int, warmups: List[Warmup] = Nil) {
     state.startPhase("Sampling", iterations)
     while (i < iterations) {
       state.step()
-      buf += state.variables
+      val output = new Array[Double](state.nVars)
+      state.variables(output)
+      buf += output
       i += 1
     }
     buf.toList
