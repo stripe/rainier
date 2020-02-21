@@ -2,75 +2,63 @@ package com.stripe.rainier.sampler
 
 class SamplerState(val chain: Int,
                    densityFn: DensityFunction,
+                   val totalIterations: Int,
+                   pathLength: PathLength,
                    progress: Progress)(implicit val rng: RNG) {
+  val startTime = System.nanoTime()
+  var currentIteration = 0
+  var lastOutputTime = 0L
 
-  def startPhase(phase: String, iterations: Int): Unit = {
-    progress.refresh(this)
+  var stepSize = 1.0
+  var isWarmup = true
 
-    currentPhase = phase
-    phaseStartTime = System.nanoTime()
-    phaseAcceptance = 0.0
-    phasePathLength = 0L
-    phaseIterations = iterations
-    currentIteration = 0
+  private val lf = new LeapFrog(densityFn)
+  private val params = lf.initialize
+
+  progress.start(this)
+
+  def findInitialStepSize(): Unit = {
+    var logAcceptanceProb = lf.tryStepping(params, stepSize)
+    val exponent = if (logAcceptanceProb > Math.log(0.5)) { 1.0 } else { -1.0 }
+    val doubleOrHalf = Math.pow(2, exponent)
+
+    while (stepSize != 0.0 && (exponent * logAcceptanceProb > -exponent * Math
+             .log(2))) {
+      stepSize *= doubleOrHalf
+      logAcceptanceProb = lf.tryStepping(params, stepSize)
+    }
+  }
+
+  def run(): Unit = {
+    val findUTurn = isWarmup && ((currentIteration % pathLength.findUTurnEvery) == 0)
+    if (findUTurn)
+      lf.run(params, pathLength.baseSteps, pathLength.stepSize(this), true)
+    else
+      lf.run(params, pathLength.nSteps(this), pathLength.stepSize(this), false)
+
+    currentIteration += 1
     checkOutput()
   }
 
-  def updateStepSize(e: Double): Unit = {
-    currentStepSize = e
-    checkOutput()
+  def variables: Array[Double] = {
+    val buf = new Array[Double](densityFn.nVars)
+    lf.variables(params, buf)
+    buf
   }
-
-  def stepSize: Double = currentStepSize
-
-  def updatePathLength(it: Iterator[Int]): Unit = {
-    pathLength = it
-  }
-
-  def step(): Double = {
-    val l = pathLength.next
-    val a = lf.step(params, l, stepSize)
-    trackIteration(a, l)
-    a
-  }
-
-  def tryStepping(): Double = {
-    val a = lf.tryStepping(params, stepSize)
-    trackIteration(a, 1)
-    a
-  }
-
-  def longestBatchStep(): Int = {
-    val (a, l) = lf.longestBatchStep(params, pathLength.next, stepSize)
-    trackIteration(a, l)
-    l
-  }
-
-  def variables: Array[Double] =
-    lf.variables(params)
 
   def finish(): Unit =
     progress.finish(this)
 
   def isValid: Boolean = stepSize > 0.0
 
-  private def startGradient(): Unit = {
-    lastGradientTime = System.nanoTime()
-    checkOutput()
-  }
+  def logAcceptanceProb = lf.recentAcceptProbs.last
+  def gradientEvaluations = lf.gradientEvaluations
+  def meanGradientTime = mean(lf.recentGradientTimes.toList).toLong
+  def meanAcceptanceProb = mean(lf.recentAcceptProbs.toList.map(math.exp(_)))
+  def meanStepCount = mean(lf.recentNSteps.toList)
 
-  private def endGradient(): Unit = {
-    gradientTime += (System.nanoTime() - lastGradientTime)
-    gradientEvaluations += 1
-    checkOutput()
-  }
-
-  private def trackIteration(logAccept: Double, pathLength: Int): Unit = {
-    phaseAcceptance += Math.exp(logAccept)
-    phasePathLength += pathLength
-    currentIteration += 1
-    checkOutput()
-  }
+  private def mean(list: List[Double]) =
+    list.sum / list.size
 
   val delayNanos = (progress.outputEverySeconds * 1e9).toLong
   private def checkOutput(): Unit = {
@@ -80,33 +68,4 @@ class SamplerState(val chain: Int,
       lastOutputTime = t
     }
   }
-
-  var startTime = System.nanoTime()
-  var phaseStartTime = 0L
-  var currentPhase = ""
-  var currentIteration = 0
-  var phaseIterations = 0
-  var gradientEvaluations = 0
-  var gradientTime = 0L
-  var lastGradientTime = 0L
-  var lastOutputTime = 0L
-  var phaseAcceptance = 0.0
-  var phasePathLength = 0L
-
-  private var currentStepSize = 1.0
-  private var pathLength = Iterator.continually(1)
-
-  private val densityWrapper = new DensityFunction {
-    val nVars = densityFn.nVars
-    def density = densityFn.density
-    def gradient(index: Int) = densityFn.gradient(index)
-    def update(vars: Array[Double]): Unit = {
-      startGradient()
-      densityFn.update(vars)
-      endGradient()
-    }
-  }
-
-  private val lf = LeapFrog(densityWrapper)
-  private val params = lf.initialize
 }

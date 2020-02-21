@@ -48,33 +48,23 @@ case class HTMLProgress(kernel: JupyterApi, delay: Double) extends Progress {
 
   private def render(p: SamplerState): String = {
     val t = System.nanoTime()
-    val iteration =
-      if (p.phaseIterations > 0) {
-        val itNum = s"Iteration: ${p.currentIteration}/${p.phaseIterations}"
-        if (p.currentIteration > 0) {
-          val itTime = renderTime((t - p.phaseStartTime) / p.currentIteration)
-          s"$itNum ($itTime)"
-        } else
-          itNum
-      } else
-        ""
+    val itNum = s"Iteration: ${p.currentIteration}/${p.totalIterations}"
     val stepSize = f"Step size: ${p.stepSize}%.5f"
-    val phaseTime = renderTime(t - p.phaseStartTime)
     val totalTime = "Total time elapsed: " + renderTime(t - p.startTime)
     val gradientTime =
       if (p.gradientEvaluations > 0)
-        "(" + renderTime(p.gradientTime / p.gradientEvaluations) + ")"
+        "(" + renderTime(p.meanGradientTime) + ")"
       else ""
     val gradient =
       f"Total gradient evaluations: ${p.gradientEvaluations.toDouble}%.1g $gradientTime"
     val acceptance =
-      if (p.phaseIterations > 0)
-        f"Acceptance rate: ${p.phaseAcceptance / p.currentIteration}%.2f"
+      if (p.currentIteration > 0)
+        f"Acceptance rate: ${p.meanAcceptanceProb}%.2f"
       else ""
     val pathLength =
-      if (p.phaseIterations > 0)
-        f"Mean path length: ${p.phasePathLength.toDouble / p.currentIteration}%.1f"
+      if (p.currentIteration > 0)
+        f"Mean step count: ${p.meanStepCount}%.1f"
       else ""
-    s"${p.currentPhase} ($phaseTime) <div>$iteration</div> <div>$acceptance</div> <div>$pathLength</div> <div>$stepSize</div> <div>$gradient</div> <div>$totalTime</div>"
+    s"<div>$itNum</div> <div>$acceptance</div> <div>$pathLength</div> <div>$stepSize</div> <div>$gradient</div> <div>$totalTime</div>"
   }
 }

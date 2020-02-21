@@ -3,31 +3,19 @@ package com.stripe.rainier.sampler
 import scala.collection.mutable.ListBuffer
 import Log._
 
-case class Sampler(iterations: Int, warmups: List[Warmup] = Nil) {
-  def findInitialStepSize: Sampler =
-    warmup(InitialStepSize)
-
-  def fixedPathLength(n: Int): Sampler =
-    warmup(FixedPathLength(n))
-
-  def dualAverageStepSize(iterations: Int, delta: Double = 0.65): Sampler =
-    warmup(DualAvgStepSize(iterations, delta))
-
-  def empiricalPathLengths(iterations: Int): Sampler =
-    warmup(EmpiricalPathLength(iterations))
-
-  def warmup(w: Warmup): Sampler =
-    Sampler(iterations, warmups :+ w)
-
+case class Sampler(warmupIterations: Int,
+                   iterations: Int,
+                   pathLength: PathLength) {
   def sample(chain: Int, density: DensityFunction, progress: Progress)(
       implicit rng: RNG) = {
-    val state = new SamplerState(chain, density, progress)
-    progress.start(state)
+    val state = new SamplerState(chain,
+                                 density,
+                                 warmupIterations + iterations,
+                                 pathLength,
+                                 progress)
 
-    warmups.foreach { w =>
-      if (state.isValid)
-        w.update(state)
-    }
+    state.findInitialStepSize()
+    warmup(state)
 
     val samples =
       if (state.isValid) {
@@ -41,13 +29,24 @@ case class Sampler(iterations: Int, warmups: List[Warmup] = Nil) {
     samples
   }
 
+  private def warmup(state: SamplerState): Unit = {
+    val dualAvg = DualAvg(0.65, state.stepSize)
+    var i = 0
+    while (i < warmupIterations && state.isValid) {
+      state.stepSize = dualAvg.stepSize
+      state.run()
+      dualAvg.update(state.logAcceptanceProb)
+      i += 1
+    }
+    state.stepSize = dualAvg.finalStepSize
+    state.isWarmup = false
+  }
+
   private def run(state: SamplerState): List[Array[Double]] = {
     val buf = new ListBuffer[Array[Double]]
     var i = 0
-
-    state.startPhase("Sampling", iterations)
     while (i < iterations) {
-      state.step()
+      state.run()
       buf += state.variables
       i += 1
     }
@@ -57,28 +56,16 @@ case class Sampler(iterations: Int, warmups: List[Warmup] = Nil) {
 
 object Sampler {
   val default =
-    EHMC(warmupIterations = 10000, iterations = 10000, l0 = 10, k = 1000)
-}
-
-trait Warmup {
-  def update(state: SamplerState)(implicit rng: RNG): Unit
+    EHMC(warmupIterations = 10000, iterations = 10000, l0 = 10)
 }
 
 //backwards compatibility
 object HMC {
   def apply(warmupIterations: Int, iterations: Int, nSteps: Int): Sampler =
-    Sampler(iterations).findInitialStepSize
-      .dualAverageStepSize(warmupIterations)
-      .fixedPathLength(nSteps)
+    Sampler(warmupIterations, iterations, FixedStepCount(nSteps))
 }
 
 object EHMC {
-  def apply(warmupIterations: Int,
-            iterations: Int,
-            l0: Int = 10,
-            k: Int = 1000): Sampler =
-    Sampler(iterations).findInitialStepSize
-      .dualAverageStepSize(warmupIterations)
-      .fixedPathLength(l0)
-      .empiricalPathLengths(k)
+  def apply(warmupIterations: Int, iterations: Int, l0: Int = 10): Sampler =
+    HMC(warmupIterations, iterations, l0)
 }
