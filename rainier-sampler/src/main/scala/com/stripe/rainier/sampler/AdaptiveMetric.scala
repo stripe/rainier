@@ -7,11 +7,12 @@ case class AdaptiveMetric(iterations: Int) extends Warmup {
     val covEst = new CovarianceEstimator(state.nVars)
     var i = 0
     val buf = new Array[Double](state.nVars)
-    while(i < iterations) {
-        state.step()
-        state.variables(buf)
-        covEst.update(buf)
-        println(buf.toList)
+    while (i < iterations) {
+      state.step()
+      state.variables(buf)
+      covEst.update(buf)
+      println(buf.toList)
+      i += 1
     }
     state.updateMetric(EuclideanMetric(covEst.close()))
   }
