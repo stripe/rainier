@@ -2,7 +2,9 @@ package com.stripe.rainier.sampler
 
 sealed trait Metric
 object StandardMetric extends Metric
-case class EuclideanMetric(elements: Array[Double]) extends Metric
+case class EuclideanMetric(elements: Array[Double]) extends Metric {
+  require(!elements.contains(0.0))
+}
 
 private[sampler] case class LeapFrog(density: DensityFunction) {
   /*

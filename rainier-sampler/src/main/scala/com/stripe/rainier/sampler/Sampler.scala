@@ -18,7 +18,7 @@ case class Sampler(iterations: Int, warmups: List[Warmup] = Nil) {
 
   def adaptMassMatrix(windows: Int, windowSize: Int = 100): Sampler =
     1.to(windows).foldLeft(this) {
-      case (s, _) => s.warmup(AdaptiveMetric(windowSize))
+      case (s, _) => s.warmup(AdaptMassMatrix(windowSize))
     }
 
   def warmup(w: Warmup): Sampler =
