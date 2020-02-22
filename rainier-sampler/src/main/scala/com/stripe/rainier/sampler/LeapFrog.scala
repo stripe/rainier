@@ -101,7 +101,7 @@ private[sampler] class LeapFrog(density: DensityFunction) {
                                     l0: Int,
                                     stepSize: Double): Int = {
     var l = 0
-    while (!isUTurn(params)) {
+    while (!isUTurn(params) && l < 32) {
       l += 1
       steps(1, stepSize)
       if (l == l0)
