@@ -1,5 +1,11 @@
 package com.stripe.rainier.sampler
 
+sealed trait Metric
+object StandardMetric extends Metric
+case class EuclideanMetric(elements: Array[Double]) extends Metric {
+  require(!elements.contains(0.0))
+}
+
 private[sampler] case class LeapFrog(density: DensityFunction) {
   /*
   Params layout:
@@ -12,26 +18,28 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
   private val inputOutputSize = potentialIndex + 1
   private val pqBuf = new Array[Double](inputOutputSize)
   private val qBuf = new Array[Double](nVars)
+  private val vBuf = new Array[Double](nVars)
+  private val vBuf2 = new Array[Double](nVars)
 
   // instance of parameters used in longestStepUntilUTurn
   private val isUturnBuf = new Array[Double](inputOutputSize)
 
-  def newQs(stepSize: Double): Unit = {
-    var i = nVars
-    val j = nVars * 2
-    while (i < j) {
-      pqBuf(i) += (stepSize * pqBuf(i - nVars))
+  def newQs(stepSize: Double, metric: Metric): Unit = {
+    velocity(pqBuf, vBuf, metric)
+    var i = 0
+    while (i < nVars) {
+      pqBuf(i + nVars) += (stepSize * vBuf(i))
       i += 1
     }
   }
 
-  def halfPsNewQs(stepSize: Double): Unit = {
+  def halfPsNewQs(stepSize: Double, metric: Metric): Unit = {
     fullPs(stepSize / 2.0)
-    newQs(stepSize)
+    newQs(stepSize, metric)
   }
 
-  def initialHalfThenFullStep(stepSize: Double): Unit = {
-    halfPsNewQs(stepSize)
+  def initialHalfThenFullStep(stepSize: Double, metric: Metric): Unit = {
+    halfPsNewQs(stepSize, metric)
     copyQsAndUpdateDensity()
     pqBuf(potentialIndex) = density.density * -1
   }
@@ -46,13 +54,13 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
     }
   }
 
-  def fullPsNewQs(stepSize: Double): Unit = {
+  def fullPsNewQs(stepSize: Double, metric: Metric): Unit = {
     fullPs(stepSize)
-    newQs(stepSize)
+    newQs(stepSize, metric)
   }
 
-  def twoFullSteps(stepSize: Double): Unit = {
-    fullPsNewQs(stepSize: Double)
+  def twoFullSteps(stepSize: Double, metric: Metric): Unit = {
+    fullPsNewQs(stepSize: Double, metric)
     copyQsAndUpdateDensity()
     pqBuf(potentialIndex) = density.density * -1
   }
@@ -68,11 +76,11 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
     * @param l the total number of leapfrog steps to perform
     * @param stepSize the current step size
     */
-  private def steps(l: Int, stepSize: Double): Unit = {
-    initialHalfThenFullStep(stepSize)
+  private def steps(l: Int, stepSize: Double, metric: Metric): Unit = {
+    initialHalfThenFullStep(stepSize, metric)
     var i = 1
     while (i < l) {
-      twoFullSteps(stepSize)
+      twoFullSteps(stepSize, metric)
       i += 1
     }
     finalHalfStep(stepSize)
@@ -103,16 +111,17 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
     */
   private def longestStepUntilUTurn(params: Array[Double],
                                     l0: Int,
-                                    stepSize: Double): Int = {
+                                    stepSize: Double,
+                                    metric: Metric): Int = {
     var l = 0
     while (!isUTurn(params)) {
       l += 1
-      steps(1, stepSize)
+      steps(1, stepSize, metric)
       if (l == l0)
         copy(pqBuf, isUturnBuf)
     }
     if (l < l0) {
-      steps(l0 - l, stepSize)
+      steps(l0 - l, stepSize, metric)
     } else {
       copy(isUturnBuf, pqBuf)
     }
@@ -120,20 +129,16 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
     l
   }
 
-  /**
-    * Perform a single step of the longest batch step algorithm
-    * @param params the current value of the parameters
-    * @param l0 the initial number of steps
-    * @param stepSize the current value of the leapfrog step size
-    */
-  def longestBatchStep(params: Array[Double], l0: Int, stepSize: Double)(
-      implicit rng: RNG): (Double, Int) = {
+  def longestBatchStep(params: Array[Double],
+                       l0: Int,
+                       stepSize: Double,
+                       metric: Metric)(implicit rng: RNG): (Double, Int) = {
 
     initializePs(params)
     copy(params, pqBuf)
-    val l = longestStepUntilUTurn(params, l0, stepSize)
+    val l = longestStepUntilUTurn(params, l0, stepSize, metric)
     val u = rng.standardUniform
-    val a = logAcceptanceProb(params, pqBuf)
+    val a = logAcceptanceProb(params, metric)
     if (math.log(u) < a)
       copy(pqBuf, params)
     (a, l)
@@ -149,23 +154,25 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
   }
   //Compute the acceptance probability for a single step at this stepSize without
   //re-initializing the ps, or modifying params
-  def tryStepping(params: Array[Double], stepSize: Double): Double = {
+  def tryStepping(params: Array[Double],
+                  stepSize: Double,
+                  metric: Metric): Double = {
     copy(params, pqBuf)
-    initialHalfThenFullStep(stepSize)
+    initialHalfThenFullStep(stepSize, metric)
     finalHalfStep(stepSize)
-    val p = logAcceptanceProb(params, pqBuf)
+    val p = logAcceptanceProb(params, metric)
     p
   }
 
   //attempt to take N steps
   //this will always clobber the stepSize and ps in params,
   //but will only update the qs if the move is accepted
-  def step(params: Array[Double], n: Int, stepSize: Double)(
+  def step(params: Array[Double], n: Int, stepSize: Double, metric: Metric)(
       implicit rng: RNG): Double = {
     initializePs(params)
     copy(params, pqBuf)
-    steps(n, stepSize)
-    val p = logAcceptanceProb(params, pqBuf)
+    steps(n, stepSize, metric)
+    val p = logAcceptanceProb(params, metric)
     if (p > Math.log(rng.standardUniform)) {
       copy(pqBuf, params)
     }
@@ -173,14 +180,12 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
   }
 
   // extract q
-  def variables(array: Array[Double]): Array[Double] = {
-    val newArray = new Array[Double](nVars)
+  def variables(array: Array[Double], out: Array[Double]): Unit = {
     var i = 0
     while (i < nVars) {
-      newArray(i) = array(i + nVars)
+      out(i) = array(i + nVars)
       i += 1
     }
-    newArray
   }
 
   //we want the invariant that a params array always has the potential which
@@ -202,34 +207,58 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
     array
   }
 
-  /**
-    * This is the dot product (ps^T ps).
-    * The fancier variations of HMC involve changing this kinetic term
-    * to either take the dot product with respect to a non-identity matrix (ps^T M ps)
-    * (a non-standard Euclidean metric) or a matrix that depends on the qs
-    * (ps^T M(qs) ps) (a Riemannian metric)
-    */
-  private def kinetic(array: Array[Double]): Double = {
-    var k = 0.0
-    var i = 0
-    while (i < nVars) {
-      val p = array(i)
-      k += (p * p)
-      i += 1
-    }
-    k / 2.0
-  }
+  private def logAcceptanceProb(from: Array[Double], metric: Metric): Double = {
+    val toPotential = pqBuf(potentialIndex)
+    velocity(pqBuf, vBuf, metric)
+    val toKinetic = dot(vBuf, pqBuf) / 2.0
 
-  private def logAcceptanceProb(from: Array[Double],
-                                to: Array[Double]): Double = {
-    val deltaH = kinetic(to) + to(potentialIndex) - kinetic(from) - from(
-      potentialIndex)
+    val fromPotential = from(potentialIndex)
+    velocity(from, vBuf2, metric)
+    val fromKinetic = dot(vBuf2, from) / 2.0
+
+    val deltaH = toKinetic + toPotential - fromKinetic - fromPotential
     if (deltaH.isNaN) {
       Math.log(0.0)
     } else {
       val lap = (-deltaH).min(0.0)
       lap
     }
+  }
+
+  private def velocity(in: Array[Double], out: Array[Double], m: Metric): Unit =
+    m match {
+      case StandardMetric =>
+        System.arraycopy(in, 0, out, 0, out.size)
+      case EuclideanMetric(elements) =>
+        squareMultiply(elements, in, out)
+    }
+
+  private def squareMultiply(matrix: Array[Double],
+                             vector: Array[Double],
+                             out: Array[Double]): Unit = {
+    val n = out.size
+    var i = 0
+    while (i < n) {
+      var y = 0.0
+      var j = 0
+      while (j < n) {
+        y += vector(i) * matrix((i * n) + j)
+        j += 1
+      }
+      out(i) = y
+      i += 1
+    }
+  }
+
+  private def dot(x: Array[Double], y: Array[Double]): Double = {
+    var k = 0.0
+    var i = 0
+    val n = x.size
+    while (i < n) {
+      k += (x(i) * y(i))
+      i += 1
+    }
+    k
   }
 
   private def initializePs(array: Array[Double])(implicit rng: RNG): Unit = {

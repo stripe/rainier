@@ -12,7 +12,8 @@ class CholeskyTest extends ComputeTest {
     val realPacked = packed.map(Real(_))
     val realX = Cholesky.lowerTriangularSolve(realPacked, realY)
     val x = realX.collect { case Scalar(d) => d }
-    val newY = Cholesky.lowerTriangularMultiply(packed.toArray, x.toArray)
+    val newY = new Array[Double](y.size)
+    Cholesky.lowerTriangularMultiply(packed.toArray, x.toArray, newY)
     y.zip(newY).foreach {
       case (yi, newYi) => assertWithinEpsilon(yi, newYi, "")
     }

@@ -16,6 +16,11 @@ case class Sampler(iterations: Int, warmups: List[Warmup] = Nil) {
   def empiricalPathLengths(iterations: Int): Sampler =
     warmup(EmpiricalPathLength(iterations))
 
+  def adaptMassMatrix(windows: Int, windowSize: Int = 100): Sampler =
+    1.to(windows).foldLeft(this) {
+      case (s, _) => s.warmup(AdaptMassMatrix(windowSize))
+    }
+
   def warmup(w: Warmup): Sampler =
     Sampler(iterations, warmups :+ w)
 
@@ -34,7 +39,9 @@ case class Sampler(iterations: Int, warmups: List[Warmup] = Nil) {
         run(state)
       } else {
         WARNING.log("Warmup failed, aborting!")
-        List(state.variables)
+        val output = new Array[Double](state.nVars)
+        state.variables(output)
+        List(output)
       }
 
     state.finish()
@@ -48,7 +55,9 @@ case class Sampler(iterations: Int, warmups: List[Warmup] = Nil) {
     state.startPhase("Sampling", iterations)
     while (i < iterations) {
       state.step()
-      buf += state.variables
+      val output = new Array[Double](state.nVars)
+      state.variables(output)
+      buf += output
       i += 1
     }
     buf.toList

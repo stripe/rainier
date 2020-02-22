@@ -63,7 +63,9 @@ case class MVNormal private (chol: Cholesky) extends Multivariate {
     val iidNormals = Normal.standard.generator.repeat(size).map(_.toArray)
     Generator((packedGen, iidNormals)).map {
       case (a, z) =>
-        Cholesky.lowerTriangularMultiply(a.toArray, z)
+        val result = new Array[Double](z.size)
+        Cholesky.lowerTriangularMultiply(a.toArray, z, result)
+        result
     }
   }
 }
