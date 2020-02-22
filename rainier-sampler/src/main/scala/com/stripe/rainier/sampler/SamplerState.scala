@@ -60,6 +60,9 @@ class SamplerState(val chain: Int,
   def meanAcceptanceProb = mean(lf.recentAcceptProbs.toList.map(math.exp(_)))
   def meanStepCount = mean(lf.recentNSteps.toList)
 
+  def sampleUTurnSteps()(implicit rng: RNG) =
+    lf.recentUTurnSteps.sample()
+
   private def mean(list: List[Double]) =
     list.sum / list.size
 

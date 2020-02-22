@@ -251,4 +251,10 @@ class RingBuffer(size: Int) {
     else
       lastPart
   }
+  def sample()(implicit rng: RNG) = {
+    if (full)
+      buf(rng.int(size))
+    else
+      buf(rng.int(i + 1))
+  }
 }

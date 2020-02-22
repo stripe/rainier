@@ -15,6 +15,15 @@ case class FixedStepCount(n: Int) extends PathLength {
   def findUTurnEvery = 1000000
 }
 
+case class EmpiricalStepCount(findUTurnEvery: Int = 10, l0: Int = 10)
+    extends PathLength {
+  def baseSteps = l0
+  def nSteps(state: SamplerState)(implicit rng: RNG) =
+    state.sampleUTurnSteps().toInt
+  def stepSize(nSteps: Int, state: SamplerState)(implicit rng: RNG) =
+    state.stepSize
+}
+
 case class Jitter(orig: PathLength) extends PathLength {
   def baseSteps = orig.baseSteps
   def nSteps(state: SamplerState)(implicit rng: RNG) =
