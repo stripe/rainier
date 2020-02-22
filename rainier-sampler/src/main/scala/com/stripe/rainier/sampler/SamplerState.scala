@@ -31,10 +31,13 @@ class SamplerState(val chain: Int,
 
   def run(): Unit = {
     val findUTurn = isWarmup && ((currentIteration % pathLength.findUTurnEvery) == 0)
-    if (findUTurn)
-      lf.run(params, pathLength.baseSteps, pathLength.stepSize(this), true)
-    else
-      lf.run(params, pathLength.nSteps(this), pathLength.stepSize(this), false)
+    if (findUTurn) {
+      val n = pathLength.baseSteps
+      lf.run(params, n, pathLength.stepSize(n, this), true)
+    } else {
+      val n = pathLength.nSteps(this)
+      lf.run(params, n, pathLength.stepSize(n, this), false)
+    }
 
     currentIteration += 1
     checkOutput()

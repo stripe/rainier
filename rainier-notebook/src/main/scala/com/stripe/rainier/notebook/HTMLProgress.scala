@@ -49,7 +49,7 @@ case class HTMLProgress(kernel: JupyterApi, delay: Double) extends Progress {
   private def render(p: SamplerState): String = {
     val t = System.nanoTime()
     val itNum = s"Iteration: ${p.currentIteration}/${p.totalIterations}"
-    val stepSize = f"Step size: ${p.stepSize}%.5f"
+    val stepSize = f"Step size: ${p.stepSize}%.1g"
     val totalTime = "Total time elapsed: " + renderTime(t - p.startTime)
     val gradientTime =
       if (p.gradientEvaluations > 0)
