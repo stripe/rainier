@@ -16,9 +16,14 @@ case class Sampler(iterations: Int, warmups: List[Warmup] = Nil) {
   def empiricalPathLengths(iterations: Int): Sampler =
     warmup(EmpiricalPathLength(iterations))
 
-  def adaptMassMatrix(windows: Int, windowSize: Int = 100): Sampler =
+  def adaptFullMassMatrix(windows: Int, windowSize: Int = 100): Sampler =
     1.to(windows).foldLeft(this) {
-      case (s, _) => s.warmup(AdaptMassMatrix(windowSize))
+      case (s, _) => s.warmup(AdaptFullMassMatrix(windowSize))
+    }
+
+  def adaptDiagonalMassMatrix(windows: Int, windowSize: Int = 100): Sampler =
+    1.to(windows).foldLeft(this) {
+      case (s, _) => s.warmup(AdaptDiagonalMassMatrix(windowSize))
     }
 
   def warmup(w: Warmup): Sampler =

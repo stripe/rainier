@@ -2,6 +2,9 @@ package com.stripe.rainier.sampler
 
 sealed trait Metric
 object StandardMetric extends Metric
+case class DiagonalMetric(elements: Array[Double]) extends Metric {
+  require(!elements.contains(0.0))
+}
 case class EuclideanMetric(elements: Array[Double]) extends Metric {
   require(!elements.contains(0.0))
 }
@@ -229,6 +232,12 @@ private[sampler] case class LeapFrog(density: DensityFunction) {
     m match {
       case StandardMetric =>
         System.arraycopy(in, 0, out, 0, out.size)
+      case DiagonalMetric(elements) =>
+        var i = 0
+        while (i < out.size) {
+          out(i) = in(i) * elements(i)
+          i += 1
+        }
       case EuclideanMetric(elements) =>
         squareMultiply(elements, in, out)
     }

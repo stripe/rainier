@@ -80,6 +80,8 @@ case class HTMLProgress(kernel: JupyterApi, delay: Double) extends Progress {
         case StandardMetric => ""
         case EuclideanMetric(elements) =>
           s"Mass matrix: ${elements.toList}"
+        case DiagonalMetric(elements) =>
+          s"Diagonal mass matrix: ${elements.toList}"
       }
     s"${p.currentPhase} ($phaseTime) <div>$iteration</div> <div>$acceptance</div> <div>$pathLength</div> <div>$stepSize</div> <div>$massMatrix</div> <div>$gradient</div> <div>$totalTime</div>"
   }
