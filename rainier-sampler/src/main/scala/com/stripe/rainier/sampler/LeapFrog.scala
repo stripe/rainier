@@ -77,6 +77,12 @@ final class LeapFrog(density: DensityFunction) {
     a
   }
 
+  def snapshot(out: Array[Double]): Unit =
+    copy(pqBuf, out)
+
+  def restore(in: Array[Double]): Unit =
+    copy(in, pqBuf)
+
   // extract q
   def variables(params: Array[Double], out: Array[Double]): Unit = {
     var i = 0
@@ -112,8 +118,9 @@ final class LeapFrog(density: DensityFunction) {
   array(n*2) == potential
    */
   val nVars = density.nVars
-  private val potentialIndex = nVars * 2
-  private val inputOutputSize = potentialIndex + 1
+  val potentialIndex = nVars * 2
+  val inputOutputSize = potentialIndex + 1
+
   private val pqBuf = new Array[Double](inputOutputSize)
   private val qBuf = new Array[Double](nVars)
   private val vBuf = new Array[Double](nVars)

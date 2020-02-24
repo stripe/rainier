@@ -53,7 +53,6 @@ object Driver {
     var nextOutputTime = System.nanoTime()
 
     val params = lf.initialize()
-    sampler.initialize(params, lf)
     var stepSize = stepSizeTuner.initialize(params, lf)
     var metric = metricTuner.initialize(lf)
 
