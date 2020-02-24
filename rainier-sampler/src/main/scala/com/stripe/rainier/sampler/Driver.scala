@@ -18,16 +18,17 @@ object Driver {
     progress.start(chain, lf.stats)
 
     FINE.log("Starting warmup")
-    warmup(chain,
-           lf,
-           sampler,
-           stepSizeTuner,
-           metricTuner,
-           config.warmupIterations,
-           progress)
+    val params = warmup(chain,
+                        lf,
+                        sampler,
+                        stepSizeTuner,
+                        metricTuner,
+                        config.warmupIterations,
+                        progress)
 
     FINE.log("Starting sampling")
     val samples = collectSamples(chain,
+                                 params,
                                  lf,
                                  sampler,
                                  stepSizeTuner,
@@ -47,12 +48,13 @@ object Driver {
                      stepSizeTuner: StepSizeTuner,
                      metricTuner: MetricTuner,
                      iterations: Int,
-                     progress: Progress)(implicit rng: RNG): Unit = {
+                     progress: Progress)(implicit rng: RNG): Array[Double] = {
     var i = 0
     var nextOutputTime = System.nanoTime()
 
-    sampler.initialize(lf)
-    var stepSize = stepSizeTuner.initialize(lf)
+    val params = lf.initialize()
+    sampler.initialize(params, lf)
+    var stepSize = stepSizeTuner.initialize(params, lf)
     var metric = metricTuner.initialize(lf)
 
     FINER.log("Initial step size %f", stepSize)
@@ -60,13 +62,13 @@ object Driver {
     val sample = new Array[Double](lf.nVars)
 
     while (i < iterations) {
-      val logAcceptProb = sampler.warmup(lf, stepSize, metric)
+      val logAcceptProb = sampler.warmup(params, lf, stepSize, metric)
       stepSize = stepSizeTuner.update(logAcceptProb)
 
       FINEST.log("Accept probability %f", Math.exp(logAcceptProb))
       FINEST.log("Adapted step size %f", stepSize)
 
-      lf.variables(sample)
+      lf.variables(params, sample)
       metricTuner.update(sample) match {
         case Some(m) =>
           metric = m
@@ -81,10 +83,12 @@ object Driver {
 
       i += 1
     }
+    params
   }
 
   private def collectSamples(
       chain: Int,
+      params: Array[Double],
       lf: LeapFrog,
       sampler: Sampler,
       stepSizeTuner: StepSizeTuner,
@@ -95,9 +99,9 @@ object Driver {
     val buf = new ListBuffer[Array[Double]]
     var i = 0
     while (i < iterations) {
-      sampler.run(lf, stepSizeTuner.stepSize, metricTuner.metric)
+      sampler.run(params, lf, stepSizeTuner.stepSize, metricTuner.metric)
       val output = new Array[Double](lf.nVars)
-      lf.variables(output)
+      lf.variables(params, output)
       buf += output
 
       if (System.nanoTime() > nextOutputTime) {

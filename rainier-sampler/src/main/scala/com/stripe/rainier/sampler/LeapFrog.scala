@@ -5,11 +5,13 @@ final class LeapFrog(density: DensityFunction) {
 
   //Compute the acceptance probability for a single step at this stepSize without
   //re-initializing the ps, or modifying params
-  def tryStepping(stepSize: Double, metric: Metric): Double = {
+  def tryStepping(params: Array[Double],
+                  stepSize: Double,
+                  metric: Metric): Double = {
     copy(params, pqBuf)
     initialHalfThenFullStep(stepSize, metric)
     finalHalfStep(stepSize)
-    logAcceptanceProb(metric)
+    logAcceptanceProb(params, metric)
   }
 
   def takeSteps(l: Int, stepSize: Double, metric: Metric): Unit = {
@@ -23,7 +25,7 @@ final class LeapFrog(density: DensityFunction) {
     finalHalfStep(stepSize)
   }
 
-  def isUTurn: Boolean = {
+  def isUTurn(params: Array[Double]): Boolean = {
     var out = 0.0
     var i = 0
     while (i < nVars) {
@@ -37,7 +39,7 @@ final class LeapFrog(density: DensityFunction) {
       out < 0
   }
 
-  def logAcceptanceProb(metric: Metric): Double = {
+  def logAcceptanceProb(params: Array[Double], metric: Metric): Double = {
     val toPotential = pqBuf(potentialIndex)
     velocity(pqBuf, vBuf, metric)
     val toKinetic = dot(vBuf, pqBuf) / 2.0
@@ -56,14 +58,15 @@ final class LeapFrog(density: DensityFunction) {
   }
 
   var iterationStartTime: Long = _
-  def startIteration()(implicit rng: RNG): Unit = {
-    initializePs()
+  def startIteration(params: Array[Double])(implicit rng: RNG): Unit = {
+    initializePs(params)
     copy(params, pqBuf)
     iterationStartTime = System.nanoTime()
   }
 
-  def finishIteration(metric: Metric)(implicit rng: RNG): Double = {
-    val a = logAcceptanceProb(metric)
+  def finishIteration(params: Array[Double], metric: Metric)(
+      implicit rng: RNG): Double = {
+    val a = logAcceptanceProb(params, metric)
     if (a > Math.log(rng.standardUniform)) {
       copy(pqBuf, params)
     }
@@ -75,7 +78,7 @@ final class LeapFrog(density: DensityFunction) {
   }
 
   // extract q
-  def variables(out: Array[Double]): Unit = {
+  def variables(params: Array[Double], out: Array[Double]): Unit = {
     var i = 0
     while (i < nVars) {
       out(i) = params(i + nVars)
@@ -86,7 +89,8 @@ final class LeapFrog(density: DensityFunction) {
   //we want the invariant that a params array always has the potential which
   //matches the qs. That means when we initialize a new one
   //we need to compute the potential.
-  def initialize(implicit rng: RNG) = {
+  def initialize()(implicit rng: RNG): Array[Double] = {
+    val params = new Array[Double](inputOutputSize)
     java.util.Arrays.fill(pqBuf, 0.0)
     var i = nVars
     val j = nVars * 2
@@ -97,7 +101,8 @@ final class LeapFrog(density: DensityFunction) {
     copyQsAndUpdateDensity()
     pqBuf(potentialIndex) = density.density * -1
     copy(pqBuf, params)
-    initializePs()
+    initializePs(params)
+    params
   }
 
   /*
@@ -109,7 +114,6 @@ final class LeapFrog(density: DensityFunction) {
   val nVars = density.nVars
   private val potentialIndex = nVars * 2
   private val inputOutputSize = potentialIndex + 1
-  private val params = new Array[Double](inputOutputSize)
   private val pqBuf = new Array[Double](inputOutputSize)
   private val qBuf = new Array[Double](nVars)
   private val vBuf = new Array[Double](nVars)
@@ -213,7 +217,7 @@ final class LeapFrog(density: DensityFunction) {
     k
   }
 
-  private def initializePs()(implicit rng: RNG): Unit = {
+  private def initializePs(params: Array[Double])(implicit rng: RNG): Unit = {
     var i = 0
     while (i < nVars) {
       params(i) = rng.standardNormal

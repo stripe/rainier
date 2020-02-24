@@ -1,20 +1,24 @@
 package com.stripe.rainier.sampler
 
 class HMCSampler(nSteps: Int) extends Sampler {
-  def initialize(lf: LeapFrog)(implicit rng: RNG) = ()
+  def initialize(params: Array[Double], lf: LeapFrog)(implicit rng: RNG) = ()
 
-  def warmup(lf: LeapFrog, stepSize: Double, metric: Metric)(
-      implicit rng: RNG): Double = {
-    lf.startIteration()
+  def warmup(params: Array[Double],
+             lf: LeapFrog,
+             stepSize: Double,
+             metric: Metric)(implicit rng: RNG): Double = {
+    lf.startIteration(params)
     lf.takeSteps(nSteps, stepSize, metric)
-    lf.finishIteration(metric)
+    lf.finishIteration(params, metric)
   }
 
-  def run(lf: LeapFrog, stepSize: Double, metric: Metric)(
-      implicit rng: RNG): Unit = {
-    lf.startIteration()
+  def run(params: Array[Double],
+          lf: LeapFrog,
+          stepSize: Double,
+          metric: Metric)(implicit rng: RNG): Unit = {
+    lf.startIteration(params)
     lf.takeSteps(nSteps, stepSize, metric)
-    lf.finishIteration(metric)
+    lf.finishIteration(params, metric)
     ()
   }
 }
