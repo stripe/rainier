@@ -1,20 +1,5 @@
 package com.stripe.rainier.sampler
 
-case class DualAvgStepSize(iterations: Int, delta: Double) extends Warmup {
-  def update(state: SamplerState)(implicit rng: RNG): Unit = {
-    val dualAvg = DualAvg(delta, state.stepSize)
-    var i = 0
-    state.startPhase("Finding step size with dual averaging", iterations)
-    while (i < iterations) {
-      state.updateStepSize(dualAvg.stepSize)
-      val logAcceptanceProb = state.step()
-      dualAvg.update(logAcceptanceProb)
-      i += 1
-    }
-    state.updateStepSize(dualAvg.finalStepSize)
-  }
-}
-
 final private class DualAvg(
     delta: Double,
     var logStepSize: Double,

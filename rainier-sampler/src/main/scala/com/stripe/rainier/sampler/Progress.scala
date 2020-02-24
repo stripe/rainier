@@ -18,7 +18,7 @@ object ConsoleProgress extends Progress {
   def start(state: SamplerState): Unit = ()
   def refresh(state: SamplerState): Unit =
     println(
-      s"Chain ${state.chain} ${state.currentPhase}: Iteration ${state.currentIteration}/${state.phaseIterations}")
+      s"Chain ${state.chain}: Iteration ${state.currentIteration}/${state.phaseIterations}")
   def finish(state: SamplerState): Unit =
     refresh(state)
   val outputEverySeconds = 0.5

@@ -116,6 +116,6 @@ class SamplerState(val chain: Int,
     }
   }
 
-  private val lf = LeapFrog(densityWrapper)
+  private val lf = new LeapFrog(densityWrapper)
   private val params = lf.initialize
 }
