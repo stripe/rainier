@@ -1,14 +1,31 @@
 package com.stripe.rainier.sampler
 
-case class HMC(warmupIterations: Int, iterations: Int, nSteps: Int) extends Sampler {
-  type S
-  val initialWindowSize = warmupIterations
-  val windowExpansion = 1.0
+class HMCSampler(nSteps: Int) extends Sampler {
+  def initialize(lf: LeapFrog)(implicit rng: RNG) = ()
 
-  def initialize(lf: LeapFrog): S = ???
-  def prepareBackground(s: S)(implicit rng: RNG): S = ???
-  def prepareForeground(s: S)(implicit rng: RNG): S = ???
+  def warmup(lf: LeapFrog, stepSize: Double, metric: Metric)(
+      implicit rng: RNG): Double = {
+    lf.startIteration()
+    lf.takeSteps(nSteps, stepSize, metric)
+    lf.finishIteration(metric)
+  }
 
-  def warmup(fg: S, bg: S, lf: LeapFrog)(implicit rng: RNG): Unit = ???
-  def run(fg: S, lf: LeapFrog)(implicit rng: RNG): Unit = ???
+  def run(lf: LeapFrog, stepSize: Double, metric: Metric)(
+      implicit rng: RNG): Unit = {
+    lf.startIteration()
+    lf.takeSteps(nSteps, stepSize, metric)
+    lf.finishIteration(metric)
+    ()
+  }
+}
+
+object HMC {
+  def apply(warmIt: Int, it: Int, nSteps: Int): SamplerConfig =
+    new SamplerConfig {
+      val warmupIterations = warmIt
+      val iterations = it
+      def sampler() = new HMCSampler(nSteps)
+      def stepSizeTuner() = new DualAvgTuner(0.65)
+      def metricTuner() = new StandardMetricTuner()
+    }
 }

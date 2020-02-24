@@ -1,11 +1,5 @@
 package com.stripe.rainier.sampler
 
-sealed trait Metric
-object StandardMetric extends Metric
-case class EuclideanMetric(elements: Array[Double]) extends Metric {
-  require(!elements.contains(0.0))
-}
-
 final class LeapFrog(density: DensityFunction) {
   val stats = new Stats(100)
 
@@ -135,7 +129,8 @@ final class LeapFrog(density: DensityFunction) {
     newQs(stepSize, metric)
   }
 
-  private def initialHalfThenFullStep(stepSize: Double, metric: Metric): Unit = {
+  private def initialHalfThenFullStep(stepSize: Double,
+                                      metric: Metric): Unit = {
     halfPsNewQs(stepSize, metric)
     copyQsAndUpdateDensity()
     pqBuf(potentialIndex) = density.density * -1
@@ -180,7 +175,9 @@ final class LeapFrog(density: DensityFunction) {
     stats.gradientEvaluations += 1
   }
 
-  private def velocity(in: Array[Double], out: Array[Double], metric: Metric): Unit =
+  private def velocity(in: Array[Double],
+                       out: Array[Double],
+                       metric: Metric): Unit =
     metric match {
       case StandardMetric =>
         System.arraycopy(in, 0, out, 0, out.size)

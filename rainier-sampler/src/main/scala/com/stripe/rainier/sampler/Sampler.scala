@@ -1,20 +1,35 @@
 package com.stripe.rainier.sampler
 
-trait Sampler {
-  type S
+trait SamplerConfig {
   def iterations: Int
   def warmupIterations: Int
-  def initialWindowSize: Int
-  def windowExpansion: Double
 
-  def initialize(lf: LeapFrog): S
-  def prepareBackground(s: S)(implicit rng: RNG): S
-  def prepareForeground(s: S)(implicit rng: RNG): S
-
-  def warmup(fg: S, bg: S, lf: LeapFrog)(implicit rng: RNG): Unit
-  def run(fg: S, lf: LeapFrog)(implicit rng: RNG): Unit
+  def stepSizeTuner(): StepSizeTuner
+  def metricTuner(): MetricTuner
+  def sampler(): Sampler
 }
 
-object Sampler {
-  val default: Sampler = HMC(10000, 1000, 10)
+object SamplerConfig {
+  val default: SamplerConfig = HMC(10000, 1000, 5)
+}
+
+trait StepSizeTuner {
+  def initialize(lf: LeapFrog)(implicit rng: RNG): Double
+  def update(logAcceptanceProb: Double)(implicit rng: RNG): Double
+  def reset()(implicit rng: RNG): Double
+  def stepSize(implicit rng: RNG): Double
+}
+
+trait MetricTuner {
+  def initialize(lf: LeapFrog): Metric
+  def update(sample: Array[Double]): Option[Metric]
+  def metric: Metric
+}
+
+trait Sampler {
+  def initialize(lf: LeapFrog)(implicit rng: RNG): Unit
+  def warmup(lf: LeapFrog, stepSize: Double, metric: Metric)(
+      implicit rng: RNG): Double
+  def run(lf: LeapFrog, stepSize: Double, metric: Metric)(
+      implicit rng: RNG): Unit
 }

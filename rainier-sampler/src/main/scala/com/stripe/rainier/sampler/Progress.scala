@@ -17,8 +17,7 @@ object SilentProgress extends Progress {
 object ConsoleProgress extends Progress {
   def start(chain: Int, stats: Stats): Unit = ()
   def refresh(chain: Int, stats: Stats): Unit =
-    println(
-      s"Chain ${chain}: Iteration ${stats.iterations}")
+    println(s"Chain ${chain}: Iteration ${stats.iterations}")
   def finish(chain: Int, stats: Stats): Unit =
     refresh(chain, stats)
   val outputEverySeconds = 0.5

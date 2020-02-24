@@ -1,6 +1,38 @@
 package com.stripe.rainier.sampler
 
-final private class DualAvg(
+class DualAvgTuner(delta: Double) extends StepSizeTuner {
+  var da: DualAvg = _
+  var stepSize0 = 1.0
+
+  def initialize(lf: LeapFrog)(implicit rng: RNG): Double = {
+    var logAcceptanceProb = lf.tryStepping(stepSize0, StandardMetric)
+    val exponent = if (logAcceptanceProb > Math.log(0.5)) { 1.0 } else { -1.0 }
+    val doubleOrHalf = Math.pow(2, exponent)
+    while (stepSize0 != 0.0 && (exponent * logAcceptanceProb > -exponent * Math
+             .log(2))) {
+      stepSize0 *= doubleOrHalf
+      logAcceptanceProb = lf.tryStepping(stepSize0, StandardMetric)
+    }
+    da = DualAvg(delta, stepSize0)
+    stepSize0
+  }
+
+  def update(logAcceptanceProb: Double)(implicit rng: RNG): Double = {
+    da.update(logAcceptanceProb)
+    da.stepSize
+  }
+
+  def reset()(implicit rng: RNG): Double = {
+    da = DualAvg(delta, stepSize0)
+    stepSize0
+  }
+
+  def stepSize(implicit rng: RNG): Double = {
+    da.finalStepSize
+  }
+}
+
+final class DualAvg(
     delta: Double,
     var logStepSize: Double,
     var logStepSizeBar: Double,

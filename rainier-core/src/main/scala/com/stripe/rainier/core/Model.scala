@@ -10,14 +10,14 @@ case class Model(private[rainier] val likelihoods: List[Real],
   def merge(other: Model) =
     Model(likelihoods ++ other.likelihoods, track ++ other.track)
 
-  def sample(sampler: Sampler, nChains: Int = 4)(implicit rng: RNG,
-                                                 progress: Progress =
-                                                   SilentProgress): Trace = {
+  def sample(config: SamplerConfig, nChains: Int = 4)(
+      implicit rng: RNG,
+      progress: Progress = SilentProgress): Trace = {
     val chains = 1
       .to(nChains)
       .toList
       .map { i =>
-       Driver.sample(i, sampler, density(), progress)
+        Driver.sample(i, config, density(), progress)
       }
       .toList
     Trace(chains, this)
@@ -52,13 +52,13 @@ case class Model(private[rainier] val likelihoods: List[Real],
 object Model {
   val empty = Model.likelihood(Real.zero)
 
-  def sample[T, U](t: T, sampler: Sampler = Sampler.default)(
+  def sample[T, U](t: T, config: SamplerConfig = SamplerConfig.default)(
       implicit toGen: ToGenerator[T, U],
       rng: RNG,
       progress: Progress = SilentProgress): List[U] = {
     val gen = toGen(t)
     val model = Model.track(gen.requirements)
-    val trace = model.sample(sampler, 1)
+    val trace = model.sample(config, 1)
     trace.thin(10).predict(gen)
   }
 

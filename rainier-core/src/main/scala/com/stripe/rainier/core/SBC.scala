@@ -21,7 +21,7 @@ final case class SBC[T](priors: Seq[Continuous],
     Generator.traverse(priors.map(_.generator))
 
   def animate(syntheticSamples: Int, logBins: Int = 3)(
-      samplerFn: Int => Sampler)(implicit rng: RNG): Unit = {
+      samplerFn: Int => SamplerConfig)(implicit rng: RNG): Unit = {
     val t0 = System.currentTimeMillis
     val stream = simulate(syntheticSamples, logBins)(samplerFn)
     val bins = 1 << logBins
@@ -41,7 +41,7 @@ final case class SBC[T](priors: Seq[Continuous],
   }
 
   def simulate(syntheticSamples: Int, logBins: Int = 3)(
-      samplerFn: Int => Sampler)(implicit rng: RNG): Stream[Rep] = {
+      samplerFn: Int => SamplerConfig)(implicit rng: RNG): Stream[Rep] = {
     require(logBins > 0)
     val bins = 1 << logBins
     require(bins <= Samples)
@@ -68,7 +68,7 @@ final case class SBC[T](priors: Seq[Continuous],
   def model(syntheticSamples: Int)(implicit rng: RNG): (Model, Real) =
     fit(synthesize(syntheticSamples)._1)
 
-  private def repStream(samplerFn: Int => Sampler,
+  private def repStream(samplerFn: Int => SamplerConfig,
                         syntheticSamples: Int,
                         bins: Int,
                         remaining: Int)(implicit rng: RNG): Stream[Rep] =
@@ -80,7 +80,7 @@ final case class SBC[T](priors: Seq[Continuous],
       rep #:: repStream(samplerFn, syntheticSamples, bins, remaining - 1)
     }
 
-  private def repetition(samplerFn: Int => Sampler,
+  private def repetition(samplerFn: Int => SamplerConfig,
                          syntheticSamples: Int,
                          bins: Int,
                          trials: Int,
@@ -102,7 +102,7 @@ final case class SBC[T](priors: Seq[Continuous],
     }
   }
 
-  private def sample(samplerFn: Int => Sampler,
+  private def sample(samplerFn: Int => SamplerConfig,
                      syntheticSamples: Int,
                      thin: Int)(implicit rng: RNG): (Int, Double, Double) = {
     val (syntheticValues, trueOutput) = synthesize(syntheticSamples)
