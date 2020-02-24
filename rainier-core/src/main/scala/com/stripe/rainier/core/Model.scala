@@ -17,7 +17,7 @@ case class Model(private[rainier] val likelihoods: List[Real],
       .to(nChains)
       .toList
       .map { i =>
-        sampler.sample(i, density(), progress)
+       Driver.sample(i, sampler, density(), progress)
       }
       .toList
     Trace(chains, this)
