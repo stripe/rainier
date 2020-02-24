@@ -5,6 +5,7 @@ class DualAvgTuner(delta: Double) extends StepSizeTuner {
   var stepSize0 = 1.0
 
   def initialize(lf: LeapFrog)(implicit rng: RNG): Double = {
+    lf.initialize
     var logAcceptanceProb = lf.tryStepping(stepSize0, StandardMetric)
     val exponent = if (logAcceptanceProb > Math.log(0.5)) { 1.0 } else { -1.0 }
     val doubleOrHalf = Math.pow(2, exponent)

@@ -1,6 +1,7 @@
 package com.stripe.rainier.sampler
 
 import scala.collection.mutable.ListBuffer
+import Log._
 
 object Driver {
   def sample(chain: Int,
@@ -16,6 +17,7 @@ object Driver {
 
     progress.start(chain, lf.stats)
 
+    FINE.log("Starting warmup")
     warmup(chain,
            lf,
            sampler,
@@ -23,6 +25,8 @@ object Driver {
            metricTuner,
            config.warmupIterations,
            progress)
+
+    FINE.log("Starting sampling")
     val samples = collectSamples(chain,
                                  lf,
                                  sampler,
@@ -30,6 +34,8 @@ object Driver {
                                  metricTuner,
                                  config.iterations,
                                  progress)
+
+    FINE.log("Finished sampling")
 
     progress.finish(chain, lf.stats)
     samples
@@ -49,11 +55,17 @@ object Driver {
     var stepSize = stepSizeTuner.initialize(lf)
     var metric = metricTuner.initialize(lf)
 
+    FINER.log("Initial step size %f", stepSize)
+
     val sample = new Array[Double](lf.nVars)
 
     while (i < iterations) {
       val logAcceptProb = sampler.warmup(lf, stepSize, metric)
       stepSize = stepSizeTuner.update(logAcceptProb)
+
+      FINEST.log("Accept probability %f", Math.exp(logAcceptProb))
+      FINEST.log("Adapted step size %f", stepSize)
+
       lf.variables(sample)
       metricTuner.update(sample) match {
         case Some(m) =>
