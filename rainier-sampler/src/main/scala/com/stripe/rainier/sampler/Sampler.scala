@@ -58,7 +58,7 @@ case class Jitter(orig: Sampler, jitterFactor: Double) extends Sampler {
     orig.run(params, lf, jitter(stepSize), metric)
 
   private def jitter(stepSize: Double)(implicit rng: RNG): Double = {
-    val u = rng.standardNormal
-    stepSize * (1.0 + (u * jitterFactor))
+    val u = rng.standardUniform * 2
+    stepSize * u
   }
 }
