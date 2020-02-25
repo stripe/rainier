@@ -29,7 +29,7 @@ class EHMCSampler(minSteps: Int, maxSteps: Int, numLengths: Int, pCount: Double)
                          stepSize: Double,
                          metric: Metric): Unit = {
     var l = 0
-    while (!lf.isUTurn(params) && l < maxSteps) {
+    while ((l < maxSteps) && !lf.isUTurn(params)) {
       l += 1
       lf.takeSteps(1, stepSize, metric)
       if (l == minSteps)
