@@ -8,22 +8,22 @@ case class HTMLProgress(kernel: JupyterApi, delay: Double) extends Progress {
 
   val outputEverySeconds = 0.1
 
-  def start(state: SamplerState) = {
-    val idN = id + "-" + state.chain
-    val chain = s"<b>Chain ${state.chain}</b>"
-    kernel.publish.html(chain, idN)
+  def start(chain: Int, stats: Stats) = {
+    val idN = id + "-" + chain
+    val chainStr = s"<b>Chain ${chain}</b>"
+    kernel.publish.html(chainStr, idN)
   }
 
-  def refresh(state: SamplerState) = {
-    val idN = id + "-" + state.chain
-    val chain = s"<b>Chain ${state.chain}</b>"
-    kernel.publish.updateHtml(chain + ": " + render(state), idN)
+  def refresh(chain: Int, stats: Stats) = {
+    val idN = id + "-" + chain
+    val chainStr = s"<b>Chain ${chain}</b>"
+    kernel.publish.updateHtml(chainStr + ": " + render(stats), idN)
   }
 
-  def finish(state: SamplerState) = {
-    val idN = id + "-" + state.chain
-    val chain = s"<b>Chain ${state.chain} complete</b>"
-    kernel.publish.updateHtml(chain + ": " + render(state), idN)
+  def finish(chain: Int, stats: Stats) = {
+    val idN = id + "-" + chain
+    val chainStr = s"<b>Chain ${chain} complete</b>"
+    kernel.publish.updateHtml(chainStr + ": " + render(stats), idN)
   }
 
   private def renderTime(nanos: Long): String =
@@ -46,41 +46,26 @@ case class HTMLProgress(kernel: JupyterApi, delay: Double) extends Progress {
       }
     }
 
-  private def render(p: SamplerState): String = {
-    val t = System.nanoTime()
+  private def render(p: Stats): String = {
     val iteration =
-      if (p.phaseIterations > 0) {
-        val itNum = s"Iteration: ${p.currentIteration}/${p.phaseIterations}"
-        if (p.currentIteration > 0) {
-          val itTime = renderTime((t - p.phaseStartTime) / p.currentIteration)
-          s"$itNum ($itTime)"
-        } else
-          itNum
+      if (p.iterations > 0) {
+        val itNum = s"Iteration: ${p.iterations}"
+        val itTime = renderTime(p.iterationTimes.mean.toLong)
+        s"$itNum ($itTime)"
       } else
         ""
-    val stepSize = f"Step size: ${p.stepSize}%.5f"
-    val phaseTime = renderTime(t - p.phaseStartTime)
-    val totalTime = "Total time elapsed: " + renderTime(t - p.startTime)
+
+    val stepSize = f"Step size: ${p.stepSizes.mean}%.1g"
     val gradientTime =
       if (p.gradientEvaluations > 0)
-        "(" + renderTime(p.gradientTime / p.gradientEvaluations) + ")"
+        "(" + renderTime(p.gradientTimes.mean.toLong) + ")"
       else ""
     val gradient =
       f"Total gradient evaluations: ${p.gradientEvaluations.toDouble}%.1g $gradientTime"
     val acceptance =
-      if (p.phaseIterations > 0)
-        f"Acceptance rate: ${p.phaseAcceptance / p.currentIteration}%.2f"
+      if (p.iterations > 0)
+        f"Acceptance rate: ${p.acceptanceRates.mean}%.2f"
       else ""
-    val pathLength =
-      if (p.phaseIterations > 0)
-        f"Mean path length: ${p.phasePathLength.toDouble / p.currentIteration}%.1f"
-      else ""
-    val massMatrix =
-      p.metric match {
-        case StandardMetric => ""
-        case EuclideanMetric(elements) =>
-          s"Mass matrix: ${elements.toList}"
-      }
-    s"${p.currentPhase} ($phaseTime) <div>$iteration</div> <div>$acceptance</div> <div>$pathLength</div> <div>$stepSize</div> <div>$massMatrix</div> <div>$gradient</div> <div>$totalTime</div>"
+    s"<div>$iteration</div> <div>$acceptance</div> <div>$stepSize</div> <div>$gradient</div>"
   }
 }

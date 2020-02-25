@@ -88,10 +88,10 @@ The first thing we need to do is configure a sampler. For that, we'll need to im
 import com.stripe.rainier.sampler._
 ```
 
-What we're creating here is an `EHMC`, or [_empirical Hamiltonian Monte Carlo_](https://arxiv.org/pdf/1810.04449.pdf) sampler. The `warmupIterations` are used to tune the sampler and find the right region to sample from; the `iterations` will produce actual samples we'll use. There are other tuning parameters but we'll keep the defaults.
+What we're creating here is an `EHMC`, or [_empirical Hamiltonian Monte Carlo_](https://arxiv.org/pdf/1810.04449.pdf) sampler. The 5000 `warmupIterations` are used to tune the sampler and find the right region to sample from; the 500 `iterations` will produce actual samples we'll use. There are other tuning parameters but we'll keep the defaults.
 
 ```scala mdoc:pprint
-val sampler = EHMC(warmupIterations = 5000, iterations = 500)
+val sampler = EHMC(5000, 500)
 ```
 
 Next, we'll run the sampler on our model. What we get back is a `Trace`: a record of the raw parameter values produced by the sampler.

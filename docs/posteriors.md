@@ -34,7 +34,7 @@ Now, it's decision time. Which feed should the farmer go with?
 As we did [once before](likelihoods.md), we'd like to sample this model to get a `Trace` we can make predictions from, and then check the diagnostics on the trace.
 
 ```scala mdoc:pprint
-val sampler = EHMC(warmupIterations = 5000, iterations = 5000)
+val sampler = EHMC(5000, 5000)
 val eggTrace = vecModel.sample(sampler)
 ```
 

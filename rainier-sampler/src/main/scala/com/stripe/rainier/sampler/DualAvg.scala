@@ -1,21 +1,39 @@
 package com.stripe.rainier.sampler
 
-case class DualAvgStepSize(iterations: Int, delta: Double) extends Warmup {
-  def update(state: SamplerState)(implicit rng: RNG): Unit = {
-    val dualAvg = DualAvg(delta, state.stepSize)
-    var i = 0
-    state.startPhase("Finding step size with dual averaging", iterations)
-    while (i < iterations) {
-      state.updateStepSize(dualAvg.stepSize)
-      val logAcceptanceProb = state.step()
-      dualAvg.update(logAcceptanceProb)
-      i += 1
+class DualAvgTuner(delta: Double) extends StepSizeTuner {
+  var da: DualAvg = _
+  var stepSize0 = 1.0
+
+  def initialize(params: Array[Double], lf: LeapFrog)(
+      implicit rng: RNG): Double = {
+    var logAcceptanceProb = lf.tryStepping(params, stepSize0, StandardMetric)
+    val exponent = if (logAcceptanceProb > Math.log(0.5)) { 1.0 } else { -1.0 }
+    val doubleOrHalf = Math.pow(2, exponent)
+    while (stepSize0 != 0.0 && (exponent * logAcceptanceProb > -exponent * Math
+             .log(2))) {
+      stepSize0 *= doubleOrHalf
+      logAcceptanceProb = lf.tryStepping(params, stepSize0, StandardMetric)
     }
-    state.updateStepSize(dualAvg.finalStepSize)
+    da = DualAvg(delta, stepSize0)
+    stepSize0
+  }
+
+  def update(logAcceptanceProb: Double)(implicit rng: RNG): Double = {
+    da.update(logAcceptanceProb)
+    da.stepSize
+  }
+
+  def reset()(implicit rng: RNG): Double = {
+    da = DualAvg(delta, stepSize0)
+    stepSize0
+  }
+
+  def stepSize(implicit rng: RNG): Double = {
+    da.finalStepSize
   }
 }
 
-final private class DualAvg(
+final class DualAvg(
     delta: Double,
     var logStepSize: Double,
     var logStepSizeBar: Double,
