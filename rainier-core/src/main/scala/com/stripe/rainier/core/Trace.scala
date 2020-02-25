@@ -7,7 +7,6 @@ case class Trace(chains: List[List[Array[Double]]], model: Model)(
     implicit rng: RNG) {
 
   def diagnostics: List[Trace.Diagnostics] = {
-    require(chains.size > 1, "diagnostics requires multiple chains")
     0.until(model.parameters.size).toList.map { i =>
       val traces = chains.map { c =>
         c.map { a =>
