@@ -49,7 +49,7 @@ case class Jitter(orig: Sampler, jitterFactor: Double) extends Sampler {
              lf: LeapFrog,
              stepSize: Double,
              metric: Metric)(implicit rng: RNG): Double =
-    orig.warmup(params, lf, jitter(stepSize), metric)
+    orig.warmup(params, lf, stepSize, metric)
 
   def run(params: Array[Double],
           lf: LeapFrog,
@@ -58,7 +58,7 @@ case class Jitter(orig: Sampler, jitterFactor: Double) extends Sampler {
     orig.run(params, lf, jitter(stepSize), metric)
 
   private def jitter(stepSize: Double)(implicit rng: RNG): Double = {
-    val u = rng.standardUniform * 2
-    stepSize * u
+    val u = 1 - rng.standardUniform * 2
+    stepSize + (stepSize * u)
   }
 }
