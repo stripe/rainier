@@ -18,7 +18,10 @@ object Driver {
     progress.start(chain, lf.stats)
 
     FINE.log("Starting warmup")
-    val params = warmup(chain,
+    val params = lf.initialize()
+
+    val metric = warmup(chain,
+                        params,
                         lf,
                         sampler,
                         stepSizeTuner,
@@ -31,8 +34,8 @@ object Driver {
                                  params,
                                  lf,
                                  sampler,
-                                 stepSizeTuner,
-                                 metricTuner,
+                                 stepSizeTuner.stepSize,
+                                 metric,
                                  config.iterations,
                                  progress)
 
@@ -43,16 +46,16 @@ object Driver {
   }
 
   private def warmup(chain: Int,
+                     params: Array[Double],
                      lf: LeapFrog,
                      sampler: Sampler,
                      stepSizeTuner: StepSizeTuner,
                      metricTuner: MetricTuner,
                      iterations: Int,
-                     progress: Progress)(implicit rng: RNG): Array[Double] = {
+                     progress: Progress)(implicit rng: RNG): Metric = {
     var i = 0
     var nextOutputTime = System.nanoTime()
 
-    val params = lf.initialize()
     sampler.initialize(params, lf)
     var stepSize = stepSizeTuner.initialize(params, lf)
     var metric = metricTuner.initialize(lf)
@@ -83,7 +86,7 @@ object Driver {
 
       i += 1
     }
-    params
+    metric
   }
 
   private def collectSamples(
@@ -91,15 +94,15 @@ object Driver {
       params: Array[Double],
       lf: LeapFrog,
       sampler: Sampler,
-      stepSizeTuner: StepSizeTuner,
-      metricTuner: MetricTuner,
+      stepSize: Double,
+      metric: Metric,
       iterations: Int,
       progress: Progress)(implicit rng: RNG): List[Array[Double]] = {
     var nextOutputTime = System.nanoTime()
     val buf = new ListBuffer[Array[Double]]
     var i = 0
     while (i < iterations) {
-      sampler.run(params, lf, stepSizeTuner.stepSize, metricTuner.metric)
+      sampler.run(params, lf, stepSize, metric)
       val output = new Array[Double](lf.nVars)
       lf.variables(params, output)
       buf += output
