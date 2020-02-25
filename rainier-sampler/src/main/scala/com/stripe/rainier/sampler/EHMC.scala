@@ -2,7 +2,7 @@ package com.stripe.rainier.sampler
 
 class EHMCSampler(minSteps: Int, maxSteps: Int, numLengths: Int, pCount: Double)
     extends Sampler {
-  val totalLengths = new RingBuffer(numLengths)
+  val lengths = new RingBuffer(numLengths)
   var buf: Array[Double] = _
 
   def initialize(params: Array[Double], lf: LeapFrog)(implicit rng: RNG) = {
@@ -17,7 +17,7 @@ class EHMCSampler(minSteps: Int, maxSteps: Int, numLengths: Int, pCount: Double)
     if (shouldCountSteps())
       countSteps(params, lf, stepSize, metric)
     else
-      lf.takeSteps(nSteps(stepSize), stepSize, metric)
+      lf.takeSteps(nSteps(), stepSize, metric)
     lf.finishIteration(params, metric)
   }
 
@@ -30,6 +30,7 @@ class EHMCSampler(minSteps: Int, maxSteps: Int, numLengths: Int, pCount: Double)
                          metric: Metric): Unit = {
     var l = 0
     while ((l < maxSteps) && !lf.isUTurn(params)) {
+      println((l, maxSteps))
       l += 1
       lf.takeSteps(1, stepSize, metric)
       if (l == minSteps)
@@ -41,7 +42,7 @@ class EHMCSampler(minSteps: Int, maxSteps: Int, numLengths: Int, pCount: Double)
       lf.restore(buf)
     }
 
-    totalLengths.add(l * stepSize)
+    lengths.add(l.toDouble)
   }
 
   def run(params: Array[Double],
@@ -49,15 +50,13 @@ class EHMCSampler(minSteps: Int, maxSteps: Int, numLengths: Int, pCount: Double)
           stepSize: Double,
           metric: Metric)(implicit rng: RNG): Unit = {
     lf.startIteration(params)
-    lf.takeSteps(nSteps(stepSize), stepSize, metric)
+    lf.takeSteps(nSteps(), stepSize, metric)
     lf.finishIteration(params, metric)
     ()
   }
 
-  private def nSteps(stepSize: Double)(implicit rng: RNG): Int = {
-    val length = totalLengths.sample()
-    Math.ceil(length / stepSize).toInt
-  }
+  private def nSteps()(implicit rng: RNG): Int =
+    lengths.sample().toInt
 }
 
 object EHMC {
