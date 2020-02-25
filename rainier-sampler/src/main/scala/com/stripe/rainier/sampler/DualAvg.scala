@@ -24,8 +24,9 @@ class DualAvgTuner(delta: Double) extends StepSizeTuner {
   }
 
   def reset()(implicit rng: RNG): Double = {
-    da = DualAvg(delta, stepSize0)
-    stepSize0
+    //da = DualAvg(delta, stepSize0)
+    //stepSize0
+    da.stepSize
   }
 
   def stepSize(implicit rng: RNG): Double = {
