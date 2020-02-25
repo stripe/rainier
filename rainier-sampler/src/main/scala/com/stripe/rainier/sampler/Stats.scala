@@ -46,8 +46,8 @@ class RingBuffer(size: Int) {
       j += 1
     }
     if (full)
-      j / size.toDouble
+      sum / size.toDouble
     else
-      j / i.toDouble
+      sum / i.toDouble
   }
 }
