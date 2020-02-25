@@ -125,7 +125,7 @@ case class LKJCorrelation(eta: Real, size: Int) {
     solve(params)
   }
 
-  private val support = BoundedSupport(-1, 1)
+  private val support = UnboundedSupport //BoundedSupport(-1, 1)
 
   private def solve(params: Vector[Parameter]): Cholesky = {
     val transformed = params.map { x =>
