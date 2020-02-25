@@ -66,6 +66,11 @@ case class HTMLProgress(kernel: JupyterApi, delay: Double) extends Progress {
       if (p.iterations > 0)
         f"Acceptance rate: ${p.acceptanceRates.mean}%.2f"
       else ""
-    s"<div>$iteration</div> <div>$acceptance</div> <div>$stepSize</div> <div>$gradient</div>"
+    val gradsPerIteration = 
+      if(p.iterations > 0)
+        f"Gradient evals per iteration: ${p.gradientEvaluations.toDouble / p.iterations.toDouble}%.2f"
+      else
+        ""
+    s"<div>$iteration</div> <div>$acceptance</div> <div>$stepSize</div> <div>$gradient</div>  <div>$gradsPerIteration</div> "
   }
 }
