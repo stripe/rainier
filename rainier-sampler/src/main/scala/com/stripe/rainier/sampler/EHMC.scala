@@ -70,6 +70,6 @@ object EHMC {
       val iterations = it
       def sampler() = new EHMCSampler(minSteps, 32, numLengths, 0.1)
       def stepSizeTuner() = new DualAvgTuner(0.65)
-      def metricTuner() = new StandardMetricTuner()
+      def metricTuner() = new DiagonalMetricTuner(20, 1.5)
     }
 }

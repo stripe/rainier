@@ -186,12 +186,16 @@ final class LeapFrog(density: DensityFunction) {
     stats.gradientEvaluations += 1
   }
 
-  private def velocity(in: Array[Double],
-                       out: Array[Double],
-                       metric: Metric): Unit =
-    metric match {
+  private def velocity(in: Array[Double], out: Array[Double], m: Metric): Unit =
+    m match {
       case StandardMetric =>
         System.arraycopy(in, 0, out, 0, out.size)
+      case DiagonalMetric(elements) =>
+        var i = 0
+        while (i < out.size) {
+          out(i) = in(i) * elements(i)
+          i += 1
+        }
       case EuclideanMetric(elements) =>
         squareMultiply(elements, in, out)
     }
