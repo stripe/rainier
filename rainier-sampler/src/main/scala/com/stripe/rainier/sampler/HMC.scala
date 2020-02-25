@@ -28,7 +28,7 @@ object HMC {
     new SamplerConfig {
       val warmupIterations = warmIt
       val iterations = it
-      def sampler() = new HMCSampler(nSteps)
+      def sampler() = new HMCSampler(nSteps).jitter()
       def stepSizeTuner() = new DualAvgTuner(0.65)
       def metricTuner() = new DiagonalMetricTuner(20, 1.5)
     }

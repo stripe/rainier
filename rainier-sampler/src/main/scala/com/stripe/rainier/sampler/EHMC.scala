@@ -68,7 +68,7 @@ object EHMC {
     new SamplerConfig {
       val warmupIterations = warmIt
       val iterations = it
-      def sampler() = new EHMCSampler(minSteps, 32, numLengths, 0.1)
+      def sampler() = new EHMCSampler(minSteps, 32, numLengths, 0.1).jitter()
       def stepSizeTuner() = new DualAvgTuner(0.65)
       def metricTuner() = new DiagonalMetricTuner(20, 1.5)
     }

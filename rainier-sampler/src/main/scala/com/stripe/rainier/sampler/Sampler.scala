@@ -36,4 +36,29 @@ trait Sampler {
           lf: LeapFrog,
           stepSize: Double,
           metric: Metric)(implicit rng: RNG): Unit
+
+  def jitter(factor: Double = 1.0): Sampler = 
+    Jitter(this, factor)
+}
+
+case class Jitter(orig: Sampler, jitterFactor: Double) extends Sampler {
+  def initialize(params: Array[Double], lf: LeapFrog)(implicit rng: RNG): Unit =
+    orig.initialize(params, lf)
+
+  def warmup(params: Array[Double],
+             lf: LeapFrog,
+             stepSize: Double,
+             metric: Metric)(implicit rng: RNG): Double =
+    orig.warmup(params, lf, jitter(stepSize), metric)
+
+    def run(params: Array[Double],
+          lf: LeapFrog,
+          stepSize: Double,
+          metric: Metric)(implicit rng: RNG): Unit = 
+    orig.run(params, lf, jitter(stepSize), metric)
+
+    private def jitter(stepSize: Double)(implicit rng: RNG): Double = {
+      val u = rng.standardNormal
+      stepSize * (1.0 + (u * jitterFactor))
+    }
 }
