@@ -73,10 +73,10 @@ object Driver {
 
       lf.variables(params, sample)
       metricTuner.update(sample) match {
-        case Some(m) =>
+        case Some(m) if ((i > 50) && (iterations - i > 50)) =>
           metric = m
-          stepSize = stepSizeTuner.reset()
-        case None => ()
+          stepSize = stepSizeTuner.reset(params, lf, metric)
+        case _ => ()
       }
       if (System.nanoTime() > nextOutputTime) {
         progress.refresh(chain, lf.stats)
@@ -86,6 +86,7 @@ object Driver {
 
       i += 1
     }
+
     metric
   }
 
@@ -101,6 +102,7 @@ object Driver {
     var nextOutputTime = System.nanoTime()
     val buf = new ListBuffer[Array[Double]]
     var i = 0
+
     while (i < iterations) {
       sampler.run(params, lf, stepSize, metric)
       val output = new Array[Double](lf.nVars)

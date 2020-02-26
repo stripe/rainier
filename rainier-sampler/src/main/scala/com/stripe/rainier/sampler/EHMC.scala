@@ -61,13 +61,15 @@ class EHMCSampler(minSteps: Int, maxSteps: Int, numLengths: Int, pCount: Double)
 object EHMC {
   def apply(warmIt: Int,
             it: Int,
-            minSteps: Int = 10,
+            minSteps: Int = 1,
             numLengths: Int = 100): SamplerConfig =
     new SamplerConfig {
       val warmupIterations = warmIt
       val iterations = it
-      def sampler() = new EHMCSampler(minSteps, 32, numLengths, 0.1)
+      def sampler() = new EHMCSampler(minSteps, 1000, numLengths, 0.1)
       def stepSizeTuner() = new DualAvgTuner(0.65)
-      def metricTuner() = new DiagonalMetricTuner(20, 1.5)
+      def metricTuner() =
+        new StandardMetricTuner
+      //new DiagonalMetricTuner(200, 1.1)
     }
 }

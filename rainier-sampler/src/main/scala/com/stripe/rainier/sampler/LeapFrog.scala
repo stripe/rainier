@@ -189,7 +189,12 @@ final class LeapFrog(density: DensityFunction) {
   private def velocity(in: Array[Double], out: Array[Double], m: Metric): Unit =
     m match {
       case StandardMetric =>
-        System.arraycopy(in, 0, out, 0, out.size)
+        //System.arraycopy(in, 0, out, 0, out.size)
+        var i = 0
+        while (i < out.size) {
+          out(i) = in(i) * 0.1
+          i += 1
+        }
       case DiagonalMetric(elements) =>
         var i = 0
         while (i < out.size) {

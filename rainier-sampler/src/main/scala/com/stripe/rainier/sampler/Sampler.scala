@@ -16,7 +16,8 @@ object SamplerConfig {
 trait StepSizeTuner {
   def initialize(params: Array[Double], lf: LeapFrog)(implicit rng: RNG): Double
   def update(logAcceptanceProb: Double)(implicit rng: RNG): Double
-  def reset()(implicit rng: RNG): Double
+  def reset(params: Array[Double], lf: LeapFrog, metric: Metric)(
+      implicit rng: RNG): Double
   def stepSize(implicit rng: RNG): Double
 }
 

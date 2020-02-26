@@ -106,6 +106,13 @@ class VarianceEstimator(size: Int) extends MetricEstimator {
       elements(i) = variance(i) / samples.toDouble
       i += 1
     }
+    /*    val med = elements.sorted.apply(size / 2)
+    i = 0
+    while (i < size) {
+      elements(i) /= med
+      i += 1
+    }
+     */
     DiagonalMetric(elements)
   }
 

@@ -34,6 +34,11 @@ case class Model(private[rainier] val likelihoods: List[Real],
 
   def parameters: List[Parameter] = targetGroup.parameters
 
+  def dependencies(value: Real): List[Int] = {
+    val params = TargetGroup.findParameters(value)
+    params.toList.map(parameters.indexOf(_))
+  }
+
   private[rainier] def density(): DensityFunction =
     new DensityFunction {
       val nVars = parameters.size
