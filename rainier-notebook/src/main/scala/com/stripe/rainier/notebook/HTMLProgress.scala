@@ -7,22 +7,24 @@ case class HTMLProgress(kernel: JupyterApi, delay: Double) extends Progress {
   val id = java.util.UUID.randomUUID().toString
 
   val outputEverySeconds = 0.1
+  var startTime: Long = _
 
-  def start(chain: Int, stats: Stats) = {
+  def start(chain: Int, message: String, stats: Stats) = {
+    startTime = System.nanoTime()
     val idN = id + "-" + chain
     val chainStr = s"<b>Chain ${chain}</b>"
     kernel.publish.html(chainStr, idN)
   }
 
-  def refresh(chain: Int, stats: Stats) = {
+  def refresh(chain: Int, message: String, stats: Stats) = {
     val idN = id + "-" + chain
-    val chainStr = s"<b>Chain ${chain}</b>"
+    val chainStr = s"<b>Chain ${chain} ${message}</b>"
     kernel.publish.updateHtml(chainStr + ": " + render(stats), idN)
   }
 
-  def finish(chain: Int, stats: Stats) = {
+  def finish(chain: Int, message: String, stats: Stats) = {
     val idN = id + "-" + chain
-    val chainStr = s"<b>Chain ${chain} complete</b>"
+    val chainStr = s"<b>Chain ${chain} ${message}</b>"
     kernel.publish.updateHtml(chainStr + ": " + render(stats), idN)
   }
 
@@ -66,6 +68,13 @@ case class HTMLProgress(kernel: JupyterApi, delay: Double) extends Progress {
       if (p.iterations > 0)
         f"Acceptance rate: ${p.acceptanceRates.mean}%.2f"
       else ""
-    s"<div>$iteration</div> <div>$acceptance</div> <div>$stepSize</div> <div>$gradient</div>"
+    val totalTime =
+      s"Total time: ${renderTime(System.nanoTime() - startTime)}"
+    val bfmi =
+      if (p.iterations > 10)
+        f"E-BFMI: ${p.bfmi}%.2f"
+      else ""
+
+    s"<div>$iteration</div> <div>$acceptance</div> <div>$bfmi</div> <div>$stepSize</div> <div>$gradient</div> <div>$totalTime</div>"
   }
 }

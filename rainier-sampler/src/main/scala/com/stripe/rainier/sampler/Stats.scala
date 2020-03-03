@@ -1,13 +1,19 @@
 package com.stripe.rainier.sampler
 
 class Stats(n: Int) {
-  var gradientEvaluations = 0
+  var gradientEvaluations = 0L
   var iterations = 0
+  var divergences = 0
 
   val gradientTimes = new RingBuffer(n)
   val iterationTimes = new RingBuffer(n)
   val stepSizes = new RingBuffer(n)
   val acceptanceRates = new RingBuffer(n)
+  val gradsPerIteration = new RingBuffer(n)
+
+  val energyVariance = new VarianceEstimator(1)
+  var energyTransitions2 = 0.0
+  def bfmi = energyTransitions2 / energyVariance.raw(0)
 }
 
 class RingBuffer(size: Int) {

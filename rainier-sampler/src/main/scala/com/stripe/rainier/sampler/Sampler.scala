@@ -3,6 +3,7 @@ package com.stripe.rainier.sampler
 trait SamplerConfig {
   def iterations: Int
   def warmupIterations: Int
+  def statsWindow: Int
 
   def stepSizeTuner(): StepSizeTuner
   def metricTuner(): MetricTuner
