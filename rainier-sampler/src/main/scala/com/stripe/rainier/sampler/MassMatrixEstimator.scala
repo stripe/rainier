@@ -1,6 +1,55 @@
 package com.stripe.rainier.sampler
 
-class VarianceEstimator(size: Int) {
+trait MassMatrixEstimator {
+  def update(sample: Array[Double]): Unit
+  def reset(): Unit
+  def massMatrix: MassMatrix
+}
+
+class CovarianceEstimator(size: Int) extends MassMatrixEstimator {
+  val variance = new VarianceEstimator(size)
+  val cov = Array.fill(size * size)(0.0)
+
+  def reset(): Unit = {
+    variance.reset()
+    var i = 0
+    while (i < cov.size) {
+      cov(i) = 0.0
+      i += 1
+    }
+  }
+
+  def update(sample: Array[Double]): Unit = {
+    variance.update(sample)
+
+    var j = 0
+    var l = 0
+    while (j < size) {
+      var k = 0
+      while (k < size) {
+        cov(j * size + k) += variance.newDiff(j) * variance.oldDiff(k)
+        k += 1
+        l += 1
+      }
+      j += 1
+    }
+  }
+
+  def covariance: Array[Double] = {
+    val elements = new Array[Double](cov.size)
+    val z = (variance.samples - 1).toDouble
+    var i = 0
+    while (i < cov.size) {
+      elements(i) = cov(i) / z
+      i += 1
+    }
+    elements
+  }
+
+  def massMatrix: MassMatrix = FullMassMatrix(covariance)
+}
+
+class VarianceEstimator(size: Int) extends MassMatrixEstimator {
   var samples = 0
   val mean = new Array[Double](size)
   val raw = new Array[Double](size)
@@ -50,6 +99,9 @@ class VarianceEstimator(size: Int) {
     }
     elements
   }
+
+  def massMatrix: MassMatrix =
+    DiagonalMassMatrix(variance)
 
   private def diff(sample: Array[Double], buf: Array[Double]): Unit = {
     var i = 0

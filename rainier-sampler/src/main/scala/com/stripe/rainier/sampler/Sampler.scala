@@ -6,7 +6,7 @@ trait SamplerConfig {
   def statsWindow: Int
 
   def stepSizeTuner(): StepSizeTuner
-  def metricTuner(): MetricTuner
+  def massMatrixTuner(): MassMatrixTuner
   def sampler(): Sampler
 }
 
@@ -15,16 +15,16 @@ object SamplerConfig {
 }
 
 trait StepSizeTuner {
-  def initialize(params: Array[Double], lf: LeapFrog)(implicit rng: RNG): Double
+  def initialize(params: Array[Double], lf: LeapFrog, iterations: Int)(
+      implicit rng: RNG): Double
   def update(logAcceptanceProb: Double)(implicit rng: RNG): Double
   def reset()(implicit rng: RNG): Double
   def stepSize(implicit rng: RNG): Double
 }
 
-trait MetricTuner {
-  def initialize(lf: LeapFrog): Metric
-  def update(sample: Array[Double]): Option[Metric]
-  def metric: Metric
+trait MassMatrixTuner {
+  def initialize(lf: LeapFrog, iterations: Int): MassMatrix
+  def update(sample: Array[Double]): Option[MassMatrix]
 }
 
 trait Sampler {
@@ -32,9 +32,9 @@ trait Sampler {
   def warmup(params: Array[Double],
              lf: LeapFrog,
              stepSize: Double,
-             metric: Metric)(implicit rng: RNG): Double
+             mass: MassMatrix)(implicit rng: RNG): Double
   def run(params: Array[Double],
           lf: LeapFrog,
           stepSize: Double,
-          metric: Metric)(implicit rng: RNG): Unit
+          mass: MassMatrix)(implicit rng: RNG): Unit
 }

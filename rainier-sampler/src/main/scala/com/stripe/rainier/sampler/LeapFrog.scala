@@ -13,20 +13,20 @@ final class LeapFrog(density: DensityFunction, statsWindow: Int) {
   //re-initializing the ps, or modifying params
   def tryStepping(params: Array[Double],
                   stepSize: Double,
-                  metric: Metric): Double = {
+                  mass: MassMatrix): Double = {
     copy(params, pqBuf)
-    initialHalfThenFullStep(stepSize, metric)
+    initialHalfThenFullStep(stepSize, mass)
     finalHalfStep(stepSize)
-    val deltaH = energy(pqBuf, metric) - energy(params, metric)
+    val deltaH = energy(pqBuf, mass) - energy(params, mass)
     logAcceptanceProb(deltaH)
   }
 
-  def takeSteps(l: Int, stepSize: Double, metric: Metric): Unit = {
+  def takeSteps(l: Int, stepSize: Double, mass: MassMatrix): Unit = {
     stats.stepSizes.add(stepSize)
-    initialHalfThenFullStep(stepSize, metric)
+    initialHalfThenFullStep(stepSize, mass)
     var i = 1
     while (i < l) {
-      twoFullSteps(stepSize, metric)
+      twoFullSteps(stepSize, mass)
       i += 1
     }
     finalHalfStep(stepSize)
@@ -49,19 +49,19 @@ final class LeapFrog(density: DensityFunction, statsWindow: Int) {
   var iterationStartTime: Long = _
   var iterationStartGrads: Long = _
   var prevH: Double = _
-  def startIteration(params: Array[Double], metric: Metric)(
+  def startIteration(params: Array[Double], mass: MassMatrix)(
       implicit rng: RNG): Unit = {
-    prevH = energy(params, metric)
+    prevH = energy(params, mass)
     initializePs(params)
     copy(params, pqBuf)
     iterationStartTime = System.nanoTime()
     iterationStartGrads = stats.gradientEvaluations
   }
 
-  def finishIteration(params: Array[Double], metric: Metric)(
+  def finishIteration(params: Array[Double], mass: MassMatrix)(
       implicit rng: RNG): Double = {
-    val startH = energy(params, metric)
-    val endH = energy(pqBuf, metric)
+    val startH = energy(params, mass)
+    val endH = energy(pqBuf, mass)
     val deltaH = endH - startH
     val a = logAcceptanceProb(deltaH)
     if (a > Math.log(rng.standardUniform)) {
@@ -129,9 +129,9 @@ final class LeapFrog(density: DensityFunction, statsWindow: Int) {
   private val qBuf = new Array[Double](nVars)
   private val vBuf = new Array[Double](nVars)
 
-  private def energy(params: Array[Double], metric: Metric): Double = {
+  private def energy(params: Array[Double], mass: MassMatrix): Double = {
     val potential = params(potentialIndex)
-    velocity(params, vBuf, metric)
+    velocity(params, vBuf, mass)
     val kinetic = dot(vBuf, params) / 2.0
     potential + kinetic
   }
@@ -142,8 +142,8 @@ final class LeapFrog(density: DensityFunction, statsWindow: Int) {
     else
       (-deltaH).min(0.0)
 
-  private def newQs(stepSize: Double, metric: Metric): Unit = {
-    velocity(pqBuf, vBuf, metric)
+  private def newQs(stepSize: Double, mass: MassMatrix): Unit = {
+    velocity(pqBuf, vBuf, mass)
     var i = 0
     while (i < nVars) {
       pqBuf(i + nVars) += (stepSize * vBuf(i))
@@ -151,14 +151,14 @@ final class LeapFrog(density: DensityFunction, statsWindow: Int) {
     }
   }
 
-  private def halfPsNewQs(stepSize: Double, metric: Metric): Unit = {
+  private def halfPsNewQs(stepSize: Double, mass: MassMatrix): Unit = {
     fullPs(stepSize / 2.0)
-    newQs(stepSize, metric)
+    newQs(stepSize, mass)
   }
 
   private def initialHalfThenFullStep(stepSize: Double,
-                                      metric: Metric): Unit = {
-    halfPsNewQs(stepSize, metric)
+                                      mass: MassMatrix): Unit = {
+    halfPsNewQs(stepSize, mass)
     copyQsAndUpdateDensity()
     pqBuf(potentialIndex) = density.density * -1
   }
@@ -173,13 +173,13 @@ final class LeapFrog(density: DensityFunction, statsWindow: Int) {
     }
   }
 
-  private def fullPsNewQs(stepSize: Double, metric: Metric): Unit = {
+  private def fullPsNewQs(stepSize: Double, mass: MassMatrix): Unit = {
     fullPs(stepSize)
-    newQs(stepSize, metric)
+    newQs(stepSize, mass)
   }
 
-  private def twoFullSteps(stepSize: Double, metric: Metric): Unit = {
-    fullPsNewQs(stepSize, metric)
+  private def twoFullSteps(stepSize: Double, mass: MassMatrix): Unit = {
+    fullPsNewQs(stepSize, mass)
     copyQsAndUpdateDensity()
     pqBuf(potentialIndex) = density.density * -1
   }
@@ -204,11 +204,17 @@ final class LeapFrog(density: DensityFunction, statsWindow: Int) {
 
   private def velocity(in: Array[Double],
                        out: Array[Double],
-                       metric: Metric): Unit =
-    metric match {
-      case StandardMetric =>
+                       mass: MassMatrix): Unit =
+    mass match {
+      case StandardMassMatrix =>
         System.arraycopy(in, 0, out, 0, out.size)
-      case EuclideanMetric(elements) =>
+      case DiagonalMassMatrix(elements) =>
+        var i = 0
+        while (i < out.size) {
+          out(i) = in(i) * elements(i)
+          i += 1
+        }
+      case FullMassMatrix(elements) =>
         squareMultiply(elements, in, out)
     }
 

@@ -11,28 +11,30 @@ object Driver {
 
     val sampler = config.sampler()
     val stepSizeTuner = config.stepSizeTuner()
-    val metricTuner = config.metricTuner()
+    val massMatrixTuner = config.massMatrixTuner()
 
     val lf = new LeapFrog(density, config.statsWindow)
 
     progress.start(chain, "Initializing", lf.stats)
 
     FINE.log("Starting warmup")
-    val params = warmup(chain,
-                        lf,
-                        sampler,
-                        stepSizeTuner,
-                        metricTuner,
-                        config.warmupIterations,
-                        progress)
+    val params = lf.initialize()
+    val mass = warmup(chain,
+                      params,
+                      lf,
+                      sampler,
+                      stepSizeTuner,
+                      massMatrixTuner,
+                      config.warmupIterations,
+                      progress)
     lf.resetStats()
     FINE.log("Starting sampling")
     val samples = collectSamples(chain,
                                  params,
                                  lf,
                                  sampler,
-                                 stepSizeTuner,
-                                 metricTuner,
+                                 stepSizeTuner.stepSize,
+                                 mass,
                                  config.iterations,
                                  progress)
 
@@ -43,35 +45,35 @@ object Driver {
   }
 
   private def warmup(chain: Int,
+                     params: Array[Double],
                      lf: LeapFrog,
                      sampler: Sampler,
                      stepSizeTuner: StepSizeTuner,
-                     metricTuner: MetricTuner,
+                     massMatrixTuner: MassMatrixTuner,
                      iterations: Int,
-                     progress: Progress)(implicit rng: RNG): Array[Double] = {
+                     progress: Progress)(implicit rng: RNG): MassMatrix = {
     var i = 0
     var nextOutputTime = System.nanoTime()
 
-    val params = lf.initialize()
     sampler.initialize(params, lf)
-    var stepSize = stepSizeTuner.initialize(params, lf)
-    var metric = metricTuner.initialize(lf)
+    var stepSize = stepSizeTuner.initialize(params, lf, iterations)
+    var mass = massMatrixTuner.initialize(lf, iterations)
 
     FINER.log("Initial step size %f", stepSize)
 
     val sample = new Array[Double](lf.nVars)
 
     while (i < iterations) {
-      val logAcceptProb = sampler.warmup(params, lf, stepSize, metric)
+      val logAcceptProb = sampler.warmup(params, lf, stepSize, mass)
       stepSize = stepSizeTuner.update(logAcceptProb)
 
       FINEST.log("Accept probability %f", Math.exp(logAcceptProb))
       FINEST.log("Adapted step size %f", stepSize)
 
       lf.variables(params, sample)
-      metricTuner.update(sample) match {
+      massMatrixTuner.update(sample) match {
         case Some(m) =>
-          metric = m
+          mass = m
           stepSize = stepSizeTuner.reset()
         case None => ()
       }
@@ -83,7 +85,7 @@ object Driver {
 
       i += 1
     }
-    params
+    mass
   }
 
   private def collectSamples(
@@ -91,15 +93,15 @@ object Driver {
       params: Array[Double],
       lf: LeapFrog,
       sampler: Sampler,
-      stepSizeTuner: StepSizeTuner,
-      metricTuner: MetricTuner,
+      stepSize: Double,
+      mass: MassMatrix,
       iterations: Int,
       progress: Progress)(implicit rng: RNG): List[Array[Double]] = {
     var nextOutputTime = System.nanoTime()
     val buf = new ListBuffer[Array[Double]]
     var i = 0
     while (i < iterations) {
-      sampler.run(params, lf, stepSizeTuner.stepSize, metricTuner.metric)
+      sampler.run(params, lf, stepSize, mass)
       val output = new Array[Double](lf.nVars)
       lf.variables(params, output)
       buf += output
