@@ -1,7 +1,13 @@
 package com.stripe.rainier.sampler
 
-final class LeapFrog(density: DensityFunction) {
-  val stats = new Stats(100)
+final class LeapFrog(density: DensityFunction, statsWindow: Int) {
+  var stats = new Stats(statsWindow)
+
+  def resetStats(): Stats = {
+    val oldStats = stats
+    stats = new Stats(statsWindow)
+    oldStats
+  }
 
   //Compute the acceptance probability for a single step at this stepSize without
   //re-initializing the ps, or modifying params
@@ -11,7 +17,8 @@ final class LeapFrog(density: DensityFunction) {
     copy(params, pqBuf)
     initialHalfThenFullStep(stepSize, metric)
     finalHalfStep(stepSize)
-    logAcceptanceProb(params, metric)
+    val deltaH = energy(pqBuf, metric) - energy(params, metric)
+    logAcceptanceProb(deltaH)
   }
 
   def takeSteps(l: Int, stepSize: Double, metric: Metric): Unit = {
@@ -39,41 +46,38 @@ final class LeapFrog(density: DensityFunction) {
       out < 0
   }
 
-  def logAcceptanceProb(params: Array[Double], metric: Metric): Double = {
-    val toPotential = pqBuf(potentialIndex)
-    velocity(pqBuf, vBuf, metric)
-    val toKinetic = dot(vBuf, pqBuf) / 2.0
-
-    val fromPotential = params(potentialIndex)
-    velocity(params, vBuf2, metric)
-    val fromKinetic = dot(vBuf2, params) / 2.0
-
-    val deltaH = toKinetic + toPotential - fromKinetic - fromPotential
-    if (deltaH.isNaN) {
-      Math.log(0.0)
-    } else {
-      val lap = (-deltaH).min(0.0)
-      lap
-    }
-  }
-
   var iterationStartTime: Long = _
-  def startIteration(params: Array[Double])(implicit rng: RNG): Unit = {
+  var iterationStartGrads: Long = _
+  var prevH: Double = _
+  def startIteration(params: Array[Double], metric: Metric)(
+      implicit rng: RNG): Unit = {
+    prevH = energy(params, metric)
     initializePs(params)
     copy(params, pqBuf)
     iterationStartTime = System.nanoTime()
+    iterationStartGrads = stats.gradientEvaluations
   }
 
   def finishIteration(params: Array[Double], metric: Metric)(
       implicit rng: RNG): Double = {
-    val a = logAcceptanceProb(params, metric)
+    val startH = energy(params, metric)
+    val endH = energy(pqBuf, metric)
+    val deltaH = endH - startH
+    val a = logAcceptanceProb(deltaH)
     if (a > Math.log(rng.standardUniform)) {
       copy(pqBuf, params)
+      stats.energyVariance.update(endH)
+      stats.energyTransitions2 += Math.pow(endH - prevH, 2)
+    } else {
+      stats.energyVariance.update(startH)
+      stats.energyTransitions2 += Math.pow(startH - prevH, 2)
     }
 
     stats.iterations += 1
     stats.iterationTimes.add((System.nanoTime() - iterationStartTime).toDouble)
     stats.acceptanceRates.add(Math.exp(a))
+    stats.gradsPerIteration.add(
+      (stats.gradientEvaluations - iterationStartGrads).toDouble)
     a
   }
 
@@ -124,7 +128,19 @@ final class LeapFrog(density: DensityFunction) {
   private val pqBuf = new Array[Double](inputOutputSize)
   private val qBuf = new Array[Double](nVars)
   private val vBuf = new Array[Double](nVars)
-  private val vBuf2 = new Array[Double](nVars)
+
+  private def energy(params: Array[Double], metric: Metric): Double = {
+    val potential = params(potentialIndex)
+    velocity(params, vBuf, metric)
+    val kinetic = dot(vBuf, params) / 2.0
+    potential + kinetic
+  }
+
+  private def logAcceptanceProb(deltaH: Double): Double =
+    if (deltaH.isNaN)
+      Math.log(0.0)
+    else
+      (-deltaH).min(0.0)
 
   private def newQs(stepSize: Double, metric: Metric): Unit = {
     velocity(pqBuf, vBuf, metric)

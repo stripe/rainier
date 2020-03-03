@@ -13,9 +13,9 @@ object Driver {
     val stepSizeTuner = config.stepSizeTuner()
     val metricTuner = config.metricTuner()
 
-    val lf = new LeapFrog(density)
+    val lf = new LeapFrog(density, config.statsWindow)
 
-    progress.start(chain, lf.stats)
+    progress.start(chain, "Initializing", lf.stats)
 
     FINE.log("Starting warmup")
     val params = warmup(chain,
@@ -25,7 +25,7 @@ object Driver {
                         metricTuner,
                         config.warmupIterations,
                         progress)
-
+    lf.resetStats()
     FINE.log("Starting sampling")
     val samples = collectSamples(chain,
                                  params,
@@ -38,7 +38,7 @@ object Driver {
 
     FINE.log("Finished sampling")
 
-    progress.finish(chain, lf.stats)
+    progress.finish(chain, "Complete", lf.stats)
     samples
   }
 
@@ -76,7 +76,7 @@ object Driver {
         case None => ()
       }
       if (System.nanoTime() > nextOutputTime) {
-        progress.refresh(chain, lf.stats)
+        progress.refresh(chain, "Warmup", lf.stats)
         nextOutputTime = System
           .nanoTime() + (progress.outputEverySeconds * 1e9).toLong
       }
@@ -105,7 +105,7 @@ object Driver {
       buf += output
 
       if (System.nanoTime() > nextOutputTime) {
-        progress.refresh(chain, lf.stats)
+        progress.refresh(chain, "Sampling", lf.stats)
         nextOutputTime = System
           .nanoTime() + (progress.outputEverySeconds * 1e9).toLong
       }
