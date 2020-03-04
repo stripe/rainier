@@ -7,7 +7,8 @@ object Driver {
   def sample(chain: Int,
              config: SamplerConfig,
              density: DensityFunction,
-             progress: Progress)(implicit rng: RNG): List[Array[Double]] = {
+             progress: Progress)(
+      implicit rng: RNG): (List[Array[Double]], MassMatrix, Stats) = {
 
     val sampler = config.sampler()
     val stepSizeTuner = config.stepSizeTuner()
@@ -15,7 +16,7 @@ object Driver {
 
     val lf = new LeapFrog(density, config.statsWindow)
 
-    progress.start(chain, "Initializing", lf.stats)
+    progress.start(chain)
 
     FINE.log("Starting warmup")
     val params = lf.initialize()
@@ -40,8 +41,8 @@ object Driver {
 
     FINE.log("Finished sampling")
 
-    progress.finish(chain, "Complete", lf.stats)
-    samples
+    progress.finish(chain, "Complete", lf.stats, mass)
+    (samples, mass, lf.stats)
   }
 
   private def warmup(chain: Int,
@@ -78,7 +79,7 @@ object Driver {
         case None => ()
       }
       if (System.nanoTime() > nextOutputTime) {
-        progress.refresh(chain, "Warmup", lf.stats)
+        progress.refresh(chain, "Warmup", lf.stats, mass)
         nextOutputTime = System
           .nanoTime() + (progress.outputEverySeconds * 1e9).toLong
       }
@@ -107,7 +108,7 @@ object Driver {
       buf += output
 
       if (System.nanoTime() > nextOutputTime) {
-        progress.refresh(chain, "Sampling", lf.stats)
+        progress.refresh(chain, "Sampling", lf.stats, mass)
         nextOutputTime = System
           .nanoTime() + (progress.outputEverySeconds * 1e9).toLong
       }
