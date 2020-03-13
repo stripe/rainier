@@ -70,7 +70,7 @@ object EHMC {
       val iterations = it
       val statsWindow = 100
       def sampler() = new EHMCSampler(minSteps, 32, numLengths, 0.1)
-      def stepSizeTuner() = new DualAvgTuner(0.65)
-      def massMatrixTuner() = new StandardMassMatrixTuner()
+      def stepSizeTuner() = new DualAvgTuner(0.8)
+      def massMatrixTuner() = new DiagonalMassMatrixTuner(100, 2, 100, 100)
     }
 }

@@ -260,5 +260,7 @@ final class LeapFrog(density: DensityFunction, statsWindow: Int) {
           i += 1
         }
       case FullMassMatrix(elements) => ???
+      //    z.p = z.inv_e_metric_.llt().matrixU().solve(u);
+
     }
 }

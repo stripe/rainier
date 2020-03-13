@@ -30,7 +30,7 @@ object HMC {
       val iterations = it
       val statsWindow = 100
       def sampler() = new HMCSampler(nSteps)
-      def stepSizeTuner() = new DualAvgTuner(0.65)
-      def massMatrixTuner() = new StandardMassMatrixTuner()
+      def stepSizeTuner() = new DualAvgTuner(0.8)
+      def massMatrixTuner() = new DiagonalMassMatrixTuner(100, 2, 100, 100)
     }
 }
