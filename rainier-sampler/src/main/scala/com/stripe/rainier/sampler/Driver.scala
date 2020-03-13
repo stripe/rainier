@@ -66,7 +66,8 @@ object Driver {
 
     while (i < iterations) {
       val logAcceptProb = sampler.warmup(params, lf, stepSize, mass)
-      stepSize = stepSizeTuner.update(logAcceptProb)
+      if (i < 100 || i > 900)
+        stepSize = stepSizeTuner.update(logAcceptProb)
 
       FINEST.log("Accept probability %f", Math.exp(logAcceptProb))
       FINEST.log("Adapted step size %f", stepSize)
@@ -75,7 +76,7 @@ object Driver {
       massMatrixTuner.update(sample) match {
         case Some(m) =>
           mass = m
-          stepSize = stepSizeTuner.reset()
+          stepSize = stepSizeTuner.reset(params, lf, mass)
         case None => ()
       }
       if (System.nanoTime() > nextOutputTime) {
@@ -101,6 +102,7 @@ object Driver {
     var nextOutputTime = System.nanoTime()
     val buf = new ListBuffer[Array[Double]]
     var i = 0
+    println(stepSize)
     while (i < iterations) {
       sampler.run(params, lf, stepSize, mass)
       val output = new Array[Double](lf.nVars)
