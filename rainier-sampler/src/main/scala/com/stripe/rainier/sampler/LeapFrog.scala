@@ -52,7 +52,7 @@ final class LeapFrog(density: DensityFunction, statsWindow: Int) {
   def startIteration(params: Array[Double], mass: MassMatrix)(
       implicit rng: RNG): Unit = {
     prevH = energy(params, mass)
-    initializePs(params)
+    initializePs(params, mass)
     copy(params, pqBuf)
     iterationStartTime = System.nanoTime()
     iterationStartGrads = stats.gradientEvaluations
@@ -99,7 +99,7 @@ final class LeapFrog(density: DensityFunction, statsWindow: Int) {
   //we want the invariant that a params array always has the potential which
   //matches the qs. That means when we initialize a new one
   //we need to compute the potential.
-  def initialize()(implicit rng: RNG): Array[Double] = {
+  def initialize(mass: MassMatrix)(implicit rng: RNG): Array[Double] = {
     val params = new Array[Double](inputOutputSize)
     java.util.Arrays.fill(pqBuf, 0.0)
     var i = nVars
@@ -111,7 +111,7 @@ final class LeapFrog(density: DensityFunction, statsWindow: Int) {
     copyQsAndUpdateDensity()
     pqBuf(potentialIndex) = density.density * -1
     copy(pqBuf, params)
-    initializePs(params)
+    initializePs(params, mass)
     params
   }
 
@@ -186,8 +186,6 @@ final class LeapFrog(density: DensityFunction, statsWindow: Int) {
 
   private def finalHalfStep(stepSize: Double): Unit = {
     fullPs(stepSize / 2.0)
-    copyQsAndUpdateDensity()
-    pqBuf(potentialIndex) = density.density * -1
   }
 
   private def copy(sourceArray: Array[Double],
@@ -246,11 +244,21 @@ final class LeapFrog(density: DensityFunction, statsWindow: Int) {
     k
   }
 
-  private def initializePs(params: Array[Double])(implicit rng: RNG): Unit = {
-    var i = 0
-    while (i < nVars) {
-      params(i) = rng.standardNormal
-      i += 1
+  private def initializePs(params: Array[Double], mass: MassMatrix)(
+      implicit rng: RNG): Unit =
+    mass match {
+      case StandardMassMatrix =>
+        var i = 0
+        while (i < nVars) {
+          params(i) = rng.standardNormal
+          i += 1
+        }
+      case DiagonalMassMatrix(elements) =>
+        var i = 0
+        while (i < nVars) {
+          params(i) = rng.standardNormal / Math.sqrt(elements(i))
+          i += 1
+        }
+      case FullMassMatrix(elements) => ???
     }
-  }
 }

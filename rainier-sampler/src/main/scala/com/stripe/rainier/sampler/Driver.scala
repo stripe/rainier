@@ -19,7 +19,7 @@ object Driver {
     progress.start(chain)
 
     FINE.log("Starting warmup")
-    val params = lf.initialize()
+    val params = lf.initialize(StandardMassMatrix) //TODO
     val mass = warmup(chain,
                       params,
                       lf,
@@ -102,7 +102,6 @@ object Driver {
     var nextOutputTime = System.nanoTime()
     val buf = new ListBuffer[Array[Double]]
     var i = 0
-    println(stepSize)
     while (i < iterations) {
       sampler.run(params, lf, stepSize, mass)
       val output = new Array[Double](lf.nVars)
