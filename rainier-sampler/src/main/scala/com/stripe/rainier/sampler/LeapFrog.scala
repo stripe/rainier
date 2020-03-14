@@ -126,13 +126,12 @@ final class LeapFrog(density: DensityFunction, statsWindow: Int) {
   val inputOutputSize = potentialIndex + 1
 
   private val pqBuf = new Array[Double](inputOutputSize)
-  private val qBuf = new Array[Double](nVars)
-  private val vBuf = new Array[Double](nVars)
+  private val buf = new Array[Double](nVars)
 
   private def energy(params: Array[Double], mass: MassMatrix): Double = {
     val potential = params(potentialIndex)
-    velocity(params, vBuf, mass)
-    val kinetic = dot(vBuf, params) / 2.0
+    velocity(params, buf, mass)
+    val kinetic = dot(buf, params) / 2.0
     potential + kinetic
   }
 
@@ -143,10 +142,10 @@ final class LeapFrog(density: DensityFunction, statsWindow: Int) {
       (-deltaH).min(0.0)
 
   private def newQs(stepSize: Double, mass: MassMatrix): Unit = {
-    velocity(pqBuf, vBuf, mass)
+    velocity(pqBuf, buf, mass)
     var i = 0
     while (i < nVars) {
-      pqBuf(i + nVars) += (stepSize * vBuf(i))
+      pqBuf(i + nVars) += (stepSize * buf(i))
       i += 1
     }
   }
@@ -193,9 +192,9 @@ final class LeapFrog(density: DensityFunction, statsWindow: Int) {
     System.arraycopy(sourceArray, 0, targetArray, 0, inputOutputSize)
 
   private def copyQsAndUpdateDensity(): Unit = {
-    System.arraycopy(pqBuf, nVars, qBuf, 0, nVars)
+    System.arraycopy(pqBuf, nVars, buf, 0, nVars)
     val t = System.nanoTime()
-    density.update(qBuf)
+    density.update(buf)
     stats.gradientTimes.add((System.nanoTime() - t).toDouble)
     stats.gradientEvaluations += 1
   }
@@ -213,25 +212,8 @@ final class LeapFrog(density: DensityFunction, statsWindow: Int) {
           i += 1
         }
       case FullMassMatrix(elements) =>
-        squareMultiply(elements, in, out)
+        FullMassMatrix.squareMultiply(elements, in, out)
     }
-
-  private def squareMultiply(matrix: Array[Double],
-                             vector: Array[Double],
-                             out: Array[Double]): Unit = {
-    val n = out.size
-    var i = 0
-    while (i < n) {
-      var y = 0.0
-      var j = 0
-      while (j < n) {
-        y += vector(i) * matrix((i * n) + j)
-        j += 1
-      }
-      out(i) = y
-      i += 1
-    }
-  }
 
   private def dot(x: Array[Double], y: Array[Double]): Double = {
     var k = 0.0
@@ -245,22 +227,26 @@ final class LeapFrog(density: DensityFunction, statsWindow: Int) {
   }
 
   private def initializePs(params: Array[Double], mass: MassMatrix)(
-      implicit rng: RNG): Unit =
+      implicit rng: RNG): Unit = {
+    var i = 0
+    while (i < nVars) {
+      buf(i) = rng.standardNormal
+      i += 1
+    }
+
     mass match {
       case StandardMassMatrix =>
-        var i = 0
+        System.arraycopy(buf, 0, params, 0, nVars)
+      case d: DiagonalMassMatrix =>
+        val stdDevs = d.stdDevs
+        i = 0
         while (i < nVars) {
-          params(i) = rng.standardNormal
+          params(i) = buf(i) / stdDevs(i)
           i += 1
         }
-      case DiagonalMassMatrix(elements) =>
-        var i = 0
-        while (i < nVars) {
-          params(i) = rng.standardNormal / Math.sqrt(elements(i))
-          i += 1
-        }
-      case FullMassMatrix(elements) => ???
-      //    z.p = z.inv_e_metric_.llt().matrixU().solve(u);
-
+      case f: FullMassMatrix =>
+        val u = f.choleskyUpperTriangular
+        FullMassMatrix.upperTriangularSolve(u, buf, params)
     }
+  }
 }

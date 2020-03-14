@@ -4,12 +4,49 @@ sealed trait MassMatrix
 
 object StandardMassMatrix extends MassMatrix
 
-case class FullMassMatrix(elements: Array[Double]) extends MassMatrix {
-  require(!elements.contains(0.0))
-}
-
 case class DiagonalMassMatrix(elements: Array[Double]) extends MassMatrix {
   require(!elements.contains(0.0))
+
+  val stdDevs = elements.map { x =>
+    Math.sqrt(x)
+  }
+}
+
+case class FullMassMatrix(elements: Array[Double]) extends MassMatrix {
+  require(!elements.contains(0.0))
+
+  val choleskyUpperTriangular =
+    FullMassMatrix.choleskyUpperTriangular(elements)
+}
+
+object FullMassMatrix {
+  def squareMultiply(matrix: Array[Double],
+                     vector: Array[Double],
+                     out: Array[Double]): Unit = {
+    val n = out.size
+    var i = 0
+    while (i < n) {
+      var y = 0.0
+      var j = 0
+      while (j < n) {
+        y += vector(i) * matrix((i * n) + j)
+        j += 1
+      }
+      out(i) = y
+      i += 1
+    }
+  }
+
+  def upperTriangularSolve(matrix: Array[Double],
+                           vector: Array[Double],
+                           out: Array[Double]): Unit = ??? /*{
+    out(i - 1) = vector(i - 1) / matrix(i, i)
+    var i = vector.size - 2
+    while (i >= 0) {
+    }
+  }*/
+
+  def choleskyUpperTriangular(matrix: Array[Double]): Array[Double] = ???
 }
 
 class StandardMassMatrixTuner extends MassMatrixTuner {
