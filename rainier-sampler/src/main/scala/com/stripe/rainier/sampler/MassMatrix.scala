@@ -37,14 +37,26 @@ object FullMassMatrix {
     }
   }
 
-  def upperTriangularSolve(matrix: Array[Double],
+  private def triangleNumber(k: Int): Int = (k * (k + 1)) / 2
+  
+  def upperTriangularSolve(packed: Array[Double],
                            vector: Array[Double],
-                           out: Array[Double]): Unit = ??? /*{
-    out(i - 1) = vector(i - 1) / matrix(i, i)
-    var i = vector.size - 2
-    while (i >= 0) {
-    }
-  }*/
+                           out: Array[Double]): Unit = {
+    var i = vector.size - 1
+    var m = triangleNumber(i+1) - 1
+    while(i >= 0) {
+      var j = vector.size - 1
+      var dot = 0.0
+      while(j > i) {
+        dot += out(j) * packed(m)
+        j -= 1
+        m -= 1
+      }
+      out(i) = (vector(i) - dot) / packed(m)
+      i -= 1
+      m -= 1
+    } 
+  }
 
   def choleskyUpperTriangular(matrix: Array[Double]): Array[Double] = ???
 }
