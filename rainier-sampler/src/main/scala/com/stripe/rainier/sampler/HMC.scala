@@ -6,19 +6,19 @@ class HMCSampler(nSteps: Int) extends Sampler {
   def warmup(params: Array[Double],
              lf: LeapFrog,
              stepSize: Double,
-             metric: Metric)(implicit rng: RNG): Double = {
-    lf.startIteration(params, metric)
-    lf.takeSteps(nSteps, stepSize, metric)
-    lf.finishIteration(params, metric)
+             mass: MassMatrix)(implicit rng: RNG): Double = {
+    lf.startIteration(params, mass)
+    lf.takeSteps(nSteps, stepSize, mass)
+    lf.finishIteration(params, mass)
   }
 
   def run(params: Array[Double],
           lf: LeapFrog,
           stepSize: Double,
-          metric: Metric)(implicit rng: RNG): Unit = {
-    lf.startIteration(params, metric)
-    lf.takeSteps(nSteps, stepSize, metric)
-    lf.finishIteration(params, metric)
+          mass: MassMatrix)(implicit rng: RNG): Unit = {
+    lf.startIteration(params, mass)
+    lf.takeSteps(nSteps, stepSize, mass)
+    lf.finishIteration(params, mass)
     ()
   }
 }
@@ -30,7 +30,7 @@ object HMC {
       val iterations = it
       val statsWindow = 100
       def sampler() = new HMCSampler(nSteps)
-      def stepSizeTuner() = new DualAvgTuner(0.65)
-      def metricTuner() = new StandardMetricTuner()
+      def stepSizeTuner() = new DualAvgTuner(0.8)
+      def massMatrixTuner() = new IdentityMassMatrixTuner
     }
 }

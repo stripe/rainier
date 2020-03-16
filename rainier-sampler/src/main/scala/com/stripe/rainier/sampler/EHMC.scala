@@ -12,13 +12,13 @@ class EHMCSampler(minSteps: Int, maxSteps: Int, numLengths: Int, pCount: Double)
   def warmup(params: Array[Double],
              lf: LeapFrog,
              stepSize: Double,
-             metric: Metric)(implicit rng: RNG): Double = {
-    lf.startIteration(params, metric)
+             mass: MassMatrix)(implicit rng: RNG): Double = {
+    lf.startIteration(params, mass)
     if (shouldCountSteps())
-      countSteps(params, lf, stepSize, metric)
+      countSteps(params, lf, stepSize, mass)
     else
-      lf.takeSteps(nSteps(stepSize), stepSize, metric)
-    lf.finishIteration(params, metric)
+      lf.takeSteps(nSteps(stepSize), stepSize, mass)
+    lf.finishIteration(params, mass)
   }
 
   private def shouldCountSteps()(implicit rng: RNG): Boolean =
@@ -27,16 +27,16 @@ class EHMCSampler(minSteps: Int, maxSteps: Int, numLengths: Int, pCount: Double)
   private def countSteps(params: Array[Double],
                          lf: LeapFrog,
                          stepSize: Double,
-                         metric: Metric): Unit = {
+                         mass: MassMatrix): Unit = {
     var l = 0
     while (!lf.isUTurn(params) && l < maxSteps) {
       l += 1
-      lf.takeSteps(1, stepSize, metric)
+      lf.takeSteps(1, stepSize, mass)
       if (l == minSteps)
         lf.snapshot(buf)
     }
     if (l < minSteps) {
-      lf.takeSteps(minSteps - l, stepSize, metric)
+      lf.takeSteps(minSteps - l, stepSize, mass)
     } else {
       lf.restore(buf)
     }
@@ -47,10 +47,10 @@ class EHMCSampler(minSteps: Int, maxSteps: Int, numLengths: Int, pCount: Double)
   def run(params: Array[Double],
           lf: LeapFrog,
           stepSize: Double,
-          metric: Metric)(implicit rng: RNG): Unit = {
-    lf.startIteration(params, metric)
-    lf.takeSteps(nSteps(stepSize), stepSize, metric)
-    lf.finishIteration(params, metric)
+          mass: MassMatrix)(implicit rng: RNG): Unit = {
+    lf.startIteration(params, mass)
+    lf.takeSteps(nSteps(stepSize), stepSize, mass)
+    lf.finishIteration(params, mass)
     ()
   }
 
@@ -70,7 +70,7 @@ object EHMC {
       val iterations = it
       val statsWindow = 100
       def sampler() = new EHMCSampler(minSteps, 32, numLengths, 0.1)
-      def stepSizeTuner() = new DualAvgTuner(0.65)
-      def metricTuner() = new StandardMetricTuner()
+      def stepSizeTuner() = new DualAvgTuner(0.8)
+      def massMatrixTuner() = new IdentityMassMatrixTuner
     }
 }

@@ -9,23 +9,23 @@ case class HTMLProgress(kernel: JupyterApi, delay: Double) extends Progress {
   val outputEverySeconds = 0.1
   var startTime: Long = _
 
-  def start(chain: Int, message: String, stats: Stats) = {
+  def start(chain: Int) = {
     startTime = System.nanoTime()
     val idN = id + "-" + chain
     val chainStr = s"<b>Chain ${chain}</b>"
     kernel.publish.html(chainStr, idN)
   }
 
-  def refresh(chain: Int, message: String, stats: Stats) = {
+  def refresh(chain: Int, message: String, stats: Stats, mass: MassMatrix) = {
     val idN = id + "-" + chain
     val chainStr = s"<b>Chain ${chain} ${message}</b>"
-    kernel.publish.updateHtml(chainStr + ": " + render(stats), idN)
+    kernel.publish.updateHtml(chainStr + ": " + render(stats, mass), idN)
   }
 
-  def finish(chain: Int, message: String, stats: Stats) = {
+  def finish(chain: Int, message: String, stats: Stats, mass: MassMatrix) = {
     val idN = id + "-" + chain
     val chainStr = s"<b>Chain ${chain} ${message}</b>"
-    kernel.publish.updateHtml(chainStr + ": " + render(stats), idN)
+    kernel.publish.updateHtml(chainStr + ": " + render(stats, mass), idN)
   }
 
   private def renderTime(nanos: Long): String =
@@ -48,7 +48,7 @@ case class HTMLProgress(kernel: JupyterApi, delay: Double) extends Progress {
       }
     }
 
-  private def render(p: Stats): String = {
+  private def render(p: Stats, mass: MassMatrix): String = {
     val iteration =
       if (p.iterations > 0) {
         val itNum = s"Iteration: ${p.iterations}"
@@ -74,7 +74,11 @@ case class HTMLProgress(kernel: JupyterApi, delay: Double) extends Progress {
       if (p.iterations > 10)
         f"E-BFMI: ${p.bfmi}%.2f"
       else ""
-
-    s"<div>$iteration</div> <div>$acceptance</div> <div>$bfmi</div> <div>$stepSize</div> <div>$gradient</div> <div>$totalTime</div>"
+    val mm = mass match {
+      case DiagonalMassMatrix(elements) =>
+        "Mass matrix: " + elements.toList.toString
+      case _ => ""
+    }
+    s"<div>$iteration</div> <div>$acceptance</div> <div>$bfmi</div> <div>$stepSize</div> <div>$mm</div> <div>$gradient</div> <div>$totalTime</div>"
   }
 }

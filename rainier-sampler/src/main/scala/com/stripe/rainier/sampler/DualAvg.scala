@@ -2,34 +2,40 @@ package com.stripe.rainier.sampler
 
 class DualAvgTuner(delta: Double) extends StepSizeTuner {
   var da: DualAvg = _
-  var stepSize0 = 1.0
 
-  def initialize(params: Array[Double], lf: LeapFrog)(
-      implicit rng: RNG): Double = {
-    var logAcceptanceProb = lf.tryStepping(params, stepSize0, StandardMetric)
-    val exponent = if (logAcceptanceProb > Math.log(0.5)) { 1.0 } else { -1.0 }
-    val doubleOrHalf = Math.pow(2, exponent)
-    while (stepSize0 != 0.0 && (exponent * logAcceptanceProb > -exponent * Math
-             .log(2))) {
-      stepSize0 *= doubleOrHalf
-      logAcceptanceProb = lf.tryStepping(params, stepSize0, StandardMetric)
-    }
-    da = DualAvg(delta, stepSize0)
-    stepSize0
-  }
+  def initialize(params: Array[Double], lf: LeapFrog, iterations: Int)(
+      implicit rng: RNG): Double = reset(params, lf, IdentityMassMatrix)
 
   def update(logAcceptanceProb: Double)(implicit rng: RNG): Double = {
     da.update(logAcceptanceProb)
     da.stepSize
   }
 
-  def reset()(implicit rng: RNG): Double = {
+  def reset(params: Array[Double], lf: LeapFrog, mass: MassMatrix)(
+      implicit rng: RNG): Double = {
+    val stepSize0 = findReasonableStepSize(params, lf, mass)
     da = DualAvg(delta, stepSize0)
     stepSize0
   }
 
   def stepSize(implicit rng: RNG): Double = {
     da.finalStepSize
+  }
+
+  private def findReasonableStepSize(params: Array[Double],
+                                     lf: LeapFrog,
+                                     mass: MassMatrix): Double = {
+    var stepSize = 1.0
+    var logAcceptanceProb =
+      lf.tryStepping(params, stepSize, mass)
+    val exponent = if (logAcceptanceProb > Math.log(0.5)) { 1.0 } else { -1.0 }
+    val doubleOrHalf = Math.pow(2, exponent)
+    while (stepSize != 0.0 && (exponent * logAcceptanceProb > -exponent * Math
+             .log(2))) {
+      stepSize *= doubleOrHalf
+      logAcceptanceProb = lf.tryStepping(params, stepSize, mass)
+    }
+    stepSize
   }
 }
 

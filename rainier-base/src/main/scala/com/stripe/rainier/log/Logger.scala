@@ -29,6 +29,7 @@ trait Logger {
   def FINER: Api = logger.at(Level.FINER)
   def FINEST: Api = logger.at(Level.FINEST)
 
+  def showSevere(): Unit = setConsoleLevel(Level.SEVERE)
   def showInfo(): Unit = setConsoleLevel(Level.INFO)
   def showFine(): Unit = setConsoleLevel(Level.FINE)
   def showFiner(): Unit = setConsoleLevel(Level.FINER)

@@ -3,8 +3,10 @@ package com.stripe.rainier.core
 import com.stripe.rainier.sampler._
 import scala.annotation.tailrec
 
-case class Trace(chains: List[List[Array[Double]]], model: Model)(
-    implicit rng: RNG) {
+case class Trace(chains: List[List[Array[Double]]],
+                 mass: List[MassMatrix],
+                 stats: List[Stats],
+                 model: Model)(implicit rng: RNG) {
 
   def diagnostics: List[Trace.Diagnostics] = {
     require(chains.size > 1, "diagnostics requires multiple chains")
@@ -26,7 +28,7 @@ case class Trace(chains: List[List[Array[Double]]], model: Model)(
             .filter { case (_, i) => i % n == 0 }
             .map(_._1)
         }
-    Trace(newChains, model)
+    Trace(newChains, mass, stats, model)
   }
 
   def predict[T, U](value: T)(implicit tg: ToGenerator[T, U]): List[U] = {
