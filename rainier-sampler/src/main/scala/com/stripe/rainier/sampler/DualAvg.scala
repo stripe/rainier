@@ -4,7 +4,7 @@ class DualAvgTuner(delta: Double) extends StepSizeTuner {
   var da: DualAvg = _
 
   def initialize(params: Array[Double], lf: LeapFrog, iterations: Int)(
-      implicit rng: RNG): Double = reset(params, lf, StandardMassMatrix)
+      implicit rng: RNG): Double = reset(params, lf, IdentityMassMatrix)
 
   def update(logAcceptanceProb: Double)(implicit rng: RNG): Double = {
     da.update(logAcceptanceProb)

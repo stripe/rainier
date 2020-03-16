@@ -2,7 +2,7 @@ package com.stripe.rainier.sampler
 
 sealed trait MassMatrix
 
-object StandardMassMatrix extends MassMatrix
+object IdentityMassMatrix extends MassMatrix
 
 case class DiagonalMassMatrix(elements: Array[Double]) extends MassMatrix {
   require(!elements.contains(0.0))
@@ -12,14 +12,14 @@ case class DiagonalMassMatrix(elements: Array[Double]) extends MassMatrix {
   }
 }
 
-case class FullMassMatrix(elements: Array[Double]) extends MassMatrix {
+case class DenseMassMatrix(elements: Array[Double]) extends MassMatrix {
   require(!elements.contains(0.0))
 
   val choleskyUpperTriangular =
-    FullMassMatrix.choleskyUpperTriangular(elements)
+    DenseMassMatrix.choleskyUpperTriangular(elements)
 }
 
-object FullMassMatrix {
+object DenseMassMatrix {
   def squareMultiply(matrix: Array[Double],
                      vector: Array[Double],
                      out: Array[Double]): Unit = {
@@ -38,16 +38,16 @@ object FullMassMatrix {
   }
 
   private def triangleNumber(k: Int): Int = (k * (k + 1)) / 2
-  
+
   def upperTriangularSolve(packed: Array[Double],
                            vector: Array[Double],
                            out: Array[Double]): Unit = {
     var i = vector.size - 1
-    var m = triangleNumber(i+1) - 1
-    while(i >= 0) {
+    var m = triangleNumber(i + 1) - 1
+    while (i >= 0) {
       var j = vector.size - 1
       var dot = 0.0
-      while(j > i) {
+      while (j > i) {
         dot += out(j) * packed(m)
         j -= 1
         m -= 1
@@ -55,16 +55,57 @@ object FullMassMatrix {
       out(i) = (vector(i) - dot) / packed(m)
       i -= 1
       m -= 1
-    } 
+    }
   }
 
-  def choleskyUpperTriangular(matrix: Array[Double]): Array[Double] = ???
+def choleskyUpperTriangular(matrix: Array[Double]): Array[Double] = {
+    val n = math.floor(math.sqrt(matrix.size.toDouble)).toInt
+    val lower = new Array[Double](triangleNumber(n))
+    var i = 0
+    var l = 0
+    while(i < n) {
+      var k = 0
+      while(k <= i) {
+        var sum = 0.0
+        var j = 0
+        while(j < k) {
+          sum += lower(triangleNumber(i) + j) * lower(triangleNumber(k) + j)
+          j += 1
+        }
+        val x = matrix((i*n) + k) - sum
+        lower(l) =
+          if(i == k)
+            math.sqrt(x)
+          else {
+            val diag = lower(triangleNumber(k+1) - 1)
+            (1.0 / diag * x)
+          }
+        k += 1
+        l += 1
+      }
+      i += 1
+    }
+      
+    val upper = new Array[Double](lower.size)
+    i = 0
+    l = 0
+    while(i < n) {
+        var k = 0
+        while(k < (n-i)) {
+            upper(l) = lower(triangleNumber(k+i) + i)
+            k += 1
+            l += 1
+        }
+        i += 1
+    }
+    upper
+  }
 }
 
-class StandardMassMatrixTuner extends MassMatrixTuner {
-  def initialize(lf: LeapFrog, iterations: Int): MassMatrix = StandardMassMatrix
+class IdentityMassMatrixTuner extends MassMatrixTuner {
+  def initialize(lf: LeapFrog, iterations: Int): MassMatrix = IdentityMassMatrix
   def update(sample: Array[Double]): Option[MassMatrix] = None
-  def massMatrix: MassMatrix = StandardMassMatrix
+  def massMatrix: MassMatrix = IdentityMassMatrix
 }
 
 trait WindowedMassMatrixTuner extends MassMatrixTuner {
@@ -73,7 +114,7 @@ trait WindowedMassMatrixTuner extends MassMatrixTuner {
   def skipFirst: Int
   def skipLast: Int
 
-  var prevMassMatrix: MassMatrix = StandardMassMatrix
+  var prevMassMatrix: MassMatrix = IdentityMassMatrix
   var estimator: MassMatrixEstimator = _
   var windowSize = initialWindowSize
   var i = 0
@@ -83,7 +124,7 @@ trait WindowedMassMatrixTuner extends MassMatrixTuner {
   def initialize(lf: LeapFrog, iterations: Int): MassMatrix = {
     estimator = initializeEstimator(lf.nVars)
     totalIterations = iterations
-    StandardMassMatrix
+    IdentityMassMatrix
   }
 
   def initializeEstimator(size: Int): MassMatrixEstimator
@@ -116,7 +157,7 @@ case class DiagonalMassMatrixTuner(initialWindowSize: Int,
   def initializeEstimator(size: Int) = new VarianceEstimator(size)
 }
 
-case class FullMassMatrixTuner(initialWindowSize: Int,
+case class DenseMassMatrixTuner(initialWindowSize: Int,
                                windowExpansion: Double,
                                skipFirst: Int,
                                skipLast: Int)

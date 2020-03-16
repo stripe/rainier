@@ -60,7 +60,7 @@ class LeapFrogTest extends FunSuite {
   test("standard normal, identity matrix") {
     check(new NormalDensityFunction,
           1.0,
-          StandardMassMatrix,
+          IdentityMassMatrix,
           0.0,
           0.2,
           1.0,

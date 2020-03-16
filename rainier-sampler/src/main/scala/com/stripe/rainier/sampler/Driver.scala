@@ -19,7 +19,7 @@ object Driver {
     progress.start(chain)
 
     FINE.log("Starting warmup")
-    val params = lf.initialize(StandardMassMatrix) //TODO
+    val params = lf.initialize(IdentityMassMatrix) //TODO
     val mass = warmup(chain,
                       params,
                       lf,

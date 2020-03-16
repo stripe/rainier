@@ -203,7 +203,7 @@ final class LeapFrog(density: DensityFunction, statsWindow: Int) {
                        out: Array[Double],
                        mass: MassMatrix): Unit =
     mass match {
-      case StandardMassMatrix =>
+      case IdentityMassMatrix =>
         System.arraycopy(in, 0, out, 0, out.size)
       case DiagonalMassMatrix(elements) =>
         var i = 0
@@ -211,8 +211,8 @@ final class LeapFrog(density: DensityFunction, statsWindow: Int) {
           out(i) = in(i) * elements(i)
           i += 1
         }
-      case FullMassMatrix(elements) =>
-        FullMassMatrix.squareMultiply(elements, in, out)
+      case DenseMassMatrix(elements) =>
+        DenseMassMatrix.squareMultiply(elements, in, out)
     }
 
   private def dot(x: Array[Double], y: Array[Double]): Double = {
@@ -235,7 +235,7 @@ final class LeapFrog(density: DensityFunction, statsWindow: Int) {
     }
 
     mass match {
-      case StandardMassMatrix =>
+      case IdentityMassMatrix =>
         System.arraycopy(buf, 0, params, 0, nVars)
       case d: DiagonalMassMatrix =>
         val stdDevs = d.stdDevs
@@ -244,9 +244,9 @@ final class LeapFrog(density: DensityFunction, statsWindow: Int) {
           params(i) = buf(i) / stdDevs(i)
           i += 1
         }
-      case f: FullMassMatrix =>
+      case f: DenseMassMatrix =>
         val u = f.choleskyUpperTriangular
-        FullMassMatrix.upperTriangularSolve(u, buf, params)
+        DenseMassMatrix.upperTriangularSolve(u, buf, params)
     }
   }
 }

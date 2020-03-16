@@ -46,7 +46,7 @@ class CovarianceEstimator(size: Int) extends MassMatrixEstimator {
     elements
   }
 
-  def massMatrix: MassMatrix = FullMassMatrix(covariance)
+  def massMatrix: MassMatrix = DenseMassMatrix(covariance)
 }
 
 class VarianceEstimator(size: Int) extends MassMatrixEstimator {
