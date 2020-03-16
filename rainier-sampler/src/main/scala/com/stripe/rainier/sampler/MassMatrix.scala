@@ -58,26 +58,26 @@ object DenseMassMatrix {
     }
   }
 
-def choleskyUpperTriangular(matrix: Array[Double]): Array[Double] = {
+  def choleskyUpperTriangular(matrix: Array[Double]): Array[Double] = {
     val n = math.floor(math.sqrt(matrix.size.toDouble)).toInt
     val lower = new Array[Double](triangleNumber(n))
     var i = 0
     var l = 0
-    while(i < n) {
+    while (i < n) {
       var k = 0
-      while(k <= i) {
+      while (k <= i) {
         var sum = 0.0
         var j = 0
-        while(j < k) {
+        while (j < k) {
           sum += lower(triangleNumber(i) + j) * lower(triangleNumber(k) + j)
           j += 1
         }
-        val x = matrix((i*n) + k) - sum
+        val x = matrix((i * n) + k) - sum
         lower(l) =
-          if(i == k)
+          if (i == k)
             math.sqrt(x)
           else {
-            val diag = lower(triangleNumber(k+1) - 1)
+            val diag = lower(triangleNumber(k + 1) - 1)
             (1.0 / diag * x)
           }
         k += 1
@@ -85,18 +85,18 @@ def choleskyUpperTriangular(matrix: Array[Double]): Array[Double] = {
       }
       i += 1
     }
-      
+
     val upper = new Array[Double](lower.size)
     i = 0
     l = 0
-    while(i < n) {
-        var k = 0
-        while(k < (n-i)) {
-            upper(l) = lower(triangleNumber(k+i) + i)
-            k += 1
-            l += 1
-        }
-        i += 1
+    while (i < n) {
+      var k = 0
+      while (k < (n - i)) {
+        upper(l) = lower(triangleNumber(k + i) + i)
+        k += 1
+        l += 1
+      }
+      i += 1
     }
     upper
   }
@@ -158,9 +158,9 @@ case class DiagonalMassMatrixTuner(initialWindowSize: Int,
 }
 
 case class DenseMassMatrixTuner(initialWindowSize: Int,
-                               windowExpansion: Double,
-                               skipFirst: Int,
-                               skipLast: Int)
+                                windowExpansion: Double,
+                                skipFirst: Int,
+                                skipLast: Int)
     extends WindowedMassMatrixTuner {
   def initializeEstimator(size: Int) = new CovarianceEstimator(size)
 }
