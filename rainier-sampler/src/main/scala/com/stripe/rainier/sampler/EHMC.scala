@@ -1,8 +1,8 @@
 package com.stripe.rainier.sampler
 
-class EHMCSampler(minSteps: Int, maxSteps: Int, numLengths: Int, pCount: Double)
+class EHMCSampler(minSteps: Int, maxSteps: Int, bufSize: Int, pCount: Double)
     extends Sampler {
-  val totalLengths = new RingBuffer(numLengths)
+  val steps = new RingBuffer(bufSize)
   var buf: Array[Double] = _
 
   def initialize(params: Array[Double], lf: LeapFrog)(implicit rng: RNG) = {
@@ -14,15 +14,17 @@ class EHMCSampler(minSteps: Int, maxSteps: Int, numLengths: Int, pCount: Double)
              stepSize: Double,
              mass: MassMatrix)(implicit rng: RNG): Double = {
     lf.startIteration(params, mass)
-    if (shouldCountSteps())
+    if (shouldCountSteps()) {
       countSteps(params, lf, stepSize, mass)
-    else
-      lf.takeSteps(nSteps(stepSize), stepSize, mass)
+    } else {
+      val n = steps.sample().toInt
+      lf.takeSteps(n, stepSize, mass)
+    }
     lf.finishIteration(params, mass)
   }
 
   private def shouldCountSteps()(implicit rng: RNG): Boolean =
-    rng.standardUniform < pCount
+    !steps.full || rng.standardUniform < pCount
 
   private def countSteps(params: Array[Double],
                          lf: LeapFrog,
@@ -41,7 +43,7 @@ class EHMCSampler(minSteps: Int, maxSteps: Int, numLengths: Int, pCount: Double)
       lf.restore(buf)
     }
 
-    totalLengths.add(l * stepSize)
+    steps.add(l.toDouble)
   }
 
   def run(params: Array[Double],
@@ -49,21 +51,17 @@ class EHMCSampler(minSteps: Int, maxSteps: Int, numLengths: Int, pCount: Double)
           stepSize: Double,
           mass: MassMatrix)(implicit rng: RNG): Unit = {
     lf.startIteration(params, mass)
-    lf.takeSteps(nSteps(stepSize), stepSize, mass)
+    val n = steps.sample().toInt
+    lf.takeSteps(n, stepSize, mass)
     lf.finishIteration(params, mass)
     ()
-  }
-
-  private def nSteps(stepSize: Double)(implicit rng: RNG): Int = {
-    val length = totalLengths.sample()
-    Math.ceil(length / stepSize).toInt
   }
 }
 
 object EHMC {
   def apply(warmIt: Int,
             it: Int,
-            minSteps: Int = 10,
+            minSteps: Int = 1,
             numLengths: Int = 100): SamplerConfig =
     new SamplerConfig {
       val warmupIterations = warmIt
@@ -71,6 +69,6 @@ object EHMC {
       val statsWindow = 100
       def sampler() = new EHMCSampler(minSteps, 32, numLengths, 0.1)
       def stepSizeTuner() = new DualAvgTuner(0.8)
-      def massMatrixTuner() = new IdentityMassMatrixTuner
+      def massMatrixTuner() = new DiagonalMassMatrixTuner(50, 1.5, 50, 50)
     }
 }
