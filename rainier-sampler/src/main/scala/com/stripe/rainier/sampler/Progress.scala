@@ -26,7 +26,8 @@ object ConsoleProgress extends Progress {
               message: String,
               stats: Stats,
               mass: MassMatrix): Unit =
-    println(s"Chain ${chain} ${message}: Iteration ${stats.iterations}")
+    println(
+      s"Chain ${chain} ${message}: Iteration ${stats.iterations} BFMI: ${stats.bfmi} grads: ${stats.gradsPerIteration.last}")
   def finish(chain: Int,
              message: String,
              stats: Stats,

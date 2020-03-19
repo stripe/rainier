@@ -17,8 +17,8 @@ class Stats(n: Int) {
 }
 
 class RingBuffer(size: Int) {
+  var full = false
   private var i = 0
-  private var full = false
   private val buf = new Array[Double](size)
 
   def add(value: Double): Unit = {
