@@ -22,7 +22,6 @@ class SBCTest extends FunSuite {
   check(SBCExponential)
   check(SBCLaplace)
   check(SBCGamma) //Couldn't prove x >= 0 for bounds (-Infinity,Infinity)
-  check(SBCBVNormal)
 
   // Discrete
   check(SBCBernoulli)
