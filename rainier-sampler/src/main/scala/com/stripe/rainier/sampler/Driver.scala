@@ -57,7 +57,7 @@ object Driver {
     var nextOutputTime = System.nanoTime()
 
     sampler.initialize(params, lf)
-    var stepSize = stepSizeTuner.initialize(params, lf, iterations)
+    var stepSize = stepSizeTuner.initialize(params, lf)
     var mass = massMatrixTuner.initialize(lf, iterations)
 
     FINER.log("Initial step size %f", stepSize)
@@ -76,7 +76,7 @@ object Driver {
       massMatrixTuner.update(sample) match {
         case Some(m) =>
           mass = m
-          stepSize = stepSizeTuner.reset(params, lf, mass)
+          stepSize = stepSizeTuner.reset()
         case None => ()
       }
       if (System.nanoTime() > nextOutputTime) {

@@ -17,6 +17,18 @@ case class DenseMassMatrix(elements: Array[Double]) extends MassMatrix {
 
   val choleskyUpperTriangular =
     DenseMassMatrix.choleskyUpperTriangular(elements)
+
+  override def toString = {
+    val n = DenseMassMatrix.matrixSize(elements)
+    val rows = elements.grouped(n).map { row =>
+      row
+        .map { v =>
+          f"${v}% 10.5f"
+        }
+        .mkString(" ")
+    }
+    "[" + rows.mkString("\n ") + "]"
+  }
 }
 
 object DenseMassMatrix {
@@ -29,7 +41,7 @@ object DenseMassMatrix {
       var y = 0.0
       var j = 0
       while (j < n) {
-        y += vector(i) * matrix((i * n) + j)
+        y += vector(j) * matrix((i * n) + j)
         j += 1
       }
       out(i) = y
@@ -58,8 +70,11 @@ object DenseMassMatrix {
     }
   }
 
+  def matrixSize(elements: Array[Double]): Int =
+    math.floor(math.sqrt(elements.size.toDouble)).toInt
+
   def choleskyUpperTriangular(matrix: Array[Double]): Array[Double] = {
-    val n = math.floor(math.sqrt(matrix.size.toDouble)).toInt
+    val n = matrixSize(matrix)
     val lower = new Array[Double](triangleNumber(n))
     var i = 0
     var l = 0
