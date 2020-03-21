@@ -3,22 +3,24 @@ package com.stripe.rainier.sampler
 class DualAvgTuner(delta: Double) extends StepSizeTuner {
   var da: DualAvg = _
 
-  def initialize(params: Array[Double], lf: LeapFrog, iterations: Int)(
-      implicit rng: RNG): Double = reset(params, lf, IdentityMassMatrix)
-
-  def update(logAcceptanceProb: Double)(implicit rng: RNG): Double = {
-    da.update(logAcceptanceProb)
-    da.stepSize
-  }
-
-  def reset(params: Array[Double], lf: LeapFrog, mass: MassMatrix)(
-      implicit rng: RNG): Double = {
-    val stepSize0 = findReasonableStepSize(params, lf, mass)
+  def initialize(params: Array[Double], lf: LeapFrog): Double = {
+    val stepSize0 = findReasonableStepSize(params, lf, IdentityMassMatrix)
     da = DualAvg(delta, stepSize0)
     stepSize0
   }
 
-  def stepSize(implicit rng: RNG): Double = {
+  def update(logAcceptanceProb: Double): Double = {
+    da.update(logAcceptanceProb)
+    da.stepSize
+  }
+
+  def reset(): Double = {
+    val ss = stepSize
+    da = DualAvg(delta, ss)
+    ss
+  }
+
+  def stepSize: Double = {
     da.finalStepSize
   }
 

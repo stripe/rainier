@@ -15,21 +15,16 @@ object SamplerConfig {
 }
 
 trait StepSizeTuner {
-  def initialize(params: Array[Double], lf: LeapFrog, iterations: Int)(
-      implicit rng: RNG): Double
-  def update(logAcceptanceProb: Double)(implicit rng: RNG): Double
-  def reset(params: Array[Double], lf: LeapFrog, mass: MassMatrix)(
-      implicit rng: RNG): Double
-  def stepSize(implicit rng: RNG): Double
+  def initialize(params: Array[Double], lf: LeapFrog): Double
+  def update(logAcceptanceProb: Double): Double
+  def reset(): Double
+  def stepSize: Double
 }
 
-case class StaticStepSize(epsilon: Double) extends StepSizeTuner {
-  def initialize(params: Array[Double], lf: LeapFrog, iterations: Int)(
-      implicit rng: RNG) = epsilon
-  def update(logAcceptanceProb: Double)(implicit rng: RNG) = epsilon
-  def reset(params: Array[Double], lf: LeapFrog, mass: MassMatrix)(
-      implicit rng: RNG) = epsilon
-  def stepSize(implicit rng: RNG) = epsilon
+case class StaticStepSize(stepSize: Double) extends StepSizeTuner {
+  def initialize(params: Array[Double], lf: LeapFrog) = stepSize
+  def update(logAcceptanceProb: Double) = stepSize
+  def reset() = stepSize
 }
 
 trait MassMatrixTuner {

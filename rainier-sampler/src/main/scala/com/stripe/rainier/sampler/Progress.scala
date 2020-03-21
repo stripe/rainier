@@ -25,9 +25,14 @@ object ConsoleProgress extends Progress {
   def refresh(chain: Int,
               message: String,
               stats: Stats,
-              mass: MassMatrix): Unit =
-    println(
-      s"Chain ${chain} ${message}: Iteration ${stats.iterations} BFMI: ${stats.bfmi} grads: ${stats.gradsPerIteration.last}")
+              mass: MassMatrix): Unit = {
+    println(s"Chain ${chain} ${message}")
+    println(s"Iteration ${stats.iterations}")
+    println(s"BFMI: ${stats.bfmi}")
+    println(s"Step size: ${stats.stepSizes.mean}")
+    println(s"Acceptance rate: ${stats.acceptanceRates.mean}")
+  }
+
   def finish(chain: Int,
              message: String,
              stats: Stats,
