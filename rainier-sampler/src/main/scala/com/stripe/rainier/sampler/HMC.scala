@@ -25,12 +25,9 @@ class HMCSampler(nSteps: Int) extends Sampler {
 
 object HMC {
   def apply(warmIt: Int, it: Int, nSteps: Int): SamplerConfig =
-    new SamplerConfig {
-      val warmupIterations = warmIt
-      val iterations = it
-      val statsWindow = 100
-      def sampler() = new HMCSampler(nSteps)
-      def stepSizeTuner() = new DualAvgTuner(0.8)
-      def massMatrixTuner() = new IdentityMassMatrixTuner
+    new DefaultConfig {
+      override val warmupIterations = warmIt
+      override val iterations = it
+      override def sampler() = new HMCSampler(nSteps)
     }
 }

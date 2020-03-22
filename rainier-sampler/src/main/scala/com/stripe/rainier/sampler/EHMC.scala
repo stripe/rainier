@@ -1,6 +1,9 @@
 package com.stripe.rainier.sampler
 
-class EHMCSampler(minSteps: Int, maxSteps: Int, bufSize: Int, pCount: Double)
+class EHMCSampler(maxSteps: Int,
+                  minSteps: Int = 1,
+                  bufSize: Int = 100,
+                  pCount: Double = 0.1)
     extends Sampler {
   val steps = new RingBuffer(bufSize)
   var buf: Array[Double] = _
@@ -63,12 +66,9 @@ object EHMC {
             it: Int,
             minSteps: Int = 1,
             numLengths: Int = 100): SamplerConfig =
-    new SamplerConfig {
-      val warmupIterations = warmIt
-      val iterations = it
-      val statsWindow = 100
-      def sampler() = new EHMCSampler(minSteps, 32, numLengths, 0.1)
-      def stepSizeTuner() = new DualAvgTuner(0.8)
-      def massMatrixTuner() = new DiagonalMassMatrixTuner(50, 1.5, 50, 50)
+    new DefaultConfig {
+      override val warmupIterations = warmIt
+      override val iterations = it
+      override def sampler() = new EHMCSampler(1000, minSteps, numLengths, 0.1)
     }
 }
