@@ -5,10 +5,20 @@ import com.stripe.rainier.sampler._
 
 trait SBCModel[T] {
   def sbc: SBC[T]
-  val warmupIterations: Int = 10000
+  val warmupIt: Int = 10000
   val syntheticSamples: Int = 1000
   val nSamples: Int = 10
-  def sampler(iterations: Int) = HMC(warmupIterations, iterations, 1)
+  def sampler(it: Int) =
+    new SamplerConfig {
+      val iterations = it
+      val warmupIterations = warmupIt
+      val statsWindow = 100
+
+      def massMatrixTuner(): MassMatrixTuner = new IdentityMassMatrixTuner
+      def stepSizeTuner(): StepSizeTuner = new DualAvgTuner(0.8)
+      def sampler(): Sampler = new HMCSampler(1)
+    }
+
   def main(args: Array[String]): Unit = {
     implicit val rng: RNG = ScalaRNG(1528673302081L)
     com.stripe.rainier.compute.Log.showSevere

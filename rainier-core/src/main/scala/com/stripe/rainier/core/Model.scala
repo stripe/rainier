@@ -4,14 +4,14 @@ import com.stripe.rainier.compute._
 import com.stripe.rainier.sampler._
 import com.stripe.rainier.optimizer._
 
-case class Model(private[rainier] val likelihoods: List[Real],
-                 track: Set[Real]) {
+class Model(private[rainier] val likelihoods: List[Real],
+            val track: Set[Real]) {
   def prior: Model = Model.track(track ++ likelihoods)
   def merge(other: Model) =
-    Model(likelihoods ++ other.likelihoods, track ++ other.track)
+    new Model(likelihoods ++ other.likelihoods, track ++ other.track)
 
-  def sample(config: SamplerConfig, nChains: Int = 4)(
-      implicit rng: RNG,
+  def sample(config: SamplerConfig = SamplerConfig.default, nChains: Int = 4)(
+      implicit rng: RNG = RNG.default,
       progress: Progress = SilentProgress): Trace = {
     val results = 1
       .to(nChains)
@@ -23,7 +23,8 @@ case class Model(private[rainier] val likelihoods: List[Real],
     Trace(results.map(_._1), results.map(_._2), results.map(_._3), this)
   }
 
-  def optimize[T, U](t: T)(implicit toGen: ToGenerator[T, U], rng: RNG): U = {
+  def optimize[T, U](t: T)(implicit toGen: ToGenerator[T, U],
+                           rng: RNG = RNG.default): U = {
     val fn = toGen(t).prepare(parameters)
     fn(Optimizer.lbfgs(density()))
   }
@@ -54,18 +55,18 @@ object Model {
 
   def sample[T, U](t: T, config: SamplerConfig = SamplerConfig.default)(
       implicit toGen: ToGenerator[T, U],
-      rng: RNG,
+      rng: RNG = RNG.default,
       progress: Progress = SilentProgress): List[U] = {
     val gen = toGen(t)
     val model = Model.track(gen.requirements)
-    val trace = model.sample(config, 1)
-    trace.thin(10).predict(gen)
+    model.sample(config).predict(gen)
   }
 
-  def apply(reals: Real*): Model = track(reals.toSet)
-  def track(track: Set[Real]): Model = Model(List(Real.zero), track)
-  def likelihood(real: Real) = Model(List(real), Set.empty[Real])
-  def likelihoods(reals: List[Real]) = Model(reals, Set.empty[Real])
+  def apply[T, U](ts: T*)(implicit toGen: ToGenerator[T, U]): Model =
+    track(ts.map(toGen.apply(_).requirements).toSet.flatten)
+  def track(track: Set[Real]): Model = new Model(List(Real.zero), track)
+  def likelihood(real: Real) = new Model(List(real), Set.empty[Real])
+  def likelihoods(reals: List[Real]) = new Model(reals, Set.empty[Real])
 
   def observe[Y](y: Y, lh: Distribution[Y]): Model =
     observe(List(y), lh)

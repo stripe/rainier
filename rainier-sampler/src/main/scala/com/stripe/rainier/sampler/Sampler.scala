@@ -11,7 +11,19 @@ trait SamplerConfig {
 }
 
 object SamplerConfig {
-  val default: SamplerConfig = HMC(10000, 1000, 5)
+  val default: SamplerConfig = new DefaultConfig
+}
+
+class DefaultConfig extends SamplerConfig {
+  val iterations = 1000
+  val warmupIterations = 1000
+  val statsWindow = 100
+
+  def stepSizeTuner(): StepSizeTuner =
+    new DualAvgTuner(0.8)
+  def massMatrixTuner(): MassMatrixTuner =
+    new DiagonalMassMatrixTuner(50, 1.5, 50, 50)
+  def sampler(): Sampler = new EHMCSampler(1024)
 }
 
 trait StepSizeTuner {
