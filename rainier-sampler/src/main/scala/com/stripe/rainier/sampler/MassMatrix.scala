@@ -164,18 +164,18 @@ trait WindowedMassMatrixTuner extends MassMatrixTuner {
   }
 }
 
-case class DiagonalMassMatrixTuner(initialWindowSize: Int,
-                                   windowExpansion: Double,
-                                   skipFirst: Int,
-                                   skipLast: Int)
+class DiagonalMassMatrixTuner(val initialWindowSize: Int,
+                              val windowExpansion: Double,
+                              val skipFirst: Int,
+                              val skipLast: Int)
     extends WindowedMassMatrixTuner {
   def initializeEstimator(size: Int) = new VarianceEstimator(size)
 }
 
-case class DenseMassMatrixTuner(initialWindowSize: Int,
-                                windowExpansion: Double,
-                                skipFirst: Int,
-                                skipLast: Int)
+class DenseMassMatrixTuner(val initialWindowSize: Int,
+                           val windowExpansion: Double,
+                           val skipFirst: Int,
+                           val skipLast: Int)
     extends WindowedMassMatrixTuner {
   def initializeEstimator(size: Int) = new CovarianceEstimator(size)
 }

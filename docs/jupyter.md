@@ -32,6 +32,12 @@ import com.stripe.rainier.core._
 import com.stripe.rainier.notebook._
 ```
 
+Finally, you can register a custom pretty-printer for better notebook output of Rainier objects:
+
+```scala
+PrettyPrint.register(repl)
+```
+
 ## Using a standard Almond kernel
 
 If you are not using the custom kernel installer, make sure to use the `Scala 2.12` kernel, and add the following to the top of your notebook in its own cell:

@@ -17,9 +17,9 @@ Strips away the observations, for ease of checking prior predictions.
 
 Combines two models.
 
-* `sample(sampler: Sampler, nChains: Int = 4): Trace`
+* `sample(config: SamplerConfig, nChains: Int = 4): Trace`
 
-Run inference using the provided sampler.
+Run inference using the provided sampler configuration.
 
 * `optimize[T](value: Generator[T]): T`
 
