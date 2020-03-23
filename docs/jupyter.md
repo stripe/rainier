@@ -13,6 +13,7 @@ Specifically, this script installs a kernel that:
 
 * Uses Scala 2.12, which is currently the only version `rainier-notebook` is available for
 * Uses Almond 0.9.0, which seems to currently be more reliable than the latest release
+* Includes the `https://dl.bintray.com/rainier/maven` repository
 * Includes the `https://dl.bintray.com/cibotech/public` repository, which is needed for the [EvilPlot](https://cibotech.github.io/evilplot/) dependency
 * Configures the kernel with a custom id, name, and logo
 
@@ -37,6 +38,7 @@ If you are not using the custom kernel installer, make sure to use the `Scala 2.
 
 ```scala
 interp.repositories() ++= Seq(
+  coursierapi.MavenRepository.of("https://dl.bintray.com/rainier/maven"),
   coursierapi.MavenRepository.of("https://dl.bintray.com/cibotech/public"),
   coursierapi.MavenRepository.of("https://jitpack.io/")
 )

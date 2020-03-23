@@ -10,6 +10,7 @@ chmod +x /tmp/coursier
 /tmp/almond --install \
  -f --id rainier -N "Rainier (Scala 2.12)" \
  --extra-repository "https://dl.bintray.com/cibotech/public" \
+ --extra-repository "https://dl.bintray.com/rainier/maven" \
  --extra-repository "https://jitpack.io" \
  --logo $PWD/logo.png
  
