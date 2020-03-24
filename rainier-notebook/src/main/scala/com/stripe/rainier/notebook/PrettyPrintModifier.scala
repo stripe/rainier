@@ -9,7 +9,13 @@ class PrettyPrintModifier extends PostModifier {
     val variables = ctx.variables
       .map { v =>
         val pp = pprint(v.runtimeValue)
-        s"${v.name}: ${v.staticType} = $pp"
+        val truncated =
+          if (pp.plainText.split("\n").size > 5) {
+            val keep = pp.plainText.split("\n").take(5).mkString("\n").size
+            pp.substring(0, keep) + "\n..."
+          } else
+            pp
+        s"${v.name}: ${v.staticType} = $truncated"
       }
       .mkString("\n")
     s"```scala \n${ctx.originalCode.text}\n\n/*\n$variables\n*/\n```"
