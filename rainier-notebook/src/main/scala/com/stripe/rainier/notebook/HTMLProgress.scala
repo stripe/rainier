@@ -74,11 +74,6 @@ case class HTMLProgress(kernel: JupyterApi, delay: Double) extends Progress {
       if (p.iterations > 10)
         f"E-BFMI: ${p.bfmi}%.2f"
       else ""
-    val mm = mass match {
-      case DiagonalMassMatrix(elements) =>
-        "Mass matrix: " + elements.toList.toString
-      case _ => ""
-    }
-    s"<div>$iteration</div> <div>$acceptance</div> <div>$bfmi</div> <div>$stepSize</div> <div>$mm</div> <div>$gradient</div> <div>$totalTime</div>"
+    s"<div>$iteration</div> <div>$acceptance</div> <div>$bfmi</div> <div>$stepSize</div> <div>$gradient</div> <div>$totalTime</div>"
   }
 }
