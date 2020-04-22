@@ -1,6 +1,8 @@
 package com.stripe.rainier.notebook
 
 import com.stripe.rainier.sampler._
+import com.stripe.rainier.unused
+
 import almond.api.JupyterApi
 
 case class HTMLProgress(kernel: JupyterApi, delay: Double) extends Progress {
@@ -48,7 +50,7 @@ case class HTMLProgress(kernel: JupyterApi, delay: Double) extends Progress {
       }
     }
 
-  private def render(p: Stats, mass: MassMatrix): String = {
+  private def render(p: Stats, @unused mass: MassMatrix): String = {
     val iteration =
       if (p.iterations > 0) {
         val itNum = s"Iteration: ${p.iterations}"
@@ -74,11 +76,6 @@ case class HTMLProgress(kernel: JupyterApi, delay: Double) extends Progress {
       if (p.iterations > 10)
         f"E-BFMI: ${p.bfmi}%.2f"
       else ""
-    val mm = mass match {
-      case DiagonalMassMatrix(elements) =>
-        "Mass matrix: " + elements.toList.toString
-      case _ => ""
-    }
-    s"<div>$iteration</div> <div>$acceptance</div> <div>$bfmi</div> <div>$stepSize</div> <div>$mm</div> <div>$gradient</div> <div>$totalTime</div>"
+    s"<div>$iteration</div> <div>$acceptance</div> <div>$bfmi</div> <div>$stepSize</div> <div>$gradient</div> <div>$totalTime</div>"
   }
 }
