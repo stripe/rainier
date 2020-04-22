@@ -1,6 +1,8 @@
 package com.stripe.rainier.notebook
 
 import com.stripe.rainier.sampler._
+import com.stripe.rainier.unused
+
 import almond.api.JupyterApi
 
 case class HTMLProgress(kernel: JupyterApi, delay: Double) extends Progress {
@@ -48,7 +50,7 @@ case class HTMLProgress(kernel: JupyterApi, delay: Double) extends Progress {
       }
     }
 
-  private def render(p: Stats, mass: MassMatrix): String = {
+  private def render(p: Stats, @unused mass: MassMatrix): String = {
     val iteration =
       if (p.iterations > 0) {
         val itNum = s"Iteration: ${p.iterations}"

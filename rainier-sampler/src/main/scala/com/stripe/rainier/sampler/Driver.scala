@@ -66,8 +66,7 @@ object Driver {
 
     while (i < iterations) {
       val logAcceptProb = sampler.warmup(params, lf, stepSize, mass)
-      //if (i < 100 || i > 900)
-        stepSize = stepSizeTuner.update(logAcceptProb)
+      stepSize = stepSizeTuner.update(logAcceptProb)
 
       FINEST.log("Accept probability %f", Math.exp(logAcceptProb))
       FINEST.log("Adapted step size %f", stepSize)
