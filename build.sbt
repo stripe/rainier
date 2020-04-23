@@ -36,7 +36,7 @@ lazy val commonSettings = Seq(
 )
 
 lazy val crossBuildSettings = Seq(
-  crossScalaVersions := List("2.13.1", "2.12.10", "2.11.12"),
+  crossScalaVersions := List("2.13.2", "2.12.10", "2.11.12"),
   releaseCrossBuild := true
 )
 
