@@ -10,6 +10,8 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - uses: olafurpg/setup-scala@v10
+        with:
+         java-version: adopt@1.11
       - name: scalafmt
         run: sbt scalafmtCheck
       - name: test
