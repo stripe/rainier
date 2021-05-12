@@ -1,3 +1,5 @@
+import ReleaseTransformations._
+
 lazy val root = project.
   in(file(".")).
   aggregate(rainierBase, rainierCompute, rainierSampler, rainierCore, rainierNotebook).
@@ -13,12 +15,13 @@ lazy val root = project.
 scalafmtOnCompile in ThisBuild := true
 
 lazy val commonSettings = Seq(
-  organization:= "com.stripe",
+  organization:= "com.kailuowang",
   scalaVersion := "2.12.10",
   releasePublishArtifactsAction := PgpKeys.publishSigned.value,
   homepage := Some(url("https://github.com/stripe/rainier")),
   licenses := Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
   publishMavenStyle := true,
+  publishTo := sonatypePublishToBundle.value,
   publishArtifact in Test := false,
   pomIncludeRepository := { _ => false },
   autoAPIMappings := true,
@@ -32,7 +35,26 @@ lazy val commonSettings = Seq(
   developers := List(
     Developer("avibryant", "Avi Bryant", "", url("https://twitter.com/avibryant"))
   ),
-  bintrayOrganization := Some("rainier")
+  releaseCrossBuild := true, // true if you cross-build the project for multiple Scala versions
+    releaseProcess := Seq[ReleaseStep](
+    checkSnapshotDependencies,
+    inquireVersions,
+    runClean,
+    runTest,
+    setReleaseVersion,
+    commitReleaseVersion,
+    tagRelease,
+    // For non cross-build projects, use releaseStepCommand("publishSigned")
+    releaseStepCommandAndRemaining("+publishSigned"),
+    releaseStepCommand("sonatypeBundleRelease"),
+    setNextVersion,
+    commitNextVersion,
+    pushChanges
+  ),
+  credentials ++= (for {
+    username <- Option(System.getenv().get("SONATYPE_USERNAME"))
+    password <- Option(System.getenv().get("SONATYPE_PASSWORD"))
+  } yield Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", username, password)).toSeq
 )
 
 lazy val crossBuildSettings = Seq(
@@ -49,7 +71,7 @@ lazy val unpublished = Seq(
 /* dependency versions */
 lazy val V = new {
   val asm = "6.0"
-  val evilplot = "0.6.0"
+  val evilplot = "0.8.1"
   val scalatest = "3.0.8"
   val flogger = "0.3.1"
   val almond = "0.9.0"
@@ -104,12 +126,10 @@ lazy val rainierNotebook = project.
   settings(commonSettings).
   settings(
     resolvers ++=
-      Seq(
-        Resolver.bintrayRepo("cibotech", "public"),
-        "jitpack" at "https://jitpack.io"),
+      Seq("jitpack" at "https://jitpack.io"),
     libraryDependencies ++=
       Seq(
-        "com.cibo" %% "evilplot" % V.evilplot,
+        "io.github.cibotech" %% "evilplot" % V.evilplot,
         "org.scalameta" %% "scalameta" % V.scalameta,
         "org.scalameta" %% "mdoc" % V.mdoc,
         "com.lihaoyi" % "ammonite-repl_2.12.10" % V.amm,
@@ -203,6 +223,6 @@ lazy val asmDeps = project.
       case other =>
         val oldStrategy = (assemblyMergeStrategy in assembly).value
         oldStrategy(other)
-    },
+    }
   ).
   settings(unpublished)

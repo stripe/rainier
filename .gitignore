@@ -1,4 +1,5 @@
 *.swp
+.bsp
 bazel-*
 .idea
 project/target
