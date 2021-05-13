@@ -15,7 +15,7 @@ lazy val root = project.
 scalafmtOnCompile in ThisBuild := true
 
 lazy val commonSettings = Seq(
-  organization:= "com.kailuowang",
+  organization:= "com.stripe",
   scalaVersion := "2.12.10",
   releasePublishArtifactsAction := PgpKeys.publishSigned.value,
   homepage := Some(url("https://github.com/stripe/rainier")),
