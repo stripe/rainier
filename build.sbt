@@ -179,7 +179,7 @@ lazy val docs = project.
   settings(commonSettings).
   settings(
    mdocVariables := Map(
-     "VERSION" -> "0.3.2"
+     "VERSION" -> "0.3.3"
    )
   ).
   settings(unpublished)
