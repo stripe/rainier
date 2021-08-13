@@ -16,7 +16,7 @@ scalafmtOnCompile in ThisBuild := true
 
 lazy val commonSettings = Seq(
   organization:= "com.stripe",
-  scalaVersion := "2.12.10",
+  scalaVersion := "2.12.14",
   releasePublishArtifactsAction := PgpKeys.publishSigned.value,
   homepage := Some(url("https://github.com/stripe/rainier")),
   licenses := Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
@@ -58,7 +58,7 @@ lazy val commonSettings = Seq(
 )
 
 lazy val crossBuildSettings = Seq(
-  crossScalaVersions := List("2.13.1", "2.12.10", "2.11.12"),
+  crossScalaVersions := List("2.13.6", scalaVersion.value, "2.11.12"),
   releaseCrossBuild := true
 )
 
