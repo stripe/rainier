@@ -78,7 +78,7 @@ lazy val V = new {
   val shadedAsm = "0.2.1"
   val scalameta = "4.2.3"
   val mdoc = "2.1.1"
-  val amm = "2.0.4"
+  val amm = "2.3.8"
 }
 
 // primary modules
