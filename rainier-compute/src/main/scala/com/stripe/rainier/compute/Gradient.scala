@@ -59,6 +59,10 @@ private object Gradient {
             //no gradient
             visit(c.left)
             visit(c.right)
+
+          case Latent(value) =>
+            diff(value).register(diff(real))
+            visit(value)
         }
       }
     }

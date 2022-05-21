@@ -33,7 +33,8 @@ class Evaluator(var cache: Map[Real, Double]) {
       Math.pow(toDouble(base), toDouble(exponent))
     case l: Lookup =>
       toDouble(l.table(toDouble(l.index).toInt - l.low))
-    case p: Parameter => sys.error(s"No value provided for $p")
+    case p: Parameter  => sys.error(s"No value provided for $p")
+    case Latent(value) => toDouble(value)
   }
 
   def compare(x: Real, y: Real): Int = toDouble(x).compare(toDouble(y))

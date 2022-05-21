@@ -186,6 +186,10 @@ final private[rainier] class Parameter(var prior: Prior) extends NonConstant {
 
 private[rainier] class Prior(val density: Real)
 
+case class Latent(value: Real) extends NonConstant {
+  val bounds = value.bounds
+}
+
 final private case class Unary(original: NonConstant, op: ir.UnaryOp)
     extends NonConstant {
   val bounds = op match {

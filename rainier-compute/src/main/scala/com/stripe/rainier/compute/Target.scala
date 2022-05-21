@@ -120,6 +120,9 @@ object TargetGroup {
           case l: Lookup =>
             loop(l.index)
             l.table.foreach(loop)
+          // NB: this should only happen for guide in variational inference
+          case Latent(value) =>
+            loop(value)
         }
       }
 
@@ -193,8 +196,12 @@ object TargetGroup {
 
             if (indexState.hasParameter)
               state.nonlinearOp
-            else
+            else {
               state
+            }
+          // NB: for variational inference, should stop here
+          case Latent(value) =>
+            loop(value)
         }
         seen += (r -> result)
         result

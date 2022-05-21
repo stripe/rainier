@@ -20,7 +20,8 @@ private class Translator {
           binaryExpr(toExpr(base), toExpr(exponent), PowOp)
         case Compare(left, right) =>
           binaryExpr(toExpr(left), toExpr(right), CompareOp)
-        case l: Lookup => lookupExpr(l)
+        case l: Lookup     => lookupExpr(l)
+        case Latent(value) => toExpr(value)
       }
       reals += r -> expr
       expr
