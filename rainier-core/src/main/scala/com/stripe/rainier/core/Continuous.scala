@@ -2,6 +2,7 @@ package com.stripe.rainier.core
 
 import com.stripe.rainier.compute._
 import com.stripe.rainier.sampler.RNG
+
 import scala.annotation.tailrec
 
 /**
@@ -11,13 +12,17 @@ trait Continuous extends Distribution[Double] {
   private[rainier] val support: Support
 
   def logDensity(seq: Seq[Double]) = Vec.from(seq).map(logDensity).columnize
+
   def logDensity(x: Real): Real
 
   def scale(a: Real): Continuous = Scale(a).transform(this)
+
   def translate(b: Real): Continuous = Translate(b).transform(this)
+
   def exp: Continuous = Exp.transform(this)
 
   def latent: Latent
+
   def latentVec(k: Int) = Vec.from(List.fill(k)(latent: Real))
 }
 
@@ -29,16 +34,22 @@ private[rainier] trait StandardContinuous extends Continuous {
     val x = Real.parameter { x =>
       support.logJacobian(x) + logDensity(support.transform(x))
     }
-    Latent(support.transform(x))
+    Latent(support.transform(x), generatorCall)
   }
+
+  def generatorCall: FnCall
 }
 
 /**
   * Location-scale family distribution
   */
-trait LocationScaleFamily { self =>
+trait LocationScaleFamily {
+  self =>
   def logDensity(x: Real): Real
+
   def generate(r: RNG): Double
+
+  def generatorCall: FnCall
 
   val standard: StandardContinuous = new StandardContinuous {
     val support: Support = UnboundedSupport
@@ -47,8 +58,12 @@ trait LocationScaleFamily { self =>
       Generator.from { (r, _) =>
         generate(r)
       }
-    def logDensity(real: Real): Real =
+
+    def logDensity(real: Real): Real = {
       self.logDensity(real)
+    }
+
+    def generatorCall: FnCall = self.generatorCall
   }
 
   def apply(location: Real, scale: Real): Continuous = {
@@ -63,7 +78,10 @@ trait LocationScaleFamily { self =>
 object Normal extends LocationScaleFamily {
   def logDensity(x: Real): Real =
     ((x * x) / -2.0) - 0.5 * Real(2 * math.Pi).log
+
   def generate(r: RNG): Double = r.standardNormal
+
+  def generatorCall: FnCall = FnCall(Normal.getClass.getName, "generate")
 }
 
 /**
@@ -72,8 +90,11 @@ object Normal extends LocationScaleFamily {
 object Cauchy extends LocationScaleFamily {
   def logDensity(x: Real): Real =
     (((x * x) + 1) * Math.PI).log * -1
+
   def generate(r: RNG): Double =
     r.standardNormal / r.standardNormal
+
+  def generatorCall: FnCall = FnCall(Cauchy.getClass.getName, "generate")
 }
 
 /**
@@ -82,10 +103,13 @@ object Cauchy extends LocationScaleFamily {
 object Laplace extends LocationScaleFamily {
   def logDensity(x: Real): Real =
     Real(0.5).log - x.abs
+
   def generate(r: RNG): Double = {
     val u = r.standardUniform - 0.5
     Math.signum(u) * -1 * Math.log(1 - (2 * Math.abs(u)))
   }
+
+  def generatorCall: FnCall = FnCall(Laplace.getClass.getName, "generate")
 }
 
 /**
@@ -103,7 +127,7 @@ object Gamma {
   def standard(shape: Real): StandardContinuous = {
     Bounds.check(shape, "k > 0")(_ >= 0.0)
     new StandardContinuous {
-      val support = BoundedBelowSupport(Real.zero)
+      private[rainier] val support = BoundedBelowSupport(Real.zero)
 
       def logDensity(real: Real): Real =
         Bounds.positive(real) {
@@ -111,38 +135,45 @@ object Gamma {
             Combinatorics.gamma(shape) - real
         }
 
+      def generatorCall: FnCall =
+        FnCall(Gamma.getClass.getName, "generateValue", List(shape))
+
       def generator: Generator[Double] = Generator.require(Set(shape)) {
         (r, n) =>
           val a = n.toDouble(shape)
-          if (a < 1) {
-            val u = r.standardUniform
-            generate(a + 1, r) * Math.pow(u, 1.0 / a)
-          } else
-            generate(a, r)
-      }
-
-      @tailrec
-      private def generate(a: Double, r: RNG): Double = {
-        val d = a - 1.0 / 3.0
-        val c = (1.0 / 3.0) / Math.sqrt(d)
-
-        var x = r.standardNormal
-        var v = 1.0 + c * x
-        while (v <= 0) {
-          x = r.standardNormal
-          v = 1.0 + c * x
-        }
-
-        val v3 = v * v * v
-        val u = r.standardUniform
-
-        if ((u < 1 - 0.0331 * x * x * x * x) ||
-            (Math.log(u) < 0.5 * x * x + d * (1 - v3 + Math.log(v3))))
-          d * v3
-        else
-          generate(a, r)
+          generateValue(r, a)
       }
     }
+  }
+
+  def generateValue(r: RNG, a: Double): Double = {
+    if (a < 1) {
+      val u = r.standardUniform
+      generate(a + 1, r) * Math.pow(u, 1.0 / a)
+    } else
+      generate(a, r)
+  }
+
+  @tailrec
+  def generate(a: Double, r: RNG): Double = {
+    val d = a - 1.0 / 3.0
+    val c = (1.0 / 3.0) / Math.sqrt(d)
+
+    var x = r.standardNormal
+    var v = 1.0 + c * x
+    while (v <= 0) {
+      x = r.standardNormal
+      v = 1.0 + c * x
+    }
+
+    val v3 = v * v * v
+    val u = r.standardUniform
+
+    if ((u < 1 - 0.0331 * x * x * x * x) ||
+        (Math.log(u) < 0.5 * x * x + d * (1 - v3 + Math.log(v3))))
+      d * v3
+    else
+      generate(a, r)
   }
 }
 
@@ -151,6 +182,7 @@ object Gamma {
   */
 object Exponential {
   val standard: Continuous = Gamma.standard(1.0)
+
   def apply(rate: Real): Continuous = {
     Bounds.check(rate, "λ >= 0")(_ >= 0.0)
     standard.scale(Real.one / rate)
@@ -164,7 +196,7 @@ final case class Beta(a: Real, b: Real) extends StandardContinuous {
   Bounds.check(a, "α >= 0")(_ >= 0.0)
   Bounds.check(b, "β >= 0")(_ >= 0.0)
 
-  val support = new BoundedSupport(Real.zero, Real.one)
+  private[rainier] val support = BoundedSupport(Real.zero, Real.one)
 
   def logDensity(real: Real): Real =
     Bounds.zeroToOne(real)(betaDensity(real))
@@ -179,11 +211,21 @@ final case class Beta(a: Real, b: Real) extends StandardContinuous {
     (a - 1) *
       u.log + (b - 1) *
       (1 - u).log - Combinatorics.beta(a, b)
+
+  def generatorCall: FnCall =
+    FnCall(Beta.getClass.getName, "generateValue", List(a, b))
 }
 
 object Beta {
+  def generateValue(r: RNG, a: Double, b: Double): Double = {
+    val z1 = Gamma.generateValue(r, a)
+    val z2 = Gamma.generateValue(r, b)
+    z1 / (z1 + z2)
+  }
+
   def meanAndPrecision(mean: Real, precision: Real): Beta =
     Beta(mean * precision, (Real.one - mean) * precision)
+
   def meanAndVariance(mean: Real, variance: Real): Beta =
     meanAndPrecision(mean, mean * (Real.one - mean) / variance - 1)
 }
@@ -202,19 +244,26 @@ object LogNormal {
 object Uniform {
   val beta11: Beta = Beta(1, 1)
   val standard: Continuous = new StandardContinuous {
-    val support = beta11.support
+    private[rainier] val support = beta11.support
 
     def logDensity(real: Real): Real = beta11.logDensity(real)
+
     val generator: Generator[Double] =
       Generator.from { (r, _) =>
         r.standardUniform
       }
+
+    def generatorCall: FnCall =
+      FnCall(Uniform.getClass.getName, "generateValue")
   }
+
+  def generateValue(r: RNG): Double = r.standardUniform
 
   def apply(from: Real, to: Real): Continuous =
     standard.scale(to - from).translate(from)
 }
 
+/*
 case class Mixture(components: Map[Continuous, Real]) extends Continuous {
   components.values.foreach { r =>
     Bounds.check(r, "0 <= p <= 1") { p =>
@@ -222,14 +271,14 @@ case class Mixture(components: Map[Continuous, Real]) extends Continuous {
     }
   }
 
+  private[rainier] val support = Support.union(components.keys.map {
+    _.support
+  })
+
   def generator: Generator[Double] =
     Generator.categorical(components).flatMap { d =>
       d.generator
     }
-
-  val support = Support.union(components.keys.map {
-    _.support
-  })
 
   def logDensity(real: Real): Real =
     Real
@@ -243,6 +292,16 @@ case class Mixture(components: Map[Continuous, Real]) extends Continuous {
     val x = Real.parameter { x =>
       support.logJacobian(x) + logDensity(support.transform(x))
     }
-    Latent(support.transform(x))
+    val cdf =
+      components.toList
+        .scanLeft((Option.empty[Continuous], Real.zero)) {
+          case ((_, acc), (t, p)) => ((Some(t)), p + acc)
+        }
+        .collect { case (Some(t), p) => (t, p) }
+
+    Latent(support.transform(x), FnCall())
   }
 }
+
+
+ */

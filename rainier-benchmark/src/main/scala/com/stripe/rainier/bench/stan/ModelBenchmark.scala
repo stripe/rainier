@@ -46,7 +46,7 @@ object ModelBenchmarks {
   def main(args: Array[String]): Unit = {
     new ARK().main()
     new EightSchools().main()
-    new LowDimGaussMix().main()
+//    new LowDimGaussMix().main()
     new GLMMPoisson2().main()
   }
 }

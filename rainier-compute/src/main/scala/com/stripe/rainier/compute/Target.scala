@@ -121,7 +121,7 @@ object TargetGroup {
             loop(l.index)
             l.table.foreach(loop)
           // NB: this should only happen for guide in variational inference
-          case Latent(value) =>
+          case Latent(value, _) =>
             loop(value)
         }
       }
@@ -200,7 +200,7 @@ object TargetGroup {
               state
             }
           // NB: for variational inference, should stop here
-          case Latent(value) =>
+          case Latent(value, _) =>
             loop(value)
         }
         seen += (r -> result)

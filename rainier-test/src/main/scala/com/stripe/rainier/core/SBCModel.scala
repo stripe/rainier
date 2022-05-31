@@ -33,8 +33,8 @@ trait SBCModel[T] {
     implicit val rng: RNG = ScalaRNG(1528673302081L)
     val (values, trueValue) = sbc.synthesize(syntheticSamples)
     val (model, real) = sbc.fit(values)
-    val samples =
-      model.sample(sampler(goldset.size), 1).predict(real)
+    val inference = new MCMCInference(model, sampler(goldset.size), 1)
+    val samples = inference.sample.predict(real)
     (samples, trueValue)
   }
 

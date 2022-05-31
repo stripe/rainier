@@ -91,6 +91,7 @@ class BinomialPoissonApproximationBenchmark extends SBCBenchmark {
     SBC(Uniform(0, 0.04))((x: Real) => Binomial(x, 200))
 }
 
+/*
 class GaussianMixtureBenchmark extends SBCBenchmark {
   def sbc =
     SBC(Uniform(0, 1))(
@@ -102,3 +103,5 @@ class GaussianMixtureBenchmark extends SBCBenchmark {
           )
       ))
 }
+
+ */

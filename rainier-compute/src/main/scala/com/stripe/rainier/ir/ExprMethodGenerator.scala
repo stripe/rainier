@@ -67,5 +67,12 @@ final private case class ExprMethodGenerator(method: MethodDef,
         traverse(s.second)
       case m: MethodRef =>
         callExprMethod(classPrefix, m.sym.id)
+      case f: ExternalFunctionRef =>
+        for {
+          a <- f.args
+        } {
+          traverse(a)
+        }
+        callFunction(f.className, f.methodName, f.args.size)
     }
 }

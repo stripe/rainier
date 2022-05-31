@@ -60,7 +60,7 @@ private object Gradient {
             visit(c.left)
             visit(c.right)
 
-          case Latent(value) =>
+          case Latent(value, _) =>
             diff(value).register(diff(real))
             visit(value)
         }
