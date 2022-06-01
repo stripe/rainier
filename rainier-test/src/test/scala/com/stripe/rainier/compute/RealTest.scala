@@ -1,8 +1,16 @@
 package com.stripe.rainier.compute
 
 import com.stripe.rainier.core._
-import scala.util.{Try, Success, Failure}
-import Double.{PositiveInfinity => Inf, NegativeInfinity => NegInf, NaN}
+import com.stripe.rainier.sampler.RNG
+
+import scala.util.{Failure, Success, Try}
+import Double.{NaN, NegativeInfinity => NegInf, PositiveInfinity => Inf}
+
+object RealTest {
+  def generateValue(r: RNG, x: Double): Double = {
+    r.standardUniform * x
+  }
+}
 
 class RealTest extends ComputeTest {
   def run(description: String,
@@ -202,4 +210,14 @@ class RealTest extends ComputeTest {
       Gamma.standard(x.abs).logDensity(y)
     })
   }
+
+  test("function call") {
+//    val l = Latent(1.0, FnCall(RealTest.getClass.getName, "generateValue", List(2.0)))
+    val l = FnCall(RealTest.getClass.getName.stripSuffix("$").replace('.', '/'),
+                   "generateValue",
+                   List(2.0))
+    val c = Compiler(200, 100).compile(List.empty, l)
+//    c(Array(3.0))
+  }
+
 }

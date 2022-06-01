@@ -223,10 +223,10 @@ private[rainier] class Prior(val density: Real)
 
 case class FnCall(className: String,
                   methodName: String,
-                  args: List[Real] = List.empty,
-                  bounds: Bounds =
-                    Bounds(Double.NegativeInfinity, Double.PositiveInfinity))
-    extends NonConstant
+                  args: List[Real] = List.empty)
+    extends NonConstant {
+  val bounds: Bounds = Bounds(Double.NegativeInfinity, Double.PositiveInfinity)
+}
 
 case class Latent(value: Real, generator: Real) extends NonConstant {
   val bounds = value.bounds

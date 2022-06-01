@@ -21,6 +21,8 @@ final case class UnaryIR(original: Expr, op: UnaryOp) extends IR
 final case class LookupIR(index: Expr, table: List[Ref], low: Int) extends IR
 final case class MethodRef(sym: Sym) extends IR
 final case class SeqIR(first: VarDef, second: VarDef) extends IR
+final case class FnIR(className: String, methodName: String, args: List[Expr])
+    extends IR
 
 object SeqIR {
   def apply(seq: Seq[VarDef]): VarDef =

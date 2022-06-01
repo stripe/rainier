@@ -112,6 +112,16 @@ private trait MethodGenerator {
                                false)
   }
 
+  def callFunction(className: String, methodName: String, nArgs: Int) {
+    val typeDef =
+      s"(Lcom/stripe/rainier/sampler/RNG;${(0 until nArgs).map(_ => "D").mkString("")})D"
+    methodNode.visitMethodInsn(INVOKESTATIC,
+                               className,
+                               methodName,
+                               typeDef,
+                               false)
+  }
+
   def returnVoid(): Unit =
     methodNode.visitInsn(RETURN)
 

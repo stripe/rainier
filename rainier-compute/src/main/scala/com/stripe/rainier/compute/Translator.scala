@@ -22,6 +22,8 @@ private class Translator {
           binaryExpr(toExpr(left), toExpr(right), CompareOp)
         case l: Lookup        => lookupExpr(l)
         case Latent(value, _) => toExpr(value)
+        case FnCall(className, methodName, args) =>
+          VarDef(Sym.freshSym, FnIR(className, methodName, args.map(toExpr)))
       }
       reals += r -> expr
       expr

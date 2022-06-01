@@ -86,6 +86,8 @@ private object VarTypes {
         case s: SeqIR =>
           traverse(s.first)
           traverse(s.second)
+        case fn: FnIR =>
+          fn.args.foreach(traverse)
         case _: MethodRef => ()
       }
 
