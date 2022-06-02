@@ -1,5 +1,7 @@
 package com.stripe.rainier.bench.stan
 
+import com.stripe.rainier.compute.Real
+import com.stripe.rainier.compute.Real.parameter
 import com.stripe.rainier.core._
 
 //https://github.com/stan-dev/stat_comp_benchmarks/tree/master/benchmarks/arK
@@ -12,7 +14,7 @@ class ARK extends ModelBenchmark {
     val betas = Normal(0, 10).latentVec(5)
 
     5.until(ys.size).foldLeft(Model.empty) { (m, t) =>
-      val mu = 1.to(5).foldLeft(alpha) {
+      val mu = 1.to(5).foldLeft(alpha: Real) {
         case (mu, k) =>
           mu + betas(k - 1) * ys(t - k)
       }

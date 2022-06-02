@@ -2,6 +2,7 @@ package com.stripe.rainier.sampler
 
 import scala.collection.mutable.ListBuffer
 import Log._
+import com.stripe.rainier.RNG
 
 object Driver {
   def sample(chain: Int,

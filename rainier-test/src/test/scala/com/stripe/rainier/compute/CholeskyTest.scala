@@ -1,6 +1,6 @@
 package com.stripe.rainier.compute
 
-import com.stripe.rainier.sampler.RNG
+import com.stripe.rainier.RNG
 
 class CholeskyTest extends ComputeTest {
   val rng = RNG.default

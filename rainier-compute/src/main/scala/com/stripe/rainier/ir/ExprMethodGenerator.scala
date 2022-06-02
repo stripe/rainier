@@ -9,7 +9,7 @@ final private case class ExprMethodGenerator(method: MethodDef,
   val isStatic: Boolean = true
   val methodName: String = exprMethodName(method.sym.id)
   val className: String = classNameForMethod(classPrefix, method.sym.id)
-  val methodDesc: String = "([D[D)D"
+  val methodDesc: String = "(Lcom/stripe/rainier/RNG;[D[D)D"
 
   private val varIndices = inputs.zipWithIndex.toMap
 
@@ -67,5 +67,9 @@ final private case class ExprMethodGenerator(method: MethodDef,
         traverse(s.second)
       case m: MethodRef =>
         callExprMethod(classPrefix, m.sym.id)
+      case f: FnIR =>
+        loadRNG()
+        f.args.foreach(traverse)
+        callFunction(f.className, f.methodName, f.args.size)
     }
 }

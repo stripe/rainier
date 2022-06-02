@@ -59,6 +59,24 @@ private class Packer(methodSizeLimit: Int) {
                 (SeqIR(firstDef, secondDef), firstSize + secondSize + 1)
             }
         }
+      case f: FnIR =>
+        def handleArgs(args: List[Expr]): TailRec[(List[Expr], Int)] = {
+          if (args.isEmpty) {
+            TailCalls.done((List.empty[Expr], 0))
+          } else {
+            traverse(args.head, 0).flatMap {
+              case (exprDef, exprSize) =>
+                handleArgs(args.tail).map {
+                  case (tailDef, tailSize) =>
+                    (exprDef +: tailDef, exprSize + tailSize)
+                }
+            }
+          }
+        }
+        handleArgs(f.args).map {
+          case (argsDef, argsSize) =>
+            (FnIR(f.className, f.methodName, argsDef), argsSize)
+        }
       case _: MethodRef =>
         sys.error("there shouldn't be any method refs yet")
     }

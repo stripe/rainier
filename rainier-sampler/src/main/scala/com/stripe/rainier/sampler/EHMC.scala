@@ -1,5 +1,7 @@
 package com.stripe.rainier.sampler
 
+import com.stripe.rainier.RNG
+
 class EHMCSampler(maxSteps: Int,
                   minSteps: Int = 1,
                   bufSize: Int = 100,

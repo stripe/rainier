@@ -6,6 +6,7 @@ import com.stripe.rainier.core._
 //https://github.com/stan-dev/stat_comp_benchmarks/tree/master/benchmarks/low_dim_gauss_mix
 //Stan: Gradient evaluation took 0.000292 seconds
 //JMH:  649.555 ± 2.572  us/op
+/*
 class LowDimGaussMix extends ModelBenchmark {
   def model = {
     val (mu1, sigma1) = muSigma()
@@ -275,3 +276,4 @@ class LowDimGaussMix extends ModelBenchmark {
     1.0084427471213, -1.6306611574291, -4.35233903314464, 3.40936081830715,
     2.75002324260943, 0.760843596839809)
 }
+ */

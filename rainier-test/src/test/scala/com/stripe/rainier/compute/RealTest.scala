@@ -1,8 +1,16 @@
 package com.stripe.rainier.compute
 
+import com.stripe.rainier.RNG
 import com.stripe.rainier.core._
-import scala.util.{Try, Success, Failure}
-import Double.{PositiveInfinity => Inf, NegativeInfinity => NegInf, NaN}
+
+import scala.util.{Failure, Success, Try}
+import Double.{NaN, NegativeInfinity => NegInf, PositiveInfinity => Inf}
+
+object RealTest {
+  def generateValue(rng: RNG, x: Double): Double = {
+    2 * x
+  }
+}
 
 class RealTest extends ComputeTest {
   def run(description: String,
@@ -33,7 +41,7 @@ class RealTest extends ComputeTest {
           val eval = new Evaluator(Map(x -> n))
           val withVar = eval.toDouble(result)
           assertWithinEpsilon(constant, withVar, s"[c/ev, n=$n]")
-          val compiled = c(Array(n))
+          val compiled = c(RNG.default, Array(n))
           assertWithinEpsilon(withVar, compiled, s"[ev/ir, n=$n]")
 
           // derivatives of automated differentiation vs numeric differentiation
@@ -45,7 +53,7 @@ class RealTest extends ComputeTest {
             assertWithinEpsilon(numDiff,
                                 diffWithVar,
                                 s"[numDiff/diffWithVar, n=$n]")
-            val diffCompiled = dc(Array(n))
+            val diffCompiled = dc(RNG.default, Array(n))
             assertWithinEpsilon(diffWithVar,
                                 diffCompiled,
                                 s"[diffWithVar/diffCompiled, n=$n]")
@@ -202,4 +210,15 @@ class RealTest extends ComputeTest {
       Gamma.standard(x.abs).logDensity(y)
     })
   }
+
+  test("function call") {
+//    val l = Latent(1.0, FnCall(RealTest.getClass.getName, "generateValue", List(2.0)))
+    val l = FnCall(RealTest.getClass.getName.stripSuffix("$").replace('.', '/'),
+                   "generateValue",
+                   List(2.0))
+    val c = Compiler(200, 100).compile(List.empty, l)
+    val rng = RNG.default
+    c(rng, Array(3.0))
+  }
+
 }

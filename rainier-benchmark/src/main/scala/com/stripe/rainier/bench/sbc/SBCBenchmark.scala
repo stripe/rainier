@@ -1,11 +1,12 @@
 package com.stripe.rainier.bench.sbc
 
+import com.stripe.rainier.RNG
 import org.openjdk.jmh.annotations._
-import java.util.concurrent.TimeUnit
 
+import java.util.concurrent.TimeUnit
 import com.stripe.rainier.compute._
 import com.stripe.rainier.core._
-import com.stripe.rainier.sampler.{RNG, DensityFunction}
+import com.stripe.rainier.sampler.DensityFunction
 
 @BenchmarkMode(Array(Mode.SampleTime))
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
@@ -35,7 +36,7 @@ abstract class SBCBenchmark {
 
   @Benchmark
   def run(): Unit =
-    df.update(params)
+    df.update(RNG.default, params)
 }
 
 class NormalBenchmark extends SBCBenchmark {
@@ -91,6 +92,7 @@ class BinomialPoissonApproximationBenchmark extends SBCBenchmark {
     SBC(Uniform(0, 0.04))((x: Real) => Binomial(x, 200))
 }
 
+/*
 class GaussianMixtureBenchmark extends SBCBenchmark {
   def sbc =
     SBC(Uniform(0, 1))(
@@ -102,3 +104,5 @@ class GaussianMixtureBenchmark extends SBCBenchmark {
           )
       ))
 }
+
+ */

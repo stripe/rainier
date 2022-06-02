@@ -10,41 +10,54 @@ sealed trait Real {
   def bounds: Bounds
 
   def +(other: Real): Real = RealOps.add(this, other)
+
   def *(other: Real): Real = RealOps.multiply(this, other)
 
   def unary_- : Real = this * (-1)
+
   def -(other: Real): Real = this + (-other)
+
   def /(other: Real): Real = RealOps.divide(this, other)
 
   def min(other: Real): Real = RealOps.min(this, other)
+
   def max(other: Real): Real = RealOps.max(this, other)
 
   def pow(exponent: Real): Real = RealOps.pow(this, exponent)
 
   def exp: Real = RealOps.unary(this, ir.ExpOp)
+
   def log: Real = RealOps.unary(this, ir.LogOp)
 
   def sin: Real = RealOps.unary(this, ir.SinOp)
+
   def cos: Real = RealOps.unary(this, ir.CosOp)
+
   def tan: Real = RealOps.unary(this, ir.TanOp)
 
   def asin: Real = RealOps.unary(this, ir.AsinOp)
+
   def acos: Real = RealOps.unary(this, ir.AcosOp)
+
   def atan: Real = RealOps.unary(this, ir.AtanOp)
 
   def sinh: Real = (this.exp - (-this).exp) / 2
+
   def cosh: Real = (this.exp + (-this).exp) / 2
+
   def tanh: Real = this.sinh / this.cosh
 
   def abs: Real = RealOps.unary(this, ir.AbsOp)
 
   def logit: Real = -((Real.one / this - 1).log)
+
   def logistic: Real = Real.one / (Real.one + (-this).exp)
 }
 
 object Real {
   implicit def apply[N](value: N)(implicit toReal: ToReal[N]): Real =
     toReal(value)
+
   def seq[A](as: Seq[A])(implicit toReal: ToReal[A]): Seq[Real] =
     as.map(toReal(_))
 
@@ -61,6 +74,7 @@ object Real {
   }
 
   def parameter(): Parameter = new Parameter(new Prior(Real.zero))
+
   def parameter(fn: Parameter => Real): Parameter = {
     val x = parameter()
     x.prior = new Prior(fn(x))
@@ -78,16 +92,21 @@ object Real {
   }
 
   def doubles(seq: Seq[Double]): Real = new Column(seq.toArray)
+
   def longs(seq: Seq[Long]): Real = doubles(seq.map(_.toDouble))
 
   def eq(left: Real, right: Real, ifTrue: Real, ifFalse: Real): Real =
     lookupCompare(left, right, ifFalse, ifTrue, ifFalse)
+
   def lt(left: Real, right: Real, ifTrue: Real, ifFalse: Real): Real =
     lookupCompare(left, right, ifFalse, ifFalse, ifTrue)
+
   def gt(left: Real, right: Real, ifTrue: Real, ifFalse: Real): Real =
     lookupCompare(left, right, ifTrue, ifFalse, ifFalse)
+
   def lte(left: Real, right: Real, ifTrue: Real, ifFalse: Real): Real =
     lookupCompare(left, right, ifFalse, ifTrue, ifTrue)
+
   def gte(left: Real, right: Real, ifTrue: Real, ifFalse: Real): Real =
     lookupCompare(left, right, ifTrue, ifTrue, ifFalse)
 
@@ -110,22 +129,32 @@ object Real {
 sealed trait Constant extends Real {
   def isZero: Boolean =
     bounds.lower == 0.0 && bounds.upper == 0.0
+
   def isOne: Boolean =
     bounds.lower == 1.0 && bounds.upper == 1.0
+
   def isTwo: Boolean =
     bounds.lower == 2.0 && bounds.upper == 2.0
+
   def isPosInfinity: Boolean =
     bounds.lower.isPosInfinity && bounds.upper.isPosInfinity
+
   def isNegInfinity: Boolean =
     bounds.lower.isNegInfinity && bounds.upper.isNegInfinity
+
   def isPositive: Boolean =
     bounds.lower >= 0.0
 
   def getDouble: Double
+
   def map(fn: Double => Double): Constant
+
   def mapWith(other: Constant)(fn: (Double, Double) => Double): Constant
+
   def +(other: Constant): Constant = ConstantOps.add(this, other)
+
   def *(other: Constant): Constant = ConstantOps.multiply(this, other)
+
   def /(other: Constant): Constant = ConstantOps.divide(this, other)
 }
 
@@ -142,8 +171,11 @@ object Constant {
 
 final private case class Scalar(value: Double) extends Constant {
   val bounds = Bounds(value, value)
+
   def getDouble = value
+
   def map(fn: Double => Double) = Scalar(fn(value))
+
   def mapWith(other: Constant)(fn: (Double, Double) => Double) =
     other match {
       case Scalar(v) => Scalar(fn(value, v))
@@ -158,8 +190,11 @@ final private[rainier] class Column(val values: Array[Double])
     extends Constant {
   val param = new ir.Param
   val bounds = Bounds(values.min, values.max)
+
   def getDouble = sys.error("Not a scalar")
+
   def map(fn: Double => Double) = new Column(values.map(fn))
+
   def mapWith(other: Constant)(fn: (Double, Double) => Double) =
     other match {
       case Scalar(v) =>
@@ -185,6 +220,17 @@ final private[rainier] class Parameter(var prior: Prior) extends NonConstant {
 }
 
 private[rainier] class Prior(val density: Real)
+
+case class FnCall(className: String,
+                  methodName: String,
+                  args: List[Real] = List.empty)
+    extends NonConstant {
+  val bounds: Bounds = Bounds(Double.NegativeInfinity, Double.PositiveInfinity)
+}
+
+case class Latent(value: Real, generator: Real) extends NonConstant {
+  val bounds = value.bounds
+}
 
 final private case class Unary(original: NonConstant, op: ir.UnaryOp)
     extends NonConstant {

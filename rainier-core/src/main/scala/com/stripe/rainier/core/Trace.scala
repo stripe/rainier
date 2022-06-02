@@ -1,6 +1,8 @@
 package com.stripe.rainier.core
 
+import com.stripe.rainier.RNG
 import com.stripe.rainier.sampler._
+
 import scala.annotation.tailrec
 
 case class Trace(chains: List[List[Array[Double]]],

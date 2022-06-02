@@ -1,8 +1,8 @@
 package com.stripe.rainier.core
 
+import com.stripe.rainier.RNG
 import com.stripe.rainier.ir.CompiledFunction
 import com.stripe.rainier.compute._
-import com.stripe.rainier.sampler.RNG
 
 /**
   * Generator trait, for posterior predictive distributions to be forwards sampled during sampling
@@ -79,7 +79,7 @@ sealed trait Generator[+T] { self =>
           val globalBuf = new Array[Double](cf.numGlobals)
           val reqValues = new Array[Double](cf.numOutputs)
           0.until(cf.numOutputs).foreach { i =>
-            reqValues(i) = CompiledFunction.output(cf, array, globalBuf, i)
+            reqValues(i) = CompiledFunction.output(cf, r, array, globalBuf, i)
           }
           implicit val evaluator: Evaluator =
             new Evaluator(

@@ -80,6 +80,8 @@ class PartialEvaluator(var noChange: Set[Real], rowIndex: Int) {
         (l, false)
     case p: Parameter =>
       (p, false)
+    case Latent(value, _) =>
+      apply(value)
   }
 }
 

@@ -1,5 +1,7 @@
 package com.stripe.rainier.sampler
 
+import com.stripe.rainier.RNG
+
 class HMCSampler(nSteps: Int) extends Sampler {
   def initialize(params: Array[Double], lf: LeapFrog)(implicit rng: RNG) = ()
 

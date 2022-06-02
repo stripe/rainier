@@ -37,7 +37,10 @@ private[rainier] trait Injection { self =>
       }
     }
 
-    def latent: Real = forwards(dist.latent)
+    def latent: Latent = {
+      val upstream = dist.latent
+      Latent(forwards(upstream.value), forwards(upstream.generator))
+    }
   }
 }
 
