@@ -1,11 +1,12 @@
 package com.stripe.rainier.sampler
 
+import com.stripe.rainier.{RNG, ScalaRNG}
 import org.scalatest.FunSuite
 
 class NormalDensityFunction extends DensityFunction {
   val nVars = 1
   var x = 0.0
-  def update(vars: Array[Double]): Unit = {
+  def update(rng: RNG, vars: Array[Double]): Unit = {
     x = vars(0)
   }
   def density = (x * x) / -2.0

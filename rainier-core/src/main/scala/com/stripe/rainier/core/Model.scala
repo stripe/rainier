@@ -1,5 +1,6 @@
 package com.stripe.rainier.core
 
+import com.stripe.rainier.RNG
 import com.stripe.rainier.compute._
 import com.stripe.rainier.sampler._
 import com.stripe.rainier.optimizer._
@@ -62,9 +63,9 @@ class Model(private[rainier] val likelihoods: List[Real],
       val inputs = new Array[Double](dataFn.numInputs)
       val globals = new Array[Double](dataFn.numGlobals)
       val outputs = new Array[Double](dataFn.numOutputs)
-      def update(vars: Array[Double]): Unit = {
+      def update(rng: RNG, vars: Array[Double]): Unit = {
         System.arraycopy(vars, 0, inputs, 0, nVars)
-        dataFn(inputs, globals, outputs)
+        dataFn(rng, inputs, globals, outputs)
       }
       def density = outputs(0)
       def gradient(index: Int) = outputs(index + 1)

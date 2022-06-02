@@ -1,5 +1,6 @@
 package com.stripe.rainier.optimizer
 
+import com.stripe.rainier.RNG
 import com.stripe.rainier.sampler.DensityFunction
 
 object Optimizer {
@@ -12,7 +13,7 @@ object Optimizer {
     val eps = 0.1
     val lb = new LBFGS(x, m, eps)
     while (!complete) {
-      df.update(x)
+      df.update(RNG.default, x)
       var i = 0
       while (i < df.nVars) {
         g(i) = df.gradient(i) * -1

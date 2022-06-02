@@ -1,39 +1,50 @@
 package com.stripe.rainier.ir
 
 import Log._
+import com.stripe.rainier.RNG
 
 trait CompiledFunction {
   def numInputs: Int
   def numGlobals: Int
   def numOutputs: Int
-  def output0(inputs: Array[Double],
+  def output0(rng: RNG,
+              inputs: Array[Double],
               globals: Array[Double],
               output: Int): Double
-  def output1(inputs: Array[Double],
+  def output1(rng: RNG,
+              inputs: Array[Double],
               globals: Array[Double],
               output: Int): Double
-  def output2(inputs: Array[Double],
+  def output2(rng: RNG,
+              inputs: Array[Double],
               globals: Array[Double],
               output: Int): Double
-  def output3(inputs: Array[Double],
+  def output3(rng: RNG,
+              inputs: Array[Double],
               globals: Array[Double],
               output: Int): Double
-  def output4(inputs: Array[Double],
+  def output4(rng: RNG,
+              inputs: Array[Double],
               globals: Array[Double],
               output: Int): Double
-  def output5(inputs: Array[Double],
+  def output5(rng: RNG,
+              inputs: Array[Double],
               globals: Array[Double],
               output: Int): Double
-  def output6(inputs: Array[Double],
+  def output6(rng: RNG,
+              inputs: Array[Double],
               globals: Array[Double],
               output: Int): Double
-  def output7(inputs: Array[Double],
+  def output7(rng: RNG,
+              inputs: Array[Double],
               globals: Array[Double],
               output: Int): Double
-  def output8(inputs: Array[Double],
+  def output8(rng: RNG,
+              inputs: Array[Double],
               globals: Array[Double],
               output: Int): Double
-  def output9(inputs: Array[Double],
+  def output9(rng: RNG,
+              inputs: Array[Double],
               globals: Array[Double],
               output: Int): Double
 }
@@ -120,22 +131,23 @@ object CompiledFunction {
   }
 
   def output(cf: CompiledFunction,
+             rng: RNG,
              inputs: Array[Double],
              globals: Array[Double],
              index: Int): Double = {
     val i = index % 10
     val j = index / 10
     i match {
-      case 0 => cf.output0(inputs, globals, j)
-      case 1 => cf.output1(inputs, globals, j)
-      case 2 => cf.output2(inputs, globals, j)
-      case 3 => cf.output3(inputs, globals, j)
-      case 4 => cf.output4(inputs, globals, j)
-      case 5 => cf.output5(inputs, globals, j)
-      case 6 => cf.output6(inputs, globals, j)
-      case 7 => cf.output7(inputs, globals, j)
-      case 8 => cf.output8(inputs, globals, j)
-      case 9 => cf.output9(inputs, globals, j)
+      case 0 => cf.output0(rng, inputs, globals, j)
+      case 1 => cf.output1(rng, inputs, globals, j)
+      case 2 => cf.output2(rng, inputs, globals, j)
+      case 3 => cf.output3(rng, inputs, globals, j)
+      case 4 => cf.output4(rng, inputs, globals, j)
+      case 5 => cf.output5(rng, inputs, globals, j)
+      case 6 => cf.output6(rng, inputs, globals, j)
+      case 7 => cf.output7(rng, inputs, globals, j)
+      case 8 => cf.output8(rng, inputs, globals, j)
+      case 9 => cf.output9(rng, inputs, globals, j)
     }
   }
 

@@ -1,5 +1,7 @@
 package com.stripe.rainier.sampler
 
+import com.stripe.rainier.RNG
+
 trait SamplerConfig {
   def iterations: Int
   def warmupIterations: Int

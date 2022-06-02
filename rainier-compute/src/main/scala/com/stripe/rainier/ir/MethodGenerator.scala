@@ -103,18 +103,19 @@ private trait MethodGenerator {
 
   def exprMethodName(id: Int): String = s"_$id"
   def callExprMethod(classPrefix: String, id: Int): Unit = {
+    loadRNG()
     loadParams()
     loadGlobalVars()
     methodNode.visitMethodInsn(INVOKESTATIC,
                                classNameForMethod(classPrefix, id),
                                exprMethodName(id),
-                               "([D[D)D",
+                               "(Lcom/stripe/rainier/RNG;[D[D)D",
                                false)
   }
 
-  def callFunction(className: String, methodName: String, nArgs: Int) {
+  def callFunction(className: String, methodName: String, nArgs: Int): Unit = {
     val typeDef =
-      s"(Lcom/stripe/rainier/sampler/RNG;${(0 until nArgs).map(_ => "D").mkString("")})D"
+      s"(Lcom/stripe/rainier/RNG;${(0 until nArgs).map(_ => "D").mkString("")})D"
     methodNode.visitMethodInsn(INVOKESTATIC,
                                className,
                                methodName,
@@ -179,27 +180,32 @@ private trait MethodGenerator {
   /**
   The local var layout is assumed to be:
   For static methods:
-  0: params array
-  1: globals array
-  2..N: locally allocated doubles (two slots each)
+  0: rng RNG
+  1: params array
+  2: globals array
+  3..N: locally allocated doubles (two slots each)
 
   for output():
   0: this
-  1: params array
-  2: globals array
-  3: output index
+  1: rng RNG
+  2: params array
+  3: globals array
+  4: output index
   **/
   def loadParams(): Unit =
-    methodNode.visitVarInsn(ALOAD, if (isStatic) 0 else 1)
-
-  def loadGlobalVars(): Unit =
     methodNode.visitVarInsn(ALOAD, if (isStatic) 1 else 2)
 
-  private def localVarSlot(pos: Int) = 2 + (pos * 2)
+  def loadGlobalVars(): Unit =
+    methodNode.visitVarInsn(ALOAD, if (isStatic) 2 else 3)
+
+  def loadRNG(): Unit =
+    methodNode.visitVarInsn(ALOAD, if (isStatic) 0 else 1)
+
+  private def localVarSlot(pos: Int) = 3 + (pos * 2)
 
   def loadThis(): Unit =
     methodNode.visitVarInsn(ALOAD, 0)
 
   def loadOutputIndex(): Unit =
-    methodNode.visitVarInsn(ILOAD, 3)
+    methodNode.visitVarInsn(ILOAD, 4)
 }

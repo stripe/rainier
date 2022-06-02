@@ -1,5 +1,7 @@
 package com.stripe.rainier.sampler
 
+import com.stripe.rainier.RNG
+
 class Stats(n: Int) {
   var gradientEvaluations = 0L
   var iterations = 0

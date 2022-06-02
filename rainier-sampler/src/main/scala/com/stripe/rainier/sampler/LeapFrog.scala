@@ -1,5 +1,7 @@
 package com.stripe.rainier.sampler
 
+import com.stripe.rainier.RNG
+
 final class LeapFrog(density: DensityFunction, statsWindow: Int) {
   var stats = new Stats(statsWindow)
 
@@ -194,7 +196,7 @@ final class LeapFrog(density: DensityFunction, statsWindow: Int) {
   private def copyQsAndUpdateDensity(): Unit = {
     System.arraycopy(pqBuf, nVars, buf, 0, nVars)
     val t = System.nanoTime()
-    density.update(buf)
+    density.update(RNG.default, buf)
     stats.gradientTimes.add((System.nanoTime() - t).toDouble)
     stats.gradientEvaluations += 1
   }

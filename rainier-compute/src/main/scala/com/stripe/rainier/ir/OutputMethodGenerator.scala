@@ -6,7 +6,7 @@ final private case class OutputMethodGenerator(methodNum: Int,
     extends MethodGenerator {
   val isStatic: Boolean = false
   val methodName: String = s"output$methodNum"
-  val methodDesc: String = "([D[DI)D"
+  val methodDesc: String = "(Lcom/stripe/rainier/RNG;[D[DI)D"
 
   if (outputIDs.isEmpty)
     constant(0.0)

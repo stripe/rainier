@@ -1,14 +1,14 @@
 package com.stripe.rainier.compute
 
+import com.stripe.rainier.RNG
 import com.stripe.rainier.core._
-import com.stripe.rainier.sampler.RNG
 
 import scala.util.{Failure, Success, Try}
 import Double.{NaN, NegativeInfinity => NegInf, PositiveInfinity => Inf}
 
 object RealTest {
-  def generateValue(r: RNG, x: Double): Double = {
-    r.standardUniform * x
+  def generateValue(rng: RNG, x: Double): Double = {
+    2 * x
   }
 }
 
@@ -41,7 +41,7 @@ class RealTest extends ComputeTest {
           val eval = new Evaluator(Map(x -> n))
           val withVar = eval.toDouble(result)
           assertWithinEpsilon(constant, withVar, s"[c/ev, n=$n]")
-          val compiled = c(Array(n))
+          val compiled = c(RNG.default, Array(n))
           assertWithinEpsilon(withVar, compiled, s"[ev/ir, n=$n]")
 
           // derivatives of automated differentiation vs numeric differentiation
@@ -53,7 +53,7 @@ class RealTest extends ComputeTest {
             assertWithinEpsilon(numDiff,
                                 diffWithVar,
                                 s"[numDiff/diffWithVar, n=$n]")
-            val diffCompiled = dc(Array(n))
+            val diffCompiled = dc(RNG.default, Array(n))
             assertWithinEpsilon(diffWithVar,
                                 diffCompiled,
                                 s"[diffWithVar/diffCompiled, n=$n]")
@@ -217,7 +217,8 @@ class RealTest extends ComputeTest {
                    "generateValue",
                    List(2.0))
     val c = Compiler(200, 100).compile(List.empty, l)
-//    c(Array(3.0))
+    val rng = RNG.default
+    c(rng, Array(3.0))
   }
 
 }

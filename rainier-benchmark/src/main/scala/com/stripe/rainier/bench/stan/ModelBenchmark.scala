@@ -1,10 +1,11 @@
 package com.stripe.rainier.bench.stan
 
+import com.stripe.rainier.RNG
 import org.openjdk.jmh.annotations._
-import java.util.concurrent.TimeUnit
 
+import java.util.concurrent.TimeUnit
 import com.stripe.rainier.core._
-import com.stripe.rainier.sampler.{RNG, DensityFunction}
+import com.stripe.rainier.sampler.DensityFunction
 
 @BenchmarkMode(Array(Mode.SampleTime))
 @OutputTimeUnit(TimeUnit.SECONDS)
@@ -28,7 +29,7 @@ abstract class ModelBenchmark {
 
   @Benchmark
   def run(): Unit =
-    df.update(params)
+    df.update(RNG.default, params)
 
   @Benchmark
   def build(): Unit =

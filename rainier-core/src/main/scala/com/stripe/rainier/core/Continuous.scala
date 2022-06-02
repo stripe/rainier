@@ -1,7 +1,7 @@
 package com.stripe.rainier.core
 
+import com.stripe.rainier.RNG
 import com.stripe.rainier.compute._
-import com.stripe.rainier.sampler.RNG
 
 import scala.annotation.tailrec
 

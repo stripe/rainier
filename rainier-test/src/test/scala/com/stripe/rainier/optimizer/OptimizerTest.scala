@@ -1,5 +1,6 @@
 package com.stripe.rainier.optimizer
 
+import com.stripe.rainier.RNG
 import com.stripe.rainier.core._
 import org.scalatest.FunSuite
 
@@ -18,7 +19,7 @@ class OptimizerTest extends FunSuite {
   def testLBFGS(model: Model): Unit = {
     val df = model.density()
     testLBFGS(df.nVars) { x =>
-      df.update(x)
+      df.update(RNG.default, x)
       val f = df.density * -1
       val g = 0.until(df.nVars).toArray.map { i =>
         df.gradient(i) * -1

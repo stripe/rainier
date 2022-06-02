@@ -1,5 +1,7 @@
 package com.stripe.rainier.ir
 
+import com.stripe.rainier.RNG
+
 /*
 Input layout:
 - numParamInputs param inputs
@@ -29,7 +31,8 @@ case class DataFunction(cf: CompiledFunction,
     }
   require(outputStartIndices(data.size) == cf.numOutputs)
 
-  def apply(inputs: Array[Double],
+  def apply(rng: RNG,
+            inputs: Array[Double],
             globals: Array[Double],
             outputs: Array[Double]): Unit = {
     var k = 0
@@ -40,12 +43,13 @@ case class DataFunction(cf: CompiledFunction,
 
     var i = 0
     while (i < data.size) {
-      compute(inputs, globals, outputs, i)
+      compute(rng, inputs, globals, outputs, i)
       i += 1
     }
   }
 
-  private def compute(inputs: Array[Double],
+  private def compute(rng: RNG,
+                      inputs: Array[Double],
                       globals: Array[Double],
                       outputs: Array[Double],
                       i: Int): Unit = {
@@ -64,6 +68,7 @@ case class DataFunction(cf: CompiledFunction,
         var o = 0
         while (o < numOutputs) {
           outputs(o) += CompiledFunction.output(cf,
+                                                rng,
                                                 inputs,
                                                 globals,
                                                 outputStartIndex + o)
@@ -75,6 +80,7 @@ case class DataFunction(cf: CompiledFunction,
       var o = 0
       while (o < numOutputs) {
         outputs(o) += CompiledFunction.output(cf,
+                                              rng,
                                               inputs,
                                               globals,
                                               outputStartIndex + o)

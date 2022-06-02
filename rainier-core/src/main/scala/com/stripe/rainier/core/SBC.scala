@@ -1,5 +1,6 @@
 package com.stripe.rainier.core
 
+import com.stripe.rainier.RNG
 import com.stripe.rainier.sampler._
 import com.stripe.rainier.compute._
 

@@ -1,14 +1,15 @@
 package com.stripe.rainier.compute
 
-import com.stripe.rainier.ir
+import com.stripe.rainier.{RNG, ir}
 
 final case class Compiler(methodSizeLimit: Int, classSizeLimit: Int) {
   def compile(parameters: Seq[Parameter],
-              real: Real): Array[Double] => Double = {
+              real: Real): (RNG, Array[Double]) => Double = {
     val cf = compile(parameters.map(_.param), List(("base", real)))
-    return { array =>
-      val globalBuf = new Array[Double](cf.numGlobals)
-      ir.CompiledFunction.output(cf, array, globalBuf, 0)
+    return {
+      case (rng, array) =>
+        val globalBuf = new Array[Double](cf.numGlobals)
+        ir.CompiledFunction.output(cf, rng, array, globalBuf, 0)
     }
   }
   def compileTargets(group: TargetGroup): ir.DataFunction = {

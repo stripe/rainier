@@ -1,7 +1,7 @@
 package com.stripe.rainier.core
 
+import com.stripe.rainier.RNG
 import com.stripe.rainier.compute._
-import com.stripe.rainier.sampler.RNG
 
 trait Discrete extends Distribution[Long] { self: Discrete =>
   def logDensity(seq: Seq[Long]) =
