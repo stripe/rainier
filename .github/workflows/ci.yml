@@ -14,6 +14,8 @@ jobs:
         with:
           java-version: '11'
           distribution: 'adopt'
+      - name: Set up Scala and sbt
+        uses: olafurpg/setup-scala@49fc8c734ef6916b4e1da8ba8d81bb26a2b46a06 # v7
       - name: scalafmt
         run: sbt scalafmtCheck
       - name: test
